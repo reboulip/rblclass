@@ -196,3 +196,7 @@ README.md
   `RBLclass.VstoAddin.csproj` (`<ManifestCertificateThumbprint>`).
 - Publish location: internal HTTPS share documented in
   `docs/deployment.md`.
+
+## Repository management
+
+Always work on develop branch or a branch based on develop.
