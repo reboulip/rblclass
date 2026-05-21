@@ -92,6 +92,15 @@ if (-not $signtool) {
     }
 }
 
+# Normalize path to signtool.exe
+if ($signtool -is [System.Management.Automation.CommandInfo]) {
+    $signtool = $signtool.Source
+}
+elseif ($signtool -is [System.IO.FileInfo]) {
+    $signtool = $signtool.FullName
+}
+
+
 # --- Copy files ---------------------------------------------------------
 
 Write-Host "Installing to $installDir"
@@ -104,7 +113,7 @@ Copy-Item -Path (Join-Path $buildOutput "*") -Destination $installDir -Recurse -
 # --- Sign the main DLL --------------------------------------------------
 
 Write-Host "Signing $mainDll with thumbprint $Thumbprint"
-& $signtool.Source sign `
+& $signtool sign `
     /sha1 $Thumbprint `
     /fd sha256 `
     /tr "http://timestamp.digicert.com" `
