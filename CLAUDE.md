@@ -2,42 +2,61 @@
 
 ## Project overview
 
-This is a refactor of a legacy Outlook VBA macro into a modern VSTO add-in.
-It helps users quickly classify emails into folders across multiple .pst
-archives, with fast keyword search over the folder tree, attachment
-management, and send-time guards.
+This is a refactor of a legacy Outlook VBA macro into a modern Outlook
+COM add-in. It helps users quickly classify emails into folders across
+multiple .pst archives, with fast keyword search over the folder tree,
+attachment management, and send-time guards.
 
 ## Stack and constraints
 
-- **Add-in technology**: VSTO (Visual Studio Tools for Office). This is
-  non-negotiable: it is the only technology supporting PST access, offline
-  use, and per-user install without admin rights on the classic Win32
-  Outlook client.
-- **Target Outlook**: classic Win32 Outlook, **32-bit**, Microsoft 365
-  Apps for Enterprise on the **Semi-Annual Enterprise Channel**.
-  NOT the "new Outlook". NO Exchange Online dependency.
-- **Runtime**: .NET Framework 4.8 for the VSTO add-in and the Outlook
-  adapter. .NET Standard 2.0 for the business core.
+- **Add-in technology**: Outlook **Shared COM Add-in** —
+  `Extensibility.IDTExtensibility2` + `Office.IRibbonExtensibility`,
+  registered into Outlook via HKCU keys under
+  `Software\Microsoft\Office\Outlook\Addins\`. This is the classic,
+  pre-VSTO Outlook add-in model. It supports PST access, offline use,
+  and per-user install without admin rights on the classic Win32
+  Outlook client. VSTO is explicitly excluded for this project after
+  the Office Developer Tools workload could not be set up on the dev
+  machine.
+- **Target Outlook** (deployment): classic Win32 Outlook, **32-bit**,
+  Microsoft 365 Apps for Enterprise on the **Semi-Annual Enterprise
+  Channel**. NOT the "new Outlook". NO Exchange Online dependency.
+- **Dev Outlook**: classic Win32 Outlook, **64-bit**, **Current**
+  channel — the local dev machine differs from the deployment
+  target. The same add-in binary must load on both. Final EDR and
+  compatibility validation happens against a real 32-bit target
+  workstation; the dev machine is for fast iteration only.
+- **Runtime**: .NET Framework 4.8 for the add-in shell and the
+  Outlook adapter. .NET Standard 2.0 for the business core.
 - **Language**: C# 7.3 (.NET Framework 4.8 limit unless LangVersion is
   explicitly bumped, which we avoid).
-- **UI**: WPF with MVVM via CommunityToolkit.Mvvm. Ribbon via Ribbon XML
-  (not the Ribbon Designer).
+- **UI**: WPF with MVVM via CommunityToolkit.Mvvm, hosted in Custom
+  Task Panes via `ICTPFactoryConsumer`/`ICustomTaskPane`. Ribbon via
+  `IRibbonExtensibility.GetCustomUI` returning Ribbon XML (not the
+  Ribbon Designer).
 - **Storage**: SQLite via Microsoft.Data.Sqlite, with FTS5 for full-text
   search. Database in %LocalAppData%\RBLclass\.
 - **Logging**: Serilog with a rolling file sink.
 - **Tests**: xUnit, FluentAssertions, NSubstitute. Tests run against
   RBLclass.Core only; the Outlook adapter is excluded from CI tests.
-- **Packaging**: ClickOnce, per-user install, code-signed with an
+- **Packaging**: per-user install via a signed installer that lays
+  down the add-in DLL + dependencies under `%LocalAppData%\RBLclass\`
+  and writes the COM registration entries to HKCU. Phase 0 POC uses a
+  PowerShell installer; Phase 1 promotes to an MSI built with the WiX
+  Toolset, Authenticode-signed (both the DLL and the MSI) with an
   internal-PKI certificate carrying the Code Signing EKU
-  (1.3.6.1.5.5.7.3.3).
+  (1.3.6.1.5.5.7.3.3). ClickOnce is not used — it is VSTO-specific
+  in this scenario.
 - **Min Windows**: Windows 10 1809.
 
 ## Architecture
 
 Strict layering. Dependencies point downward only.
 
-RBLclass.VstoAddin           (.NET FW 4.8) — Ribbon, Task Pane, events
-       │
+RBLclass.AddIn               (.NET FW 4.8) — COM add-in shell:
+       │                                  IDTExtensibility2, IRibbonExtensibility,
+       │                                  ribbon callbacks, Custom Task Panes,
+       │                                  Outlook event subscriptions
 RBLclass.Outlook.Adapter     (.NET FW 4.8) — COM access to Outlook OM
        │                                  Implements RBLclass.Core interfaces
        ▼
@@ -47,9 +66,9 @@ RBLclass.Core                (.NET Standard 2.0) — business logic, no Outlook
 
 
 The business core (`RBLclass.Core`) MUST remain free of any reference to
-Microsoft.Office.Interop.Outlook, System.Windows, or VSTO assemblies.
-This is what makes the code portable on the day we have to migrate away
-from VSTO.
+Microsoft.Office.Interop.Outlook, System.Windows, or COM-add-in shell
+assemblies. This is what makes the code portable on the day we have to
+migrate away from the COM add-in model.
 
 ## Critical coding rules
 
@@ -76,19 +95,25 @@ cause Outlook crashes and memory leaks.
 
 ### Bitness
 
-- Outlook runs as a **32-bit process** on target workstations. The VSTO
-  add-in therefore loads into a 32-bit host.
-- Build configuration: `x86` for `RBLclass.VstoAddin` and
-  `RBLclass.Outlook.Adapter`. `AnyCPU` is acceptable for `RBLclass.Core` and
-  test projects.
-- Any native dependency (SQLite, etc.) MUST ship with its **x86 native
-  binary**. Use the NuGet packages that include both x86 and x64
-  payloads (e.g. `SQLitePCLRaw.bundle_e_sqlite3`) and verify after build
-  that `e_sqlite3.dll` (x86) is present in the output directory.
-- Do NOT add dependencies that are x64-only.
+- Build configuration: **AnyCPU** for all projects, with
+  `Prefer32Bit=false`. The same binary loads into both 64-bit Outlook
+  (dev machine) and 32-bit Outlook (target workstations); the .NET
+  runtime JITs to the host process bitness.
+- Native dependencies MUST ship both `runtimes\win-x86\native\` AND
+  `runtimes\win-x64\native\` payloads (e.g.
+  `SQLitePCLRaw.bundle_e_sqlite3`). Verify after build that both
+  payloads land in the output directory. Do NOT add x64-only
+  dependencies.
+- COM registration is bitness-specific. Under HKCU on 64-bit
+  Windows, 64-bit clients read `Software\Classes\CLSID\{guid}` while
+  32-bit clients read `Software\Classes\Wow6432Node\CLSID\{guid}`.
+  The installer writes both subtrees so a single artifact supports
+  both Outlook bitnesses without per-host customisation. The
+  `Software\Microsoft\Office\Outlook\Addins\` key is NOT WOW64-
+  redirected in HKCU and is written once.
 - Memory budget: 32-bit processes are capped at ~2 GB address space
   shared with Outlook itself. Avoid loading large datasets in memory;
-  stream from SQLite.
+  stream from SQLite. Treat ~1 GB as the usable budget.
 
 ### Performance targets
 
@@ -110,15 +135,16 @@ cause Outlook crashes and memory leaks.
 
 ### Outlook events
 
-- Register event handlers in `ThisAddIn_Startup`, unregister in
-  `ThisAddIn_Shutdown`.
+- Register event handlers in `OnStartupComplete`, unregister in
+  `OnBeginShutdown`.
 - Keep references to event source objects in fields, otherwise GC will
   collect them and events stop firing silently.
 
 ### Error handling
 
 - Outlook COM calls can throw `COMException`. Catch and log, never let
-  exceptions escape to Outlook (it disables the add-in).
+  exceptions escape to Outlook (it disables the add-in by flipping
+  `LoadBehavior` from 3 to 2 in the registry).
 - Top-level handlers in every ribbon callback, every event handler, every
   fire-and-forget Task.
 
@@ -128,9 +154,12 @@ cause Outlook crashes and memory leaks.
 /src
   /RBLclass.Core              business logic, .NET Standard 2.0
   /RBLclass.Outlook.Adapter   COM adapter, .NET Framework 4.8
-  /RBLclass.VstoAddin         VSTO shell, .NET Framework 4.8
+  /RBLclass.AddIn             COM add-in shell, .NET Framework 4.8
+/installer                    WiX MSI project (Phase 1)
 /tests
   /RBLclass.Core.Tests        xUnit
+/poc                          Phase 0 throwaway POC — not part of the
+                              Phase 1 solution
 /docs
   /architecture.md
   /derisking.md
@@ -144,7 +173,7 @@ README.md
 - When asked to add a feature, locate it in the appropriate layer. If it
   needs Outlook data, define an interface in `RBLclass.Core`, implement it
   in `RBLclass.Outlook.Adapter`, write the business logic in `RBLclass.Core`,
-  wire it from `RBLclass.VstoAddin`.
+  wire it from `RBLclass.AddIn`.
 - Always write unit tests for any non-trivial logic added in `RBLclass.Core`.
 - Follow existing naming, formatting (`.editorconfig`), and namespace
   conventions.
@@ -154,7 +183,9 @@ README.md
 ## What Claude should NOT do
 
 - Do not add references from `RBLclass.Core` to anything Outlook-, WPF-, or
-  VSTO-related.
+  COM-add-in-shell-related.
+- Do not depend on the VSTO runtime or the `Microsoft.Office.Tools.*`
+  assemblies — they are not used in this project.
 - Do not introduce new dependencies without asking. Keep the dependency
   surface small.
 - Do not call Outlook COM APIs from a non-UI thread.
@@ -164,7 +195,7 @@ README.md
 - Do not assume Exchange Online is available. PST is the source of truth.
 - Do not introduce x64-only native dependencies.
 - Do not assume more than ~1 GB of usable memory; the add-in lives
-  inside a 32-bit Outlook process.
+  inside a 32-bit Outlook process on the deployment target.
 
 ## Useful context for Outlook OM quirks
 
@@ -179,23 +210,31 @@ README.md
 
 ## Build and run
 
-- Open `RBLclass.sln` in Visual Studio 2022 with the "Office/SharePoint
-  development" workload installed.
-- Set `RBLclass.VstoAddin` as startup project. F5 launches Outlook with the
-  add-in attached.
-- `RBLclass.Core` and its tests can be built and run from VS Code with the
-  C# Dev Kit; do not try to build the VSTO project from VS Code.
-- Default build configuration is `Debug|x86`. Release is `Release|x86`.
-  The `AnyCPU` configuration exists only for `RBLclass.Core` and test
-  projects.
+- VS 2022 with the **.NET desktop development** workload and the
+  **.NET Framework 4.8 targeting pack** is sufficient. The
+  Office/SharePoint development workload is NOT required.
+- Open `RBLclass.sln` in Visual Studio 2022. F5 launches Outlook with
+  the add-in attached via *Debug → Start External Program:
+  outlook.exe*. The HKCU COM registration written by the install
+  script is what makes Outlook load the add-in; no VSTO hosting is
+  involved.
+- `RBLclass.Core` and its tests can be built and run from VS Code with
+  the C# Dev Kit; the add-in shell project must be built from VS or
+  the command line (`msbuild`) on Windows.
+- Default build configuration is `Debug|AnyCPU`. Release is
+  `Release|AnyCPU`. There is no x86 or x64 configuration.
 
 ## Publishing
 
-- ClickOnce profile in `RBLclass.VstoAddin\Properties\PublishProfiles`.
-- Manifest is signed with the certificate referenced in
-  `RBLclass.VstoAddin.csproj` (`<ManifestCertificateThumbprint>`).
-- Publish location: internal HTTPS share documented in
+- Phase 1: WiX-based MSI installer under `/installer/`, per-user, code-
+  signed (Authenticode) with the internal-PKI cert. The MSI writes
+  the HKCU registry entries, lays down files under
+  `%LocalAppData%\RBLclass\`, and registers the add-in under
+  `HKCU\Software\Microsoft\Office\Outlook\Addins\`.
+- Distribution: internal HTTPS share documented in
   `docs/deployment.md`.
+- Phase 0 POC publishing flow (PowerShell installer) is in
+  `/poc/scripts/` and is not part of the Phase 1 publishing chain.
 
 ## Repository management
 

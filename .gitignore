@@ -1,0 +1,22 @@
+# Visual Studio / MSBuild output
+bin/
+obj/
+.vs/
+*.user
+*.suo
+
+# ReSharper / Rider
+_ReSharper*/
+*.DotSettings.user
+
+# NuGet
+packages/
+*.nuget.props
+*.nuget.targets
+
+# OS / editor
+Thumbs.db
+.DS_Store
+
+# POC publish output (if any)
+poc/publish/

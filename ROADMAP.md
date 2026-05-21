@@ -14,15 +14,23 @@
       certificate is NOT sufficient.
 - [ ] Verify ClickOnce per-user install works on a real user workstation
       (no admin).
-- [ ] Build the "Hello PST" VSTO POC:
-    - Ribbon button
+- [ ] Build the "Hello PST" **COM Add-in** POC:
+    - Ribbon button (via `IRibbonExtensibility`)
     - Enumerate open PST stores, count items in first folder
     - Open a SQLite database in %LocalAppData%, write/read one row
-      (validates the **x86 native SQLite binary** loads in the 32-bit
-      Outlook process)
-    - Package as ClickOnce signed with the internal certificate
-- [ ] Deploy the POC to one real user workstation; observe for 2-3 days
-      for any EDR alert (Stormshield in particular).
+      (validates that `Microsoft.Data.Sqlite` + the native
+      `e_sqlite3.dll` load correctly inside the Outlook process at
+      both 32-bit and 64-bit, via the `SQLitePCLRaw.bundle_e_sqlite3`
+      both-arch runtime payload)
+    - Package as a signed per-user installer (PowerShell script for
+      the POC; WiX MSI from Phase 1) and verify it installs without
+      admin rights
+- [ ] Deploy the POC for validation:
+    - Dev-machine smoke test on 64-bit Outlook, Current channel
+    - Target-workstation validation on 32-bit Outlook, Semi-Annual
+      Enterprise channel — observe for 2-3 days for any EDR alert
+      (Stormshield in particular) and any `LoadBehavior` flip from
+      3 to 2 in HKCU
 - [ ] Go/No-Go gate.
 
 ## Phase 1 — Foundations (2-3 weeks)
@@ -33,7 +41,8 @@ to build fast afterwards.
 - [ ] Solution skeleton:
     - RBLclass.Core (.NET Standard 2.0) — business logic, no Outlook dep
     - RBLclass.Outlook.Adapter (.NET Framework 4.8) — IMailStore impl over COM
-    - RBLclass.VstoAddin (.NET Framework 4.8) — thin VSTO shell
+    - RBLclass.AddIn (.NET Framework 4.8) — thin COM-add-in shell
+      (IDTExtensibility2 + IRibbonExtensibility)
     - RBLclass.Core.Tests (xUnit)
 - [ ] Define core interfaces: IMailStore, IFolderTree, IMailIndex, IClassifier
 - [ ] SQLite schema v1 (mails index with FTS5, folders, conversation→folder
@@ -41,7 +50,9 @@ to build fast afterwards.
 - [ ] Logging infrastructure (Serilog, rolling file in %LocalAppData%)
 - [ ] CI: build + tests on every push (GitHub Actions or Azure DevOps)
 - [ ] COM lifetime management utilities (ComWrapper<T> with IDisposable)
-- [ ] ClickOnce publishing profile, signed with the chosen certificate
+- [ ] WiX-based MSI installer skeleton, per-user, Authenticode-signed,
+      registers the add-in under
+      `HKCU\Software\Microsoft\Office\Outlook\Addins\`
 
 ## Phase 2 — Indexing engine (2 weeks)
 

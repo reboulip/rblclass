@@ -1,3 +1,140 @@
-RBLclass version 2, as a VSTO add-in.
+# RBLclass v2
 
-This project is the new version of the old, VBA-based RBLclass add-in.s
+RBLclass v2 is the modernised replacement for the legacy VBA-based
+RBLclass Outlook macro. It helps users quickly classify emails into
+folders across multiple .pst archives, with fast keyword search over
+the folder tree, attachment management, and send-time guards.
+
+**Stack**: C# / .NET Framework 4.8 (add-in shell + Outlook adapter)
+and .NET Standard 2.0 (business core), packaged as a classic
+**Outlook Shared COM Add-in** (`IDTExtensibility2` +
+`IRibbonExtensibility`). SQLite with FTS5 for the index. WPF
++ MVVM (CommunityToolkit.Mvvm) for UI hosted in Custom Task Panes.
+Per-user install via HKCU registration — no admin rights, no
+ClickOnce, no VSTO runtime.
+
+See [CLAUDE.md](CLAUDE.md) for the full architectural rules and
+[ROADMAP.md](ROADMAP.md) for the delivery phases.
+
+## Phase 0 — Hello PST POC
+
+`/poc/RBLclass.HelloPstPoc` is a **throwaway** proof-of-concept that
+de-risks the three Phase-0 technical concerns before the Phase 1
+layered solution is built:
+
+1. A COM add-in we author and sign loads into both 64-bit Outlook
+   (this dev machine, Current channel) and 32-bit Outlook (the
+   target workstations, Semi-Annual Enterprise channel).
+2. `Microsoft.Data.Sqlite` + the native `e_sqlite3.dll` work inside
+   the Outlook process at both bitnesses
+   (`SQLitePCLRaw.bundle_e_sqlite3` ships both runtimes).
+3. A per-user install (PowerShell + HKCU registration, no admin)
+   does not trip Stormshield / EDR.
+
+The POC is **not** the Phase 1 codebase. Do not extend it; once it
+has done its job it will be deleted in favour of the
+`/src/RBLclass.{Core,Outlook.Adapter,AddIn}` solution.
+
+### Prerequisites
+
+- Visual Studio 2022 with the **.NET desktop development** workload
+  and the **.NET Framework 4.8 targeting pack**. (The
+  Office/SharePoint workload is NOT required.)
+- Outlook installed locally (any bitness; the POC targets both).
+- At least one PST file attached to your Outlook profile, with a
+  non-empty first subfolder.
+- A self-signed code-signing certificate in `Cert:\CurrentUser\My`
+  with the **Code Signing EKU** (OID `1.3.6.1.5.5.7.3.3`). Create
+  it once:
+
+  ```powershell
+  cd <repo>\poc\scripts
+  .\Create-SelfSignedCert.ps1
+  ```
+
+  The script prints the thumbprint — copy it; you will pass it to
+  the installer below.
+
+### Build
+
+From the repo root, in a Developer PowerShell for VS 2022:
+
+```powershell
+cd poc
+msbuild RBLclass.HelloPstPoc.sln /restore /p:Configuration=Debug /p:Platform="Any CPU"
+```
+
+After a successful build, the output lives under
+`poc\RBLclass.HelloPstPoc\bin\Debug\net48\`. Verify that **both**
+native SQLite payloads are present:
+
+```
+poc\RBLclass.HelloPstPoc\bin\Debug\net48\runtimes\win-x86\native\e_sqlite3.dll
+poc\RBLclass.HelloPstPoc\bin\Debug\net48\runtimes\win-x64\native\e_sqlite3.dll
+```
+
+If only one is present, the build did not unpack the `runtimes\`
+NuGet content; see `poc/README.md` for the workaround.
+
+### Install (per user, no admin)
+
+Close Outlook. Then, from the repo root in a non-elevated
+PowerShell:
+
+```powershell
+cd poc\scripts
+.\Install-HelloPstAddIn.ps1 -Thumbprint <your-cert-thumbprint>
+```
+
+What the installer does:
+
+1. Copies the build output (DLL + dependencies + `runtimes\`) to
+   `%LocalAppData%\RBLclass\HelloPstPoc\`.
+2. Authenticode-signs `RBLclass.HelloPstPoc.dll` with the cert
+   identified by the thumbprint you passed.
+3. Writes COM-class registration under
+   `HKCU:\Software\Classes\CLSID\{guid}` (and the
+   `Wow6432Node\` mirror, so 32-bit Outlook on 64-bit Windows
+   resolves the same class).
+4. Writes the Outlook add-in entry at
+   `HKCU:\Software\Microsoft\Office\Outlook\Addins\RBLclass.HelloPstAddIn`
+   with `LoadBehavior = 3`.
+
+Confirm the install:
+
+1. Open Outlook. A new ribbon tab **RBLclass** appears with a
+   single button **Hello PST**.
+2. `File → Options → Add-ins`. "RBLclass Hello PST POC" is listed
+   under *Active Application Add-ins*.
+3. Click **Hello PST**. A `MessageBox` shows the process bitness,
+   the first PST's name, the item count in its first subfolder,
+   the path of the loaded `e_sqlite3.dll`, and the SQLite roundtrip
+   row count.
+
+### Uninstall
+
+Close Outlook. Then:
+
+```powershell
+cd poc\scripts
+.\Uninstall-HelloPstAddIn.ps1
+```
+
+What the uninstaller does:
+
+1. Removes the COM-class registration from
+   `HKCU:\Software\Classes\CLSID\{guid}` and its `Wow6432Node\`
+   mirror.
+2. Removes the Outlook add-in entry at
+   `HKCU:\Software\Microsoft\Office\Outlook\Addins\RBLclass.HelloPstAddIn`.
+3. Deletes `%LocalAppData%\RBLclass\HelloPstPoc\`. Leaves
+   `%LocalAppData%\RBLclass\hello-pst-poc.db` in place (it
+   contains POC ping rows; remove manually if you want a clean
+   slate).
+
+Verify the uninstall:
+
+- Reopen Outlook → no **RBLclass** ribbon tab.
+- `File → Options → Add-ins` → "RBLclass Hello PST POC" is gone.
+- `HKCU:\Software\Microsoft\Office\Outlook\Addins\` no longer
+  contains an `RBLclass.HelloPstAddIn` key.
