@@ -3,7 +3,6 @@ using System.IO;
 using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Windows.Forms;
-using Office = Microsoft.Office.Core;
 using Outlook = Microsoft.Office.Interop.Outlook;
 
 namespace RBLclass.HelloPstPoc
@@ -12,7 +11,7 @@ namespace RBLclass.HelloPstPoc
     [Guid(ClsidString)]
     [ProgId(ProgIdString)]
     [ClassInterface(ClassInterfaceType.None)]
-    public class HelloPstAddIn : IDTExtensibility2, Office.IRibbonExtensibility
+    public class HelloPstAddIn : IDTExtensibility2, IRibbonExtensibility
     {
         public const string ClsidString = "B5E7A6F1-3D5A-4A8B-9C2E-1F4E5A8B9D03";
         public const string ProgIdString = "RBLclass.HelloPstAddIn";
@@ -75,7 +74,10 @@ namespace RBLclass.HelloPstPoc
             }
         }
 
-        public void OnHelloPstClick(Office.IRibbonControl control)
+        // Ribbon onAction callback. Office passes an IRibbonControl COM
+        // object; we accept it as `object` to avoid declaring the
+        // IRibbonControl interface — the parameter is unused.
+        public void OnHelloPstClick(object control)
         {
             try
             {

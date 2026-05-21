@@ -3,10 +3,11 @@ using System.Runtime.InteropServices;
 
 namespace RBLclass.HelloPstPoc
 {
-    // Manual declaration of the Office Extensibility IDTExtensibility2
-    // interface and its enums. We do this instead of taking a COM
-    // reference on the Extensibility 1.3 type library so the project
-    // builds without an external interop dependency.
+    // Manual declarations of the Office interop interfaces we need.
+    // We declare them by hand instead of taking COM/NuGet references
+    // on Extensibility 1.3 and the Microsoft Office object library
+    // (no maintained NuGet package exists for the latter), so the
+    // project builds against nothing but Microsoft.Office.Interop.Outlook.
 
     [ComImport]
     [Guid("B65AD801-ABAF-11D0-BB8B-00A0C90F2744")]
@@ -44,5 +45,16 @@ namespace RBLclass.HelloPstPoc
     {
         ext_dm_HostShutdown = 0,
         ext_dm_UserClosed = 1,
+    }
+
+    // Office.IRibbonExtensibility — Outlook queries the add-in for this
+    // interface by GUID at startup to fetch the ribbon XML.
+    [ComImport]
+    [Guid("000C0396-0000-0000-C000-000000000046")]
+    [InterfaceType(ComInterfaceType.InterfaceIsIDispatch)]
+    public interface IRibbonExtensibility
+    {
+        [DispId(1)]
+        string GetCustomUI([In, MarshalAs(UnmanagedType.BStr)] string RibbonID);
     }
 }
