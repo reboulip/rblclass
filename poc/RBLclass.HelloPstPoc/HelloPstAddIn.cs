@@ -3,6 +3,8 @@ using System.IO;
 using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Windows.Forms;
+using Extensibility;
+using Office = Microsoft.Office.Core;
 using Outlook = Microsoft.Office.Interop.Outlook;
 
 namespace RBLclass.HelloPstPoc
@@ -16,7 +18,7 @@ namespace RBLclass.HelloPstPoc
     // implemented interfaces are findable, and the ribbon callbacks
     // would fail at click time.
     [ClassInterface(ClassInterfaceType.AutoDispatch)]
-    public class HelloPstAddIn : IDTExtensibility2, IRibbonExtensibility
+    public class HelloPstAddIn : IDTExtensibility2, Office.IRibbonExtensibility
     {
         public const string ClsidString = "B5E7A6F1-3D5A-4A8B-9C2E-1F4E5A8B9D03";
         public const string ProgIdString = "RBLclass.HelloPstAddIn";
@@ -79,10 +81,7 @@ namespace RBLclass.HelloPstPoc
             }
         }
 
-        // Ribbon onAction callback. Office passes an IRibbonControl COM
-        // object; we accept it as `object` to avoid declaring the
-        // IRibbonControl interface — the parameter is unused.
-        public void OnHelloPstClick(object control)
+        public void OnHelloPstClick(Office.IRibbonControl control)
         {
             try
             {

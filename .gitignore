@@ -23,3 +23,6 @@ Thumbs.db
 
 # POC publish output (if any)
 poc/publish/
+
+# Runtime side-effects when launching the add-in (Outlook telemetry stub)
+myeasylog.log

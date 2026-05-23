@@ -22,10 +22,12 @@ attachment management, and send-time guards.
   Microsoft 365 Apps for Enterprise on the **Semi-Annual Enterprise
   Channel**. NOT the "new Outlook". NO Exchange Online dependency.
 - **Dev Outlook**: classic Win32 Outlook, **64-bit**, **Current**
-  channel — the local dev machine differs from the deployment
-  target. The same add-in binary must load on both. Final EDR and
-  compatibility validation happens against a real 32-bit target
-  workstation; the dev machine is for fast iteration only.
+  channel, on **Windows 11 ARM64** (Outlook runs as emulated x64
+  via Prism). The local dev machine differs from the deployment
+  target in both architecture and channel. The same AnyCPU
+  add-in binary must load on both. Final EDR and compatibility
+  validation happens against a real 32-bit target workstation;
+  the dev machine is for fast iteration only.
 - **Runtime**: .NET Framework 4.8 for the add-in shell and the
   Outlook adapter. .NET Standard 2.0 for the business core.
 - **Language**: C# 7.3 (.NET Framework 4.8 limit unless LangVersion is
@@ -72,6 +74,39 @@ migrate away from the COM add-in model.
 
 ## Critical coding rules
 
+### COM interop interface declarations (add-in shell only)
+
+- **Never hand-roll `[ComImport]` declarations of `IDTExtensibility2`,
+  `IRibbonExtensibility`, `IRibbonControl`, or other Office/Extensibility
+  interfaces.** Reference the canonical PIAs from the GAC instead:
+  - `Extensibility` —
+    `C:\Windows\assembly\GAC\Extensibility\7.0.3300.0__b03f5f7f11d50a3a\extensibility.dll`
+  - `office` (Microsoft.Office.Core) —
+    `C:\Windows\assembly\GAC_MSIL\office\15.0.0.0__71e9bce111e9429c\OFFICE.DLL`
+  - `Microsoft.Office.Interop.Outlook` —
+    `C:\Windows\assembly\GAC_MSIL\Microsoft.Office.Interop.Outlook\15.0.0.0__71e9bce111e9429c\Microsoft.Office.Interop.Outlook.dll`
+
+  Reference them in the `.csproj` via `<Reference Include="…"><HintPath>…</HintPath><Private>false</Private></Reference>`.
+  **Why:** CLR auto-generates IL marshalling stubs from interface
+  metadata. Even with the correct `[Guid]` and `[DispId]` attributes,
+  subtle differences from the canonical PIAs (e.g. missing `[In]`,
+  wrong `MarshalAs` for `ref Array`) produce stubs that AV inside
+  `IL_STUB_COMtoCLR` when Outlook calls our methods. The crash
+  surfaces as `ExecutionEngineException` (HRESULT `0x80131506`),
+  takes Outlook down silently, and is hard to diagnose without
+  a memory dump.
+
+- **`[ClassInterface(ClassInterfaceType.AutoDispatch)]` on the add-in
+  class is mandatory** — not `None`. Office resolves ribbon
+  `onAction` callbacks by calling `IDispatch::GetIDsOfNames` on
+  the class itself, and `None` only exposes members of explicitly-
+  implemented interfaces, none of which the ribbon callbacks live on.
+
+- **Do not embed Office interop types** (`<EmbedInteropTypes>true</EmbedInteropTypes>`
+  on a `PackageReference`). In SDK-style net48 projects this metadata
+  is silently ignored and the PIA is copied as a regular dependency.
+  Use direct GAC references (as above) which never get copied.
+
 ### COM lifetime (Outlook adapter only)
 
 Outlook COM objects MUST be released explicitly. Long-lived references
@@ -96,8 +131,9 @@ cause Outlook crashes and memory leaks.
 ### Bitness
 
 - Build configuration: **AnyCPU** for all projects, with
-  `Prefer32Bit=false`. The same binary loads into both 64-bit Outlook
-  (dev machine) and 32-bit Outlook (target workstations); the .NET
+  `Prefer32Bit=false`. The same binary loads into 64-bit Outlook on
+  the ARM64 dev machine (running as x64 under Prism emulation) AND
+  32-bit Outlook on the x86/x64 target workstations; the .NET
   runtime JITs to the host process bitness.
 - Native dependencies MUST ship both `runtimes\win-x86\native\` AND
   `runtimes\win-x64\native\` payloads (e.g.
@@ -211,8 +247,14 @@ README.md
 ## Build and run
 
 - VS 2022 with the **.NET desktop development** workload and the
-  **.NET Framework 4.8 targeting pack** is sufficient. The
+  **.NET Framework 4.8 targeting pack** is required. The
   Office/SharePoint development workload is NOT required.
+- The **standalone .NET SDK** must also be installed (e.g.
+  `winget install Microsoft.DotNet.SDK.8`). The SDK-style csproj
+  needs `Microsoft.NET.Sdk` to resolve, and on Windows ARM64 the
+  VS workload does not bundle it. After install, refresh PATH in
+  any shell that was open before the install — see the deploy
+  script for the canonical refresh idiom.
 - Open `RBLclass.sln` in Visual Studio 2022. F5 launches Outlook with
   the add-in attached via *Debug → Start External Program:
   outlook.exe*. The HKCU COM registration written by the install
@@ -220,7 +262,7 @@ README.md
   involved.
 - `RBLclass.Core` and its tests can be built and run from VS Code with
   the C# Dev Kit; the add-in shell project must be built from VS or
-  the command line (`msbuild`) on Windows.
+  the command line (`msbuild` or `dotnet build`) on Windows.
 - Default build configuration is `Debug|AnyCPU`. Release is
   `Release|AnyCPU`. There is no x86 or x64 configuration.
 

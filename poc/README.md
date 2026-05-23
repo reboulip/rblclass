@@ -74,4 +74,34 @@ All of the above land in Phase 1 in the real
   `HKCU\Software\Microsoft\Office\Outlook\Addins\RBLclass.HelloPstAddIn\LoadBehavior`.
   Outlook flips it from 3 to 2 if an exception escaped during
   `OnConnection`. Investigate the cause, fix it, set it back to
-  3, restart Outlook.
+  3, restart Outlook. (`Deploy-HelloPstAddIn.ps1` already
+  whitelists us in `DoNotDisableAddinList`, so it won't.)
+
+## Debugging hard crashes
+
+If Outlook crashes on add-in load with no visible error:
+
+1. **Event Viewer** → Application log → `.NET Runtime` source. Crash
+   exit code `80131506` = `ExecutionEngineException` (fatal CLR FailFast,
+   typically COM marshalling).
+2. **Per-user WER local dumps** for `OUTLOOK.EXE` (no admin):
+   `HKCU\Software\Microsoft\Windows\Windows Error Reporting\LocalDumps\OUTLOOK.EXE`
+   → `DumpType=2`, `DumpFolder=%LocalAppData%\CrashDumps`. Office may
+   ignore HKCU; fall back to **procdump** from Sysinternals (also
+   no admin needed): `procdump64.exe -accepteula -ma -e -t -w outlook.exe <dump-dir>`.
+3. **Analyze the dump.** On Windows ARM64 with a 64-bit emulated-x64
+   Outlook dump, you need an **x64 .NET host** to run ClrMD —
+   cross-build a self-contained x64 exe from the ARM64 SDK:
+   `dotnet publish -r win-x64 --self-contained`. ClrMD's
+   `ClrInfo.CreateRuntime(dacPath, ignoreMismatch: true)` with
+   `dacPath = "C:\Windows\Microsoft.NET\Framework64\v4.0.30319\mscordacwks.dll"`
+   loads .NET Framework 4.8 dumps cleanly. The `dotnet-dump` global
+   tool does NOT work for .NET Framework dumps from emulated x64
+   processes — its SOS won't load.
+4. The crash we already hit in this POC, archived for posterity:
+   hand-rolled `[ComImport]` declarations of `IDTExtensibility2` and
+   `IRibbonExtensibility` produced an IL stub
+   (`DomainBoundILStubClass.IL_STUB_COMtoCLR`) that AV'd when Outlook
+   called `OnConnection`. Fix: reference the canonical PIAs from the
+   GAC instead — see [CLAUDE.md](../CLAUDE.md), *Critical coding
+   rules / COM interop interface declarations*.

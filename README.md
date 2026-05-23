@@ -37,79 +37,80 @@ has done its job it will be deleted in favour of the
 
 ### Prerequisites
 
-- Visual Studio 2022 with the **.NET desktop development** workload
-  and the **.NET Framework 4.8 targeting pack**. (The
-  Office/SharePoint workload is NOT required.)
-- Outlook installed locally (any bitness; the POC targets both).
+- Visual Studio 2022 (Community or higher) with the
+  **.NET desktop development** workload and the
+  **.NET Framework 4.8 targeting pack**. (The Office/SharePoint
+  workload is NOT required.)
+- The standalone **.NET SDK** (e.g.
+  `winget install Microsoft.DotNet.SDK.8`). Required even though we
+  target `net48` — the SDK-style csproj needs `Microsoft.NET.Sdk` to
+  resolve. On Windows ARM64 the VS workload does not bundle it.
+- **Office must be installed locally** — the build references the
+  Office PIAs (`Extensibility`, `office`, `Microsoft.Office.Interop.Outlook`)
+  directly from the GAC. They land there when Office is installed.
 - At least one PST file attached to your Outlook profile, with a
   non-empty first subfolder.
-- A self-signed code-signing certificate in `Cert:\CurrentUser\My`
-  with the **Code Signing EKU** (OID `1.3.6.1.5.5.7.3.3`). Create
-  it once:
 
-  ```powershell
-  cd <repo>\poc\scripts
-  .\Create-SelfSignedCert.ps1
-  ```
+The deploy script will create a self-signed code-signing cert
+automatically the first time it runs.
 
-  The script prints the thumbprint — copy it; you will pass it to
-  the installer below.
+### Easy-button deploy
 
-### Build
-
-From the repo root, in a Developer PowerShell for VS 2022:
+Close Outlook. Then from a non-elevated PowerShell anywhere:
 
 ```powershell
-cd poc
-msbuild RBLclass.HelloPstPoc.sln /restore /p:Configuration=Debug /p:Platform="Any CPU"
+cd <repo>\poc\scripts
+.\Deploy-HelloPstAddIn.ps1
 ```
 
-After a successful build, the output lives under
-`poc\RBLclass.HelloPstPoc\bin\Debug\net48\`. Verify that **both**
-native SQLite payloads are present:
+This single script runs the full workflow:
 
-```
-poc\RBLclass.HelloPstPoc\bin\Debug\net48\runtimes\win-x86\native\e_sqlite3.dll
-poc\RBLclass.HelloPstPoc\bin\Debug\net48\runtimes\win-x64\native\e_sqlite3.dll
-```
+1. Finds `msbuild.exe` via `vswhere` (no Developer PowerShell
+   needed).
+2. Creates a self-signed cert (`CN=RBLclass POC Dev`) if none
+   exists, or reuses the existing one.
+3. Uninstalls any prior install (idempotent).
+4. Clears Outlook **Resiliency** entries that mention our ProgId,
+   and adds the add-in to `DoNotDisableAddinList`, so Outlook will
+   re-try loading us after a previous crash and not auto-disable
+   us next time.
+5. Restores + builds the solution (Debug|AnyCPU).
+6. Copies the build output to
+   `%LocalAppData%\RBLclass\HelloPstPoc\`, Authenticode-signs the
+   DLL, and writes the HKCU COM + add-in registry entries.
 
-If only one is present, the build did not unpack the `runtimes\`
-NuGet content; see `poc/README.md` for the workaround.
+Start Outlook. Look for the **RBLclass** ribbon tab.
 
-### Install (per user, no admin)
-
-Close Outlook. Then, from the repo root in a non-elevated
-PowerShell:
+### Step-by-step (if you'd rather not use the wrapper)
 
 ```powershell
-cd poc\scripts
-.\Install-HelloPstAddIn.ps1 -Thumbprint <your-cert-thumbprint>
+cd <repo>\poc\scripts
+.\Create-SelfSignedCert.ps1                                # prints the thumbprint
+cd ..
+msbuild RBLclass.HelloPstPoc.sln /restore `
+        /p:Configuration=Debug /p:Platform="Any CPU"
+cd scripts
+.\Install-HelloPstAddIn.ps1 -Thumbprint <thumbprint>
 ```
 
-What the installer does:
+After a successful build the output lives under
+`poc\RBLclass.HelloPstPoc\bin\Debug\net48\`. Verify both native
+SQLite payloads are present:
 
-1. Copies the build output (DLL + dependencies + `runtimes\`) to
-   `%LocalAppData%\RBLclass\HelloPstPoc\`.
-2. Authenticode-signs `RBLclass.HelloPstPoc.dll` with the cert
-   identified by the thumbprint you passed.
-3. Writes COM-class registration under
-   `HKCU:\Software\Classes\CLSID\{guid}` (and the
-   `Wow6432Node\` mirror, so 32-bit Outlook on 64-bit Windows
-   resolves the same class).
-4. Writes the Outlook add-in entry at
-   `HKCU:\Software\Microsoft\Office\Outlook\Addins\RBLclass.HelloPstAddIn`
-   with `LoadBehavior = 3`.
+```
+bin\Debug\net48\runtimes\win-x86\native\e_sqlite3.dll
+bin\Debug\net48\runtimes\win-x64\native\e_sqlite3.dll
+```
 
-Confirm the install:
+### Confirm the install
 
-1. Open Outlook. A new ribbon tab **RBLclass** appears with a
-   single button **Hello PST**.
-2. `File → Options → Add-ins`. "RBLclass Hello PST POC" is listed
-   under *Active Application Add-ins*.
-3. Click **Hello PST**. A `MessageBox` shows the process bitness,
-   the first PST's name, the item count in its first subfolder,
-   the path of the loaded `e_sqlite3.dll`, and the SQLite roundtrip
-   row count.
+1. A new ribbon tab **RBLclass** appears with one button **Hello
+   PST**.
+2. `File → Options → Add-ins` lists "RBLclass Hello PST POC" under
+   *Active Application Add-ins*.
+3. Clicking **Hello PST** shows a MessageBox with process bitness,
+   first PST name, item count in its first subfolder, the loaded
+   `e_sqlite3.dll` path, and the SQLite roundtrip row count.
 
 ### Uninstall
 
