@@ -112,6 +112,41 @@ bin\Debug\net48\runtimes\win-x64\native\e_sqlite3.dll
    first PST name, item count in its first subfolder, the loaded
    `e_sqlite3.dll` path, and the SQLite roundtrip row count.
 
+### Deploy to a target workstation (Phase 0 EDR observation)
+
+To package the POC for install on a separate machine (typically
+32-bit Outlook on the Semi-Annual Enterprise channel), without
+needing the code-signing cert or any dev tooling on that machine:
+
+```powershell
+cd poc\scripts
+.\Stage-TargetRelease.ps1
+```
+
+This rebuilds Release, stages payload + scripts + a tiny on-target
+README under `%TEMP%\HelloPstPoc-target\`, and produces
+`%USERPROFILE%\Desktop\HelloPstPoc-target.zip` — **AES-256
+encrypted with password `rbl-v2`** by default, so Gmail / corporate
+mail filters that strip unencrypted zips containing `.ps1` / `.dll`
+will let it through. Pass `-Password ''` to skip encryption.
+
+Requires **7-Zip** locally for the encryption step
+(`winget install 7zip.7zip`).
+
+Email the zip + the password to whoever runs the target machine.
+On the target: extract, close Outlook, and run from the extracted
+folder:
+
+```powershell
+Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass -Force
+.\Install-HelloPstAddIn.ps1 -SkipSigning -BuildOutput .\payload
+```
+
+Outlook does not require an Authenticode signature to load a COM
+add-in — `-SkipSigning` is fine for the Phase 0 observation pass.
+The real installer (Phase 1, WiX MSI) will sign with the internal-
+PKI cert.
+
 ### Uninstall
 
 Close Outlook. Then:
