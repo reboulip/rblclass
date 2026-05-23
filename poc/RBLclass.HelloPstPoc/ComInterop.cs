@@ -14,20 +14,29 @@ namespace RBLclass.HelloPstPoc
     [InterfaceType(ComInterfaceType.InterfaceIsIDispatch)]
     public interface IDTExtensibility2
     {
+        // DispIds must match the canonical Extensibility 1.3 type
+        // library exactly — Outlook calls IDispatch::Invoke with these
+        // hard-coded values. Without explicit DispIds, .NET auto-
+        // assigns and Outlook's call dispatches to the wrong method.
+        [DispId(1)]
         void OnConnection(
             [MarshalAs(UnmanagedType.IDispatch)] object application,
             ext_ConnectMode connectMode,
             [MarshalAs(UnmanagedType.IDispatch)] object addInInst,
             ref Array custom);
 
+        [DispId(2)]
         void OnDisconnection(
             ext_DisconnectMode removeMode,
             ref Array custom);
 
+        [DispId(3)]
         void OnAddInsUpdate(ref Array custom);
 
+        [DispId(4)]
         void OnStartupComplete(ref Array custom);
 
+        [DispId(5)]
         void OnBeginShutdown(ref Array custom);
     }
 

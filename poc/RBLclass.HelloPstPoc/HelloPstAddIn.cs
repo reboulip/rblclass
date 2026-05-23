@@ -10,7 +10,12 @@ namespace RBLclass.HelloPstPoc
     [ComVisible(true)]
     [Guid(ClsidString)]
     [ProgId(ProgIdString)]
-    [ClassInterface(ClassInterfaceType.None)]
+    // AutoDispatch (not None) so Office can resolve the ribbon
+    // onAction callbacks (OnHelloPstClick) via IDispatch::GetIDsOfNames
+    // on the class itself. With None, only methods on the explicitly-
+    // implemented interfaces are findable, and the ribbon callbacks
+    // would fail at click time.
+    [ClassInterface(ClassInterfaceType.AutoDispatch)]
     public class HelloPstAddIn : IDTExtensibility2, IRibbonExtensibility
     {
         public const string ClsidString = "B5E7A6F1-3D5A-4A8B-9C2E-1F4E5A8B9D03";
