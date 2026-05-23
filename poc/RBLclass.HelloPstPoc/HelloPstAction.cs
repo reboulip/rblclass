@@ -56,7 +56,20 @@ namespace RBLclass.HelloPstPoc
                     Outlook.Store store = null;
                     try
                     {
-                        store = stores[i];
+                        try
+                        {
+                            store = stores[i];
+                        }
+                        catch (Exception ex)
+                        {
+                            // E.g. PST on OneDrive that hasn't materialised,
+                            // an Exchange archive that's offline, etc.
+                            // Don't let one bad store kill the whole report.
+                            sb.AppendLine("  [" + i + "] (could not open: " +
+                                          ex.Message.Trim() + ")");
+                            continue;
+                        }
+
                         bool isPst = SafeIsDataFileStore(store);
                         sb.AppendLine(
                             "  [" + i + "] " + store.DisplayName +

@@ -38,8 +38,15 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.Data.Sqlite.Core" Version="8.0.0" />
-    <PackageReference Include="SQLitePCLRaw.bundle_e_sqlite3" Version="2.1.7" />
+    <!-- Use the Microsoft.Data.Sqlite meta-package (not .Core) so the
+         bundled SQLitePCLRaw provider version matches what
+         Microsoft.Data.Sqlite was compiled against. Mixing
+         Microsoft.Data.Sqlite.Core + a different-version
+         SQLitePCLRaw.bundle_e_sqlite3 causes a
+         FileNotFoundException("SQLitePCLRaw.core, Version=...") at
+         runtime — strong-named assembly identity has to match
+         exactly and we can't add a binding redirect to outlook.exe. -->
+    <PackageReference Include="Microsoft.Data.Sqlite" Version="8.0.0" />
   </ItemGroup>
 
   <ItemGroup>
