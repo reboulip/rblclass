@@ -5,26 +5,44 @@
 
 .DESCRIPTION
     Copies the build output to %LocalAppData%\RBLclass\HelloPstPoc,
-    Authenticode-signs the main DLL with the supplied certificate,
-    and writes the HKCU registry entries that make Outlook discover
-    and load the add-in.
+    optionally Authenticode-signs the main DLL, and writes the HKCU
+    registry entries that make Outlook discover and load the add-in.
 
     Outlook must be closed before running. The script refuses to
     proceed if it detects a running outlook.exe.
 
 .PARAMETER Thumbprint
     SHA1 thumbprint of the code-signing certificate in
-    Cert:\CurrentUser\My. Use Create-SelfSignedCert.ps1 to make one
-    for POC use.
+    Cert:\CurrentUser\My. Required unless -SkipSigning is passed.
+    Use Create-SelfSignedCert.ps1 to make one for POC use.
+
+.PARAMETER SkipSigning
+    Skip Authenticode signing of the DLL. The add-in will still load
+    in Outlook (no signature is required to load a COM add-in). Use
+    this when running on a target workstation that doesn't have the
+    POC cert / signtool available.
+
+.PARAMETER BuildOutput
+    Explicit path to the build output folder containing
+    RBLclass.HelloPstPoc.dll + dependencies + runtimes\. Overrides
+    the default ../RBLclass.HelloPstPoc/bin/<Configuration>/net48
+    discovery. Useful when running this script on a target machine
+    after copying just the build output and the scripts/ folder.
 
 .PARAMETER Configuration
-    Build configuration to install from. Default: Debug.
+    Build configuration to install from when -BuildOutput is not
+    given. Default: Debug.
 #>
 
-[CmdletBinding()]
+[CmdletBinding(DefaultParameterSetName = 'Sign')]
 param(
-    [Parameter(Mandatory = $true)]
+    [Parameter(Mandatory = $true, ParameterSetName = 'Sign')]
     [string] $Thumbprint,
+
+    [Parameter(Mandatory = $true, ParameterSetName = 'NoSign')]
+    [switch] $SkipSigning,
+
+    [string] $BuildOutput,
 
     [ValidateSet("Debug", "Release")]
     [string] $Configuration = "Debug"
@@ -35,9 +53,13 @@ $ErrorActionPreference = "Stop"
 # --- Paths --------------------------------------------------------------
 
 $scriptDir   = Split-Path -Parent $MyInvocation.MyCommand.Path
-$pocRoot     = Split-Path -Parent $scriptDir
-$projectDir  = Join-Path $pocRoot "RBLclass.HelloPstPoc"
-$buildOutput = Join-Path $projectDir "bin\$Configuration\net48"
+if ($BuildOutput) {
+    $buildOutput = $BuildOutput
+} else {
+    $pocRoot     = Split-Path -Parent $scriptDir
+    $projectDir  = Join-Path $pocRoot "RBLclass.HelloPstPoc"
+    $buildOutput = Join-Path $projectDir "bin\$Configuration\net48"
+}
 $installDir  = Join-Path $env:LOCALAPPDATA "RBLclass\HelloPstPoc"
 $mainDll     = Join-Path $installDir "RBLclass.HelloPstPoc.dll"
 
@@ -71,33 +93,35 @@ if (Get-Process -Name outlook -ErrorAction SilentlyContinue) {
     throw "Outlook is running. Close it before installing the add-in."
 }
 
-$cert = Get-ChildItem Cert:\CurrentUser\My |
-    Where-Object { $_.Thumbprint -eq $Thumbprint } |
-    Select-Object -First 1
-if (-not $cert) {
-    throw "Certificate with thumbprint '$Thumbprint' not found in Cert:\CurrentUser\My."
-}
-
-$signtool = Get-Command signtool.exe -ErrorAction SilentlyContinue
-if (-not $signtool) {
-    $sdkRoot = "${env:ProgramFiles(x86)}\Windows Kits\10\bin"
-    if (Test-Path $sdkRoot) {
-        $candidate = Get-ChildItem $sdkRoot -Recurse -Filter signtool.exe -ErrorAction SilentlyContinue |
-            Where-Object { $_.FullName -match "x64" } |
-            Select-Object -First 1
-        if ($candidate) { $signtool = $candidate }
+if (-not $SkipSigning) {
+    $cert = Get-ChildItem Cert:\CurrentUser\My |
+        Where-Object { $_.Thumbprint -eq $Thumbprint } |
+        Select-Object -First 1
+    if (-not $cert) {
+        throw "Certificate with thumbprint '$Thumbprint' not found in Cert:\CurrentUser\My."
     }
+
+    $signtool = Get-Command signtool.exe -ErrorAction SilentlyContinue
     if (-not $signtool) {
-        throw "signtool.exe not found. Install the Windows SDK or add it to PATH."
+        $sdkRoot = "${env:ProgramFiles(x86)}\Windows Kits\10\bin"
+        if (Test-Path $sdkRoot) {
+            $candidate = Get-ChildItem $sdkRoot -Recurse -Filter signtool.exe -ErrorAction SilentlyContinue |
+                Where-Object { $_.FullName -match "x64" } |
+                Select-Object -First 1
+            if ($candidate) { $signtool = $candidate }
+        }
+        if (-not $signtool) {
+            throw "signtool.exe not found. Install the Windows SDK or add it to PATH."
+        }
     }
-}
 
-# Normalize path to signtool.exe
-if ($signtool -is [System.Management.Automation.CommandInfo]) {
-    $signtool = $signtool.Source
-}
-elseif ($signtool -is [System.IO.FileInfo]) {
-    $signtool = $signtool.FullName
+    # Normalize path to signtool.exe
+    if ($signtool -is [System.Management.Automation.CommandInfo]) {
+        $signtool = $signtool.Source
+    }
+    elseif ($signtool -is [System.IO.FileInfo]) {
+        $signtool = $signtool.FullName
+    }
 }
 
 
@@ -112,15 +136,19 @@ Copy-Item -Path (Join-Path $buildOutput "*") -Destination $installDir -Recurse -
 
 # --- Sign the main DLL --------------------------------------------------
 
-Write-Host "Signing $mainDll with thumbprint $Thumbprint"
-& $signtool sign `
-    /sha1 $Thumbprint `
-    /fd sha256 `
-    /tr "http://timestamp.digicert.com" `
-    /td sha256 `
-    $mainDll
-if ($LASTEXITCODE -ne 0) {
-    throw "signtool sign failed with exit code $LASTEXITCODE."
+if ($SkipSigning) {
+    Write-Host "Skipping Authenticode signing (-SkipSigning)"
+} else {
+    Write-Host "Signing $mainDll with thumbprint $Thumbprint"
+    & $signtool sign `
+        /sha1 $Thumbprint `
+        /fd sha256 `
+        /tr "http://timestamp.digicert.com" `
+        /td sha256 `
+        $mainDll
+    if ($LASTEXITCODE -ne 0) {
+        throw "signtool sign failed with exit code $LASTEXITCODE."
+    }
 }
 
 # --- Helper: write a registry value -------------------------------------
