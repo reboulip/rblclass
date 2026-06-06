@@ -1,0 +1,23 @@
+{
+  "_comment": "Single source of truth for the RBLclass product release. The COM identity below MUST match the [Guid]/[ProgId] attributes on the add-in class in src\\RBLclass.AddIn. The sentinel Clsid (all-zeros) makes every release script refuse to run until you reconcile these values against the real RBLclass.AddIn source the first time Phase 1 is built.",
+
+  "Product": "RBLclass",
+  "FriendlyName": "RBLclass - Email Classifier",
+  "Description": "Classify Outlook mail into PST folders with fast keyword search.",
+
+  "Clsid": "{00000000-0000-0000-0000-000000000000}",
+  "ProgId": "RBLclass.AddIn",
+  "AssemblyName": "RBLclass.AddIn",
+  "AssemblyClass": "RBLclass.AddIn.RblClassAddIn",
+  "AssemblyVersion": "1.0.0.0",
+
+  "Solution": "RBLclass.sln",
+  "AddInProjectOutput": "src\\RBLclass.AddIn\\bin\\{Configuration}\\net48",
+  "MainDll": "RBLclass.AddIn.dll",
+  "InstallSubdir": "AddIn",
+
+  "NativePayloads": [
+    "runtimes\\win-x86\\native\\e_sqlite3.dll",
+    "runtimes\\win-x64\\native\\e_sqlite3.dll"
+  ]
+}

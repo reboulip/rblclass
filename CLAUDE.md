@@ -268,15 +268,28 @@ README.md
 
 ## Publishing
 
-- Phase 1: WiX-based MSI installer under `/installer/`, per-user, code-
-  signed (Authenticode) with the internal-PKI cert. The MSI writes
-  the HKCU registry entries, lays down files under
-  `%LocalAppData%\RBLclass\`, and registers the add-in under
-  `HKCU\Software\Microsoft\Office\Outlook\Addins\`.
+The full release/packaging **workflow** (build → stage → verify both
+native SQLite bitnesses → produce a shippable install kit) lives in the
+manually-triggered **`/make-release`** skill at
+`.claude/skills/make-release/` — run it to package the product for a
+target workstation. The notes below are the surrounding facts; the runnable
+steps are in the skill.
+
+- Package format (current): a per-user PowerShell **install kit** (`.zip`)
+  produced by `/make-release`, laying files under
+  `%LocalAppData%\RBLclass\` and writing HKCU COM + Outlook Addins
+  registry entries. No admin rights required.
+- Package format (later, Phase 1 GA target): a WiX-based **MSI** under
+  `/installer/`, per-user, optionally Authenticode-signed with the
+  internal-PKI cert. Same registry/file effects as the install kit. The
+  install kit and MSI coexist until the MSI is validated on the target.
+- Signing is **optional** — Outlook does not require an Authenticode
+  signature to load a COM add-in (validated in Phase 0).
 - Distribution: internal HTTPS share documented in
   `docs/deployment.md`.
-- Phase 0 POC publishing flow (PowerShell installer) is in
-  `/poc/scripts/` and is not part of the Phase 1 publishing chain.
+- The Phase 0 POC has its own throwaway publishing flow in `/poc/scripts/`
+  (`Stage-TargetRelease.ps1`); it is not part of the product release chain
+  and is not what `/make-release` builds.
 
 ## Repository management
 

@@ -18,11 +18,15 @@ packages/
 Thumbs.db
 .DS_Store
 
-# Claude Code local settings
-.claude/
+# Claude Code local settings (but track shared skills)
+.claude/*
+!.claude/skills/
 
 # POC publish output (if any)
 poc/publish/
 
 # Runtime side-effects when launching the add-in (Outlook telemetry stub)
 myeasylog.log
+
+# RBLclass legacy files
+RBLclass_legacy/
