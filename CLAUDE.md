@@ -293,4 +293,52 @@ steps are in the skill.
 
 ## Repository management
 
-Always work on develop branch or a branch based on develop.
+This is a solo project, developed interactively (with Claude) on a single
+machine — which is also the only place changes can be built and tested.
+The branching model is lightweight but strict about what may reach `main`.
+
+### Branches
+
+- `main` — always shippable. Updated **only** by merging `develop`. Never
+  commit directly to `main`. Every commit on `main` is a feature or fix
+  that has been validated locally and is ready to ship to the target.
+- `develop` — integration branch and the default working branch. Direct
+  commits are allowed (solo workflow). Always work on `develop` or a
+  branch based on it.
+- Feature branches — `feature/<slug>` or `fix/<slug>`, branched from
+  `develop` and merged back into `develop`. Optional for small changes;
+  expected for anything that might leave `develop` broken.
+
+### Shipping a feature (`develop` → `main`)
+
+Because this machine is the only test environment, nothing reaches `main`
+until it has been built and validated here (and, for anything touching
+COM / EDR / bitness, on the real 32-bit target — see the constraints
+above).
+
+1. Land the work on `develop`; confirm the solution builds and the
+   `RBLclass.Core` tests pass.
+2. Validate the behaviour interactively (run the add-in, exercise the
+   feature).
+3. Merge `develop` into `main` with a merge commit (`--no-ff`) so each
+   ship is a distinct point in history.
+4. Tag the merge on `main` with the product version `/make-release`
+   stamps (e.g. `v1.0.0`).
+5. Package from `main` with `/make-release` when an install kit is needed.
+
+### GitHub (`gh` CLI)
+
+- Use the `gh` CLI for all GitHub actions — PRs, releases, issues, repo
+  settings. Do not drive GitHub through the web UI when a `gh` command
+  exists.
+- Pull requests are optional for solo merges; when used, target `develop`
+  for features and `main` only for ship merges.
+- Cut releases from tags on `main` (`gh release create vX.Y.Z`), attaching
+  the install kit from `/make-release` when relevant.
+
+### Hygiene
+
+- Commit or push only when asked.
+- Keep commits focused. Do not sweep unrelated working-tree changes into a
+  commit (e.g. stray `.gitignore`, `docs/`, or `ROADMAP.md` edits) unless
+  explicitly told to.
