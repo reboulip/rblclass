@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<customUI xmlns="http://schemas.microsoft.com/office/2009/07/customui">
+  <ribbon>
+    <tabs>
+      <tab id="RBLclassTab" label="RBLclass">
+        <group id="RBLclassGroup" label="RBLclass">
+          <button id="AboutButton"
+                  label="About"
+                  size="large"
+                  imageMso="Info"
+                  onAction="OnAboutClick"
+                  screentip="About RBLclass"
+                  supertip="Shows the loaded add-in version and process bitness. Phase 1 skeleton - real actions (Open folder, Classify) arrive in later steps." />
+        </group>
+      </tab>
+    </tabs>
+  </ribbon>
+</customUI>

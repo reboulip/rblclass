@@ -5,7 +5,7 @@
   "FriendlyName": "RBLclass - Email Classifier",
   "Description": "Classify Outlook mail into PST folders with fast keyword search.",
 
-  "Clsid": "{00000000-0000-0000-0000-000000000000}",
+  "Clsid": "{43808654-547E-4222-9BE3-7FA4B781FA44}",
   "ProgId": "RBLclass.AddIn",
   "AssemblyName": "RBLclass.AddIn",
   "AssemblyClass": "RBLclass.AddIn.RblClassAddIn",

@@ -1,0 +1,40 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- Outlook adapter: .NET Framework 4.8, the only layer that touches the
+       Outlook Object Model over COM. Implements the RBLclass.Core seams
+       (IMailStore etc.) as they are defined. AnyCPU so the one binary loads
+       into both 64-bit (dev) and 32-bit (target) Outlook. -->
+  <PropertyGroup>
+    <TargetFramework>net48</TargetFramework>
+    <PlatformTarget>AnyCPU</PlatformTarget>
+    <Prefer32Bit>false</Prefer32Bit>
+    <LangVersion>7.3</LangVersion>
+    <RootNamespace>RBLclass.Outlook.Adapter</RootNamespace>
+    <AssemblyName>RBLclass.Outlook.Adapter</AssemblyName>
+    <Version>1.0.0.0</Version>
+    <AssemblyVersion>1.0.0.0</AssemblyVersion>
+    <FileVersion>1.0.0.0</FileVersion>
+    <Product>RBLclass</Product>
+    <Company>RBLclass</Company>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\RBLclass.Core\RBLclass.Core.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Canonical Office PIAs from the GAC (never hand-rolled [ComImport];
+         see CLAUDE.md "COM interop interface declarations"). <Private>false</Private>
+         keeps them out of the output - they are resolved from the GAC at
+         runtime inside Outlook. -->
+    <Reference Include="office">
+      <HintPath>C:\Windows\assembly\GAC_MSIL\office\15.0.0.0__71e9bce111e9429c\OFFICE.DLL</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="Microsoft.Office.Interop.Outlook">
+      <HintPath>C:\Windows\assembly\GAC_MSIL\Microsoft.Office.Interop.Outlook\15.0.0.0__71e9bce111e9429c\Microsoft.Office.Interop.Outlook.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+  </ItemGroup>
+
+</Project>
