@@ -16,4 +16,14 @@
     <Prefer32Bit>false</Prefer32Bit>
   </PropertyGroup>
 
+  <ItemGroup>
+    <!-- SQLite persistence lives in Core behind IFolderRepository (Step 1
+         architecture decision: directly unit-testable from Core.Tests; the
+         "no I/O except via interfaces" rule is softened only for the repo
+         impl). Use the meta-package (not .Core) so the bundled SQLitePCLRaw
+         provider version matches - same pin as the AddIn (8.0.0) keeps the
+         transitive graph consistent inside Outlook. -->
+    <PackageReference Include="Microsoft.Data.Sqlite" Version="8.0.0" />
+  </ItemGroup>
+
 </Project>

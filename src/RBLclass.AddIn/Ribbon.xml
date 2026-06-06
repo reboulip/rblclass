@@ -4,13 +4,13 @@
     <tabs>
       <tab id="RBLclassTab" label="RBLclass">
         <group id="RBLclassGroup" label="RBLclass">
-          <button id="AboutButton"
-                  label="About"
+          <button id="IndexStatusButton"
+                  label="Index status"
                   size="large"
                   imageMso="Info"
-                  onAction="OnAboutClick"
-                  screentip="About RBLclass"
-                  supertip="Shows the loaded add-in version and process bitness. Phase 1 skeleton - real actions (Open folder, Classify) arrive in later steps." />
+                  onAction="OnIndexStatusClick"
+                  screentip="Folder index status"
+                  supertip="Shows whether the folder index was loaded from cache or freshly walked, with store/folder counts. Step 1 diagnostic - the search UI arrives in Step 3." />
         </group>
       </tab>
     </tabs>

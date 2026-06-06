@@ -56,6 +56,20 @@
          land in the output (the bitness invariant the release scripts
          hard-check). Proven in the Phase 0 POC. -->
     <PackageReference Include="Microsoft.Data.Sqlite" Version="8.0.0" />
+    <!-- Logging infrastructure (Phase 1): Serilog rolling file sink in
+         %LocalAppData%\RBLclass\logs.
+         Pinned to the 2.x line (Serilog 2.12.0 + Sinks.File 5.0.0) ON PURPOSE.
+         A COM host has no binding redirects, so every strong-named assembly
+         must resolve to the exact version each referencer was compiled against.
+         Serilog 4.x drags System.Diagnostics.DiagnosticSource 8.0.1, which
+         demands System.Memory >= 4.5.5 / System.Runtime.CompilerServices.Unsafe
+         >= 6.0.0 - floating the SQLite facade assemblies above the versions
+         SQLitePCLRaw was built against (System.Memory 4.0.1.1) and crashing the
+         first SqliteConnection. Serilog 2.x is dependency-light and leaves the
+         SQLite facade graph at the validated Phase 0 POC versions. Do not bump
+         Serilog without re-checking the whole facade graph loads in Outlook. -->
+    <PackageReference Include="Serilog" Version="2.12.0" />
+    <PackageReference Include="Serilog.Sinks.File" Version="5.0.0" />
   </ItemGroup>
 
   <ItemGroup>
