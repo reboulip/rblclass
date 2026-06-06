@@ -1,0 +1,32 @@
+# Visual Studio / MSBuild output
+bin/
+obj/
+.vs/
+*.user
+*.suo
+
+# ReSharper / Rider
+_ReSharper*/
+*.DotSettings.user
+
+# NuGet
+packages/
+*.nuget.props
+*.nuget.targets
+
+# OS / editor
+Thumbs.db
+.DS_Store
+
+# Claude Code local settings (but track shared skills)
+.claude/*
+!.claude/skills/
+
+# POC publish output (if any)
+poc/publish/
+
+# Runtime side-effects when launching the add-in (Outlook telemetry stub)
+myeasylog.log
+
+# RBLclass legacy files
+RBLclass_legacy/
