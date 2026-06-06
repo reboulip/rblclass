@@ -1,9 +1,12 @@
 # Legacy RBLclass — feature memo
 
-This memo documents the legacy **RBLclass** Outlook VBA project found
-under [`/RBLclass_legacy`](../RBLclass_legacy), as reverse-engineered
-from its source. It is the functional reference for the
-reimplementation. The companion document
+This memo documents the legacy **RBLclass** Outlook VBA project, as
+reverse-engineered from its source. It is the functional reference for
+the reimplementation — written so it stands on its own, because the
+legacy source itself is **not committed** to the repo (the
+`RBLclass_legacy/` working-tree folder is gitignored and kept as a
+local-only reference; file names cited below are from that local copy).
+The companion document
 [legacy-reimplementation-roadmap.md](legacy-reimplementation-roadmap.md)
 maps each feature below onto our target COM-add-in architecture.
 
