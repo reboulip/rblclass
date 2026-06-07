@@ -102,8 +102,16 @@ namespace RBLclass.AddIn.ViewModels
 
         private void Refresh()
         {
-            // MatchMode is WordPrefix for now; Step 9 will source it from settings.
-            var options = new FolderSearchOptions(FolderMatchMode.WordPrefix, _allResults);
+            var matchMode = FolderMatchMode.WordPrefix;
+            var maxResults = FolderSearchOptions.DefaultMaxResults;
+            if (_settings != null)
+            {
+                var settings = Settings.Load(_settings);
+                matchMode = settings.FolderMatchMode;
+                maxResults = settings.MaxResults;
+            }
+
+            var options = new FolderSearchOptions(matchMode, _allResults, maxResults);
             var outcome = _search.Search(_query, options);
 
             Results.Clear();

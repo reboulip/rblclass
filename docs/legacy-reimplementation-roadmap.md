@@ -398,6 +398,38 @@ no event re-entrancy.
 **Demo:** toggle options, persist across restarts, each guard/action
 respects its setting.
 
+**Implementation note (2026-06-07):** shipped as a modal "Options"-style
+dialog (`SettingsWindow`/`SettingsViewModel`, the third modal `Window` in
+the project after Step 8's triage/picker dialogs and a clean fit for a
+configure-once-and-walk-away flow), opened from a new ribbon button, with
+**live-apply, save-on-change** persistence — every toggle/edit writes
+through `ISettingsStore` immediately, exactly like the existing
+Classify/folder-search panes, so "Close" is the only button and there is
+no separate save step to forget.
+
+QuickOpen was already dropped ([[step5-quick-open-dropped]]), so eight
+legacy options were ported, plus three settings introduced earlier in the
+rewrite that had keys but no UI yet (`FolderMatchMode`, `InternalDomains`,
+`ForgottenAttachmentKeywords`) and `MaxResults`, which existed only as the
+hard-coded `FolderSearchOptions.DefaultMaxResults` until now — eleven
+options in total, grouped into four sections (Folder search / Classify /
+Sending guards / Sent items).
+
+The "typed `Settings` object in Core" is `RBLclass.Core.Settings`: a POCO
+snapshot with a static `Load(ISettingsStore)` (defaults + parsing +
+clamping - invalid `MaxResults`/`FolderMatchMode` values fall back rather
+than propagate) and an instance `Save(ISettingsStore)` that round-trips
+every key as one unit. The dialog is the only thing that loads/saves the
+whole snapshot; the existing scattered `GetBool(SettingsKeys.X, default)`
+call sites in `ClassifyViewModel`/`FolderSearchViewModel`/the shell were
+left untouched (per [[prefer-isolated-new-ui-over-retrofit]] - don't
+retrofit working code) **except** for the three `FolderSearchOptions`
+construction sites (`ClassifyViewModel`, `FolderSearchViewModel`,
+`FolderPickerViewModel`), which now read `FolderMatchMode`/`MaxResults`
+via `Settings.Load` so the new pane's settings actually take effect rather
+than being cosmetic — this was the one unavoidable, narrowly-scoped touch
+to already-shipped code.
+
 ---
 
 ## Step 10 — Polish, parity sign-off, packaging

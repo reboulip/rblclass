@@ -1,9 +1,11 @@
 namespace RBLclass.Core
 {
     /// <summary>
-    /// Canonical keys for the <see cref="ISettingsStore"/>, mapping to the nine
-    /// legacy options. Only the ones with UI today are read/written; Step 9
-    /// surfaces the rest in a settings pane.
+    /// Canonical keys for the <see cref="ISettingsStore"/>, mapping to the
+    /// legacy options (minus the dropped QuickOpen) plus the settings
+    /// introduced during the rewrite. All surfaced together by the Step 9
+    /// settings dialog (see <see cref="Settings"/>); several were already
+    /// wired into individual panes before Step 9 added the typed snapshot.
     /// </summary>
     public static class SettingsKeys
     {
@@ -15,6 +17,9 @@ namespace RBLclass.Core
 
         /// <summary>Folder match mode: "WordPrefix" or "Substring".</summary>
         public const string FolderMatchMode = "FolderMatchMode";
+
+        /// <summary>Cap on displayed folder-search results (legacy settingsMaxResults).</summary>
+        public const string MaxResults = "MaxResults";
 
         /// <summary>Keep originals after classify, i.e. don't delete (inverse of legacy settingsdeleteProcessedElts).</summary>
         public const string KeepCopy = "KeepCopy";

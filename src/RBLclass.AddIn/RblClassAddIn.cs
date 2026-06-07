@@ -553,7 +553,7 @@ namespace RBLclass.AddIn
         /// <summary>Show the small modal folder-picker; null if the user cancelled.</summary>
         private FolderNode ShowFolderPicker()
         {
-            var window = new FolderPickerWindow { DataContext = new FolderPickerViewModel(_folderSearch) };
+            var window = new FolderPickerWindow { DataContext = new FolderPickerViewModel(_folderSearch, _settingsStore) };
             return window.ShowDialog() == true ? window.ChosenFolder : null;
         }
 
@@ -651,6 +651,19 @@ namespace RBLclass.AddIn
             catch (Exception ex)
             {
                 ShowError("Index status failed", ex);
+            }
+        }
+
+        /// <summary>Ribbon "Settings": modal dialog over every user-facing option (legacy §7). Live-applies on every change.</summary>
+        public void OnSettingsClick(Office.IRibbonControl control)
+        {
+            try
+            {
+                new SettingsWindow { DataContext = new SettingsViewModel(_settingsStore) }.ShowDialog();
+            }
+            catch (Exception ex)
+            {
+                ShowError("Settings failed", ex);
             }
         }
 

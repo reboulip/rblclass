@@ -1,0 +1,132 @@
+using System;
+using System.Collections.Generic;
+using System.Globalization;
+using System.Runtime.CompilerServices;
+using RBLclass.AddIn.Mvvm;
+using RBLclass.Core;
+
+namespace RBLclass.AddIn.ViewModels
+{
+    /// <summary>
+    /// View model for the Step 9 settings dialog (legacy §7, modernised):
+    /// every user-facing option bound directly to a <see cref="Settings"/>
+    /// snapshot, persisted as a whole via <see cref="ISettingsStore"/> on
+    /// every change - the same live-apply convention the Classify/folder-
+    /// search panes already use, so "Close" is the only button and there is
+    /// nothing to lose by walking away mid-edit.
+    /// </summary>
+    public sealed class SettingsViewModel : ObservableObject
+    {
+        private readonly ISettingsStore _store;
+        private readonly Settings _settings;
+        private string _maxResultsText;
+
+        public SettingsViewModel(ISettingsStore store)
+        {
+            _store = store ?? throw new ArgumentNullException(nameof(store));
+            _settings = Settings.Load(_store);
+            _maxResultsText = _settings.MaxResults.ToString(CultureInfo.InvariantCulture);
+        }
+
+        public bool OpenInNewWindow
+        {
+            get => _settings.OpenInNewWindow;
+            set => Apply(_settings.OpenInNewWindow, value, v => _settings.OpenInNewWindow = v);
+        }
+
+        public bool AllResults
+        {
+            get => _settings.AllResults;
+            set => Apply(_settings.AllResults, value, v => _settings.AllResults = v);
+        }
+
+        /// <summary>Bound to a single checkbox - the legacy default (word-prefix) is the unchecked state.</summary>
+        public bool UseSubstringMatch
+        {
+            get => _settings.FolderMatchMode == FolderMatchMode.Substring;
+            set => Apply(UseSubstringMatch, value,
+                         v => _settings.FolderMatchMode = v ? FolderMatchMode.Substring : FolderMatchMode.WordPrefix);
+        }
+
+        /// <summary>
+        /// Free-text editor for <see cref="Settings.MaxResults"/>. Only commits
+        /// (and persists) on a valid positive integer; an in-progress edit that
+        /// doesn't yet parse is left alone rather than reverted or rejected.
+        /// </summary>
+        public string MaxResultsText
+        {
+            get => _maxResultsText;
+            set
+            {
+                if (!SetProperty(ref _maxResultsText, value)) return;
+
+                int parsed;
+                if (int.TryParse(value, NumberStyles.Integer, CultureInfo.InvariantCulture, out parsed) && parsed >= 1)
+                {
+                    _settings.MaxResults = parsed;
+                    _settings.Save(_store);
+                }
+            }
+        }
+
+        public bool KeepCopy
+        {
+            get => _settings.KeepCopy;
+            set => Apply(_settings.KeepCopy, value, v => _settings.KeepCopy = v);
+        }
+
+        public bool RemoveAttachments
+        {
+            get => _settings.RemoveAttachments;
+            set => Apply(_settings.RemoveAttachments, value, v => _settings.RemoveAttachments = v);
+        }
+
+        public bool WidenConversation
+        {
+            get => _settings.WidenConversation;
+            set => Apply(_settings.WidenConversation, value, v => _settings.WidenConversation = v);
+        }
+
+        public bool SendExternalWarning
+        {
+            get => _settings.SendExternalWarning;
+            set => Apply(_settings.SendExternalWarning, value, v => _settings.SendExternalWarning = v);
+        }
+
+        /// <summary>Semicolon-separated domains treated as internal, edited as free text.</summary>
+        public string InternalDomainsText
+        {
+            get => Settings.FormatList(_settings.InternalDomains);
+            set => Apply(_settings.InternalDomains, Settings.ParseList(value),
+                         v => _settings.InternalDomains = v);
+        }
+
+        /// <summary>Semicolon-separated forgotten-attachment keywords, edited as free text.</summary>
+        public string ForgottenAttachmentKeywordsText
+        {
+            get => Settings.FormatList(_settings.ForgottenAttachmentKeywords);
+            set => Apply(_settings.ForgottenAttachmentKeywords, Settings.ParseList(value),
+                         v => _settings.ForgottenAttachmentKeywords = v);
+        }
+
+        public bool SentItemTriagePrompt
+        {
+            get => _settings.SentItemTriagePrompt;
+            set => Apply(_settings.SentItemTriagePrompt, value, v => _settings.SentItemTriagePrompt = v);
+        }
+
+        /// <summary>
+        /// Change-detect, mutate the snapshot, notify and persist as a unit -
+        /// the <see cref="Settings"/> equivalent of <see cref="ObservableObject.SetProperty"/>
+        /// for state that lives in properties rather than ref-able fields.
+        /// </summary>
+        private void Apply<T>(T current, T value, Action<T> assign, [CallerMemberName] string propertyName = null)
+        {
+            if (EqualityComparer<T>.Default.Equals(current, value)) return;
+
+            assign(value);
+            OnPropertyChanged(propertyName);
+            _settings.Save(_store);
+        }
+    }
+}

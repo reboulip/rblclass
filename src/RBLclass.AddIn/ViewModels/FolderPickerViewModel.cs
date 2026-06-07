@@ -16,14 +16,16 @@ namespace RBLclass.AddIn.ViewModels
     public sealed class FolderPickerViewModel : ObservableObject
     {
         private readonly IFolderSearch _search;
+        private readonly ISettingsStore _settings;
 
         private string _query = string.Empty;
         private FolderSearchResult _selectedResult;
         private string _status = "Type to search folders.";
 
-        public FolderPickerViewModel(IFolderSearch search)
+        public FolderPickerViewModel(IFolderSearch search, ISettingsStore settings = null)
         {
             _search = search ?? throw new ArgumentNullException(nameof(search));
+            _settings = settings;
         }
 
         public ObservableCollection<FolderSearchResult> Results { get; } =
@@ -53,7 +55,16 @@ namespace RBLclass.AddIn.ViewModels
 
         private void Refresh()
         {
-            var outcome = _search.Search(_query, new FolderSearchOptions(FolderMatchMode.WordPrefix, allResults: false));
+            var matchMode = FolderMatchMode.WordPrefix;
+            var maxResults = FolderSearchOptions.DefaultMaxResults;
+            if (_settings != null)
+            {
+                var settings = Settings.Load(_settings);
+                matchMode = settings.FolderMatchMode;
+                maxResults = settings.MaxResults;
+            }
+
+            var outcome = _search.Search(_query, new FolderSearchOptions(matchMode, allResults: false, maxResults: maxResults));
 
             Results.Clear();
             foreach (var r in outcome.Results)

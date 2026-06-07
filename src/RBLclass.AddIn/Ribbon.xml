@@ -32,6 +32,13 @@
                   onAction="OnIndexStatusClick"
                   screentip="Folder index status"
                   supertip="Shows whether the folder index was loaded from cache or freshly walked, with store/folder counts. Step 1 diagnostic - the search UI arrives in Step 3." />
+          <button id="SettingsButton"
+                  label="Settings"
+                  size="large"
+                  imageMso="ToolsOptions"
+                  onAction="OnSettingsClick"
+                  screentip="RBLclass settings"
+                  supertip="Configure folder search, classify, sending guards and sent-item triage. Every change applies and persists immediately." />
         </group>
       </tab>
     </tabs>
