@@ -1,0 +1,597 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>RBLclass — Installation Guide / Installationsanleitung / Guide d'installation</title>
+<style>
+  body {
+    font-family: -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
+    line-height: 1.55;
+    color: #222;
+    max-width: 760px;
+    margin: 2em auto;
+    padding: 0 1.5em;
+  }
+  h1 { font-size: 1.6em; border-bottom: 2px solid #2a5d8a; padding-bottom: 0.3em; }
+  h2 { font-size: 1.25em; color: #2a5d8a; margin-top: 1.6em; }
+  code, .path {
+    font-family: Consolas, "Courier New", monospace;
+    background: #f1f3f5;
+    padding: 0.1em 0.35em;
+    border-radius: 3px;
+    font-size: 0.95em;
+  }
+  table { border-collapse: collapse; width: 100%; margin: 0.8em 0; }
+  th, td { border: 1px solid #d8dde2; padding: 0.5em 0.7em; text-align: left; vertical-align: top; }
+  th { background: #f1f3f5; }
+  .note {
+    background: #eef6ff;
+    border-left: 4px solid #2a5d8a;
+    padding: 0.7em 1em;
+    margin: 1em 0;
+  }
+  .placeholder { color: #b3261e; font-weight: bold; }
+  footer { margin-top: 2.5em; font-size: 0.9em; color: #666; }
+
+  /* Language switcher */
+  .lang-switch {
+    position: fixed;
+    top: 1em;
+    right: 1.5em;
+    background: #fff;
+    border: 1px solid #d8dde2;
+    border-radius: 6px;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.12);
+    overflow: hidden;
+    z-index: 10;
+  }
+  .lang-switch button {
+    font-family: inherit;
+    font-size: 0.9em;
+    border: none;
+    background: #fff;
+    color: #2a5d8a;
+    padding: 0.45em 0.9em;
+    cursor: pointer;
+  }
+  .lang-switch button + button { border-left: 1px solid #d8dde2; }
+  .lang-switch button.active { background: #2a5d8a; color: #fff; font-weight: bold; }
+  .lang-switch button:hover:not(.active) { background: #eef6ff; }
+  .lang-block { display: none; }
+  .lang-block.active { display: block; }
+
+  @media print {
+    .lang-switch { display: none; }
+  }
+</style>
+</head>
+<body>
+
+<nav class="lang-switch" aria-label="Language selector">
+  <button type="button" data-lang="en" class="active" onclick="setLang('en')">English</button><button type="button" data-lang="de" onclick="setLang('de')">Deutsch</button><button type="button" data-lang="fr" onclick="setLang('fr')">Français</button>
+</nav>
+
+<!-- ================================================================ -->
+<!-- ENGLISH                                                          -->
+<!-- ================================================================ -->
+<div class="lang-block active" data-lang="en" lang="en">
+
+<h1>RBLclass — Installation Guide</h1>
+
+<p>
+RBLclass is an Outlook add-in that helps you file emails into folders
+across your <code>.pst</code> archives faster: keyword search over your
+whole folder tree, one-click classification to one or several folders,
+attachment clean-up, and a few send-time reminders (forgotten attachments,
+external recipients). It runs entirely on your machine against your local
+PST files — no server, no Exchange Online dependency.
+</p>
+<p>Once installed, it adds a new <strong>RBLclass</strong> tab to the Outlook ribbon.</p>
+
+<h2>What you'll receive</h2>
+<p>
+A single installer file: <code>RBLclass-1.0.0.0.msi</code> (about 2&nbsp;MB),
+either attached directly or as a download link from the internal share.
+It's a standard Windows Installer package — no extraction, no extra steps
+to get it ready to run.
+</p>
+
+<h2>Before you start</h2>
+<ul>
+  <li><strong>No administrator rights needed.</strong> This is a
+    <em>per-user</em> install — everything lands in your own profile
+    (<code>%LocalAppData%\RBLclass\</code>) and your personal registry
+    area. Nothing is written system-wide, and Windows will not prompt you
+    for an administrator password.</li>
+  <li><strong>Close Outlook completely</strong> before installing or
+    uninstalling. The installer doesn't check for this itself, but Windows
+    can't replace files that Outlook currently has open — install while
+    Outlook is running and you may get a vague "file in use" error.
+    (Check the Task Manager too — Outlook sometimes lingers in the
+    background after the window closes.)</li>
+  <li>Make sure you're running <strong>classic (desktop) Outlook</strong>,
+    not the "new Outlook" toggle some Microsoft&nbsp;365 builds show in the
+    top-right corner. RBLclass is a classic add-in and will not appear in
+    the new Outlook.</li>
+</ul>
+
+<h2>Installing</h2>
+<ol>
+  <li>Save <code>RBLclass-1.0.0.0.msi</code> somewhere you can find it
+    (Desktop or Downloads is fine).</li>
+  <li>Double-click it.</li>
+  <li>
+    Windows may show a blue <strong>"Windows protected your PC"</strong>
+    screen — this is the normal SmartScreen warning for installers from
+    publishers Windows doesn't yet recognise, which applies to internal
+    pilot tools like this one. Click <strong>More info</strong>, then
+    <strong>Run anyway</strong>.
+    <div class="note">
+      This is expected and not a sign that something is wrong — RBLclass
+      doesn't carry a code signature yet (Outlook doesn't require one to
+      load an add-in, and signing is planned as a later, optional
+      hardening step). If your antivirus/EDR <em>blocks</em> the install
+      outright rather than just warning, stop and let us know rather than
+      trying to work around it.
+    </div>
+  </li>
+  <li>Click through the installer (<strong>Next</strong> →
+    <strong>Install</strong> → <strong>Finish</strong>). There are no
+    options to configure.</li>
+  <li>Start Outlook. After a few seconds, look for the
+    <strong>RBLclass</strong> tab on the ribbon.</li>
+</ol>
+
+<h2>What happens the first time</h2>
+<p>
+On its first run after install (or after your Outlook profile changes),
+RBLclass walks your PST folder tree in the background to build its search
+index. This can take a few minutes on a large mailbox; Outlook stays
+usable while it runs. After that, folder search responds in well under a
+second.
+</p>
+
+<h2>Uninstalling</h2>
+<p>Outlook closed, then either:</p>
+<ul>
+  <li>
+    <strong>Settings → Apps → Installed apps</strong> (or, on older
+    Windows, <strong>Control Panel → Programs and Features</strong>),
+    find <strong>"RBLclass - Email Classifier"</strong>, and click
+    <strong>Uninstall</strong> — exactly like removing any other program; or
+  </li>
+  <li>Double-click <code>RBLclass-1.0.0.0.msi</code> again and choose
+    <strong>Remove</strong> when the installer offers it.</li>
+</ul>
+<p>
+Outlook will no longer show the RBLclass tab after it restarts. Your
+search index database is <strong>left in place</strong> under
+<code>%LocalAppData%\RBLclass\</code> so a future reinstall doesn't have
+to re-index everything from scratch — delete that folder by hand
+afterwards if you want a completely clean slate.
+</p>
+
+<h2>Caveats and things to know</h2>
+<table>
+  <tr><th>Topic</th><th>What to expect</th></tr>
+  <tr>
+    <td>Unsigned installer</td>
+    <td>SmartScreen / "unknown publisher" warnings on first run are
+      expected for this internal pilot tool — see the install steps above
+      for how to proceed. A hard <em>block</em> from your security
+      software is not expected; report that rather than bypassing it.</td>
+  </tr>
+  <tr>
+    <td>Outlook must be closed</td>
+    <td>Before both install and uninstall — otherwise file-in-use errors
+      can occur mid-install.</td>
+  </tr>
+  <tr>
+    <td>Ribbon tab missing after install</td>
+    <td>Make sure Outlook fully restarted (check Task Manager). If it's
+      still missing, send us a log file (see below) before re-running the
+      installer.</td>
+  </tr>
+  <tr>
+    <td>Logs</td>
+    <td>If something misbehaves, RBLclass writes a rolling log file to
+      <code>%LocalAppData%\RBLclass\logs\</code>. Attaching the most recent
+      file from there to your report saves a lot of back-and-forth.</td>
+  </tr>
+  <tr>
+    <td>Pilot build</td>
+    <td>This has been validated on the same Outlook configuration you're
+      running (32-bit, Microsoft&nbsp;365 Apps for Enterprise, Semi-Annual
+      Enterprise Channel, classic desktop Outlook), but you're among the
+      first beyond the development machine to use it day to day. Please
+      report anything that looks off — crashes, the ribbon tab
+      disappearing after a Windows/Office update, slow search, anything —
+      to <span class="placeholder">[contact / channel — fill in before sending]</span>.</td>
+  </tr>
+  <tr>
+    <td>Upgrading to a newer version</td>
+    <td>Just run the new <code>.msi</code> — it replaces the previous
+      version in place. No need to uninstall first or reboot in between.</td>
+  </tr>
+</table>
+
+<h2>Questions?</h2>
+<p>
+Reach out to <span class="placeholder">[contact / channel — fill in before sending]</span>
+— happy to walk through the install live if anything here doesn't match
+what you see.
+</p>
+
+<footer>
+This file is self-contained (no external images or styles) — safe to send
+as a single email attachment, or to drop on the internal share next to the
+installer.
+</footer>
+
+</div>
+
+<!-- ================================================================ -->
+<!-- DEUTSCH                                                          -->
+<!-- ================================================================ -->
+<div class="lang-block" data-lang="de" lang="de">
+
+<h1>RBLclass — Installationsanleitung</h1>
+
+<p>
+RBLclass ist ein Outlook-Add-In, mit dem Sie E-Mails schneller in Ordner
+über Ihre <code>.pst</code>-Archive einsortieren können: Schlüsselwortsuche
+über die gesamte Ordnerstruktur, Klassifizierung in einen oder mehrere
+Ordner mit einem Klick, Bereinigung von Anhängen und ein paar Erinnerungen
+beim Senden (vergessene Anhänge, externe Empfänger). Es läuft vollständig
+auf Ihrem Rechner mit Ihren lokalen PST-Dateien — kein Server, keine
+Abhängigkeit von Exchange Online.
+</p>
+<p>Nach der Installation fügt es einen neuen Tab <strong>RBLclass</strong> zum Outlook-Menüband hinzu.</p>
+
+<h2>Was Sie erhalten</h2>
+<p>
+Eine einzelne Installationsdatei: <code>RBLclass-1.0.0.0.msi</code>
+(etwa 2&nbsp;MB), entweder direkt als Anhang oder als Download-Link von der
+internen Ablage. Es handelt sich um ein normales Windows-Installer-Paket —
+kein Entpacken, keine zusätzlichen Schritte zur Vorbereitung.
+</p>
+
+<h2>Bevor Sie beginnen</h2>
+<ul>
+  <li><strong>Keine Administratorrechte erforderlich.</strong> Dies ist
+    eine Installation pro Benutzer — alles wird in Ihrem eigenen Profil
+    (<code>%LocalAppData%\RBLclass\</code>) und Ihrem persönlichen
+    Registrierungsbereich abgelegt. Es wird nichts systemweit geschrieben,
+    und Windows fragt Sie nicht nach einem Administratorkennwort.</li>
+  <li><strong>Schließen Sie Outlook vollständig</strong>, bevor Sie
+    installieren oder deinstallieren. Der Installer prüft dies nicht
+    selbst, aber Windows kann Dateien, die Outlook gerade geöffnet hat,
+    nicht ersetzen — eine Installation bei laufendem Outlook kann zu einer
+    unklaren Fehlermeldung „Datei wird verwendet" führen. (Prüfen Sie auch
+    den Task-Manager — Outlook bleibt manchmal im Hintergrund aktiv,
+    nachdem das Fenster geschlossen wurde.)</li>
+  <li>Stellen Sie sicher, dass Sie das <strong>klassische Outlook
+    (Desktop)</strong> verwenden und nicht den „Neues Outlook"-Umschalter,
+    den manche Microsoft-365-Builds oben rechts anzeigen. RBLclass ist ein
+    klassisches Add-In und erscheint im neuen Outlook nicht.</li>
+</ul>
+
+<h2>Installation</h2>
+<ol>
+  <li>Speichern Sie <code>RBLclass-1.0.0.0.msi</code> an einem Ort, den Sie
+    leicht wiederfinden (Desktop oder Downloads eignen sich gut).</li>
+  <li>Doppelklicken Sie darauf.</li>
+  <li>
+    Windows zeigt möglicherweise einen blauen Bildschirm
+    <strong>„Der Computer wurde durch Windows geschützt"</strong> — das ist
+    die normale SmartScreen-Warnung für Installationsprogramme von
+    Herausgebern, die Windows noch nicht kennt; das trifft auf interne
+    Pilot-Tools wie dieses zu. Klicken Sie auf
+    <strong>Weitere Informationen</strong> und dann auf
+    <strong>Trotzdem ausführen</strong>.
+    <div class="note">
+      Das ist zu erwarten und kein Zeichen dafür, dass etwas nicht stimmt —
+      RBLclass trägt noch keine Codesignatur (Outlook benötigt keine, um
+      ein Add-In zu laden, und das Signieren ist als späterer, optionaler
+      Härtungsschritt geplant). Falls Ihre Antiviren-/EDR-Software die
+      Installation vollständig blockiert, statt nur zu warnen, brechen Sie
+      ab und melden Sie sich bei uns, anstatt das zu umgehen.
+    </div>
+  </li>
+  <li>Klicken Sie sich durch das Installationsprogramm
+    (<strong>Weiter</strong> → <strong>Installieren</strong> →
+    <strong>Fertig stellen</strong>). Es gibt keine Optionen zu konfigurieren.</li>
+  <li>Starten Sie Outlook. Nach ein paar Sekunden sollte der Tab
+    <strong>RBLclass</strong> im Menüband erscheinen.</li>
+</ol>
+
+<h2>Was beim ersten Start passiert</h2>
+<p>
+Beim ersten Start nach der Installation (oder nach einer Änderung Ihres
+Outlook-Profils) durchsucht RBLclass im Hintergrund Ihre
+PST-Ordnerstruktur, um seinen Suchindex aufzubauen. Bei einem großen
+Postfach kann das ein paar Minuten dauern; Outlook bleibt währenddessen
+nutzbar. Danach antwortet die Ordnersuche in deutlich unter einer Sekunde.
+</p>
+
+<h2>Deinstallation</h2>
+<p>Bei geschlossenem Outlook, dann entweder:</p>
+<ul>
+  <li>
+    <strong>Einstellungen → Apps → Installierte Apps</strong> (unter
+    älterem Windows: <strong>Systemsteuerung → Programme und
+    Funktionen</strong>), suchen Sie <strong>„RBLclass - Email
+    Classifier"</strong> und klicken Sie auf <strong>Deinstallieren</strong>
+    — genau wie beim Entfernen jedes anderen Programms; oder
+  </li>
+  <li>Doppelklicken Sie erneut auf <code>RBLclass-1.0.0.0.msi</code> und
+    wählen Sie <strong>Entfernen</strong>, wenn das Installationsprogramm
+    dies anbietet.</li>
+</ul>
+<p>
+Nach einem Neustart zeigt Outlook den Tab RBLclass nicht mehr an. Ihre
+Suchindex-Datenbank bleibt unter <code>%LocalAppData%\RBLclass\</code>
+erhalten, damit eine spätere Neuinstallation nicht alles neu indizieren
+muss — löschen Sie diesen Ordner danach von Hand, wenn Sie einen
+vollständig sauberen Zustand wünschen.
+</p>
+
+<h2>Hinweise und Besonderheiten</h2>
+<table>
+  <tr><th>Thema</th><th>Was Sie erwarten können</th></tr>
+  <tr>
+    <td>Unsignierter Installer</td>
+    <td>SmartScreen-/„Unbekannter Herausgeber"-Warnungen beim ersten Start
+      sind für dieses interne Pilot-Tool zu erwarten — siehe oben, wie Sie
+      vorgehen. Eine vollständige <em>Blockierung</em> durch Ihre
+      Sicherheitssoftware ist hingegen nicht zu erwarten; melden Sie das,
+      statt es zu umgehen.</td>
+  </tr>
+  <tr>
+    <td>Outlook muss geschlossen sein</td>
+    <td>Vor Installation und Deinstallation — sonst können während der
+      Installation Fehler wegen „Datei wird verwendet" auftreten.</td>
+  </tr>
+  <tr>
+    <td>Tab fehlt nach der Installation</td>
+    <td>Stellen Sie sicher, dass Outlook vollständig neu gestartet wurde
+      (Task-Manager prüfen). Falls der Tab weiterhin fehlt, schicken Sie
+      uns vor einem erneuten Installationsversuch eine Protokolldatei
+      (siehe unten).</td>
+  </tr>
+  <tr>
+    <td>Protokolle</td>
+    <td>Falls etwas nicht wie erwartet funktioniert, schreibt RBLclass eine
+      rollierende Protokolldatei nach
+      <code>%LocalAppData%\RBLclass\logs\</code>. Wenn Sie die neueste
+      Datei daraus an Ihre Meldung anhängen, sparen wir uns viel Hin und Her.</td>
+  </tr>
+  <tr>
+    <td>Pilot-Build</td>
+    <td>Dies wurde mit derselben Outlook-Konfiguration validiert, die Sie
+      verwenden (32-Bit, Microsoft&nbsp;365 Apps for Enterprise,
+      Semi-Annual Enterprise Channel, klassisches Desktop-Outlook), aber
+      Sie gehören zu den Ersten außerhalb der Entwicklungsumgebung, die es
+      im Alltag einsetzen. Bitte melden Sie alles, was ungewöhnlich wirkt —
+      Abstürze, ein Tab, der nach einem Windows-/Office-Update verschwindet,
+      langsame Suche, irgendetwas — an
+      <span class="placeholder">[Kontakt/Kanal — vor dem Versand ausfüllen]</span>.</td>
+  </tr>
+  <tr>
+    <td>Aktualisierung auf eine neuere Version</td>
+    <td>Führen Sie einfach die neue <code>.msi</code> aus — sie ersetzt die
+      vorherige Version an Ort und Stelle. Kein vorheriges Deinstallieren
+      nötig, kein Neustart dazwischen.</td>
+  </tr>
+</table>
+
+<h2>Fragen?</h2>
+<p>
+Wenden Sie sich an
+<span class="placeholder">[Kontakt/Kanal — vor dem Versand ausfüllen]</span>
+— wir zeigen Ihnen die Installation gerne live, falls hier etwas nicht mit
+dem übereinstimmt, was Sie sehen.
+</p>
+
+<footer>
+Diese Datei ist in sich geschlossen (keine externen Bilder oder Stile) —
+sie kann gefahrlos als einzelner E-Mail-Anhang versendet oder neben dem
+Installationsprogramm in der internen Ablage abgelegt werden.
+</footer>
+
+</div>
+
+<!-- ================================================================ -->
+<!-- FRANÇAIS                                                         -->
+<!-- ================================================================ -->
+<div class="lang-block" data-lang="fr" lang="fr">
+
+<h1>RBLclass — Guide d'installation</h1>
+
+<p>
+RBLclass est un complément Outlook qui vous aide à classer vos e-mails
+plus rapidement dans des dossiers répartis sur vos archives
+<code>.pst</code> : recherche par mots-clés sur toute l'arborescence des
+dossiers, classement en un clic vers un ou plusieurs dossiers, nettoyage
+des pièces jointes, et quelques rappels au moment de l'envoi (pièce jointe
+oubliée, destinataires externes). Il fonctionne entièrement sur votre
+poste, avec vos fichiers PST locaux — pas de serveur, aucune dépendance à
+Exchange Online.
+</p>
+<p>Une fois installé, il ajoute un nouvel onglet <strong>RBLclass</strong> au ruban Outlook.</p>
+
+<h2>Ce que vous allez recevoir</h2>
+<p>
+Un seul fichier d'installation : <code>RBLclass-1.0.0.0.msi</code>
+(environ 2&nbsp;Mo), reçu soit en pièce jointe directe, soit sous forme de
+lien de téléchargement depuis l'espace partagé interne. Il s'agit d'un
+paquet Windows Installer standard — pas d'extraction, aucune étape
+supplémentaire pour le préparer.
+</p>
+
+<h2>Avant de commencer</h2>
+<ul>
+  <li><strong>Aucun droit administrateur requis.</strong> C'est une
+    installation par utilisateur — tout est placé dans votre propre profil
+    (<code>%LocalAppData%\RBLclass\</code>) et votre zone de registre
+    personnelle. Rien n'est écrit au niveau du système, et Windows ne vous
+    demandera pas de mot de passe administrateur.</li>
+  <li><strong>Fermez complètement Outlook</strong> avant d'installer ou de
+    désinstaller. L'installateur ne le vérifie pas lui-même, mais Windows
+    ne peut pas remplacer des fichiers qu'Outlook a actuellement ouverts —
+    installer pendant qu'Outlook tourne peut produire une erreur vague du
+    type « fichier en cours d'utilisation ». (Vérifiez aussi le
+    Gestionnaire des tâches — Outlook reste parfois actif en arrière-plan
+    après la fermeture de la fenêtre.)</li>
+  <li>Assurez-vous d'utiliser <strong>Outlook classique (de bureau)</strong>,
+    et non le bouton « nouveau Outlook » que certaines versions de
+    Microsoft&nbsp;365 affichent en haut à droite. RBLclass est un
+    complément classique et n'apparaîtra pas dans le nouveau Outlook.</li>
+</ul>
+
+<h2>Installation</h2>
+<ol>
+  <li>Enregistrez <code>RBLclass-1.0.0.0.msi</code> à un endroit où vous le
+    retrouverez facilement (le Bureau ou le dossier Téléchargements
+    conviennent).</li>
+  <li>Double-cliquez dessus.</li>
+  <li>
+    Windows peut afficher un écran bleu
+    <strong>« Windows a protégé votre ordinateur »</strong> — c'est
+    l'avertissement SmartScreen habituel pour les installateurs provenant
+    d'éditeurs que Windows ne reconnaît pas encore, ce qui est le cas des
+    outils internes en phase pilote comme celui-ci. Cliquez sur
+    <strong>Plus d'informations</strong>, puis sur
+    <strong>Exécuter quand même</strong>.
+    <div class="note">
+      C'est normal et ne signifie pas qu'il y a un problème — RBLclass ne
+      porte pas encore de signature de code (Outlook n'en exige pas pour
+      charger un complément, et la signature est prévue comme une étape de
+      durcissement ultérieure et facultative). Si votre antivirus/EDR
+      bloque carrément l'installation au lieu de simplement avertir,
+      arrêtez-vous et signalez-le-nous plutôt que de chercher à contourner
+      le blocage.
+    </div>
+  </li>
+  <li>Suivez les étapes de l'assistant (<strong>Suivant</strong> →
+    <strong>Installer</strong> → <strong>Terminer</strong>). Il n'y a
+    aucune option à configurer.</li>
+  <li>Démarrez Outlook. Au bout de quelques secondes, l'onglet
+    <strong>RBLclass</strong> devrait apparaître dans le ruban.</li>
+</ol>
+
+<h2>Ce qui se passe la première fois</h2>
+<p>
+Lors de sa première exécution après l'installation (ou après un changement
+de profil Outlook), RBLclass parcourt en arrière-plan l'arborescence de vos
+dossiers PST pour construire son index de recherche. Cela peut prendre
+quelques minutes sur une grosse boîte aux lettres ; Outlook reste
+utilisable pendant ce temps. Ensuite, la recherche de dossiers répond en
+bien moins d'une seconde.
+</p>
+
+<h2>Désinstallation</h2>
+<p>Outlook fermé, puis :</p>
+<ul>
+  <li>
+    <strong>Paramètres → Applications → Applications installées</strong>
+    (ou, sur les versions plus anciennes de Windows,
+    <strong>Panneau de configuration → Programmes et
+    fonctionnalités</strong>), repérez
+    <strong>« RBLclass - Email Classifier »</strong> et cliquez sur
+    <strong>Désinstaller</strong> — exactement comme pour retirer
+    n'importe quel autre programme ; ou
+  </li>
+  <li>Double-cliquez à nouveau sur <code>RBLclass-1.0.0.0.msi</code> et
+    choisissez <strong>Supprimer</strong> lorsque l'installateur le
+    propose.</li>
+</ul>
+<p>
+Outlook n'affichera plus l'onglet RBLclass après son redémarrage. Votre
+base de données d'index de recherche est <strong>conservée</strong> dans
+<code>%LocalAppData%\RBLclass\</code>, afin qu'une future réinstallation
+n'ait pas à tout réindexer — supprimez ce dossier manuellement par la
+suite si vous souhaitez repartir sur une base entièrement vierge.
+</p>
+
+<h2>Points d'attention à connaître</h2>
+<table>
+  <tr><th>Sujet</th><th>À quoi vous attendre</th></tr>
+  <tr>
+    <td>Installateur non signé</td>
+    <td>Des avertissements SmartScreen / « éditeur inconnu » au premier
+      lancement sont attendus pour cet outil interne en phase pilote —
+      voir les étapes d'installation ci-dessus pour savoir comment
+      procéder. En revanche, un <em>blocage</em> pur et simple par votre
+      logiciel de sécurité n'est pas normal ; signalez-le plutôt que de le
+      contourner.</td>
+  </tr>
+  <tr>
+    <td>Outlook doit être fermé</td>
+    <td>Avant l'installation et la désinstallation — sinon des erreurs de
+      type « fichier en cours d'utilisation » peuvent survenir en cours
+      d'installation.</td>
+  </tr>
+  <tr>
+    <td>Onglet absent après l'installation</td>
+    <td>Vérifiez qu'Outlook a bien complètement redémarré (Gestionnaire
+      des tâches). S'il manque toujours, envoyez-nous un fichier journal
+      (voir ci-dessous) avant de relancer l'installateur.</td>
+  </tr>
+  <tr>
+    <td>Journaux</td>
+    <td>En cas de comportement anormal, RBLclass écrit un fichier journal
+      à rotation dans <code>%LocalAppData%\RBLclass\logs\</code>. Joindre
+      le fichier le plus récent à votre signalement nous fera gagner
+      beaucoup de temps.</td>
+  </tr>
+  <tr>
+    <td>Version pilote</td>
+    <td>Ceci a été validé sur la même configuration Outlook que celle que
+      vous utilisez (32 bits, Microsoft&nbsp;365 Apps for Enterprise,
+      canal Entreprise semestriel, Outlook de bureau classique), mais vous
+      faites partie des premiers, en dehors du poste de développement, à
+      l'utiliser au quotidien. Merci de nous signaler tout ce qui semble
+      anormal — plantages, onglet qui disparaît après une mise à jour
+      Windows/Office, recherche lente, n'importe quoi — à
+      <span class="placeholder">[contact / canal — à compléter avant l'envoi]</span>.</td>
+  </tr>
+  <tr>
+    <td>Mise à niveau vers une nouvelle version</td>
+    <td>Lancez simplement le nouveau <code>.msi</code> — il remplace la
+      version précédente sur place. Pas besoin de désinstaller au
+      préalable, ni de redémarrer entre les deux.</td>
+  </tr>
+</table>
+
+<h2>Des questions ?</h2>
+<p>
+Contactez
+<span class="placeholder">[contact / canal — à compléter avant l'envoi]</span>
+— avec plaisir pour faire l'installation ensemble en direct si quelque
+chose ici ne correspond pas à ce que vous voyez.
+</p>
+
+<footer>
+Ce fichier est autonome (pas d'images ni de styles externes) — il peut être
+envoyé sans risque en pièce jointe unique, ou déposé à côté de
+l'installateur sur l'espace partagé interne.
+</footer>
+
+</div>
+
+<script>
+  function setLang(lang) {
+    document.querySelectorAll('.lang-block').forEach(function (el) {
+      el.classList.toggle('active', el.getAttribute('data-lang') === lang);
+    });
+    document.querySelectorAll('.lang-switch button').forEach(function (btn) {
+      btn.classList.toggle('active', btn.getAttribute('data-lang') === lang);
+    });
+    document.documentElement.setAttribute('lang', lang);
+  }
+</script>
+
+</body>
+</html>
