@@ -25,7 +25,7 @@
          to the add-in DLL. -->
     <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
     <!-- We hand-author AssemblyInfo.cs so AssemblyVersion is pinned to
-         1.0.0.0 to match release.config.json's COM registration identity. -->
+         2.0.0.0 to match release.config.json's COM registration identity. -->
     <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
   </PropertyGroup>
 
