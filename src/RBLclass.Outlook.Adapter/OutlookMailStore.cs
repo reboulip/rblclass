@@ -100,6 +100,49 @@ namespace RBLclass.Outlook.Adapter
             return result;
         }
 
+        public void NavigateTo(string storeId, string entryId, bool newWindow)
+        {
+            if (storeId == null || entryId == null) return;
+
+            using (var session = new ComRef<OutlookOM.NameSpace>(_app.Session))
+            {
+                OutlookOM.Folder rawFolder;
+                try
+                {
+                    rawFolder = (OutlookOM.Folder)session.Value.GetFolderFromID(entryId, storeId);
+                }
+                catch
+                {
+                    return; // (StoreId, EntryId) no longer resolves - tolerate the miss
+                }
+
+                using (var folder = new ComRef<OutlookOM.Folder>(rawFolder))
+                {
+                    if (newWindow)
+                    {
+                        folder.Value.Display();
+                        return;
+                    }
+
+                    OutlookOM.Explorer rawExplorer;
+                    try { rawExplorer = _app.ActiveExplorer(); }
+                    catch { rawExplorer = null; }
+
+                    if (rawExplorer == null)
+                    {
+                        // No active explorer to retarget - fall back to a new window.
+                        folder.Value.Display();
+                        return;
+                    }
+
+                    using (var explorer = new ComRef<OutlookOM.Explorer>(rawExplorer))
+                    {
+                        explorer.Value.CurrentFolder = folder.Value;
+                    }
+                }
+            }
+        }
+
         /// <summary>
         /// Enumerate the immediate sub-folders of <paramref name="parent"/> and
         /// index each (recursing into its subtree). Opens <c>parent.Folders</c>

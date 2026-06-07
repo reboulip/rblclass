@@ -14,6 +14,12 @@
     <Product>RBLclass</Product>
     <Company>RBLclass</Company>
     <RegisterForComInterop>false</RegisterForComInterop>
+    <!-- WPF task pane content hosted in a WinForms UserControl (the CTP shell)
+         via ElementHost. UseWPF + UseWindowsForms reference the in-box GAC WPF
+         and WinForms assemblies (no NuGet facades), keeping the dependency
+         graph clean. -->
+    <UseWPF>true</UseWPF>
+    <UseWindowsForms>true</UseWindowsForms>
     <!-- Copy NuGet dependencies (Microsoft.Data.Sqlite + its native
          runtimes\) into the output so the installer can lay them down next
          to the add-in DLL. -->
@@ -29,8 +35,9 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Reference Include="System.Windows.Forms" />
-    <Reference Include="System.Drawing" />
+    <!-- System.Windows.Forms / System.Drawing come from UseWindowsForms.
+         WindowsFormsIntegration provides ElementHost (WPF-in-WinForms bridge). -->
+    <Reference Include="WindowsFormsIntegration" />
     <!-- Canonical Office PIAs from the GAC. Using the canonical PIAs (rather
          than hand-rolled [ComImport] interfaces) avoids the auto-generated
          IL-stub marshalling AVs that crashed Outlook in the POC. See
@@ -70,6 +77,14 @@
          Serilog without re-checking the whole facade graph loads in Outlook. -->
     <PackageReference Include="Serilog" Version="2.12.0" />
     <PackageReference Include="Serilog.Sinks.File" Version="5.0.0" />
+    <!-- NOTE: CommunityToolkit.Mvvm (CLAUDE.md's nominal MVVM choice) is NOT
+         used. Its 8.x line depends on System.Memory >= 4.5.5 /
+         System.Runtime.CompilerServices.Unsafe >= 6.0.0, which floats the SQLite
+         facade assemblies above what SQLitePCLRaw was built against - and a COM
+         host has no binding redirects, so that breaks the first SqliteConnection
+         at runtime. We hand-roll a tiny dependency-free MVVM base
+         (Mvvm/ObservableObject + RelayCommand) instead, keeping the facade graph
+         at the validated POC versions. Same constraint as the Serilog pin. -->
   </ItemGroup>
 
   <ItemGroup>

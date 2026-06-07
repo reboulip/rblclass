@@ -25,5 +25,14 @@ namespace RBLclass.Core
         /// walk so excluded subtrees are pruned, not merely hidden.
         /// </summary>
         IReadOnlyList<FolderNode> GetFolders(string storeId);
+
+        /// <summary>
+        /// Navigate Outlook to the folder identified by (storeId, entryId),
+        /// re-resolving by those stable IDs and tolerating misses (the EntryID
+        /// may have changed). Opens a new explorer window when
+        /// <paramref name="newWindow"/> is true, otherwise re-targets the active
+        /// explorer. Touches COM - call on the Outlook UI thread.
+        /// </summary>
+        void NavigateTo(string storeId, string entryId, bool newWindow);
     }
 }

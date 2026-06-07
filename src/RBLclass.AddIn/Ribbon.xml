@@ -4,6 +4,13 @@
     <tabs>
       <tab id="RBLclassTab" label="RBLclass">
         <group id="RBLclassGroup" label="RBLclass">
+          <button id="OpenFolderButton"
+                  label="Open folder"
+                  size="large"
+                  imageMso="FileOpen"
+                  onAction="OnOpenFolderClick"
+                  screentip="Open a folder"
+                  supertip="Toggle the RBLclass task pane to search the folder tree and jump to a folder." />
           <button id="IndexStatusButton"
                   label="Index status"
                   size="large"

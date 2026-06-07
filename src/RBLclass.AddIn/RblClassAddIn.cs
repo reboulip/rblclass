@@ -29,7 +29,9 @@ namespace RBLclass.AddIn
     // AutoDispatch (not None) so Office can resolve ribbon onAction callbacks
     // via IDispatch::GetIDsOfNames on the class itself (CLAUDE.md).
     [ClassInterface(ClassInterfaceType.AutoDispatch)]
-    public class RblClassAddIn : IDTExtensibility2, Office.IRibbonExtensibility
+    public class RblClassAddIn : IDTExtensibility2,
+                                 Office.IRibbonExtensibility,
+                                 Office.ICustomTaskPaneConsumer
     {
         // Kept in sync with release.config.json (Clsid / ProgId).
         public const string ClsidString = "43808654-547E-4222-9BE3-7FA4B781FA44";
@@ -40,12 +42,18 @@ namespace RBLclass.AddIn
         private IFolderRepository _repository;
         private IMailStore _mailStore;
         private IFolderTree _folderTree;
+        private IFolderSearch _folderSearch;
+        private ISettingsStore _settingsStore;
         private IndexResult _lastIndexResult;
 
         // One-shot timer that runs the first-run folder walk on the Outlook UI
         // thread shortly AFTER startup, so the COM walk stays on the STA thread
         // (CLAUDE.md) without blocking Outlook's startup.
         private Timer _firstRunWalkTimer;
+
+        // Custom Task Pane (Office gives us the factory via ICustomTaskPaneConsumer).
+        private Office.ICTPFactory _ctpFactory;
+        private Office.CustomTaskPane _taskPane;
 
         private string _dbPath;
         private string _logDirectory;
@@ -83,6 +91,23 @@ namespace RBLclass.AddIn
 
         public void OnAddInsUpdate(ref Array custom) { }
 
+        /// <summary>
+        /// Office hands us the Custom Task Pane factory here (the add-in
+        /// implements ICustomTaskPaneConsumer). We keep it and create the pane
+        /// lazily on first "Open folder" click.
+        /// </summary>
+        public void CTPFactoryAvailable(Office.ICTPFactory CTPFactoryInst)
+        {
+            try
+            {
+                _ctpFactory = CTPFactoryInst;
+            }
+            catch (Exception ex)
+            {
+                TryLog("CTPFactoryAvailable failed", ex);
+            }
+        }
+
         public void OnStartupComplete(ref Array custom)
         {
             try
@@ -95,9 +120,29 @@ namespace RBLclass.AddIn
                     "RBLclass add-in starting (version {Version}, 64-bit process={Is64}).",
                     version, Environment.Is64BitProcess);
 
-                _repository = new SqliteFolderRepository("Data Source=" + _dbPath);
+                string connectionString = "Data Source=" + _dbPath;
+                _repository = new SqliteFolderRepository(connectionString);
                 _mailStore = new OutlookMailStore(_outlookApp);
                 _folderTree = new FolderIndexService(_mailStore, _repository);
+                _folderSearch = new FolderSearchService(_folderTree);
+                _settingsStore = new SqliteSettingsStore(connectionString);
+                _settingsStore.EnsureSchema();
+
+                // Publish services for the Custom Task Pane host control (which
+                // Office instantiates via COM and so can't be constructor-injected).
+                TaskPaneServices.Search = _folderSearch;
+                TaskPaneServices.Settings = _settingsStore;
+                TaskPaneServices.Navigate = (folder, newWindow) =>
+                {
+                    try
+                    {
+                        _mailStore.NavigateTo(folder.StoreId, folder.EntryId, newWindow);
+                    }
+                    catch (Exception ex)
+                    {
+                        Log.Error(ex, "NavigateTo failed for {Path}", folder.FullPath);
+                    }
+                };
 
                 // Fast path: load the persisted index (SQLite only, no COM walk).
                 _lastIndexResult = _folderTree.Load();
@@ -129,6 +174,17 @@ namespace RBLclass.AddIn
                     _firstRunWalkTimer = null;
                 }
 
+                if (_taskPane != null)
+                {
+                    try { Marshal.ReleaseComObject(_taskPane); } catch { }
+                    _taskPane = null;
+                }
+                if (_ctpFactory != null)
+                {
+                    try { Marshal.ReleaseComObject(_ctpFactory); } catch { }
+                    _ctpFactory = null;
+                }
+
                 Log.Information("RBLclass add-in shutting down.");
                 Log.CloseAndFlush();
             }
@@ -156,6 +212,43 @@ namespace RBLclass.AddIn
                 ShowError("GetCustomUI failed", ex);
                 return string.Empty;
             }
+        }
+
+        /// <summary>
+        /// Ribbon "Open folder": show/hide the RBLclass Custom Task Pane,
+        /// creating it on first use.
+        /// </summary>
+        public void OnOpenFolderClick(Office.IRibbonControl control)
+        {
+            try
+            {
+                EnsureTaskPane();
+                if (_taskPane != null)
+                    _taskPane.Visible = !_taskPane.Visible;
+            }
+            catch (Exception ex)
+            {
+                ShowError("Open folder failed", ex);
+            }
+        }
+
+        private void EnsureTaskPane()
+        {
+            if (_taskPane != null) return;
+
+            if (_ctpFactory == null)
+            {
+                ShowError("Task pane unavailable",
+                    new InvalidOperationException(
+                        "Office did not provide a Custom Task Pane factory."));
+                return;
+            }
+
+            // CreateCTP instantiates the COM-registered host control by ProgId.
+            _taskPane = _ctpFactory.CreateCTP(
+                RblClassTaskPaneHost.ProgIdString, "RBLclass", Type.Missing);
+            _taskPane.DockPosition = Office.MsoCTPDockPosition.msoCTPDockPositionRight;
+            _taskPane.Width = 360;
         }
 
         /// <summary>
