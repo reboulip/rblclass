@@ -299,3 +299,118 @@ below).
       classic Outlook.
 - [ ] Annual review of the migration plan toward "new Outlook" if/when
       that becomes a corporate direction.
+
+## Phase 9 — Security hardening (audit 2026-06-07)
+
+A full audit of `src/` and `tests/` found **no critical or high-severity
+vulnerabilities**: SQL is fully parameterized (`SqliteFolderRepository`,
+`SqliteSettingsStore` — every query uses `$param` binding, no string-built
+SQL), there is no filesystem path traversal (DB/log paths come from
+`Environment.GetFolderPath(LocalApplicationData)` + `Path.Combine`; folder
+"paths" are Outlook OM data, not filesystem), folder search is in-memory over
+the cached tree (`FolderSearchService` — no query-time SQL/FTS injection
+surface), there are no hardcoded secrets, no cryptography to weaken, and no
+outbound network calls (Azure OpenAI stays Phase-5 deferred). COM object
+lifetime is managed via `ComRef<T>` and events are unsubscribed on shutdown.
+
+The items below are therefore **defense-in-depth and enterprise
+due-diligence** to clear a large-enterprise security review — not fixes for
+known exploits. The stated bar is approval by a corporate cybersecurity team;
+several items will be **dropped on risk/benefit** for a per-user, no-network,
+single-machine add-in, but they are recorded so the review trail is explicit.
+For enterprise sign-off the *evidence* items (threat-model doc, signing,
+dependency scanning) are usually worth more than the code tweaks.
+
+### Evidence & process (highest value for enterprise sign-off)
+
+- [ ] **Threat-model / security architecture doc** (`docs/security.md`):
+      trust boundaries, data handled (folder names/paths + transient mail
+      metadata at send time; **no mail bodies are persisted** — the FTS5 mail
+      index was deliberately never built), data-at-rest location
+      (`%LocalAppData%\RBLclass\`, per-user ACL), an explicit "no telemetry /
+      no network calls by default" statement, and the HKCU-only / no-admin
+      install posture. This is usually the single artifact a security team
+      asks for first.
+- [ ] **Authenticode-sign the DLL + MSI** with the internal-PKI Code Signing
+      cert (OID 1.3.6.1.5.5.7.3.3), timestamped — promoting today's *optional*
+      signing (Phase 0 notes) to the GA default. Proves integrity/provenance
+      and removes SmartScreen friction. (Signing is not a functional gate; this
+      is a trust nicety the security team will expect anyway.)
+- [ ] **Dependency vulnerability scanning** in CI:
+      `dotnet list package --vulnerable --include-transitive` plus GitHub
+      Dependabot / advisory alerts over `SQLitePCLRaw`, `Microsoft.Data.Sqlite`
+      and `Serilog`. Pin and re-verify versions on every bump — the COM host
+      has no binding redirects, so transitive strong-named versions must match
+      exactly ([[com-addin-no-binding-redirects]]).
+- [ ] **SAST in CI** once the still-open Phase 1 CI pipeline lands: enable
+      Roslyn security analyzers / CodeQL on every push and treat security rules
+      as build errors.
+- [ ] **SBOM** generated for each release artifact (supply-chain inventory the
+      security team can ingest).
+
+### Error handling & data leakage (actionable code changes)
+
+- [ ] **Stop showing raw exception text to users.** `ShowError`
+      (`RblClassAddIn.cs:762-768`) calls `MessageBox.Show(ex.ToString())`,
+      exposing stack traces and internal file paths on screen. Show a friendly
+      message and log the full exception via Serilog (`TryLog`) instead.
+- [ ] **Replace silent `catch { }` blocks** in `OutlookMailStore.cs` with
+      logged catches (e.g. attachment removal/save at lines 504 & 508, the
+      generic swallow at 562, folder ops at 209/216, store enumeration at 49).
+      The attachment-strip swallow is the notable one: a filed copy could
+      silently retain attachments the user believes were removed
+      ([[classify-attachments-on-copy]]) — log every failure and surface the
+      attachment-removal failure to the user.
+- [ ] **Decide & document send-guard failure behavior.** `Application_ItemSend`
+      (`RblClassAddIn.cs:425-444`) deliberately **fails open** — its top-level
+      try/catch never blocks a send, because CLAUDE.md forbids letting an
+      exception escape into Outlook (it would flip `LoadBehavior` 3→2). A
+      security team may want the external-recipient guard to **fail safe**
+      (warn/block) instead. Resolve the tension explicitly: narrow the catch so
+      a guard *evaluation* error still prompts the user, while genuine COM
+      faults stay contained. Document whichever stance is chosen.
+- [ ] **Confirm & document log hygiene:** assert that no recipient addresses or
+      mail-body text reach the Serilog sink (`RblClassAddIn.cs:745-755`,
+      Information level, 14-day retention). Capture the redaction policy in
+      `docs/security.md`.
+
+### Policy & tamper resistance (enterprise control)
+
+- [ ] **Admin-lockable security settings.** The security-relevant toggles
+      (`SendExternalWarning`, `InternalDomains`, `ForgottenAttachmentKeywords`)
+      live in the user-writable SQLite `Settings` table, so a user — or malware
+      running at user scope — can disable the external-recipient warning. Add an
+      optional **HKLM policy override** the security team can push by GPO to
+      enforce the external guard fleet-wide (admin policy wins over the user
+      setting). *Likely the highest-value enterprise-specific item.*
+
+### Input validation (low risk — single-user, 32-bit memory budget)
+
+- [ ] **Cap free-text inputs:** length-limit the folder-search query
+      (`FolderSearchService.Tokenize`) and the settings text editors
+      (`InternalDomains`, `ForgottenAttachmentKeywords`), and add an **upper**
+      bound to `MaxResults` (`Settings.ParseMaxResults`, `Settings.cs:74-80`
+      currently clamps only the lower bound at 1). Guards against
+      self-inflicted memory pressure inside the ~1 GB 32-bit Outlook budget.
+- [ ] **Validate `InternalDomains` format** (reject entries without a
+      `domain.tld` shape) so a malformed allowlist can't silently weaken the
+      external-recipient guard.
+
+### Minor / best-practice
+
+- [ ] **Use `SqliteConnectionStringBuilder`** instead of
+      `"Data Source=" + _dbPath` (`RblClassAddIn.cs:147`). The path is fixed and
+      not user-influenced today, so this is purely hygiene.
+- [ ] **Drop file/DB paths from user-facing dialogs** unless in an explicit
+      diagnostics mode — the folder-index status dialog currently prints
+      `_dbPath` and `_logDirectory`.
+
+### Accepted by design (recorded so they are not re-flagged)
+
+- **Plaintext SQLite settings/folder index** — contents are non-secret
+  (toggles, folder names/paths); confidentiality relies on the per-user
+  `%LocalAppData%` ACL, which is the correct OS trust boundary. No app-level
+  encryption is planned.
+- **External-recipient and diagnostics dialogs** that display addresses/paths
+  are **intentional UX** (the whole point of the external-recipient guard),
+  not information-disclosure leaks.
