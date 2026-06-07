@@ -1,0 +1,220 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  RBLclass per-user MSI (Phase 1 GA target). Declarative restatement of
+  .claude\skills\make-release\Install-RblClassAddIn.ps1 - the validated
+  Phase-0 HKCU registration - in Windows Installer form. Both install the
+  exact same bits to the exact same places, so "loads after the MSI"
+  means "loads after the kit".
+
+  COM identity below MUST stay in sync with
+  .claude\skills\make-release\release.config.json (the documented single
+  source of truth) and the [Guid]/[ProgId] attributes on
+  RblClassAddIn / RblClassTaskPaneHost in src\RBLclass.AddIn. All three
+  already have to agree for the PowerShell kit to work; this is the third
+  hard-coded copy of the same two GUIDs, not a new coupling.
+-->
+<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs">
+  <Package Name="RBLclass - Email Classifier"
+           Manufacturer="Romain Reboulleau"
+           Version="1.0.0.0"
+           UpgradeCode="{4048303C-8921-4CAA-BC74-F2A61D03A8E6}"
+           Scope="perUser">
+
+    <MajorUpgrade DowngradeErrorMessage="A newer version of [ProductName] is already installed." />
+    <MediaTemplate EmbedCab="yes" />
+
+    <!--
+      Per-user install context: files land under %LocalAppData%, registry
+      writes go to HKCU, and msiexec needs no elevation - the same
+      constraints the PowerShell kit already satisfies (CLAUDE.md
+      "Packaging" / Install-RblClassAddIn.ps1 header comment).
+    -->
+    <StandardDirectory Id="LocalAppDataFolder">
+      <Directory Id="RblClassDir" Name="RBLclass">
+        <Directory Id="INSTALLFOLDER" Name="AddIn" />
+      </Directory>
+    </StandardDirectory>
+
+    <!--
+      The main DLL gets its own component with a stable File Id, because
+      the CodeBase registry values below need to reference its installed
+      path via "[#fil_MainDll]". Everything else in the build output
+      (dependencies, PDBs, both native SQLite bitnesses under runtimes\)
+      is harvested by glob - same "copy everything" approach as
+      Stage-ProductRelease.ps1's payload assembly.
+    -->
+    <Component Id="MainDllComponent" Directory="INSTALLFOLDER" Guid="{DD822255-6B69-495D-8DDA-82FF87860785}">
+      <File Id="fil_MainDll" Source="$(var.PayloadDir)\RBLclass.AddIn.dll" KeyPath="yes" />
+    </Component>
+
+    <ComponentGroup Id="PayloadFiles" Directory="INSTALLFOLDER">
+      <Files Include="$(var.PayloadDir)\**">
+        <Exclude Files="$(var.PayloadDir)\RBLclass.AddIn.dll" />
+      </Files>
+    </ComponentGroup>
+
+    <!-- ================================================================
+         Add-in class CLSID - real subtree + Wow6432Node mirror.
+         HKCU\Software\Classes is not WOW64-redirected, so one subtree
+         would suffice for both Outlook bitnesses, but the mirror is
+         written defensively, exactly as the PowerShell kit does
+         (Install-RblClassAddIn.ps1 "$clsidPaths" comment).
+         ================================================================ -->
+    <Component Id="AddInClsid" Directory="INSTALLFOLDER" Guid="{5594F8D9-4401-4DBE-8F2A-EFEC3733B717}">
+      <RegistryKey Root="HKCU" Key="Software\Classes\CLSID\{43808654-547E-4222-9BE3-7FA4B781FA44}">
+        <RegistryValue Value="RBLclass.AddIn" Type="string" KeyPath="yes" />
+        <RegistryKey Key="InprocServer32">
+          <RegistryValue Value="mscoree.dll" Type="string" />
+          <RegistryValue Name="ThreadingModel" Value="Both" Type="string" />
+          <RegistryValue Name="Class" Value="RBLclass.AddIn.RblClassAddIn" Type="string" />
+          <RegistryValue Name="Assembly" Value="RBLclass.AddIn, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null" Type="string" />
+          <RegistryValue Name="RuntimeVersion" Value="v4.0.30319" Type="string" />
+          <RegistryValue Name="CodeBase" Value="file:///[#fil_MainDll]" Type="string" />
+          <RegistryKey Key="1.0.0.0">
+            <RegistryValue Name="Class" Value="RBLclass.AddIn.RblClassAddIn" Type="string" />
+            <RegistryValue Name="Assembly" Value="RBLclass.AddIn, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null" Type="string" />
+            <RegistryValue Name="RuntimeVersion" Value="v4.0.30319" Type="string" />
+            <RegistryValue Name="CodeBase" Value="file:///[#fil_MainDll]" Type="string" />
+          </RegistryKey>
+        </RegistryKey>
+        <RegistryKey Key="ProgId">
+          <RegistryValue Value="RBLclass.AddIn" Type="string" />
+        </RegistryKey>
+        <RegistryKey Key="Implemented Categories\{62C8FE65-4EBB-45E7-B440-6E39B2CDBF29}" ForceCreateOnInstall="yes" />
+      </RegistryKey>
+    </Component>
+
+    <Component Id="AddInClsidWow6432" Directory="INSTALLFOLDER" Guid="{BB9C912B-BBEA-4BED-8EC9-09500807329F}">
+      <RegistryKey Root="HKCU" Key="Software\Classes\Wow6432Node\CLSID\{43808654-547E-4222-9BE3-7FA4B781FA44}">
+        <RegistryValue Value="RBLclass.AddIn" Type="string" KeyPath="yes" />
+        <RegistryKey Key="InprocServer32">
+          <RegistryValue Value="mscoree.dll" Type="string" />
+          <RegistryValue Name="ThreadingModel" Value="Both" Type="string" />
+          <RegistryValue Name="Class" Value="RBLclass.AddIn.RblClassAddIn" Type="string" />
+          <RegistryValue Name="Assembly" Value="RBLclass.AddIn, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null" Type="string" />
+          <RegistryValue Name="RuntimeVersion" Value="v4.0.30319" Type="string" />
+          <RegistryValue Name="CodeBase" Value="file:///[#fil_MainDll]" Type="string" />
+          <RegistryKey Key="1.0.0.0">
+            <RegistryValue Name="Class" Value="RBLclass.AddIn.RblClassAddIn" Type="string" />
+            <RegistryValue Name="Assembly" Value="RBLclass.AddIn, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null" Type="string" />
+            <RegistryValue Name="RuntimeVersion" Value="v4.0.30319" Type="string" />
+            <RegistryValue Name="CodeBase" Value="file:///[#fil_MainDll]" Type="string" />
+          </RegistryKey>
+        </RegistryKey>
+        <RegistryKey Key="ProgId">
+          <RegistryValue Value="RBLclass.AddIn" Type="string" />
+        </RegistryKey>
+        <RegistryKey Key="Implemented Categories\{62C8FE65-4EBB-45E7-B440-6E39B2CDBF29}" ForceCreateOnInstall="yes" />
+      </RegistryKey>
+    </Component>
+
+    <!-- Add-in ProgId -> CLSID mapping -->
+    <Component Id="AddInProgId" Directory="INSTALLFOLDER" Guid="{8AC9E0C0-0745-4C04-9E0A-0D1DB62DF421}">
+      <RegistryKey Root="HKCU" Key="Software\Classes\RBLclass.AddIn">
+        <RegistryValue Value="RBLclass - Email Classifier" Type="string" KeyPath="yes" />
+        <RegistryKey Key="CLSID">
+          <RegistryValue Value="{43808654-547E-4222-9BE3-7FA4B781FA44}" Type="string" />
+        </RegistryKey>
+      </RegistryKey>
+    </Component>
+
+    <!-- ================================================================
+         Custom Task Pane host control - a ComVisible WinForms UserControl
+         in the same assembly. A raw Shared COM Add-in (no VSTO) must
+         register its CLSID/ProgId itself, plus the ActiveX Control
+         category, so Office's ICTPFactory.CreateCTP can instantiate it
+         (Install-RblClassAddIn.ps1 "_comment_taskpane").
+         ================================================================ -->
+    <Component Id="TaskPaneClsid" Directory="INSTALLFOLDER" Guid="{735A205E-49DC-46CD-AC88-0970359B77F3}">
+      <RegistryKey Root="HKCU" Key="Software\Classes\CLSID\{3357823B-8157-4B49-8B66-9BFF2F61C06B}">
+        <RegistryValue Value="RBLclass.TaskPaneHost" Type="string" KeyPath="yes" />
+        <RegistryKey Key="InprocServer32">
+          <RegistryValue Value="mscoree.dll" Type="string" />
+          <RegistryValue Name="ThreadingModel" Value="Both" Type="string" />
+          <RegistryValue Name="Class" Value="RBLclass.AddIn.RblClassTaskPaneHost" Type="string" />
+          <RegistryValue Name="Assembly" Value="RBLclass.AddIn, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null" Type="string" />
+          <RegistryValue Name="RuntimeVersion" Value="v4.0.30319" Type="string" />
+          <RegistryValue Name="CodeBase" Value="file:///[#fil_MainDll]" Type="string" />
+          <RegistryKey Key="1.0.0.0">
+            <RegistryValue Name="Class" Value="RBLclass.AddIn.RblClassTaskPaneHost" Type="string" />
+            <RegistryValue Name="Assembly" Value="RBLclass.AddIn, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null" Type="string" />
+            <RegistryValue Name="RuntimeVersion" Value="v4.0.30319" Type="string" />
+            <RegistryValue Name="CodeBase" Value="file:///[#fil_MainDll]" Type="string" />
+          </RegistryKey>
+        </RegistryKey>
+        <RegistryKey Key="ProgId">
+          <RegistryValue Value="RBLclass.TaskPaneHost" Type="string" />
+        </RegistryKey>
+        <!-- ActiveX Control category marks it hostable in a CTP; .NET Category lets mscoree activate it -->
+        <RegistryKey Key="Implemented Categories\{40FC6ED4-2438-11CF-A3DB-080036F12502}" ForceCreateOnInstall="yes" />
+        <RegistryKey Key="Implemented Categories\{62C8FE65-4EBB-45E7-B440-6E39B2CDBF29}" ForceCreateOnInstall="yes" />
+        <RegistryKey Key="Control" ForceCreateOnInstall="yes" />
+      </RegistryKey>
+    </Component>
+
+    <Component Id="TaskPaneClsidWow6432" Directory="INSTALLFOLDER" Guid="{DDDD12D7-580E-428D-AE23-6993D4CBB8F8}">
+      <RegistryKey Root="HKCU" Key="Software\Classes\Wow6432Node\CLSID\{3357823B-8157-4B49-8B66-9BFF2F61C06B}">
+        <RegistryValue Value="RBLclass.TaskPaneHost" Type="string" KeyPath="yes" />
+        <RegistryKey Key="InprocServer32">
+          <RegistryValue Value="mscoree.dll" Type="string" />
+          <RegistryValue Name="ThreadingModel" Value="Both" Type="string" />
+          <RegistryValue Name="Class" Value="RBLclass.AddIn.RblClassTaskPaneHost" Type="string" />
+          <RegistryValue Name="Assembly" Value="RBLclass.AddIn, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null" Type="string" />
+          <RegistryValue Name="RuntimeVersion" Value="v4.0.30319" Type="string" />
+          <RegistryValue Name="CodeBase" Value="file:///[#fil_MainDll]" Type="string" />
+          <RegistryKey Key="1.0.0.0">
+            <RegistryValue Name="Class" Value="RBLclass.AddIn.RblClassTaskPaneHost" Type="string" />
+            <RegistryValue Name="Assembly" Value="RBLclass.AddIn, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null" Type="string" />
+            <RegistryValue Name="RuntimeVersion" Value="v4.0.30319" Type="string" />
+            <RegistryValue Name="CodeBase" Value="file:///[#fil_MainDll]" Type="string" />
+          </RegistryKey>
+        </RegistryKey>
+        <RegistryKey Key="ProgId">
+          <RegistryValue Value="RBLclass.TaskPaneHost" Type="string" />
+        </RegistryKey>
+        <RegistryKey Key="Implemented Categories\{40FC6ED4-2438-11CF-A3DB-080036F12502}" ForceCreateOnInstall="yes" />
+        <RegistryKey Key="Implemented Categories\{62C8FE65-4EBB-45E7-B440-6E39B2CDBF29}" ForceCreateOnInstall="yes" />
+        <RegistryKey Key="Control" ForceCreateOnInstall="yes" />
+      </RegistryKey>
+    </Component>
+
+    <!-- Task Pane host ProgId -> CLSID mapping -->
+    <Component Id="TaskPaneProgId" Directory="INSTALLFOLDER" Guid="{83975A58-9609-4F3B-842F-3C1B2B750814}">
+      <RegistryKey Root="HKCU" Key="Software\Classes\RBLclass.TaskPaneHost">
+        <RegistryValue Value="RBLclass Task Pane Host" Type="string" KeyPath="yes" />
+        <RegistryKey Key="CLSID">
+          <RegistryValue Value="{3357823B-8157-4B49-8B66-9BFF2F61C06B}" Type="string" />
+        </RegistryKey>
+      </RegistryKey>
+    </Component>
+
+    <!--
+      Outlook add-in registration. The Addins key is NOT WOW64-redirected
+      under HKCU and is written once (Install-RblClassAddIn.ps1 final
+      block). LoadBehavior=3 / CommandLineSafe=1 must be DWORDs - if
+      Outlook ever flips LoadBehavior to 2 it has disabled the add-in
+      after an unhandled exception (CLAUDE.md "Error handling").
+    -->
+    <Component Id="OutlookAddinsKey" Directory="INSTALLFOLDER" Guid="{EED39D34-26EC-496C-99AD-6185476F6C2C}">
+      <RegistryKey Root="HKCU" Key="Software\Microsoft\Office\Outlook\Addins\RBLclass.AddIn">
+        <RegistryValue Name="FriendlyName" Value="RBLclass - Email Classifier" Type="string" KeyPath="yes" />
+        <RegistryValue Name="Description" Value="Classify Outlook mail into PST folders with fast keyword search." Type="string" />
+        <RegistryValue Name="LoadBehavior" Value="3" Type="integer" />
+        <RegistryValue Name="CommandLineSafe" Value="1" Type="integer" />
+      </RegistryKey>
+    </Component>
+
+    <Feature Id="Main" Title="RBLclass" Level="1">
+      <ComponentRef Id="MainDllComponent" />
+      <ComponentGroupRef Id="PayloadFiles" />
+      <ComponentRef Id="AddInClsid" />
+      <ComponentRef Id="AddInClsidWow6432" />
+      <ComponentRef Id="AddInProgId" />
+      <ComponentRef Id="TaskPaneClsid" />
+      <ComponentRef Id="TaskPaneClsidWow6432" />
+      <ComponentRef Id="TaskPaneProgId" />
+      <ComponentRef Id="OutlookAddinsKey" />
+    </Feature>
+
+  </Package>
+</Wix>

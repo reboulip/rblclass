@@ -444,10 +444,33 @@ to already-shipped code.
   roadmap as obsoleted by WPF (see "Explicitly NOT reimplemented"). Not
   reconsidered; item 14 of the §9 checklist is marked dropped with this
   rationale.
-- **Packaging:** WiX per-user MSI writing the HKCU add-in registration +
-  both CLSID subtrees (x86/Wow6432Node) — the POC's registration, in MSI
-  form. **Signing optional** per Step 0. Keep the POC PowerShell
-  installer working in parallel until the MSI is validated on the target.
+- **Packaging: WiX per-user MSI — done, dev-machine-validated
+  (2026-06-07).** `installer/Package.wxs` (built via WiX Toolset v7,
+  installed as a per-user `dotnet tool`; `Build-Installer.ps1` wraps
+  `wix build`, reading `release.config.json` as the same single source
+  of truth `/make-release` and `/reload-addin` use). `Scope="perUser"`
+  → installs to `%LocalAppData%\RBLclass\AddIn`, writes only `HKCU`, no
+  elevation — declaratively replicating every registry write
+  `Install-RblClassAddIn.ps1` makes: both CLSID subtrees
+  (`CLSID\{guid}` + `Wow6432Node\CLSID\{guid}`) for both the add-in and
+  task-pane-host classes, both ProgIds, the `.NET`/ActiveX-Control
+  category markers, and the `Outlook\Addins\RBLclass.AddIn` key
+  (`LoadBehavior=3`, `CommandLineSafe=1`). Test-installed on the dev
+  machine with `msiexec /i ... /qn` over the existing PowerShell-kit
+  install — Outlook loaded the add-in entirely from the MSI-written
+  registration, ribbon tab confirmed working ("Works as expected").
+  One harmless quirk found and verified inert: WiX's `[#FileId]`
+  `CodeBase` token resolves with `/`-separators in the native CLSID
+  subtree but `\`-separators in the `Wow6432Node` mirror — both parse
+  to an identical `System.Uri.LocalPath`/`AbsoluteUri` (the same
+  normalisation Fusion/`mscoree` applies), so both load correctly; not
+  worth fighting WiX's resolver over a cosmetic difference. **Signing
+  optional** per Step 0 (unsigned, as already validated for the POC
+  kit). Per CLAUDE.md, the POC PowerShell installer remains the
+  primary, validated path — both coexist — until the MSI is also
+  installed and smoke-tested on the real 32-bit target workstation
+  (the `Wow6432Node` subtree is the one the MSI write to that the dev
+  machine's 64-bit Outlook never reads).
 - **Regression matrix** for Semi-Annual channel updates (install, index,
   search, open, classify, send-guard, attachment removal, sent triage,
   settings).

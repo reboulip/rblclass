@@ -55,7 +55,7 @@ before cutting a release that follows one.
 
 | Area | What to check | Pass criteria |
 |---|---|---|
-| **Install** | Run the install kit (`/make-release` output) on a clean profile | Add-in loads (`LoadBehavior` stays 3); RBLclass ribbon tab appears; no startup error dialog |
+| **Install** | Run the install kit (`/make-release` output) on a clean profile, **and/or** `installer\bin\*.msi` (`installer\Build-Installer.ps1` → `msiexec /i`, dev-machine-validated 2026-06-07 — see roadmap Step 10) | Add-in loads (`LoadBehavior` stays 3); RBLclass ribbon tab appears; no startup error dialog |
 | **Index** | First run after install/profile change | Background walk completes; "Index status" shows expected store/folder counts; <500ms contribution to Outlook startup (CLAUDE.md target) |
 | **Search** | Type keywords in the folder-search task pane | Results appear within ~100ms for the indexed set (CLAUDE.md target); collapse/expand and match-mode settings are honoured |
 | **Open** | Pick a search result, try both same-window and new-window | Outlook navigates to the right folder in the right window |
