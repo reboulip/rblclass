@@ -1,176 +1,156 @@
 # RBLclass v2
 
-RBLclass v2 is the modernised replacement for the legacy VBA-based
-RBLclass Outlook macro. It helps users quickly classify emails into
-folders across multiple .pst archives, with fast keyword search over
-the folder tree, attachment management, and send-time guards.
+RBLclass is an Outlook add-in that helps you file emails into folders
+across your `.pst` archives faster: keyword search over your whole
+folder tree, one-click classification to one or several folders,
+attachment clean-up, and a few send-time reminders (forgotten
+attachments, external recipients). It runs entirely on your machine
+against your local PST files — no server, no Exchange Online
+dependency.
 
-**Stack**: C# / .NET Framework 4.8 (add-in shell + Outlook adapter)
-and .NET Standard 2.0 (business core), packaged as a classic
-**Outlook Shared COM Add-in** (`IDTExtensibility2` +
-`IRibbonExtensibility`). SQLite with FTS5 for the index. WPF
-+ MVVM (CommunityToolkit.Mvvm) for UI hosted in Custom Task Panes.
-Per-user install via HKCU registration — no admin rights, no
-ClickOnce, no VSTO runtime.
+It's a from-scratch C#/.NET rewrite of a legacy VBA Outlook macro of
+the same name. **v2.0.0.0** is the first release of the rewrite and is
+currently rolling out to a pilot group.
 
-See [CLAUDE.md](CLAUDE.md) for the full architectural rules and
-[ROADMAP.md](ROADMAP.md) for the delivery phases.
+## Features
 
-## Phase 0 — Hello PST POC
+- **Folder search** — type a few keywords to jump straight to a folder
+  anywhere in your PST tree, with collapse/expand and a configurable
+  match mode (word-prefix by default, substring as an opt-in).
+- **One-click classify** — file the selected mail(s) into one or
+  several destination folders at once, with per-destination copies and
+  attachment handling on copy.
+- **Attachment management** — strip attachments from a filed copy
+  without touching the original (or a kept copy, if you keep one).
+- **Inline sub-folder creation** — create a destination folder on the
+  fly while classifying, with a targeted re-index.
+- **Conversation widening** — pull the rest of a conversation into view,
+  with a task-completion guard.
+- **Send-time guards** — configurable reminders for forgotten
+  attachments (keyword list) and external recipients (internal-domain
+  allowlist), wired to Outlook's `ItemSend`.
+- **Sent-item triage** — a prompt to Class / Delete / Move-to-Inbox /
+  Leave a sent item or its whole conversation.
+- **Settings** — every option above persists across restarts, backed by
+  a local SQLite database under `%LocalAppData%\RBLclass\`.
 
-`/poc/RBLclass.HelloPstPoc` is a **throwaway** proof-of-concept that
-de-risks the three Phase-0 technical concerns before the Phase 1
-layered solution is built:
+Once installed, it adds a new **RBLclass** tab to the Outlook ribbon.
 
-1. A COM add-in we author and sign loads into both 64-bit Outlook
-   (this dev machine, Current channel) and 32-bit Outlook (the
-   target workstations, Semi-Annual Enterprise channel).
-2. `Microsoft.Data.Sqlite` + the native `e_sqlite3.dll` work inside
-   the Outlook process at both bitnesses
-   (`SQLitePCLRaw.bundle_e_sqlite3` ships both runtimes).
-3. A per-user install (PowerShell + HKCU registration, no admin)
-   does not trip Stormshield / EDR.
+## Status
 
-The POC is **not** the Phase 1 codebase. Do not extend it; once it
-has done its job it will be deleted in favour of the
-`/src/RBLclass.{Core,Outlook.Adapter,AddIn}` solution.
+v2.0.0.0 is in **pilot rollout** (Phase 6 of the [roadmap](ROADMAP.md)).
+The legacy-parity rebuild (Steps 0–10) is complete and signed off — see
+[docs/parity-and-regression.md](docs/parity-and-regression.md) for the
+checklist. An open `develop` → `main` PR is gating the `v2.0.0.0` tag on
+a 32-bit-target regression pass.
 
-### Prerequisites
+## Requirements
 
-- Visual Studio 2022 (Community or higher) with the
-  **.NET desktop development** workload and the
-  **.NET Framework 4.8 targeting pack**. (The Office/SharePoint
-  workload is NOT required.)
-- The standalone **.NET SDK** (e.g.
-  `winget install Microsoft.DotNet.SDK.8`). Required even though we
-  target `net48` — the SDK-style csproj needs `Microsoft.NET.Sdk` to
-  resolve. On Windows ARM64 the VS workload does not bundle it.
-- **Office must be installed locally** — the build references the
-  Office PIAs (`Extensibility`, `office`, `Microsoft.Office.Interop.Outlook`)
-  directly from the GAC. They land there when Office is installed.
-- At least one PST file attached to your Outlook profile, with a
-  non-empty first subfolder.
+- Classic (desktop) Windows Outlook — **not** the "new Outlook" toggle
+  some Microsoft 365 builds show. Validated against 32-bit Microsoft
+  365 Apps for Enterprise on the Semi-Annual Enterprise Channel.
+- Windows 10 1809 or later.
+- No administrator rights — it's a per-user install.
 
-The deploy script will create a self-signed code-signing cert
-automatically the first time it runs.
+## Installing
 
-### Easy-button deploy
+Download `RBLclass-<version>.msi` and double-click it — a standard
+per-user Windows Installer package, no extraction or extra steps. Click
+through **Next → Install → Finish** (there's nothing to configure),
+then start Outlook and look for the **RBLclass** tab on the ribbon.
 
-Close Outlook. Then from a non-elevated PowerShell anywhere:
+Windows SmartScreen will likely show an "unrecognised publisher"
+warning — expected for this internal pilot tool, since it isn't
+code-signed yet. Choose **More info → Run anyway**. A hard *block* from
+your antivirus/EDR is not expected and should be reported rather than
+worked around.
+
+To uninstall: close Outlook, then **Settings → Apps → Installed apps →
+"RBLclass - Email Classifier" → Uninstall** (or re-run the `.msi` and
+choose **Remove**). The search index database is left in place under
+`%LocalAppData%\RBLclass\` so a reinstall doesn't have to re-index from
+scratch — delete that folder by hand for a fully clean slate.
+
+For the full walkthrough — first-run indexing, log file locations, and
+a caveats table — see the trilingual (EN/DE/FR)
+[installation guide](docs/installation-guide.html), which is the same
+document sent to pilot users.
+
+## Architecture
+
+A strictly-layered solution, dependencies pointing downward only:
+
+```
+RBLclass.AddIn            (.NET FW 4.8)      COM add-in shell — IDTExtensibility2,
+                                              IRibbonExtensibility, ribbon, task panes
+RBLclass.Outlook.Adapter  (.NET FW 4.8)      COM access to the Outlook object model
+RBLclass.Core             (.NET Standard 2.0) business logic — no Outlook/UI/COM deps
+```
+
+Packaged as a classic **Outlook Shared COM Add-in** (no VSTO),
+registered into Outlook via HKCU. Storage is SQLite (FTS5-capable) in
+`%LocalAppData%\RBLclass\`; the UI is WPF with a hand-rolled minimal
+MVVM hosted in Custom Task Panes; logging is Serilog with a rolling
+file sink.
+
+See [CLAUDE.md](CLAUDE.md) for the full architectural rules (COM
+interop and lifetime conventions, threading, bitness, SQLite schema
+policy, etc.) and [ROADMAP.md](ROADMAP.md) for the delivery phases and
+current status.
+
+## Project layout
+
+```
+/src
+  /RBLclass.Core              business logic, .NET Standard 2.0
+  /RBLclass.Outlook.Adapter   COM adapter, .NET Framework 4.8
+  /RBLclass.AddIn             COM add-in shell, .NET Framework 4.8
+/installer                    WiX MSI project
+/tests
+  /RBLclass.Core.Tests        xUnit
+/poc                          Phase 0 throwaway POC — not part of the
+                              shipped product
+/docs                         architecture notes, install guide, roadmap detail
+```
+
+## Building and running
+
+Open `RBLclass.sln` in Visual Studio 2022 with the **.NET desktop
+development** workload, the **.NET Framework 4.8 targeting pack**, and
+the standalone **.NET SDK** installed (the Office/SharePoint workload
+is not required — Office itself must be installed locally for the PIA
+references). F5 launches Outlook with the add-in attached via *Debug →
+Start External Program: outlook.exe*. Full prerequisites and quirks are
+in [CLAUDE.md](CLAUDE.md#build-and-run).
+
+Two Claude Code skills cover the day-to-day loop on the dev machine:
+
+- `/reload-addin` — rebuild and reload the add-in into a running
+  Outlook to verify a change live.
+- `/make-release` — build, package, and verify both the install kit
+  (`.zip`) and the per-user MSI shipped to pilots.
+
+## Tests
+
+`RBLclass.Core` is covered by xUnit + FluentAssertions + NSubstitute:
 
 ```powershell
-cd <repo>\poc\scripts
-.\Deploy-HelloPstAddIn.ps1
+dotnet test tests\RBLclass.Core.Tests
 ```
 
-This single script runs the full workflow:
+The Outlook adapter and add-in shell need a live Outlook session and
+are validated by hand instead — see the testing strategy in
+[ROADMAP.md](ROADMAP.md).
 
-1. Finds `msbuild.exe` via `vswhere` (no Developer PowerShell
-   needed).
-2. Creates a self-signed cert (`CN=RBLclass POC Dev`) if none
-   exists, or reuses the existing one.
-3. Uninstalls any prior install (idempotent).
-4. Clears Outlook **Resiliency** entries that mention our ProgId,
-   and adds the add-in to `DoNotDisableAddinList`, so Outlook will
-   re-try loading us after a previous crash and not auto-disable
-   us next time.
-5. Restores + builds the solution (Debug|AnyCPU).
-6. Copies the build output to
-   `%LocalAppData%\RBLclass\HelloPstPoc\`, Authenticode-signs the
-   DLL, and writes the HKCU COM + add-in registry entries.
+## License
 
-Start Outlook. Look for the **RBLclass** ribbon tab.
+Apache License 2.0 — see [LICENSE](LICENSE).
 
-### Step-by-step (if you'd rather not use the wrapper)
+## Contributing / feedback
 
-```powershell
-cd <repo>\poc\scripts
-.\Create-SelfSignedCert.ps1                                # prints the thumbprint
-cd ..
-msbuild RBLclass.HelloPstPoc.sln /restore `
-        /p:Configuration=Debug /p:Platform="Any CPU"
-cd scripts
-.\Install-HelloPstAddIn.ps1 -Thumbprint <thumbprint>
-```
-
-After a successful build the output lives under
-`poc\RBLclass.HelloPstPoc\bin\Debug\net48\`. Verify both native
-SQLite payloads are present:
-
-```
-bin\Debug\net48\runtimes\win-x86\native\e_sqlite3.dll
-bin\Debug\net48\runtimes\win-x64\native\e_sqlite3.dll
-```
-
-### Confirm the install
-
-1. A new ribbon tab **RBLclass** appears with one button **Hello
-   PST**.
-2. `File → Options → Add-ins` lists "RBLclass Hello PST POC" under
-   *Active Application Add-ins*.
-3. Clicking **Hello PST** shows a MessageBox with process bitness,
-   first PST name, item count in its first subfolder, the loaded
-   `e_sqlite3.dll` path, and the SQLite roundtrip row count.
-
-### Deploy to a target workstation (Phase 0 EDR observation)
-
-To package the POC for install on a separate machine (typically
-32-bit Outlook on the Semi-Annual Enterprise channel), without
-needing the code-signing cert or any dev tooling on that machine:
-
-```powershell
-cd poc\scripts
-.\Stage-TargetRelease.ps1
-```
-
-This rebuilds Release, stages payload + scripts + a tiny on-target
-README under `%TEMP%\HelloPstPoc-target\`, and produces
-`%USERPROFILE%\Desktop\HelloPstPoc-target.zip` — **AES-256
-encrypted with password `rbl-v2`** by default, so Gmail / corporate
-mail filters that strip unencrypted zips containing `.ps1` / `.dll`
-will let it through. Pass `-Password ''` to skip encryption.
-
-Requires **7-Zip** locally for the encryption step
-(`winget install 7zip.7zip`).
-
-Email the zip + the password to whoever runs the target machine.
-On the target: extract, close Outlook, and run from the extracted
-folder:
-
-```powershell
-Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass -Force
-.\Install-HelloPstAddIn.ps1 -SkipSigning -BuildOutput .\payload
-```
-
-Outlook does not require an Authenticode signature to load a COM
-add-in — `-SkipSigning` is fine for the Phase 0 observation pass.
-The real installer (Phase 1, WiX MSI) will sign with the internal-
-PKI cert.
-
-### Uninstall
-
-Close Outlook. Then:
-
-```powershell
-cd poc\scripts
-.\Uninstall-HelloPstAddIn.ps1
-```
-
-What the uninstaller does:
-
-1. Removes the COM-class registration from
-   `HKCU:\Software\Classes\CLSID\{guid}` and its `Wow6432Node\`
-   mirror.
-2. Removes the Outlook add-in entry at
-   `HKCU:\Software\Microsoft\Office\Outlook\Addins\RBLclass.HelloPstAddIn`.
-3. Deletes `%LocalAppData%\RBLclass\HelloPstPoc\`. Leaves
-   `%LocalAppData%\RBLclass\hello-pst-poc.db` in place (it
-   contains POC ping rows; remove manually if you want a clean
-   slate).
-
-Verify the uninstall:
-
-- Reopen Outlook → no **RBLclass** ribbon tab.
-- `File → Options → Add-ins` → "RBLclass Hello PST POC" is gone.
-- `HKCU:\Software\Microsoft\Office\Outlook\Addins\` no longer
-  contains an `RBLclass.HelloPstAddIn` key.
+This is currently a solo-maintained internal tool, developed
+interactively on a single machine — the only place it can be built and
+validated against real PST data and the deployment-target Outlook. It
+isn't set up for external contributions. Pilot users can report issues
+through the contact channel listed in the
+[installation guide](docs/installation-guide.html).
