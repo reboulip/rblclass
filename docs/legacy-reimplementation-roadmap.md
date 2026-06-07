@@ -437,8 +437,13 @@ to already-shipped code.
 - **Parity pass** against the §9 checklist in
   [legacy-overview.md](legacy-overview.md). Each row demoed on the
   32-bit target.
-- **Reminder-to-front (§6d):** ⚠ recommend **drop** (cosmetic, entirely
-  locale-coupled). Revisit only if the user asks.
+- **Reminder-to-front (§6d): DROPPED (confirmed 2026-06-07).** Purely
+  cosmetic, hard-coded French reminder-count strings ("1 Rappel"… "15
+  Rappels"), and implemented via `AppActivate` window-foregrounding — the
+  exact MSForms-era focus-juggling hack already excluded elsewhere in this
+  roadmap as obsoleted by WPF (see "Explicitly NOT reimplemented"). Not
+  reconsidered; item 14 of the §9 checklist is marked dropped with this
+  rationale.
 - **Packaging:** WiX per-user MSI writing the HKCU add-in registration +
   both CLSID subtrees (x86/Wow6432Node) — the POC's registration, in MSI
   form. **Signing optional** per Step 0. Keep the POC PowerShell
