@@ -15,5 +15,11 @@ namespace RBLclass.Core
 
         /// <summary>Folder match mode: "WordPrefix" or "Substring".</summary>
         public const string FolderMatchMode = "FolderMatchMode";
+
+        /// <summary>Keep originals after classify, i.e. don't delete (inverse of legacy settingsdeleteProcessedElts).</summary>
+        public const string KeepCopy = "KeepCopy";
+
+        /// <summary>Strip attachments when classifying (legacy settingsRemoveAttachments).</summary>
+        public const string RemoveAttachments = "RemoveAttachments";
     }
 }

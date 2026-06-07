@@ -34,5 +34,31 @@ namespace RBLclass.Core
         /// explorer. Touches COM - call on the Outlook UI thread.
         /// </summary>
         void NavigateTo(string storeId, string entryId, bool newWindow);
+
+        /// <summary>
+        /// The mail items currently selected in the active explorer (non-mail
+        /// items - meetings, reports - are skipped). Empty if no explorer.
+        /// </summary>
+        IReadOnlyList<MailItemRef> GetSelectedItems();
+
+        /// <summary>
+        /// Place a copy of <paramref name="item"/> into <paramref name="destination"/>
+        /// (Outlook Copy-then-Move; the original is untouched) and return a
+        /// reference to the filed copy, or null on failure. Honour the rule that
+        /// Move invalidates the moved reference.
+        /// </summary>
+        MailItemRef CopyItemToFolder(MailItemRef item, FolderNode destination);
+
+        /// <summary>Delete a mail item (used to remove originals when not keeping a copy).</summary>
+        void DeleteItem(MailItemRef item);
+
+        /// <summary>Strip all attachments from a mail item and save it.</summary>
+        void RemoveAttachments(MailItemRef item);
+
+        /// <summary>
+        /// Create a sub-folder under <paramref name="parent"/> and return the new
+        /// node, or null on failure. Touches COM - call on the Outlook UI thread.
+        /// </summary>
+        FolderNode CreateSubfolder(FolderNode parent, string name);
     }
 }

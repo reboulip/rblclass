@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using RBLclass.Core;
+using Serilog;
 // Aliased as OutlookOM (not "Outlook") because this project's own namespace is
 // RBLclass.Outlook, which would shadow a plain "Outlook" alias.
 using OutlookOM = Microsoft.Office.Interop.Outlook;
@@ -138,6 +139,199 @@ namespace RBLclass.Outlook.Adapter
                     using (var explorer = new ComRef<OutlookOM.Explorer>(rawExplorer))
                     {
                         explorer.Value.CurrentFolder = folder.Value;
+                    }
+                }
+            }
+        }
+
+        public IReadOnlyList<MailItemRef> GetSelectedItems()
+        {
+            var list = new List<MailItemRef>();
+
+            OutlookOM.Explorer rawExplorer;
+            try { rawExplorer = _app.ActiveExplorer(); }
+            catch { rawExplorer = null; }
+            if (rawExplorer == null) return list;
+
+            using (var explorer = new ComRef<OutlookOM.Explorer>(rawExplorer))
+            {
+                // Read the selection first (before touching CurrentFolder).
+                OutlookOM.Selection rawSelection;
+                try { rawSelection = explorer.Value.Selection; }
+                catch { return list; }
+
+                using (var selection = new ComRef<OutlookOM.Selection>(rawSelection))
+                {
+                    int count = 0;
+                    try { count = selection.Value.Count; } catch { }
+
+                    for (int i = 1; i <= count; i++)
+                    {
+                        object raw;
+                        try { raw = selection.Value[i]; }
+                        catch { continue; }
+
+                        using (var comItem = new ComRef<object>(raw))
+                        {
+                            // Selection can hold MeetingItem/ReportItem/... - skip non-mail.
+                            var mail = comItem.Value as OutlookOM.MailItem;
+                            if (mail == null) continue;
+
+                            string entryId = Safe(() => mail.EntryID, null);
+                            if (entryId == null) continue;
+
+                            string storeId = GetItemStoreId(mail);
+                            if (storeId == null) continue;
+
+                            list.Add(new MailItemRef(storeId, entryId,
+                                                     Safe(() => mail.Subject, string.Empty)));
+                        }
+                    }
+
+                    Log.Information(
+                        "GetSelectedItems: Selection.Count={Count}, mail items returned={Returned}.",
+                        count, list.Count);
+                }
+            }
+
+            return list;
+        }
+
+        public FolderNode CreateSubfolder(FolderNode parent, string name)
+        {
+            if (parent == null || string.IsNullOrWhiteSpace(name)) return null;
+
+            using (var session = new ComRef<OutlookOM.NameSpace>(_app.Session))
+            {
+                OutlookOM.Folder rawParent;
+                try { rawParent = (OutlookOM.Folder)session.Value.GetFolderFromID(
+                    parent.EntryId, parent.StoreId); }
+                catch { return null; }
+
+                using (var parentFolder = new ComRef<OutlookOM.Folder>(rawParent))
+                using (var folders = new ComRef<OutlookOM.Folders>(parentFolder.Value.Folders))
+                {
+                    OutlookOM.Folder rawNew;
+                    try { rawNew = (OutlookOM.Folder)folders.Value.Add(name, Type.Missing); }
+                    catch { return null; }
+
+                    using (var newFolder = new ComRef<OutlookOM.Folder>(rawNew))
+                    {
+                        string entryId = Safe(() => newFolder.Value.EntryID, null);
+                        if (entryId == null) return null;
+                        string fullPath = parent.FullPath + FolderNode.PathSeparator + name;
+                        return new FolderNode(parent.StoreId, entryId, parent.EntryId,
+                                              name, fullPath, isLeaf: true);
+                    }
+                }
+            }
+        }
+
+        /// <summary>Store id of the folder containing a mail item (via its parent).</summary>
+        private static string GetItemStoreId(OutlookOM.MailItem mail)
+        {
+            ComRef<OutlookOM.Folder> parent = null;
+            try
+            {
+                parent = new ComRef<OutlookOM.Folder>((OutlookOM.Folder)mail.Parent);
+                return Safe(() => parent.Value.StoreID, null);
+            }
+            catch { return null; }
+            finally { parent?.Dispose(); }
+        }
+
+        public MailItemRef CopyItemToFolder(MailItemRef item, FolderNode destination)
+        {
+            if (item == null || destination == null) return null;
+
+            using (var session = new ComRef<OutlookOM.NameSpace>(_app.Session))
+            {
+                object rawItem;
+                try { rawItem = session.Value.GetItemFromID(item.EntryId, item.StoreId); }
+                catch { return null; } // item no longer resolves - tolerate the miss
+
+                using (var comItem = new ComRef<object>(rawItem))
+                {
+                    var mail = comItem.Value as OutlookOM.MailItem;
+                    if (mail == null) return null;
+
+                    OutlookOM.Folder rawDest;
+                    try { rawDest = (OutlookOM.Folder)session.Value.GetFolderFromID(
+                        destination.EntryId, destination.StoreId); }
+                    catch { return null; }
+
+                    using (var destFolder = new ComRef<OutlookOM.Folder>(rawDest))
+                    using (var comCopy = new ComRef<object>(mail.Copy()))
+                    {
+                        var copy = comCopy.Value as OutlookOM.MailItem;
+                        if (copy == null) return null;
+
+                        // Move returns the moved item; the copy reference is now
+                        // invalid (CLAUDE.md). Read the moved item's id for the
+                        // returned ref, then release it.
+                        using (var comMoved = new ComRef<object>(copy.Move(destFolder.Value)))
+                        {
+                            var moved = comMoved.Value as OutlookOM.MailItem;
+                            if (moved == null) return null;
+                            string movedEntryId = Safe(() => moved.EntryID, null);
+                            if (movedEntryId == null) return null;
+                            return new MailItemRef(destination.StoreId, movedEntryId, item.Subject);
+                        }
+                    }
+                }
+            }
+        }
+
+        public void DeleteItem(MailItemRef item)
+        {
+            if (item == null) return;
+
+            using (var session = new ComRef<OutlookOM.NameSpace>(_app.Session))
+            {
+                object rawItem;
+                try { rawItem = session.Value.GetItemFromID(item.EntryId, item.StoreId); }
+                catch { return; }
+
+                using (var comItem = new ComRef<object>(rawItem))
+                {
+                    var mail = comItem.Value as OutlookOM.MailItem;
+                    if (mail != null)
+                    {
+                        try { mail.Delete(); } catch { }
+                    }
+                }
+            }
+        }
+
+        public void RemoveAttachments(MailItemRef item)
+        {
+            if (item == null) return;
+
+            using (var session = new ComRef<OutlookOM.NameSpace>(_app.Session))
+            {
+                object rawItem;
+                try { rawItem = session.Value.GetItemFromID(item.EntryId, item.StoreId); }
+                catch { return; }
+
+                using (var comItem = new ComRef<object>(rawItem))
+                {
+                    var mail = comItem.Value as OutlookOM.MailItem;
+                    if (mail == null) return;
+
+                    using (var attachments = new ComRef<OutlookOM.Attachments>(mail.Attachments))
+                    {
+                        int count = attachments.Value.Count;
+                        bool removedAny = false;
+                        // Remove from the end so indexes don't shift underneath us.
+                        for (int i = count; i >= 1; i--)
+                        {
+                            try { attachments.Value.Remove(i); removedAny = true; }
+                            catch { }
+                        }
+                        if (removedAny)
+                        {
+                            try { mail.Save(); } catch { }
+                        }
                     }
                 }
             }

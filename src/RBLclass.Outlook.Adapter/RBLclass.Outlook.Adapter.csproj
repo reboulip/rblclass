@@ -23,6 +23,13 @@
   </ItemGroup>
 
   <ItemGroup>
+    <!-- Serilog for observability of the otherwise-opaque COM layer. Pinned to
+         2.x to match the AddIn (a COM host has no binding redirects; see
+         CLAUDE.md). The AddIn configures the sink; this project just logs. -->
+    <PackageReference Include="Serilog" Version="2.12.0" />
+  </ItemGroup>
+
+  <ItemGroup>
     <!-- Canonical Office PIAs from the GAC (never hand-rolled [ComImport];
          see CLAUDE.md "COM interop interface declarations"). <Private>false</Private>
          keeps them out of the output - they are resolved from the GAC at

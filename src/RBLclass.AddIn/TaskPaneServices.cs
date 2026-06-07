@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using RBLclass.Core;
 
 namespace RBLclass.AddIn
@@ -18,10 +19,28 @@ namespace RBLclass.AddIn
         /// <summary>Settings store (task-pane toggles persist here).</summary>
         public static ISettingsStore Settings;
 
+        /// <summary>Classify (file) selected mail into folders.</summary>
+        public static IClassifier Classifier;
+
+        /// <summary>Read the current Outlook explorer mail selection (UI thread).</summary>
+        public static Func<IReadOnlyList<MailItemRef>> GetSelection;
+
+        /// <summary>
+        /// Create a sub-folder under a parent and re-index that store; returns
+        /// the new node (or null). Args: parent folder, new name. UI thread.
+        /// </summary>
+        public static Func<FolderNode, string, FolderNode> CreateSubfolder;
+
         /// <summary>
         /// Navigate Outlook to a folder. Args: target folder, open-in-new-window.
         /// Runs on the Outlook UI thread (invoked from the pane's WPF handlers).
         /// </summary>
         public static Action<FolderNode, bool> Navigate;
+
+        /// <summary>
+        /// The live pane host control (set by its ctor), so ribbon callbacks can
+        /// switch the pane between Open-folder and Classify modes.
+        /// </summary>
+        public static RblClassTaskPaneHost Host;
     }
 }

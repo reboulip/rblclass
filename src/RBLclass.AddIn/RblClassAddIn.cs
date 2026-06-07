@@ -43,6 +43,7 @@ namespace RBLclass.AddIn
         private IMailStore _mailStore;
         private IFolderTree _folderTree;
         private IFolderSearch _folderSearch;
+        private IClassifier _classifier;
         private ISettingsStore _settingsStore;
         private IndexResult _lastIndexResult;
 
@@ -54,6 +55,10 @@ namespace RBLclass.AddIn
         // Custom Task Pane (Office gives us the factory via ICustomTaskPaneConsumer).
         private Office.ICTPFactory _ctpFactory;
         private Office.CustomTaskPane _taskPane;
+
+        // Kept in a field so the SelectionChange handler keeps firing (GC would
+        // otherwise collect the event source - CLAUDE.md Outlook-events rule).
+        private OutlookOM.Explorer _activeExplorer;
 
         private string _dbPath;
         private string _logDirectory;
@@ -128,10 +133,29 @@ namespace RBLclass.AddIn
                 _settingsStore = new SqliteSettingsStore(connectionString);
                 _settingsStore.EnsureSchema();
 
+                _classifier = new ClassifierService(_mailStore);
+
                 // Publish services for the Custom Task Pane host control (which
                 // Office instantiates via COM and so can't be constructor-injected).
                 TaskPaneServices.Search = _folderSearch;
                 TaskPaneServices.Settings = _settingsStore;
+                TaskPaneServices.Classifier = _classifier;
+                TaskPaneServices.GetSelection = () => _mailStore.GetSelectedItems();
+                TaskPaneServices.CreateSubfolder = (parent, name) =>
+                {
+                    try
+                    {
+                        var created = _mailStore.CreateSubfolder(parent, name);
+                        if (created != null)
+                            _folderTree.ReindexStore(parent.StoreId); // targeted re-index
+                        return created;
+                    }
+                    catch (Exception ex)
+                    {
+                        Log.Error(ex, "CreateSubfolder failed under {Path}", parent.FullPath);
+                        return null;
+                    }
+                };
                 TaskPaneServices.Navigate = (folder, newWindow) =>
                 {
                     try
@@ -143,6 +167,15 @@ namespace RBLclass.AddIn
                         Log.Error(ex, "NavigateTo failed for {Path}", folder.FullPath);
                     }
                 };
+
+                // Keep the classify pane's selection count live.
+                try
+                {
+                    _activeExplorer = _outlookApp.ActiveExplorer();
+                    if (_activeExplorer != null)
+                        _activeExplorer.SelectionChange += OnExplorerSelectionChange;
+                }
+                catch (Exception ex) { TryLog("SelectionChange subscribe failed", ex); }
 
                 // Fast path: load the persisted index (SQLite only, no COM walk).
                 _lastIndexResult = _folderTree.Load();
@@ -172,6 +205,13 @@ namespace RBLclass.AddIn
                     _firstRunWalkTimer.Stop();
                     _firstRunWalkTimer.Dispose();
                     _firstRunWalkTimer = null;
+                }
+
+                if (_activeExplorer != null)
+                {
+                    try { _activeExplorer.SelectionChange -= OnExplorerSelectionChange; } catch { }
+                    try { Marshal.ReleaseComObject(_activeExplorer); } catch { }
+                    _activeExplorer = null;
                 }
 
                 if (_taskPane != null)
@@ -214,22 +254,93 @@ namespace RBLclass.AddIn
             }
         }
 
-        /// <summary>
-        /// Ribbon "Open folder": show/hide the RBLclass Custom Task Pane,
-        /// creating it on first use.
-        /// </summary>
+        /// <summary>Ribbon "Open folder": show the pane in Open-folder mode (toggle off if already there).</summary>
         public void OnOpenFolderClick(Office.IRibbonControl control)
+        {
+            try { ShowPane(PaneMode.OpenFolder); }
+            catch (Exception ex) { ShowError("Open folder failed", ex); }
+        }
+
+        /// <summary>Ribbon "Classify": show the pane in Classify mode (toggle off if already there).</summary>
+        public void OnClassifyClick(Office.IRibbonControl control)
+        {
+            try { ShowPane(PaneMode.Classify); }
+            catch (Exception ex) { ShowError("Classify failed", ex); }
+        }
+
+        /// <summary>
+        /// Ribbon "Remove attachments": strip attachments from the current mail
+        /// selection (legacy 5e standalone entry point), with confirmation.
+        /// </summary>
+        public void OnRemoveAttachmentsClick(Office.IRibbonControl control)
         {
             try
             {
-                EnsureTaskPane();
-                if (_taskPane != null)
-                    _taskPane.Visible = !_taskPane.Visible;
+                var items = _mailStore.GetSelectedItems();
+                if (items.Count == 0)
+                {
+                    MessageBox.Show("Select one or more mails first.", "RBLclass",
+                                    MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    return;
+                }
+
+                var confirm = MessageBox.Show(
+                    "Remove all attachments from " + items.Count + " mail(s)? This cannot be undone.",
+                    "RBLclass - Remove attachments",
+                    MessageBoxButtons.YesNo, MessageBoxIcon.Warning);
+                if (confirm != DialogResult.Yes) return;
+
+                int done = 0;
+                foreach (var item in items)
+                {
+                    try { _mailStore.RemoveAttachments(item); done++; }
+                    catch (Exception ex) { Log.Error(ex, "RemoveAttachments failed for an item."); }
+                }
+
+                Log.Information("Removed attachments from {Count} mail(s).", done);
+                MessageBox.Show("Removed attachments from " + done + " mail(s).", "RBLclass",
+                                MessageBoxButtons.OK, MessageBoxIcon.Information);
             }
             catch (Exception ex)
             {
-                ShowError("Open folder failed", ex);
+                ShowError("Remove attachments failed", ex);
             }
+        }
+
+        /// <summary>Keep the classify pane's "N mails selected" label in sync with Outlook.</summary>
+        private void OnExplorerSelectionChange()
+        {
+            try
+            {
+                int count = _mailStore.GetSelectedItems().Count;
+                TaskPaneServices.Host?.SetSelectionCount(count);
+            }
+            catch (Exception ex)
+            {
+                TryLog("SelectionChange handler failed", ex);
+            }
+        }
+
+        private void ShowPane(PaneMode mode)
+        {
+            EnsureTaskPane();
+            if (_taskPane == null) return;
+
+            var host = TaskPaneServices.Host;
+
+            // Re-clicking the active mode's button hides the pane.
+            if (_taskPane.Visible && host != null && host.CurrentMode == mode)
+            {
+                _taskPane.Visible = false;
+                return;
+            }
+
+            if (host != null)
+            {
+                if (mode == PaneMode.Classify) host.ShowClassify();
+                else host.ShowOpenFolder();
+            }
+            _taskPane.Visible = true;
         }
 
         private void EnsureTaskPane()
