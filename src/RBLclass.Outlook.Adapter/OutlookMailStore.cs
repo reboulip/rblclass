@@ -564,6 +564,43 @@ namespace RBLclass.Outlook.Adapter
             return new RecipientAddress(name, address, exchangeResolved);
         }
 
+        public MailItemRef ResolveMailItem(object item)
+        {
+            var mail = item as OutlookOM.MailItem;
+            if (mail == null) return null;
+
+            string entryId = Safe(() => mail.EntryID, null);
+            if (entryId == null) return null;
+
+            if (!TryGetFolderInfo(mail, out string storeId, out _)) return null;
+
+            return new MailItemRef(storeId, entryId, Safe(() => mail.Subject, string.Empty));
+        }
+
+        public FolderNode GetInboxFolder()
+        {
+            using (var session = new ComRef<OutlookOM.NameSpace>(_app.Session))
+            {
+                ComRef<OutlookOM.Folder> inbox = null;
+                try
+                {
+                    inbox = new ComRef<OutlookOM.Folder>(
+                        (OutlookOM.Folder)session.Value.GetDefaultFolder(OutlookOM.OlDefaultFolders.olFolderInbox));
+
+                    string storeId = Safe(() => inbox.Value.StoreID, null);
+                    string entryId = Safe(() => inbox.Value.EntryID, null);
+                    if (storeId == null || entryId == null) return null;
+
+                    string name = Safe(() => inbox.Value.Name, "Inbox");
+                    int subCount = SafeSubfolderCount(inbox.Value);
+                    return new FolderNode(storeId, entryId, parentEntryId: null,
+                                          name: name, fullPath: name, isLeaf: subCount == 0);
+                }
+                catch { return null; } // no default store / folder unavailable - tolerate
+                finally { inbox?.Dispose(); }
+            }
+        }
+
         /// <summary>
         /// Enumerate the immediate sub-folders of <paramref name="parent"/> and
         /// index each (recursing into its subtree). Opens <c>parent.Folders</c>

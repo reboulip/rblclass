@@ -91,5 +91,24 @@ namespace RBLclass.Core
         /// olMail-only too). Touches COM - call on the Outlook UI thread.
         /// </summary>
         SendGuardInfo InspectForSend(object item);
+
+        /// <summary>
+        /// Build a stable <see cref="MailItemRef"/> for a live item Outlook just
+        /// handed us (e.g. the Sent Items <c>Items.ItemAdd</c> event, legacy
+        /// 6c). <paramref name="item"/> is boxed <c>object</c> to keep this
+        /// interface Outlook-free, mirroring <see cref="InspectForSend"/>;
+        /// returns null for anything that isn't a <c>MailItem</c>. Touches COM -
+        /// call on the Outlook UI thread.
+        /// </summary>
+        MailItemRef ResolveMailItem(object item);
+
+        /// <summary>
+        /// Resolve the default store's Inbox as a filing destination (legacy 6c
+        /// "move to Inbox"), or null when unavailable. Resolved by
+        /// <c>OlDefaultFolders.olFolderInbox</c> - locale-independent, unlike
+        /// matching on the display name. Touches COM - call on the Outlook UI
+        /// thread.
+        /// </summary>
+        FolderNode GetInboxFolder();
     }
 }

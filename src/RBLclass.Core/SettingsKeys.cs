@@ -42,5 +42,8 @@ namespace RBLclass.Core
         /// the legacy guard had none either.
         /// </summary>
         public const string ForgottenAttachmentKeywords = "ForgottenAttachmentKeywords";
+
+        /// <summary>Show the sent-item triage prompt (legacy settingsUFsent).</summary>
+        public const string SentItemTriagePrompt = "SentItemTriagePrompt";
     }
 }

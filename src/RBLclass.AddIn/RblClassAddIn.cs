@@ -7,6 +7,8 @@ using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Windows.Forms;
 using Extensibility;
+using RBLclass.AddIn.ViewModels;
+using RBLclass.AddIn.Views;
 using RBLclass.Core;
 using RBLclass.Core.Persistence;
 using RBLclass.Outlook.Adapter;
@@ -63,6 +65,19 @@ namespace RBLclass.AddIn
         // Kept in a field so the SelectionChange handler keeps firing (GC would
         // otherwise collect the event source - CLAUDE.md Outlook-events rule).
         private OutlookOM.Explorer _activeExplorer;
+
+        // Sent-item triage (legacy 6c): kept alive for the same reason as
+        // _activeExplorer - both the folder and its Items collection, so the
+        // ItemAdd subscription keeps firing.
+        private OutlookOM.Folder _sentItemsFolder;
+        private OutlookOM.Items _sentItems;
+
+        // Re-entrancy guard for the handler above (legacy "Set colSentItems =
+        // Nothing" detach/reattach dance, replaced per the roadmap with a
+        // plain flag): classifying or moving the triaged item makes a copy
+        // transit Sent Items, which would otherwise re-trigger the prompt on
+        // that transient copy.
+        private bool _suppressSentItemTriage;
 
         private string _dbPath;
         private string _logDirectory;
@@ -223,6 +238,23 @@ namespace RBLclass.AddIn
                 try { _outlookApp.ItemSend += Application_ItemSend; }
                 catch (Exception ex) { TryLog("ItemSend subscribe failed", ex); }
 
+                // Sent-item triage (legacy 6c). Folder + Items kept in fields
+                // for the add-in's lifetime, mirroring _activeExplorer - GC
+                // would otherwise silently unsubscribe (CLAUDE.md).
+                try
+                {
+                    using (var session = new ComRef<OutlookOM.NameSpace>(_outlookApp.Session))
+                        _sentItemsFolder = (OutlookOM.Folder)session.Value.GetDefaultFolder(
+                            OutlookOM.OlDefaultFolders.olFolderSentMail);
+
+                    if (_sentItemsFolder != null)
+                    {
+                        _sentItems = _sentItemsFolder.Items;
+                        _sentItems.ItemAdd += SentItems_ItemAdd;
+                    }
+                }
+                catch (Exception ex) { TryLog("Sent Items ItemAdd subscribe failed", ex); }
+
                 // Fast path: load the persisted index (SQLite only, no COM walk).
                 _lastIndexResult = _folderTree.Load();
                 Log.Information(
@@ -263,6 +295,18 @@ namespace RBLclass.AddIn
                 if (_outlookApp != null)
                 {
                     try { _outlookApp.ItemSend -= Application_ItemSend; } catch { }
+                }
+
+                if (_sentItems != null)
+                {
+                    try { _sentItems.ItemAdd -= SentItems_ItemAdd; } catch { }
+                    try { Marshal.ReleaseComObject(_sentItems); } catch { }
+                    _sentItems = null;
+                }
+                if (_sentItemsFolder != null)
+                {
+                    try { Marshal.ReleaseComObject(_sentItemsFolder); } catch { }
+                    _sentItemsFolder = null;
                 }
 
                 if (_taskPane != null)
@@ -414,6 +458,103 @@ namespace RBLclass.AddIn
             {
                 TryLog("ItemSend guard failed", ex);
             }
+        }
+
+        /// <summary>
+        /// Sent-item triage (legacy 6c): on a fresh item in Sent Items, offer
+        /// Class / Delete / Move-to-Inbox / Leave, optionally widened to the
+        /// whole conversation. Suppressed while we're acting on a previous
+        /// choice (a classify/move makes a copy transit Sent Items, which
+        /// would otherwise re-trigger this handler on the transient copy -
+        /// the roadmap's replacement for the legacy detach/reattach dance).
+        /// </summary>
+        private void SentItems_ItemAdd(object item)
+        {
+            try
+            {
+                if (_suppressSentItemTriage) return;
+                if (!_settingsStore.GetBool(SettingsKeys.SentItemTriagePrompt, true)) return;
+
+                var reference = _mailStore.ResolveMailItem(item);
+                if (reference == null) return; // not a mail item (meeting response, report...)
+
+                var triageVm = new SentItemTriageViewModel(reference.Subject, _settingsStore);
+                new SentItemTriageWindow { DataContext = triageVm }.ShowDialog();
+
+                var action = triageVm.SelectedAction;
+                if (action == null || action == SentItemTriageAction.Leave) return;
+
+                _suppressSentItemTriage = true;
+                try { ApplySentItemTriage(action.Value, reference, triageVm.WholeConversation); }
+                finally { _suppressSentItemTriage = false; }
+            }
+            catch (Exception ex)
+            {
+                TryLog("Sent-item triage failed", ex);
+            }
+        }
+
+        private void ApplySentItemTriage(SentItemTriageAction action, MailItemRef item, bool widenConversation)
+        {
+            switch (action)
+            {
+                case SentItemTriageAction.Delete:
+                    foreach (var i in _classifier.Preflight(new[] { item }, widenConversation).Items)
+                        _mailStore.DeleteItem(i);
+                    break;
+
+                case SentItemTriageAction.MoveToInbox:
+                    var inbox = _mailStore.GetInboxFolder();
+                    if (inbox == null)
+                    {
+                        Log.Warning("Sent-item triage: could not resolve the Inbox folder.");
+                        return;
+                    }
+                    RunTriageClassify(item, widenConversation, new[] { inbox },
+                                      keepCopy: false, removeAttachments: false);
+                    break;
+
+                case SentItemTriageAction.Class:
+                    var destination = ShowFolderPicker();
+                    if (destination == null) return;
+                    RunTriageClassify(item, widenConversation, new[] { destination },
+                                      keepCopy: _settingsStore.GetBool(SettingsKeys.KeepCopy, false),
+                                      removeAttachments: _settingsStore.GetBool(SettingsKeys.RemoveAttachments, false));
+                    break;
+            }
+        }
+
+        /// <summary>
+        /// Preflight + (optional) task-completion confirmation + classify,
+        /// shared by the triage prompt's "Class" and "Move to Inbox" actions -
+        /// the same dance <see cref="ClassifyViewModel"/> runs for the pane.
+        /// </summary>
+        private void RunTriageClassify(MailItemRef item, bool widenConversation,
+                                        IReadOnlyList<FolderNode> destinations,
+                                        bool keepCopy, bool removeAttachments)
+        {
+            var preflight = _classifier.Preflight(new[] { item }, widenConversation);
+
+            bool markTasksComplete = false;
+            if (preflight.FlaggedIncomplete.Count > 0 && TaskPaneServices.ConfirmMarkTasksComplete != null)
+            {
+                var answer = TaskPaneServices.ConfirmMarkTasksComplete(preflight.FlaggedIncomplete.Count);
+                if (answer == null) return; // cancelled
+                markTasksComplete = answer.Value;
+            }
+
+            var result = _classifier.Classify(
+                new ClassifyRequest(preflight.Items, destinations, keepCopy, removeAttachments, markTasksComplete));
+            Log.Information(
+                "Sent-item triage classified {Processed} mail(s) to {Destinations} folder(s) ({Errors} failed).",
+                result.ItemsProcessed, destinations.Count, result.Errors);
+        }
+
+        /// <summary>Show the small modal folder-picker; null if the user cancelled.</summary>
+        private FolderNode ShowFolderPicker()
+        {
+            var window = new FolderPickerWindow { DataContext = new FolderPickerViewModel(_folderSearch) };
+            return window.ShowDialog() == true ? window.ChosenFolder : null;
         }
 
         /// <summary>Split a semicolon-separated settings value into trimmed, non-empty entries.</summary>

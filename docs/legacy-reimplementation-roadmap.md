@@ -352,6 +352,29 @@ sending to an outside address warns; both toggleable.
   a **whole-conversation** option, reusing `IClassifier` and the
   conversation-widening from Step 6.
 
+**Implementation note (2026-06-07):** the prompt is a small modal
+`Window` with hand-rolled MVVM (`SentItemTriageViewModel` /
+`SentItemTriageWindow`) — the first modal dialog in the add-in; every
+prior prompt was a `MessageBox`, which can't express four custom actions
+plus a toggle. "Class…" opens a second small modal, a dedicated
+folder-picker (`FolderPickerViewModel` / `FolderPickerWindow`) over
+`IFolderSearch`, deliberately **not** the existing Classify pane —
+that pane is built around the live Outlook selection
+(`ClassifyViewModel`'s `_getSelection`), and driving it with a fixed,
+externally-supplied item list would mean teaching a shipped, working
+flow a second selection model for one caller. The orchestration itself
+(widen → preflight → optional task-completion confirm → classify/delete/
+move) lives directly in the AddIn shell, mirroring `ClassifyViewModel
+.DoClassify` — there is no new Core decision logic to test here, only
+two small `IMailStore` extraction methods (`ResolveMailItem`,
+`GetInboxFolder`) that, like `InspectForSend`, turn a live COM item into
+an Outlook-free DTO. "Move to Inbox" is `Classify` with `keepCopy:
+false` to a resolved `olFolderInbox` destination — a real move, not a
+new code path. The legacy `Set colSentItems = Nothing` / re-init dance
+is replaced by a plain `_suppressSentItemTriage` flag set around the
+dispatch (a classify/move makes a copy transit Sent Items, which would
+otherwise re-trigger the prompt on the transient copy).
+
 **Demo:** send a mail → triage prompt → classify/delete/leave works,
 no event re-entrancy.
 
