@@ -38,6 +38,16 @@ namespace RBLclass.AddIn
         public static Action<FolderNode, bool> Navigate;
 
         /// <summary>
+        /// Ask the user whether to mark flagged-incomplete items complete in
+        /// the destination before filing (legacy 5b step 3 task-completion
+        /// guard). Arg: how many items qualify. Returns true = mark them
+        /// complete, false = leave them as-is, null = cancel the classify
+        /// entirely. A WinForms MessageBox (Yes/No/Cancel) under the hood -
+        /// kept out of the WPF-agnostic view model as a plain delegate.
+        /// </summary>
+        public static Func<int, bool?> ConfirmMarkTasksComplete;
+
+        /// <summary>
         /// The live pane host control (set by its ctor), so ribbon callbacks can
         /// switch the pane between Open-folder and Classify modes.
         /// </summary>

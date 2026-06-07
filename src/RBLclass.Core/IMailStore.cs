@@ -52,6 +52,26 @@ namespace RBLclass.Core
         /// <summary>Delete a mail item (used to remove originals when not keeping a copy).</summary>
         void DeleteItem(MailItemRef item);
 
+        /// <summary>
+        /// Items sharing <paramref name="item"/>'s conversation, restricted to
+        /// the default store's Inbox and Sent Items and excluding
+        /// <paramref name="item"/> itself (legacy "conversation widening",
+        /// 5b step 2). Returns an empty list when the item has no conversation
+        /// or none of its siblings live in those two folders.
+        /// </summary>
+        IReadOnlyList<MailItemRef> GetConversationSiblings(MailItemRef item);
+
+        /// <summary>
+        /// True when the item carries a follow-up flag that has not been marked
+        /// complete (legacy "task-completion guard" check, 5b step 3 - done via
+        /// <c>FlagStatus</c>/<c>IsMarkedAsTask</c>, never a locale-formatted date
+        /// sentinel).
+        /// </summary>
+        bool IsFlaggedIncomplete(MailItemRef item);
+
+        /// <summary>Mark an item's follow-up flag complete (<c>OlFlagStatus.olFlagComplete</c>) and save it.</summary>
+        void MarkTaskComplete(MailItemRef item);
+
         /// <summary>Strip all attachments from a mail item and save it.</summary>
         void RemoveAttachments(MailItemRef item);
 

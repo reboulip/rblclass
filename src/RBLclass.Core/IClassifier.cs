@@ -1,3 +1,5 @@
+using System.Collections.Generic;
+
 namespace RBLclass.Core
 {
     /// <summary>
@@ -7,6 +9,17 @@ namespace RBLclass.Core
     /// </summary>
     public interface IClassifier
     {
+        /// <summary>
+        /// Compute the final item set and surface anything the caller should
+        /// confirm before filing (legacy 5b steps 2-3): optionally widens
+        /// <paramref name="items"/> with conversation siblings, dedupes by
+        /// (StoreId, EntryId), and reports which of the resulting items are
+        /// flagged-incomplete tasks. Call this before building a
+        /// <see cref="ClassifyRequest"/> so the UI can prompt when
+        /// <see cref="ClassifyPreflight.FlaggedIncomplete"/> is non-empty.
+        /// </summary>
+        ClassifyPreflight Preflight(IReadOnlyList<MailItemRef> items, bool widenConversation);
+
         ClassifyResult Classify(ClassifyRequest request);
     }
 }

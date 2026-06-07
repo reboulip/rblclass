@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using FluentAssertions;
 using NSubstitute;
 using RBLclass.Core;
@@ -97,6 +98,94 @@ namespace RBLclass.Core.Tests
                 keepCopy: false, removeAttachments: false));
 
             store.DidNotReceive().RemoveAttachments(Arg.Any<MailItemRef>());
+        }
+
+        [Fact]
+        public void Preflight_without_widening_just_dedupes_the_selection()
+        {
+            var store = Substitute.For<IMailStore>();
+            var sut = new ClassifierService(store);
+
+            var preflight = sut.Preflight(new[] { Item("e1"), Item("e1"), Item("e2") }, widenConversation: false);
+
+            preflight.Items.Select(i => i.EntryId).Should().BeEquivalentTo(new[] { "e1", "e2" });
+            store.DidNotReceive().GetConversationSiblings(Arg.Any<MailItemRef>());
+        }
+
+        [Fact]
+        public void Preflight_with_widening_adds_conversation_siblings_deduped()
+        {
+            var store = Substitute.For<IMailStore>();
+            var e1 = Item("e1");
+            var e2 = Item("e2");
+            var sibling = new MailItemRef("s1", "sib", "reply");
+            // e1's siblings include e2 (already selected) and a genuinely new one;
+            // e2 reports the same new sibling back (e.g. both ends of a thread).
+            store.GetConversationSiblings(e1).Returns(new[] { e2, sibling });
+            store.GetConversationSiblings(e2).Returns(new[] { sibling });
+            var sut = new ClassifierService(store);
+
+            var preflight = sut.Preflight(new[] { e1, e2 }, widenConversation: true);
+
+            preflight.Items.Select(i => i.EntryId).Should().BeEquivalentTo(new[] { "e1", "e2", "sib" });
+            preflight.Items.Should().HaveCount(3); // no duplicates despite the cross-reported sibling
+        }
+
+        [Fact]
+        public void Preflight_reports_the_flagged_incomplete_subset()
+        {
+            var store = Substitute.For<IMailStore>();
+            var flagged = Item("e1");
+            var done = Item("e2");
+            var unflagged = Item("e3");
+            store.IsFlaggedIncomplete(flagged).Returns(true);
+            store.IsFlaggedIncomplete(done).Returns(false);
+            store.IsFlaggedIncomplete(unflagged).Returns(false);
+            var sut = new ClassifierService(store);
+
+            var preflight = sut.Preflight(new[] { flagged, done, unflagged }, widenConversation: false);
+
+            preflight.FlaggedIncomplete.Should().BeEquivalentTo(new[] { flagged });
+        }
+
+        [Fact]
+        public void Classify_marks_the_filed_copy_complete_for_flagged_items_only()
+        {
+            var store = Substitute.For<IMailStore>();
+            var flagged = Item("e1");
+            var plain = Item("e2");
+            var flaggedCopy = new MailItemRef("s1", "copy-flagged", "e1");
+            var plainCopy = new MailItemRef("s1", "copy-plain", "e2");
+            store.IsFlaggedIncomplete(flagged).Returns(true);
+            store.IsFlaggedIncomplete(plain).Returns(false);
+            store.CopyItemToFolder(flagged, D1).Returns(flaggedCopy);
+            store.CopyItemToFolder(plain, D1).Returns(plainCopy);
+            var sut = new ClassifierService(store);
+
+            sut.Classify(new ClassifyRequest(
+                new[] { flagged, plain }, new[] { D1 },
+                keepCopy: false, removeAttachments: false, markTasksComplete: true));
+
+            store.Received(1).MarkTaskComplete(flaggedCopy);
+            store.DidNotReceive().MarkTaskComplete(plainCopy);
+            store.DidNotReceive().MarkTaskComplete(flagged); // never the original
+        }
+
+        [Fact]
+        public void Classify_marks_nothing_complete_when_not_requested()
+        {
+            var store = Substitute.For<IMailStore>();
+            var flagged = Item("e1");
+            var copy = new MailItemRef("s1", "copy", "e1");
+            store.IsFlaggedIncomplete(flagged).Returns(true);
+            store.CopyItemToFolder(flagged, D1).Returns(copy);
+            var sut = new ClassifierService(store);
+
+            sut.Classify(new ClassifyRequest(
+                new[] { flagged }, new[] { D1 },
+                keepCopy: false, removeAttachments: false, markTasksComplete: false));
+
+            store.DidNotReceive().MarkTaskComplete(Arg.Any<MailItemRef>());
         }
 
         [Fact]

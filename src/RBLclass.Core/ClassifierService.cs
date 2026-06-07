@@ -1,4 +1,6 @@
 using System;
+using System.Collections.Generic;
+using System.Linq;
 
 namespace RBLclass.Core
 {
@@ -18,6 +20,17 @@ namespace RBLclass.Core
             _store = store ?? throw new ArgumentNullException(nameof(store));
         }
 
+        public ClassifyPreflight Preflight(IReadOnlyList<MailItemRef> items, bool widenConversation)
+        {
+            if (items == null) throw new ArgumentNullException(nameof(items));
+
+            var widened = widenConversation ? Widen(items) : Dedupe(items);
+
+            var flagged = widened.Where(i => SafeIsFlaggedIncomplete(i)).ToArray();
+
+            return new ClassifyPreflight(widened, flagged);
+        }
+
         public ClassifyResult Classify(ClassifyRequest request)
         {
             if (request == null) throw new ArgumentNullException(nameof(request));
@@ -32,16 +45,24 @@ namespace RBLclass.Core
             {
                 try
                 {
+                    bool markComplete = request.MarkTasksComplete && SafeIsFlaggedIncomplete(item);
+
                     foreach (var destination in request.Destinations)
                     {
                         var copy = _store.CopyItemToFolder(item, destination);
                         copies++;
 
-                        // Strip attachments from the FILED COPY only, never the
-                        // original - so "keep a copy" leaves the original intact
-                        // with its attachments.
-                        if (request.RemoveAttachments && copy != null)
-                            _store.RemoveAttachments(copy);
+                        // Strip attachments / mark the task complete on the
+                        // FILED COPY only, never the original - so "keep a
+                        // copy" leaves the original (and its flag/attachments)
+                        // untouched.
+                        if (copy != null)
+                        {
+                            if (request.RemoveAttachments)
+                                _store.RemoveAttachments(copy);
+                            if (markComplete)
+                                _store.MarkTaskComplete(copy);
+                        }
                     }
 
                     if (!request.KeepCopy)
@@ -60,6 +81,47 @@ namespace RBLclass.Core
             }
 
             return new ClassifyResult(processed, copies, deleted, errors);
+        }
+
+        /// <summary>
+        /// The original items plus every conversation sibling reported by the
+        /// store (legacy 5b step 2), deduped by (StoreId, EntryId) - the
+        /// originals win the slot when a sibling lookup also returns one of
+        /// them back.
+        /// </summary>
+        private IReadOnlyList<MailItemRef> Widen(IReadOnlyList<MailItemRef> items)
+        {
+            var seen = new HashSet<(string StoreId, string EntryId)>();
+            var result = new List<MailItemRef>();
+
+            void AddIfNew(MailItemRef candidate)
+            {
+                if (candidate != null && seen.Add((candidate.StoreId, candidate.EntryId)))
+                    result.Add(candidate);
+            }
+
+            foreach (var item in items) AddIfNew(item);
+            foreach (var item in items)
+                foreach (var sibling in _store.GetConversationSiblings(item) ?? Array.Empty<MailItemRef>())
+                    AddIfNew(sibling);
+
+            return result;
+        }
+
+        private static IReadOnlyList<MailItemRef> Dedupe(IReadOnlyList<MailItemRef> items)
+        {
+            var seen = new HashSet<(string StoreId, string EntryId)>();
+            var result = new List<MailItemRef>();
+            foreach (var item in items)
+                if (item != null && seen.Add((item.StoreId, item.EntryId)))
+                    result.Add(item);
+            return result;
+        }
+
+        private bool SafeIsFlaggedIncomplete(MailItemRef item)
+        {
+            try { return _store.IsFlaggedIncomplete(item); }
+            catch { return false; } // tolerate adapter misses; never block the batch
         }
     }
 }

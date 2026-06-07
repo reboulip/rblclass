@@ -21,5 +21,8 @@ namespace RBLclass.Core
 
         /// <summary>Strip attachments when classifying (legacy settingsRemoveAttachments).</summary>
         public const string RemoveAttachments = "RemoveAttachments";
+
+        /// <summary>Widen the classify set to conversation siblings in Inbox/Sent (legacy settingsWholeConversation).</summary>
+        public const string WidenConversation = "WidenConversation";
     }
 }

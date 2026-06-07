@@ -20,11 +20,13 @@ namespace RBLclass.AddIn.ViewModels
         private readonly Func<IReadOnlyList<MailItemRef>> _getSelection;
         private readonly Func<FolderNode, string, FolderNode> _createSubfolder;
         private readonly ISettingsStore _settings;
+        private readonly Func<int, bool?> _confirmMarkTasksComplete;
 
         private string _query = string.Empty;
         private bool _allResults;
         private bool _keepCopy;
         private bool _removeAttachments;
+        private bool _widenConversation;
         private string _selectionSummary = "No mail selected.";
         private string _status = string.Empty;
 
@@ -32,19 +34,22 @@ namespace RBLclass.AddIn.ViewModels
                                  IClassifier classifier,
                                  Func<IReadOnlyList<MailItemRef>> getSelection,
                                  Func<FolderNode, string, FolderNode> createSubfolder = null,
-                                 ISettingsStore settings = null)
+                                 ISettingsStore settings = null,
+                                 Func<int, bool?> confirmMarkTasksComplete = null)
         {
             _search = search ?? throw new ArgumentNullException(nameof(search));
             _classifier = classifier ?? throw new ArgumentNullException(nameof(classifier));
             _getSelection = getSelection;
             _createSubfolder = createSubfolder;
             _settings = settings;
+            _confirmMarkTasksComplete = confirmMarkTasksComplete;
 
             if (_settings != null)
             {
                 _allResults = _settings.GetBool(SettingsKeys.AllResults, false);
                 _keepCopy = _settings.GetBool(SettingsKeys.KeepCopy, false);
                 _removeAttachments = _settings.GetBool(SettingsKeys.RemoveAttachments, false);
+                _widenConversation = _settings.GetBool(SettingsKeys.WidenConversation, false);
             }
         }
 
@@ -80,6 +85,12 @@ namespace RBLclass.AddIn.ViewModels
         {
             get => _removeAttachments;
             set { if (SetProperty(ref _removeAttachments, value)) _settings?.SetBool(SettingsKeys.RemoveAttachments, value); }
+        }
+
+        public bool WidenConversation
+        {
+            get => _widenConversation;
+            set { if (SetProperty(ref _widenConversation, value)) _settings?.SetBool(SettingsKeys.WidenConversation, value); }
         }
 
         public string SelectionSummary
@@ -139,8 +150,22 @@ namespace RBLclass.AddIn.ViewModels
                 return;
             }
 
+            var preflight = _classifier.Preflight(items, _widenConversation);
+
+            bool markTasksComplete = false;
+            if (preflight.FlaggedIncomplete.Count > 0 && _confirmMarkTasksComplete != null)
+            {
+                var answer = _confirmMarkTasksComplete(preflight.FlaggedIncomplete.Count);
+                if (answer == null)
+                {
+                    Status = "Classify cancelled.";
+                    return;
+                }
+                markTasksComplete = answer.Value;
+            }
+
             var result = _classifier.Classify(
-                new ClassifyRequest(items, destinations, _keepCopy, _removeAttachments));
+                new ClassifyRequest(preflight.Items, destinations, _keepCopy, _removeAttachments, markTasksComplete));
 
             string verb = _keepCopy ? "Copied" : "Filed";
             Status = verb + " " + result.ItemsProcessed + " mail(s) to " +

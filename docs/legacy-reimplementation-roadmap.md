@@ -266,19 +266,16 @@ deleted or kept per toggle, attachments optionally stripped.
 
 ---
 
-## Step 5 — Quick Open popup & "last filed folder"
+## Step 5 — DROPPED: Quick Open popup & "last filed folder"
 
-**Goal:** legacy §5d.
+**Goal (legacy §5d):** after a classify, jump to the last filed folder
+via a small popup affordance.
 
-- After a classify, remember the last destination (in memory; optionally
-  persist last-N in SQLite for a "recent folders" affordance later).
-- Show a small modeless WPF affordance to **jump to the last filed
-  folder**. ⚠ DEVIATION (presentation): rather than the legacy
-  `GetDeviceCaps` P/Invoke top-right placement + `SelectionChange`
-  auto-hide hack, use a WPF toast/infobar inside the task pane or a
-  short-lived modeless window. No P/Invoke, DPI handled by WPF.
-
-**Demo:** classify → "Go to folder" appears → one click navigates there.
+**Status: dropped (2026-06-07).** A pane-local infobar version was built,
+tried live, and didn't land well. The user does not want this feature
+ported — it will be reconsidered, if at all, only as part of a deeper UI
+pass later (see Step 10), as something "more meaningful". Do not
+re-attempt this as specified here.
 
 ---
 
@@ -294,6 +291,12 @@ deleted or kept per toggle, attachments optionally stripped.
   filter on the conversation property, or Outlook's
   `MailItem.GetConversation`/`ConversationID` lookup. Document the DASL.
   Dedupe by `(StoreId, EntryId)`.
+  **Implementation note (2026-06-07):** built on `MailItem.GetConversation()`
+  → `Conversation.GetTable()`, not DASL/`Restrict` — Outlook indexes the
+  conversation table itself, so this is both more robust (no guessing
+  binary-MAPI-property DASL syntax) and faster (a small Outlook-side
+  result set vs. a full-folder scan). Rows are filtered to the default
+  Inbox/Sent EntryIDs and deduped by `(StoreId, EntryId)`.
 - **Task-completion guard:** detect task-flagged, not-completed items and
   offer to mark them complete in the destination.
   ⚠ DEVIATION (correctness): drop the `TaskCompletedDate = "01/01/4501"`

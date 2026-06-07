@@ -167,6 +167,21 @@ namespace RBLclass.AddIn
                         Log.Error(ex, "NavigateTo failed for {Path}", folder.FullPath);
                     }
                 };
+                TaskPaneServices.ConfirmMarkTasksComplete = count =>
+                {
+                    string noun = count == 1 ? "item is" : "items are";
+                    var answer = MessageBox.Show(
+                        count + " selected " + noun + " flagged as an incomplete task.\n\n" +
+                        "Mark them complete in the destination folder?",
+                        "RBLclass - Classify",
+                        MessageBoxButtons.YesNoCancel, MessageBoxIcon.Question);
+                    switch (answer)
+                    {
+                        case DialogResult.Yes: return true;
+                        case DialogResult.No: return false;
+                        default: return null; // Cancel - abort the classify
+                    }
+                };
 
                 // Keep the classify pane's selection count live.
                 try

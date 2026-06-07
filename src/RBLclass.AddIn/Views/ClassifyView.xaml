@@ -42,6 +42,7 @@
         <StackPanel Grid.Row="4" Margin="0,6,0,0">
             <CheckBox Content="Keep a copy (don't delete originals)" IsChecked="{Binding KeepCopy}" />
             <CheckBox Content="Remove attachments" Margin="0,4,0,0" IsChecked="{Binding RemoveAttachments}" />
+            <CheckBox Content="Include whole conversation" Margin="0,4,0,0" IsChecked="{Binding WidenConversation}" />
             <DockPanel Margin="0,6,0,0" LastChildFill="True">
                 <Button DockPanel.Dock="Right" Margin="6,0,0,0" Padding="8,2"
                         Content="New subfolder" Click="NewSubfolder_Click"

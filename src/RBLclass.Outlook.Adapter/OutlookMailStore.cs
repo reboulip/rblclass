@@ -303,6 +303,181 @@ namespace RBLclass.Outlook.Adapter
             }
         }
 
+        public IReadOnlyList<MailItemRef> GetConversationSiblings(MailItemRef item)
+        {
+            var result = new List<MailItemRef>();
+            if (item == null) return result;
+
+            using (var session = new ComRef<OutlookOM.NameSpace>(_app.Session))
+            {
+                object rawItem;
+                try { rawItem = session.Value.GetItemFromID(item.EntryId, item.StoreId); }
+                catch { return result; }
+
+                using (var comItem = new ComRef<object>(rawItem))
+                {
+                    var mail = comItem.Value as OutlookOM.MailItem;
+                    if (mail == null) return result;
+
+                    OutlookOM.Conversation rawConversation;
+                    try { rawConversation = mail.GetConversation(); }
+                    catch { return result; } // conversation tracking unavailable - tolerate
+
+                    if (rawConversation == null) return result;
+
+                    using (var conversation = new ComRef<OutlookOM.Conversation>(rawConversation))
+                    {
+                        // Scope to the default store's Inbox + Sent Items, the
+                        // legacy 5b-step-2 scope. GetTable() gives Outlook's own
+                        // flattened, indexed view of every item in the
+                        // conversation (anywhere) - resolving and filtering that
+                        // small set is far cheaper and more robust than the
+                        // legacy approach of iterating every item in both
+                        // folders and string-comparing ConversationID.
+                        string inboxEntryId = SafeNamespaceDefaultFolderEntryId(
+                            session.Value, OutlookOM.OlDefaultFolders.olFolderInbox);
+                        string sentEntryId = SafeNamespaceDefaultFolderEntryId(
+                            session.Value, OutlookOM.OlDefaultFolders.olFolderSentMail);
+                        if (inboxEntryId == null && sentEntryId == null) return result;
+
+                        OutlookOM.Table rawTable;
+                        try { rawTable = conversation.Value.GetTable(); }
+                        catch { return result; }
+
+                        using (var table = new ComRef<OutlookOM.Table>(rawTable))
+                        {
+                            var seen = new HashSet<string> { item.EntryId };
+
+                            table.Value.MoveToStart();
+                            while (!table.Value.EndOfTable)
+                            {
+                                OutlookOM.Row row;
+                                try { row = table.Value.GetNextRow(); }
+                                catch { break; }
+
+                                string entryId = Safe(() => row["EntryID"] as string, null);
+                                if (entryId == null || !seen.Add(entryId)) continue;
+
+                                AddSiblingIfInScope(session.Value, entryId,
+                                                     inboxEntryId, sentEntryId, result);
+                            }
+                        }
+                    }
+                }
+            }
+
+            return result;
+        }
+
+        /// <summary>
+        /// Resolve <paramref name="entryId"/> and, if it is a plain mail item
+        /// living directly in the Inbox or Sent Items (by folder EntryID, and
+        /// not S/MIME-signed/encrypted - legacy skips <c>IPM.Note.SMIME</c>),
+        /// append it to <paramref name="result"/>.
+        /// </summary>
+        private static void AddSiblingIfInScope(OutlookOM.NameSpace session, string entryId,
+                                                 string inboxEntryId, string sentEntryId,
+                                                 List<MailItemRef> result)
+        {
+            object rawSibling;
+            try { rawSibling = session.GetItemFromID(entryId); }
+            catch { return; }
+
+            using (var comSibling = new ComRef<object>(rawSibling))
+            {
+                var sibling = comSibling.Value as OutlookOM.MailItem;
+                if (sibling == null) return;
+                if (Safe(() => sibling.MessageClass, string.Empty) == "IPM.Note.SMIME") return;
+
+                if (!TryGetFolderInfo(sibling, out string storeId, out string folderEntryId))
+                    return;
+                if (folderEntryId != inboxEntryId && folderEntryId != sentEntryId) return;
+
+                result.Add(new MailItemRef(storeId, entryId, Safe(() => sibling.Subject, string.Empty)));
+            }
+        }
+
+        /// <summary>Store id and containing-folder id of a mail item, opening its Parent exactly once.</summary>
+        private static bool TryGetFolderInfo(OutlookOM.MailItem mail, out string storeId, out string folderEntryId)
+        {
+            storeId = null;
+            folderEntryId = null;
+            ComRef<OutlookOM.Folder> parent = null;
+            try
+            {
+                parent = new ComRef<OutlookOM.Folder>((OutlookOM.Folder)mail.Parent);
+                storeId = Safe(() => parent.Value.StoreID, null);
+                folderEntryId = Safe(() => parent.Value.EntryID, null);
+                return storeId != null && folderEntryId != null;
+            }
+            catch { return false; }
+            finally { parent?.Dispose(); }
+        }
+
+        private static string SafeNamespaceDefaultFolderEntryId(OutlookOM.NameSpace session,
+                                                                 OutlookOM.OlDefaultFolders kind)
+        {
+            ComRef<OutlookOM.Folder> folder = null;
+            try
+            {
+                folder = new ComRef<OutlookOM.Folder>((OutlookOM.Folder)session.GetDefaultFolder(kind));
+                return Safe(() => folder.Value.EntryID, null);
+            }
+            catch { return null; } // no default store / folder unavailable - tolerate
+            finally { folder?.Dispose(); }
+        }
+
+        public bool IsFlaggedIncomplete(MailItemRef item)
+        {
+            if (item == null) return false;
+
+            using (var session = new ComRef<OutlookOM.NameSpace>(_app.Session))
+            {
+                object rawItem;
+                try { rawItem = session.Value.GetItemFromID(item.EntryId, item.StoreId); }
+                catch { return false; }
+
+                using (var comItem = new ComRef<object>(rawItem))
+                {
+                    var mail = comItem.Value as OutlookOM.MailItem;
+                    if (mail == null) return false;
+
+                    // Real OM semantics, not the legacy locale-formatted
+                    // "01/01/4501" TaskCompletedDate sentinel: a follow-up flag
+                    // that hasn't been completed reports olFlagMarked (vs
+                    // olFlagComplete / olNoFlag).
+                    return Safe(() => mail.IsMarkedAsTask, false)
+                        && Safe(() => mail.FlagStatus, OutlookOM.OlFlagStatus.olNoFlag)
+                               == OutlookOM.OlFlagStatus.olFlagMarked;
+                }
+            }
+        }
+
+        public void MarkTaskComplete(MailItemRef item)
+        {
+            if (item == null) return;
+
+            using (var session = new ComRef<OutlookOM.NameSpace>(_app.Session))
+            {
+                object rawItem;
+                try { rawItem = session.Value.GetItemFromID(item.EntryId, item.StoreId); }
+                catch { return; }
+
+                using (var comItem = new ComRef<object>(rawItem))
+                {
+                    var mail = comItem.Value as OutlookOM.MailItem;
+                    if (mail == null) return;
+
+                    try
+                    {
+                        mail.FlagStatus = OutlookOM.OlFlagStatus.olFlagComplete;
+                        mail.Save();
+                    }
+                    catch { }
+                }
+            }
+        }
+
         public void RemoveAttachments(MailItemRef item)
         {
             if (item == null) return;

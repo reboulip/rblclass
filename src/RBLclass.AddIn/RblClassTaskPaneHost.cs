@@ -77,7 +77,8 @@ namespace RBLclass.AddIn
                         TaskPaneServices.Classifier,
                         TaskPaneServices.GetSelection,
                         TaskPaneServices.CreateSubfolder,
-                        TaskPaneServices.Settings);
+                        TaskPaneServices.Settings,
+                        TaskPaneServices.ConfirmMarkTasksComplete);
             }
 
             // Re-read the live mail selection each time the pane is shown.
