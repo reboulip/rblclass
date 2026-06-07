@@ -1,6 +1,8 @@
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Windows.Forms;
@@ -45,6 +47,8 @@ namespace RBLclass.AddIn
         private IFolderSearch _folderSearch;
         private IClassifier _classifier;
         private ISettingsStore _settingsStore;
+        private readonly ForgottenAttachmentGuard _attachmentGuard = new ForgottenAttachmentGuard();
+        private readonly ExternalRecipientGuard _externalGuard = new ExternalRecipientGuard();
         private IndexResult _lastIndexResult;
 
         // One-shot timer that runs the first-run folder walk on the Outlook UI
@@ -182,6 +186,27 @@ namespace RBLclass.AddIn
                         default: return null; // Cancel - abort the classify
                     }
                 };
+                TaskPaneServices.ConfirmSendWithoutAttachment = () =>
+                {
+                    var answer = MessageBox.Show(
+                        "This message mentions an attachment, but none is attached.\n\n" +
+                        "Send anyway?",
+                        "RBLclass - Send",
+                        MessageBoxButtons.YesNo, MessageBoxIcon.Warning);
+                    return answer == DialogResult.Yes;
+                };
+                TaskPaneServices.ConfirmSendToExternal = external =>
+                {
+                    string list = string.Join("\n", external.Select(r =>
+                        string.IsNullOrEmpty(r.DisplayName) ? r.Address : r.DisplayName + " <" + r.Address + ">"));
+                    string noun = external.Count == 1 ? "recipient is" : "recipients are";
+                    var answer = MessageBox.Show(
+                        external.Count + " " + noun + " outside the organisation:\n\n" + list +
+                        "\n\nSend anyway?",
+                        "RBLclass - Send",
+                        MessageBoxButtons.YesNo, MessageBoxIcon.Warning);
+                    return answer == DialogResult.Yes;
+                };
 
                 // Keep the classify pane's selection count live.
                 try
@@ -191,6 +216,12 @@ namespace RBLclass.AddIn
                         _activeExplorer.SelectionChange += OnExplorerSelectionChange;
                 }
                 catch (Exception ex) { TryLog("SelectionChange subscribe failed", ex); }
+
+                // Send-time guards (legacy 6a-6b). Kept on _outlookApp, which is
+                // already held in a field for the add-in's lifetime (CLAUDE.md
+                // Outlook-events rule - the source must not be GC'd).
+                try { _outlookApp.ItemSend += Application_ItemSend; }
+                catch (Exception ex) { TryLog("ItemSend subscribe failed", ex); }
 
                 // Fast path: load the persisted index (SQLite only, no COM walk).
                 _lastIndexResult = _folderTree.Load();
@@ -227,6 +258,11 @@ namespace RBLclass.AddIn
                     try { _activeExplorer.SelectionChange -= OnExplorerSelectionChange; } catch { }
                     try { Marshal.ReleaseComObject(_activeExplorer); } catch { }
                     _activeExplorer = null;
+                }
+
+                if (_outlookApp != null)
+                {
+                    try { _outlookApp.ItemSend -= Application_ItemSend; } catch { }
                 }
 
                 if (_taskPane != null)
@@ -334,6 +370,60 @@ namespace RBLclass.AddIn
             {
                 TryLog("SelectionChange handler failed", ex);
             }
+        }
+
+        /// <summary>
+        /// Send-time guards (legacy 6a-6b): warn on a forgotten attachment and
+        /// on external recipients, each cancellable. olMail-only, like the
+        /// legacy. Top-level try/catch - never let a guard failure block a send
+        /// (CLAUDE.md: COM exceptions must never escape into Outlook).
+        /// </summary>
+        private void Application_ItemSend(object item, ref bool cancel)
+        {
+            try
+            {
+                var info = _mailStore.InspectForSend(item);
+                if (info == null) return;
+
+                var keywords = ParseList(_settingsStore.Get(
+                    SettingsKeys.ForgottenAttachmentKeywords, "attach;enclos;joint;PJ"));
+                if (_attachmentGuard.ShouldWarn(info.Body, info.AttachmentCount, keywords))
+                {
+                    if (TaskPaneServices.ConfirmSendWithoutAttachment != null &&
+                        !TaskPaneServices.ConfirmSendWithoutAttachment())
+                    {
+                        cancel = true;
+                        return;
+                    }
+                }
+
+                if (_settingsStore.GetBool(SettingsKeys.SendExternalWarning, true))
+                {
+                    var domains = ParseList(_settingsStore.Get(SettingsKeys.InternalDomains, string.Empty));
+                    var external = _externalGuard.FindExternal(info.Recipients, domains);
+                    if (external.Count > 0 &&
+                        TaskPaneServices.ConfirmSendToExternal != null &&
+                        !TaskPaneServices.ConfirmSendToExternal(external))
+                    {
+                        cancel = true;
+                        return;
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                TryLog("ItemSend guard failed", ex);
+            }
+        }
+
+        /// <summary>Split a semicolon-separated settings value into trimmed, non-empty entries.</summary>
+        private static IReadOnlyList<string> ParseList(string value)
+        {
+            if (string.IsNullOrWhiteSpace(value)) return new string[0];
+            return value.Split(';')
+                        .Select(s => s.Trim())
+                        .Where(s => s.Length > 0)
+                        .ToArray();
         }
 
         private void ShowPane(PaneMode mode)

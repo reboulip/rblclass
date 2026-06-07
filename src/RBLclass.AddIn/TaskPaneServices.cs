@@ -48,6 +48,20 @@ namespace RBLclass.AddIn
         public static Func<int, bool?> ConfirmMarkTasksComplete;
 
         /// <summary>
+        /// Ask the user whether to send anyway when the body mentions an
+        /// attachment but none is attached (legacy 6b forgotten-attachment
+        /// guard). Returns true = send, false = cancel and go back to attach.
+        /// </summary>
+        public static Func<bool> ConfirmSendWithoutAttachment;
+
+        /// <summary>
+        /// Ask the user whether to send anyway to the listed external
+        /// recipients (legacy 6a external-recipient guard). Returns
+        /// true = send, false = cancel.
+        /// </summary>
+        public static Func<IReadOnlyList<RecipientAddress>, bool> ConfirmSendToExternal;
+
+        /// <summary>
         /// The live pane host control (set by its ctor), so ribbon callbacks can
         /// switch the pane between Open-folder and Classify modes.
         /// </summary>

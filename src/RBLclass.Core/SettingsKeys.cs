@@ -24,5 +24,23 @@ namespace RBLclass.Core
 
         /// <summary>Widen the classify set to conversation siblings in Inbox/Sent (legacy settingsWholeConversation).</summary>
         public const string WidenConversation = "WidenConversation";
+
+        /// <summary>Warn before sending to recipients outside the org (legacy settingsSendExt).</summary>
+        public const string SendExternalWarning = "SendExternalWarning";
+
+        /// <summary>
+        /// Semicolon-separated domains treated as internal in addition to
+        /// Exchange-resolved recipients (empty by default - nothing
+        /// org-specific is hard-coded; Step 9 exposes this for editing).
+        /// </summary>
+        public const string InternalDomains = "InternalDomains";
+
+        /// <summary>
+        /// Semicolon-separated keywords that trigger the forgotten-attachment
+        /// warning when none of them are backed by an actual attachment
+        /// (legacy hard-coded list: attach/enclos/joint/PJ). No on/off toggle -
+        /// the legacy guard had none either.
+        /// </summary>
+        public const string ForgottenAttachmentKeywords = "ForgottenAttachmentKeywords";
     }
 }

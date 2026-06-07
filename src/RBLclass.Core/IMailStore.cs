@@ -80,5 +80,16 @@ namespace RBLclass.Core
         /// node, or null on failure. Touches COM - call on the Outlook UI thread.
         /// </summary>
         FolderNode CreateSubfolder(FolderNode parent, string name);
+
+        /// <summary>
+        /// Extract what the send-time guards (legacy 6a-6b) need - body text,
+        /// attachment count, recipient addresses - from a live mail item that's
+        /// about to go out. <paramref name="item"/> is the raw <c>object</c>
+        /// Outlook hands <c>Application.ItemSend</c>, boxed to keep this
+        /// interface Outlook-free; returns null for anything that isn't a
+        /// <c>MailItem</c> (meeting requests etc. - the legacy guard is
+        /// olMail-only too). Touches COM - call on the Outlook UI thread.
+        /// </summary>
+        SendGuardInfo InspectForSend(object item);
     }
 }

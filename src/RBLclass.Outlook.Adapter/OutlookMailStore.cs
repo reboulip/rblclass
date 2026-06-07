@@ -512,6 +512,58 @@ namespace RBLclass.Outlook.Adapter
             }
         }
 
+        public SendGuardInfo InspectForSend(object item)
+        {
+            var mail = item as OutlookOM.MailItem;
+            if (mail == null) return null;
+
+            string body = Safe(() => mail.Body, string.Empty);
+
+            int attachmentCount;
+            using (var attachments = new ComRef<OutlookOM.Attachments>(mail.Attachments))
+                attachmentCount = Safe(() => attachments.Value.Count, 0);
+
+            var recipients = new List<RecipientAddress>();
+            using (var recipientsRef = new ComRef<OutlookOM.Recipients>(mail.Recipients))
+            {
+                int count = Safe(() => recipientsRef.Value.Count, 0);
+                for (int i = 1; i <= count; i++)
+                {
+                    OutlookOM.Recipient raw;
+                    try { raw = recipientsRef.Value[i]; }
+                    catch { continue; }
+
+                    using (var recipient = new ComRef<OutlookOM.Recipient>(raw))
+                        recipients.Add(ReadRecipient(recipient.Value));
+                }
+            }
+
+            return new SendGuardInfo(body, attachmentCount, recipients);
+        }
+
+        private static RecipientAddress ReadRecipient(OutlookOM.Recipient recipient)
+        {
+            string name = Safe(() => recipient.Name, null);
+            string address = Safe(() => recipient.Address, null);
+            bool exchangeResolved = false;
+
+            try
+            {
+                using (var addressEntry = new ComRef<OutlookOM.AddressEntry>(recipient.AddressEntry))
+                {
+                    if (addressEntry.Value != null)
+                    {
+                        var userType = Safe(() => addressEntry.Value.AddressEntryUserType,
+                                             OutlookOM.OlAddressEntryUserType.olOtherAddressEntry);
+                        exchangeResolved = userType.ToString().StartsWith("olExchange", StringComparison.Ordinal);
+                    }
+                }
+            }
+            catch { }
+
+            return new RecipientAddress(name, address, exchangeResolved);
+        }
+
         /// <summary>
         /// Enumerate the immediate sub-folders of <paramref name="parent"/> and
         /// index each (recursing into its subtree). Opens <c>parent.Folders</c>
