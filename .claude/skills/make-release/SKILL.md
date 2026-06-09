@@ -35,8 +35,6 @@ the declarative WiX packaging added alongside it
   PowerShell install kit (build → stage → verify both native SQLite
   bitnesses → AES-256 zip) **and** the WiX MSI (same Release build →
   `wix build` against `installer/Package.wxs`).
-- **Out of scope:** the throwaway POC under `poc/`. To ship the POC, run
-  `poc/scripts/Stage-TargetRelease.ps1` directly instead.
 
 ## Preconditions (check before running, fail clearly)
 
@@ -44,8 +42,7 @@ the declarative WiX packaging added alongside it
 2. **Product exists.** `RBLclass.sln` must exist at the repo root and
    `src/RBLclass.AddIn` must build. If it does not, the product has not
    been built yet — **stop** and tell the user the release cannot be
-   produced until the Phase 1 solution exists. Do not silently fall back
-   to the POC.
+   produced until the solution exists.
 3. **COM identity reconciled.** Open the add-in class in
    `src/RBLclass.AddIn` and confirm its `[Guid(...)]` and `[ProgId(...)]`
    match `Clsid` / `ProgId` in [release.config.json](release.config.json),

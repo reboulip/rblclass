@@ -90,9 +90,8 @@ $buildOut = Join-Path $repoRoot ($config.AddInProjectOutput -replace "\{Configur
 if (-not (Test-Path $sln)) {
     throw @"
 Solution not found at '$sln'.
-The Phase 1 product solution does not exist yet (only the Phase 0 POC
-under poc/ builds today). /reload-addin targets the real product; build
-the Phase 1 skeleton first.
+/reload-addin targets the product solution at the repo root; it is missing
+or its path in the config is wrong. Check it out / fix the path and re-run.
 "@
 }
 

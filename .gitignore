@@ -22,9 +22,6 @@ Thumbs.db
 .claude/*
 !.claude/skills/
 
-# POC publish output (if any)
-poc/publish/
-
 # WiX MSI build output
 installer/bin/
 installer/*.msi
