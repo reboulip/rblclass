@@ -2,6 +2,7 @@ using System;
 using System.Runtime.InteropServices;
 using System.Windows.Forms;
 using System.Windows.Forms.Integration;
+using RBLclass.AddIn.Theming;
 using RBLclass.AddIn.ViewModels;
 using RBLclass.AddIn.Views;
 using Serilog;
@@ -62,6 +63,7 @@ namespace RBLclass.AddIn
                         TaskPaneServices.Search, TaskPaneServices.Navigate, TaskPaneServices.Settings);
             }
 
+            ApplyTheme(_openView);
             _elementHost.Child = _openView;
             CurrentMode = PaneMode.OpenFolder;
         }
@@ -84,8 +86,22 @@ namespace RBLclass.AddIn
             // Re-read the live mail selection each time the pane is shown.
             (_classifyView.DataContext as ClassifyViewModel)?.RefreshSelection();
 
+            ApplyTheme(_classifyView);
             _elementHost.Child = _classifyView;
             CurrentMode = PaneMode.Classify;
+        }
+
+        /// <summary>
+        /// Theme the given view to the current Outlook look and match the
+        /// WinForms host background so no white border shows around it. Called
+        /// on each show, so a theme switch made while Outlook is running is
+        /// picked up the next time the pane is opened.
+        /// </summary>
+        private void ApplyTheme(System.Windows.FrameworkElement view)
+        {
+            var mode = ThemeService.Apply(view);
+            BackColor = ThemeService.WinFormsBackColor(mode);
+            _elementHost.BackColor = BackColor;
         }
 
         /// <summary>Push a live selection count into the classify view model, if it exists.</summary>

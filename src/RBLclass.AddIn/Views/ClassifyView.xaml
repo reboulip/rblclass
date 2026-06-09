@@ -54,7 +54,7 @@
         <Button Grid.Row="5" Margin="0,8,0,0" Padding="12,4" HorizontalAlignment="Left"
                 Content="Classify selected mail" Click="Classify_Click" />
 
-        <TextBlock Grid.Row="6" Margin="0,6,0,0" Foreground="Gray"
+        <TextBlock Grid.Row="6" Margin="0,6,0,0" Style="{DynamicResource MutedText}"
                    Text="{Binding Status}" TextWrapping="Wrap" />
     </Grid>
 </UserControl>

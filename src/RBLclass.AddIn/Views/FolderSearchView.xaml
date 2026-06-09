@@ -33,7 +33,7 @@
             </ListBox.ItemTemplate>
         </ListBox>
 
-        <TextBlock Grid.Row="3" Margin="0,6,0,6" Foreground="Gray"
+        <TextBlock Grid.Row="3" Margin="0,6,0,6" Style="{DynamicResource MutedText}"
                    Text="{Binding Status}" TextWrapping="Wrap" />
 
         <StackPanel Grid.Row="4" Orientation="Horizontal">

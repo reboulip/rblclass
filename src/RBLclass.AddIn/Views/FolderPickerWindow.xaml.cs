@@ -1,5 +1,6 @@
 using System.Windows;
 using System.Windows.Input;
+using RBLclass.AddIn.Theming;
 using RBLclass.AddIn.ViewModels;
 using RBLclass.Core;
 
@@ -16,6 +17,7 @@ namespace RBLclass.AddIn.Views
         public FolderPickerWindow()
         {
             InitializeComponent();
+            ThemeService.Apply(this);
             Loaded += (s, e) => QueryBox.Focus();
         }
 
