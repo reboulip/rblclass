@@ -266,19 +266,16 @@ deleted or kept per toggle, attachments optionally stripped.
 
 ---
 
-## Step 5 — Quick Open popup & "last filed folder"
+## Step 5 — DROPPED: Quick Open popup & "last filed folder"
 
-**Goal:** legacy §5d.
+**Goal (legacy §5d):** after a classify, jump to the last filed folder
+via a small popup affordance.
 
-- After a classify, remember the last destination (in memory; optionally
-  persist last-N in SQLite for a "recent folders" affordance later).
-- Show a small modeless WPF affordance to **jump to the last filed
-  folder**. ⚠ DEVIATION (presentation): rather than the legacy
-  `GetDeviceCaps` P/Invoke top-right placement + `SelectionChange`
-  auto-hide hack, use a WPF toast/infobar inside the task pane or a
-  short-lived modeless window. No P/Invoke, DPI handled by WPF.
-
-**Demo:** classify → "Go to folder" appears → one click navigates there.
+**Status: dropped (2026-06-07).** A pane-local infobar version was built,
+tried live, and didn't land well. The user does not want this feature
+ported — it will be reconsidered, if at all, only as part of a deeper UI
+pass later (see Step 10), as something "more meaningful". Do not
+re-attempt this as specified here.
 
 ---
 
@@ -294,6 +291,12 @@ deleted or kept per toggle, attachments optionally stripped.
   filter on the conversation property, or Outlook's
   `MailItem.GetConversation`/`ConversationID` lookup. Document the DASL.
   Dedupe by `(StoreId, EntryId)`.
+  **Implementation note (2026-06-07):** built on `MailItem.GetConversation()`
+  → `Conversation.GetTable()`, not DASL/`Restrict` — Outlook indexes the
+  conversation table itself, so this is both more robust (no guessing
+  binary-MAPI-property DASL syntax) and faster (a small Outlook-side
+  result set vs. a full-folder scan). Rows are filtered to the default
+  Inbox/Sent EntryIDs and deduped by `(StoreId, EntryId)`.
 - **Task-completion guard:** detect task-flagged, not-completed items and
   offer to mark them complete in the destination.
   ⚠ DEVIATION (correctness): drop the `TaskCompletedDate = "01/01/4501"`
@@ -349,6 +352,29 @@ sending to an outside address warns; both toggleable.
   a **whole-conversation** option, reusing `IClassifier` and the
   conversation-widening from Step 6.
 
+**Implementation note (2026-06-07):** the prompt is a small modal
+`Window` with hand-rolled MVVM (`SentItemTriageViewModel` /
+`SentItemTriageWindow`) — the first modal dialog in the add-in; every
+prior prompt was a `MessageBox`, which can't express four custom actions
+plus a toggle. "Class…" opens a second small modal, a dedicated
+folder-picker (`FolderPickerViewModel` / `FolderPickerWindow`) over
+`IFolderSearch`, deliberately **not** the existing Classify pane —
+that pane is built around the live Outlook selection
+(`ClassifyViewModel`'s `_getSelection`), and driving it with a fixed,
+externally-supplied item list would mean teaching a shipped, working
+flow a second selection model for one caller. The orchestration itself
+(widen → preflight → optional task-completion confirm → classify/delete/
+move) lives directly in the AddIn shell, mirroring `ClassifyViewModel
+.DoClassify` — there is no new Core decision logic to test here, only
+two small `IMailStore` extraction methods (`ResolveMailItem`,
+`GetInboxFolder`) that, like `InspectForSend`, turn a live COM item into
+an Outlook-free DTO. "Move to Inbox" is `Classify` with `keepCopy:
+false` to a resolved `olFolderInbox` destination — a real move, not a
+new code path. The legacy `Set colSentItems = Nothing` / re-init dance
+is replaced by a plain `_suppressSentItemTriage` flag set around the
+dispatch (a classify/move makes a copy transit Sent Items, which would
+otherwise re-trigger the prompt on the transient copy).
+
 **Demo:** send a mail → triage prompt → classify/delete/leave works,
 no event re-entrancy.
 
@@ -372,6 +398,38 @@ no event re-entrancy.
 **Demo:** toggle options, persist across restarts, each guard/action
 respects its setting.
 
+**Implementation note (2026-06-07):** shipped as a modal "Options"-style
+dialog (`SettingsWindow`/`SettingsViewModel`, the third modal `Window` in
+the project after Step 8's triage/picker dialogs and a clean fit for a
+configure-once-and-walk-away flow), opened from a new ribbon button, with
+**live-apply, save-on-change** persistence — every toggle/edit writes
+through `ISettingsStore` immediately, exactly like the existing
+Classify/folder-search panes, so "Close" is the only button and there is
+no separate save step to forget.
+
+QuickOpen was already dropped ([[step5-quick-open-dropped]]), so eight
+legacy options were ported, plus three settings introduced earlier in the
+rewrite that had keys but no UI yet (`FolderMatchMode`, `InternalDomains`,
+`ForgottenAttachmentKeywords`) and `MaxResults`, which existed only as the
+hard-coded `FolderSearchOptions.DefaultMaxResults` until now — eleven
+options in total, grouped into four sections (Folder search / Classify /
+Sending guards / Sent items).
+
+The "typed `Settings` object in Core" is `RBLclass.Core.Settings`: a POCO
+snapshot with a static `Load(ISettingsStore)` (defaults + parsing +
+clamping - invalid `MaxResults`/`FolderMatchMode` values fall back rather
+than propagate) and an instance `Save(ISettingsStore)` that round-trips
+every key as one unit. The dialog is the only thing that loads/saves the
+whole snapshot; the existing scattered `GetBool(SettingsKeys.X, default)`
+call sites in `ClassifyViewModel`/`FolderSearchViewModel`/the shell were
+left untouched (per [[prefer-isolated-new-ui-over-retrofit]] - don't
+retrofit working code) **except** for the three `FolderSearchOptions`
+construction sites (`ClassifyViewModel`, `FolderSearchViewModel`,
+`FolderPickerViewModel`), which now read `FolderMatchMode`/`MaxResults`
+via `Settings.Load` so the new pane's settings actually take effect rather
+than being cosmetic — this was the one unavoidable, narrowly-scoped touch
+to already-shipped code.
+
 ---
 
 ## Step 10 — Polish, parity sign-off, packaging
@@ -379,12 +437,40 @@ respects its setting.
 - **Parity pass** against the §9 checklist in
   [legacy-overview.md](legacy-overview.md). Each row demoed on the
   32-bit target.
-- **Reminder-to-front (§6d):** ⚠ recommend **drop** (cosmetic, entirely
-  locale-coupled). Revisit only if the user asks.
-- **Packaging:** WiX per-user MSI writing the HKCU add-in registration +
-  both CLSID subtrees (x86/Wow6432Node) — the POC's registration, in MSI
-  form. **Signing optional** per Step 0. Keep the POC PowerShell
-  installer working in parallel until the MSI is validated on the target.
+- **Reminder-to-front (§6d): DROPPED (confirmed 2026-06-07).** Purely
+  cosmetic, hard-coded French reminder-count strings ("1 Rappel"… "15
+  Rappels"), and implemented via `AppActivate` window-foregrounding — the
+  exact MSForms-era focus-juggling hack already excluded elsewhere in this
+  roadmap as obsoleted by WPF (see "Explicitly NOT reimplemented"). Not
+  reconsidered; item 14 of the §9 checklist is marked dropped with this
+  rationale.
+- **Packaging: WiX per-user MSI — done, dev-machine-validated
+  (2026-06-07).** `installer/Package.wxs` (built via WiX Toolset v7,
+  installed as a per-user `dotnet tool`; `Build-Installer.ps1` wraps
+  `wix build`, reading `release.config.json` as the same single source
+  of truth `/make-release` and `/reload-addin` use). `Scope="perUser"`
+  → installs to `%LocalAppData%\RBLclass\AddIn`, writes only `HKCU`, no
+  elevation — declaratively replicating every registry write
+  `Install-RblClassAddIn.ps1` makes: both CLSID subtrees
+  (`CLSID\{guid}` + `Wow6432Node\CLSID\{guid}`) for both the add-in and
+  task-pane-host classes, both ProgIds, the `.NET`/ActiveX-Control
+  category markers, and the `Outlook\Addins\RBLclass.AddIn` key
+  (`LoadBehavior=3`, `CommandLineSafe=1`). Test-installed on the dev
+  machine with `msiexec /i ... /qn` over the existing PowerShell-kit
+  install — Outlook loaded the add-in entirely from the MSI-written
+  registration, ribbon tab confirmed working ("Works as expected").
+  One harmless quirk found and verified inert: WiX's `[#FileId]`
+  `CodeBase` token resolves with `/`-separators in the native CLSID
+  subtree but `\`-separators in the `Wow6432Node` mirror — both parse
+  to an identical `System.Uri.LocalPath`/`AbsoluteUri` (the same
+  normalisation Fusion/`mscoree` applies), so both load correctly; not
+  worth fighting WiX's resolver over a cosmetic difference. **Signing
+  optional** per Step 0 (unsigned, as already validated for the POC
+  kit). Per CLAUDE.md, the POC PowerShell installer remains the
+  primary, validated path — both coexist — until the MSI is also
+  installed and smoke-tested on the real 32-bit target workstation
+  (the `Wow6432Node` subtree is the one the MSI write to that the dev
+  machine's 64-bit Outlook never reads).
 - **Regression matrix** for Semi-Annual channel updates (install, index,
   search, open, classify, send-guard, attachment removal, sent triage,
   settings).

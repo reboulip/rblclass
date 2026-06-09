@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<customUI xmlns="http://schemas.microsoft.com/office/2009/07/customui">
+  <ribbon>
+    <tabs>
+      <tab id="RBLclassTab" label="RBLclass">
+        <group id="RBLclassGroup" label="RBLclass">
+          <button id="OpenFolderButton"
+                  label="Open folder"
+                  size="large"
+                  imageMso="FileOpen"
+                  onAction="OnOpenFolderClick"
+                  screentip="Open a folder"
+                  supertip="Toggle the RBLclass task pane to search the folder tree and jump to a folder." />
+          <button id="ClassifyButton"
+                  label="Classify"
+                  size="large"
+                  imageMso="MoveToFolder"
+                  onAction="OnClassifyClick"
+                  screentip="Classify selected mail"
+                  supertip="File the selected mail into one or more folders. Multi-select destinations; toggle keep-a-copy and remove-attachments." />
+          <button id="RemoveAttachmentsButton"
+                  label="Remove attachments"
+                  size="large"
+                  imageMso="AttachmentRemove"
+                  onAction="OnRemoveAttachmentsClick"
+                  screentip="Remove attachments"
+                  supertip="Strip all attachments from the selected mail(s), after confirmation." />
+          <button id="IndexStatusButton"
+                  label="Index status"
+                  size="large"
+                  imageMso="Info"
+                  onAction="OnIndexStatusClick"
+                  screentip="Folder index status"
+                  supertip="Shows whether the folder index was loaded from cache or freshly walked, with store/folder counts. Step 1 diagnostic - the search UI arrives in Step 3." />
+          <button id="SettingsButton"
+                  label="Settings"
+                  size="large"
+                  imageMso="ToolsOptions"
+                  onAction="OnSettingsClick"
+                  screentip="RBLclass settings"
+                  supertip="Configure folder search, classify, sending guards and sent-item triage. Every change applies and persists immediately." />
+        </group>
+      </tab>
+    </tabs>
+  </ribbon>
+</customUI>

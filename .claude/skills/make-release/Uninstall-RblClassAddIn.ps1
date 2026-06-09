@@ -47,6 +47,17 @@ $paths = @(
     "HKCU:\Software\Classes\$progId"
 )
 
+# Also remove the Custom Task Pane host control registration, if present.
+if ($config.TaskPaneControl) {
+    $ctlClsid = $config.TaskPaneControl.Clsid
+    $ctlProg  = $config.TaskPaneControl.ProgId
+    $paths += @(
+        "HKCU:\Software\Classes\CLSID\$ctlClsid",
+        "HKCU:\Software\Classes\Wow6432Node\CLSID\$ctlClsid",
+        "HKCU:\Software\Classes\$ctlProg"
+    )
+}
+
 foreach ($p in $paths) {
     if (Test-Path $p) {
         Write-Host "Removing $p"

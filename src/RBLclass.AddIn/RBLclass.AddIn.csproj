@@ -1,0 +1,94 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- COM add-in shell: .NET Framework 4.8, AnyCPU. Thin IDTExtensibility2 +
+       IRibbonExtensibility host. Loaded by Outlook via HKCU COM registration
+       (no VSTO, no ClickOnce). The same AnyCPU binary JITs to the host
+       bitness on both 64-bit (dev) and 32-bit (target) Outlook. -->
+  <PropertyGroup>
+    <TargetFramework>net48</TargetFramework>
+    <PlatformTarget>AnyCPU</PlatformTarget>
+    <Prefer32Bit>false</Prefer32Bit>
+    <LangVersion>7.3</LangVersion>
+    <RootNamespace>RBLclass.AddIn</RootNamespace>
+    <AssemblyName>RBLclass.AddIn</AssemblyName>
+    <Product>RBLclass</Product>
+    <Company>RBLclass</Company>
+    <RegisterForComInterop>false</RegisterForComInterop>
+    <!-- WPF task pane content hosted in a WinForms UserControl (the CTP shell)
+         via ElementHost. UseWPF + UseWindowsForms reference the in-box GAC WPF
+         and WinForms assemblies (no NuGet facades), keeping the dependency
+         graph clean. -->
+    <UseWPF>true</UseWPF>
+    <UseWindowsForms>true</UseWindowsForms>
+    <!-- Copy NuGet dependencies (Microsoft.Data.Sqlite + its native
+         runtimes\) into the output so the installer can lay them down next
+         to the add-in DLL. -->
+    <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
+    <!-- We hand-author AssemblyInfo.cs so AssemblyVersion is pinned to
+         2.0.0.0 to match release.config.json's COM registration identity. -->
+    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\RBLclass.Core\RBLclass.Core.csproj" />
+    <ProjectReference Include="..\RBLclass.Outlook.Adapter\RBLclass.Outlook.Adapter.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- System.Windows.Forms / System.Drawing come from UseWindowsForms.
+         WindowsFormsIntegration provides ElementHost (WPF-in-WinForms bridge). -->
+    <Reference Include="WindowsFormsIntegration" />
+    <!-- Canonical Office PIAs from the GAC. Using the canonical PIAs (rather
+         than hand-rolled [ComImport] interfaces) avoids the auto-generated
+         IL-stub marshalling AVs that crashed Outlook in the POC. See
+         CLAUDE.md "COM interop interface declarations". -->
+    <Reference Include="Extensibility">
+      <HintPath>C:\Windows\assembly\GAC\Extensibility\7.0.3300.0__b03f5f7f11d50a3a\extensibility.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="office">
+      <HintPath>C:\Windows\assembly\GAC_MSIL\office\15.0.0.0__71e9bce111e9429c\OFFICE.DLL</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="Microsoft.Office.Interop.Outlook">
+      <HintPath>C:\Windows\assembly\GAC_MSIL\Microsoft.Office.Interop.Outlook\15.0.0.0__71e9bce111e9429c\Microsoft.Office.Interop.Outlook.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Microsoft.Data.Sqlite meta-package (not .Core) so the bundled
+         SQLitePCLRaw provider version matches what Microsoft.Data.Sqlite was
+         compiled against, and both win-x86 + win-x64 native e_sqlite3.dll
+         land in the output (the bitness invariant the release scripts
+         hard-check). Proven in the Phase 0 POC. -->
+    <PackageReference Include="Microsoft.Data.Sqlite" Version="8.0.0" />
+    <!-- Logging infrastructure (Phase 1): Serilog rolling file sink in
+         %LocalAppData%\RBLclass\logs.
+         Pinned to the 2.x line (Serilog 2.12.0 + Sinks.File 5.0.0) ON PURPOSE.
+         A COM host has no binding redirects, so every strong-named assembly
+         must resolve to the exact version each referencer was compiled against.
+         Serilog 4.x drags System.Diagnostics.DiagnosticSource 8.0.1, which
+         demands System.Memory >= 4.5.5 / System.Runtime.CompilerServices.Unsafe
+         >= 6.0.0 - floating the SQLite facade assemblies above the versions
+         SQLitePCLRaw was built against (System.Memory 4.0.1.1) and crashing the
+         first SqliteConnection. Serilog 2.x is dependency-light and leaves the
+         SQLite facade graph at the validated Phase 0 POC versions. Do not bump
+         Serilog without re-checking the whole facade graph loads in Outlook. -->
+    <PackageReference Include="Serilog" Version="2.12.0" />
+    <PackageReference Include="Serilog.Sinks.File" Version="5.0.0" />
+    <!-- NOTE: CommunityToolkit.Mvvm (CLAUDE.md's nominal MVVM choice) is NOT
+         used. Its 8.x line depends on System.Memory >= 4.5.5 /
+         System.Runtime.CompilerServices.Unsafe >= 6.0.0, which floats the SQLite
+         facade assemblies above what SQLitePCLRaw was built against - and a COM
+         host has no binding redirects, so that breaks the first SqliteConnection
+         at runtime. We hand-roll a tiny dependency-free MVVM base
+         (Mvvm/ObservableObject + RelayCommand) instead, keeping the facade graph
+         at the validated POC versions. Same constraint as the Serilog pin. -->
+  </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Include="Ribbon.xml" />
+  </ItemGroup>
+
+</Project>

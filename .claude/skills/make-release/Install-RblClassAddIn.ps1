@@ -196,6 +196,55 @@ $progIdPath = "HKCU:\Software\Classes\$progId"
 Set-RegValue -Path $progIdPath -Name "(default)" -Value $config.FriendlyName
 Set-RegValue -Path (Join-Path $progIdPath "CLSID") -Name "(default)" -Value $clsid
 
+# --- Register the Custom Task Pane host control (.NET ActiveX control) ----
+#
+# A raw Shared COM Add-in must register the CTP host control itself (VSTO
+# would otherwise do this). Same .NET InprocServer32 entries as the add-in
+# class PLUS the ActiveX "Control" category so Office's CreateCTP can host it.
+if ($config.TaskPaneControl) {
+    $ctlClsid = $config.TaskPaneControl.Clsid
+    $ctlProg  = $config.TaskPaneControl.ProgId
+    $ctlClass = $config.TaskPaneControl.AssemblyClass
+    $controlCategory = "{40FC6ED4-2438-11CF-A3DB-080036F12502}" # ActiveX Control
+
+    foreach ($base in @(
+        "HKCU:\Software\Classes\CLSID\$ctlClsid",
+        "HKCU:\Software\Classes\Wow6432Node\CLSID\$ctlClsid"
+    )) {
+        Write-Host "Writing $base (task pane control)"
+        Set-RegValue -Path $base -Name "(default)" -Value $ctlProg
+
+        $inproc = Join-Path $base "InprocServer32"
+        Set-RegValue -Path $inproc -Name "(default)"      -Value "mscoree.dll"
+        Set-RegValue -Path $inproc -Name "ThreadingModel" -Value "Both"
+        Set-RegValue -Path $inproc -Name "Class"          -Value $ctlClass
+        Set-RegValue -Path $inproc -Name "Assembly"       -Value $asmName
+        Set-RegValue -Path $inproc -Name "RuntimeVersion" -Value $runtime
+        $codeBaseUri = ([System.Uri](New-Object System.Uri($mainDll))).AbsoluteUri
+        Set-RegValue -Path $inproc -Name "CodeBase"       -Value $codeBaseUri
+
+        $verKey = Join-Path $inproc $asmVer
+        Set-RegValue -Path $verKey -Name "Class"          -Value $ctlClass
+        Set-RegValue -Path $verKey -Name "Assembly"       -Value $asmName
+        Set-RegValue -Path $verKey -Name "RuntimeVersion" -Value $runtime
+        Set-RegValue -Path $verKey -Name "CodeBase"       -Value $codeBaseUri
+
+        Set-RegValue -Path (Join-Path $base "ProgId") -Name "(default)" -Value $ctlProg
+
+        # Mark it as an ActiveX control so Office will host it in a CTP.
+        $ctlCat = Join-Path $base "Implemented Categories\$controlCategory"
+        if (-not (Test-Path $ctlCat)) { New-Item -Path $ctlCat -Force | Out-Null }
+        $netCat = Join-Path $base "Implemented Categories\{62C8FE65-4EBB-45E7-B440-6E39B2CDBF29}"
+        if (-not (Test-Path $netCat)) { New-Item -Path $netCat -Force | Out-Null }
+        $control = Join-Path $base "Control"
+        if (-not (Test-Path $control)) { New-Item -Path $control -Force | Out-Null }
+    }
+
+    $ctlProgPath = "HKCU:\Software\Classes\$ctlProg"
+    Set-RegValue -Path $ctlProgPath -Name "(default)" -Value $config.TaskPaneControl.FriendlyName
+    Set-RegValue -Path (Join-Path $ctlProgPath "CLSID") -Name "(default)" -Value $ctlClsid
+}
+
 # --- Register as an Outlook add-in --------------------------------------
 
 $addinKey = "HKCU:\Software\Microsoft\Office\Outlook\Addins\$progId"

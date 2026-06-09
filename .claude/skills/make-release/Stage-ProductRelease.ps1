@@ -1,8 +1,9 @@
 <#
 .SYNOPSIS
-    Build the RBLclass product add-in (NOT the POC) and package it into a
-    single install kit (.zip) that can be copied to a target workstation
-    and installed with the bundled Install-RblClassAddIn.ps1.
+    Build the RBLclass product add-in (NOT the POC) and package it both as
+    a PowerShell install kit (.zip) and as the per-user MSI that is the
+    artifact actually described in docs/installation-guide.html and
+    shipped to pilot users.
 
 .DESCRIPTION
     Product-grade adaptation of the validated POC staging flow
@@ -23,9 +24,17 @@
          keep working on 64-bit dev Outlook too).
       6. Zips the staging folder (AES-256 encrypted by default via 7-Zip;
          most corporate mail filters refuse unencrypted zips of .dll/.ps1).
+      7. Builds the per-user MSI from the SAME Release output via
+         installer\Build-Installer.ps1 (itself driven by
+         release.config.json), so the kit and the MSI are always stamped
+         with the same version and COM identity and can never drift apart.
 
     The produced zip is a self-contained install kit for the target
-    machine. See the on-target README.txt it writes for the procedure.
+    machine - see the on-target README.txt it writes for the procedure.
+    The produced MSI (installer\bin\<Product>-<Version>.msi) is the
+    artifact end users actually double-click, per
+    docs/installation-guide.html; CLAUDE.md "Packaging" has both coexist
+    until the MSI is validated on the 32-bit target.
 
     This script is invoked by the /make-release skill; it can also be run
     by hand.
@@ -116,7 +125,7 @@ poc/scripts/Stage-TargetRelease.ps1 to ship the POC.
 "@
 }
 
-Write-Host "[0/5] config      : $($config.Product) $Version  ($($config.ProgId))"
+Write-Host "[0/6] config      : $($config.Product) $Version  ($($config.ProgId))"
 Write-Host "      repo root   : $repoRoot"
 
 # ----------------------------------------------------------------------
@@ -139,13 +148,13 @@ $msbuild = & $vswhere -latest -prerelease -products * `
 if (-not $msbuild -or -not (Test-Path $msbuild)) {
     throw "MSBuild not found via vswhere."
 }
-Write-Host "[1/5] msbuild     : $msbuild"
+Write-Host "[1/6] msbuild     : $msbuild"
 
 # ----------------------------------------------------------------------
 # Step 2: Rebuild (clean output)
 # ----------------------------------------------------------------------
 
-Write-Host "[2/5] build       : $sln ($Configuration|Any CPU)"
+Write-Host "[2/6] build       : $sln ($Configuration|Any CPU)"
 & $msbuild $sln /restore /t:Rebuild "/p:Configuration=$Configuration" "/p:Platform=Any CPU" /v:minimal /nologo
 if ($LASTEXITCODE -ne 0) {
     throw "Build failed with exit code $LASTEXITCODE."
@@ -155,7 +164,7 @@ if ($LASTEXITCODE -ne 0) {
 # Step 3: Stage
 # ----------------------------------------------------------------------
 
-Write-Host "[3/5] stage       : $StageRoot"
+Write-Host "[3/6] stage       : $StageRoot"
 if (Test-Path $StageRoot) { Remove-Item $StageRoot -Recurse -Force }
 $payloadDir = Join-Path $StageRoot "payload"
 New-Item -ItemType Directory -Path $payloadDir -Force | Out-Null
@@ -203,7 +212,7 @@ Set-Content -Path (Join-Path $StageRoot "README.txt") -Value $readme -Encoding u
 # Step 4: Sanity-check payloads
 # ----------------------------------------------------------------------
 
-Write-Host "[4/5] verify      : main DLL + native SQLite payloads"
+Write-Host "[4/6] verify      : main DLL + native SQLite payloads"
 if (-not (Test-Path (Join-Path $payloadDir $config.MainDll))) {
     throw "Payload is missing $($config.MainDll) - aborting."
 }
@@ -229,7 +238,7 @@ if ($missing) {
 if (Test-Path $OutputZip) { Remove-Item $OutputZip -Force }
 
 if ([string]::IsNullOrEmpty($Password)) {
-    Write-Host "[5/5] zip         : $OutputZip (unencrypted)"
+    Write-Host "[5/6] zip         : $OutputZip (unencrypted)"
     Compress-Archive -Path (Join-Path $StageRoot "*") -DestinationPath $OutputZip -Force
 } else {
     # Encrypted zip via 7-Zip. Gmail and most corporate mail filters refuse
@@ -252,7 +261,7 @@ if ([string]::IsNullOrEmpty($Password)) {
               "Compress-Archive instead."
     }
 
-    Write-Host "[5/5] zip         : $OutputZip (AES-256 encrypted, password: $Password)"
+    Write-Host "[5/6] zip         : $OutputZip (AES-256 encrypted, password: $Password)"
     & $sevenZip a -tzip "-p$Password" -mem=AES256 -mx=5 $OutputZip (Join-Path $StageRoot "*") | Out-Null
     if ($LASTEXITCODE -ne 0) {
         throw "7-Zip failed with exit code $LASTEXITCODE."
@@ -260,10 +269,26 @@ if ([string]::IsNullOrEmpty($Password)) {
 }
 
 $zipSize = (Get-Item $OutputZip).Length
+
+# ----------------------------------------------------------------------
+# Step 6: Build the MSI from the same Release output
+# ----------------------------------------------------------------------
+# installer\Build-Installer.ps1 reads the SAME release.config.json, so the
+# MSI is stamped with the same AssemblyVersion/COM identity as the kit
+# above - they can never drift apart. This is the artifact actually
+# described in docs/installation-guide.html and double-clicked by pilots;
+# the kit remains the documented fallback until the MSI is also validated
+# on the 32-bit target (CLAUDE.md "Packaging").
+
+Write-Host "[6/6] msi         : installer\Build-Installer.ps1 -Configuration $Configuration"
+& (Join-Path $repoRoot "installer\Build-Installer.ps1") -Configuration $Configuration | ForEach-Object { Write-Host "        $_" }
+$msiPath = Join-Path $repoRoot "installer\bin\$($config.Product)-$($config.AssemblyVersion).msi"
+
 Write-Host ""
 Write-Host "Done."
 Write-Host "  Product : $($config.FriendlyName) $Version"
 Write-Host "  Zip     : $OutputZip ($([Math]::Round($zipSize/1KB)) KB)"
+Write-Host "  MSI     : $msiPath"
 Write-Host "  Staged  : $StageRoot"
 if (-not [string]::IsNullOrEmpty($Password)) {
     Write-Host "  Open with password: $Password"

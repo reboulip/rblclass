@@ -32,10 +32,17 @@ attachment management, and send-time guards.
   Outlook adapter. .NET Standard 2.0 for the business core.
 - **Language**: C# 7.3 (.NET Framework 4.8 limit unless LangVersion is
   explicitly bumped, which we avoid).
-- **UI**: WPF with MVVM via CommunityToolkit.Mvvm, hosted in Custom
-  Task Panes via `ICTPFactoryConsumer`/`ICustomTaskPane`. Ribbon via
+- **UI**: WPF with a **hand-rolled minimal MVVM** (`RBLclass.AddIn/Mvvm`:
+  `ObservableObject` + `RelayCommand`), hosted in Custom Task Panes via
+  `ICustomTaskPaneConsumer`/`ICTPFactory` — the WPF view is bridged into a
+  ComVisible WinForms host control through `ElementHost`. Ribbon via
   `IRibbonExtensibility.GetCustomUI` returning Ribbon XML (not the
-  Ribbon Designer).
+  Ribbon Designer). **CommunityToolkit.Mvvm is deliberately NOT used:** its
+  8.x dependencies (`System.Memory` ≥ 4.5.5, `System.Runtime.CompilerServices.Unsafe`
+  ≥ 6.0.0) float the SQLite facade assemblies above what `SQLitePCLRaw` was
+  built against, and a COM host has no binding redirects, so it breaks the
+  first `SqliteConnection` at runtime. Keep new AddIn dependencies
+  dependency-light for the same reason.
 - **Storage**: SQLite via Microsoft.Data.Sqlite, with FTS5 for full-text
   search. Database in %LocalAppData%\RBLclass\.
 - **Logging**: Serilog with a rolling file sink.

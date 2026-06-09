@@ -5,11 +5,19 @@
   "FriendlyName": "RBLclass - Email Classifier",
   "Description": "Classify Outlook mail into PST folders with fast keyword search.",
 
-  "Clsid": "{00000000-0000-0000-0000-000000000000}",
+  "Clsid": "{43808654-547E-4222-9BE3-7FA4B781FA44}",
   "ProgId": "RBLclass.AddIn",
   "AssemblyName": "RBLclass.AddIn",
   "AssemblyClass": "RBLclass.AddIn.RblClassAddIn",
-  "AssemblyVersion": "1.0.0.0",
+  "AssemblyVersion": "2.0.0.0",
+
+  "_comment_taskpane": "The Custom Task Pane host is a ComVisible WinForms UserControl in the same assembly. A raw Shared COM Add-in (no VSTO) must register the control's CLSID/ProgId itself, plus the ActiveX Control category, so Office's ICTPFactory.CreateCTP can instantiate it. CLSID/ProgId here MUST match the [Guid]/[ProgId] on RblClassTaskPaneHost.",
+  "TaskPaneControl": {
+    "Clsid": "{3357823B-8157-4B49-8B66-9BFF2F61C06B}",
+    "ProgId": "RBLclass.TaskPaneHost",
+    "AssemblyClass": "RBLclass.AddIn.RblClassTaskPaneHost",
+    "FriendlyName": "RBLclass Task Pane Host"
+  },
 
   "Solution": "RBLclass.sln",
   "AddInProjectOutput": "src\\RBLclass.AddIn\\bin\\{Configuration}\\net48",

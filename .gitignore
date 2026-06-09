@@ -25,6 +25,11 @@ Thumbs.db
 # POC publish output (if any)
 poc/publish/
 
+# WiX MSI build output
+installer/bin/
+installer/*.msi
+installer/*.wixpdb
+
 # Runtime side-effects when launching the add-in (Outlook telemetry stub)
 myeasylog.log
 
