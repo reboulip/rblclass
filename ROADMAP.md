@@ -31,6 +31,10 @@ documented in a trilingual (EN/DE/FR) self-contained install guide
 awaiting the 32-bit-target regression pass before merge, tag, and
 `/make-release` packaging.
 
+**Update (2026-06-09):** the throwaway Phase 0 POC has been removed now that
+the product is stable, and the first wave of operational pilot feedback is
+scoped for **v2.1.0.0** — see the planned section at the end of this file.
+
 ## Testing & validation strategy (applies to every phase)
 
 - **Automated unit tests:** all non-trivial logic lives in
@@ -414,3 +418,122 @@ dependency scanning) are usually worth more than the code tweaks.
 - **External-recipient and diagnostics dialogs** that display addresses/paths
   are **intentional UX** (the whole point of the external-recipient guard),
   not information-disclosure leaks.
+
+## v2.1.0.0 — Pilot-feedback UX & fixes (planned)
+
+The first feedback wave from operational use on the test machine (Phase 6
+"Feedback loop, bug fixes"). All of it is polish, UX, and bug-fix work on
+top of the shipped v2.0.0.0 — no new architectural layer. Ordered so the
+**theming/layout foundations** land first (they touch the views everything
+else styles), then the **isolated correctness/UX fixes**, then the three
+**design-heavy redesigns** last (each carries open implementation questions
+to resolve when it's picked up). Per CLAUDE.md, any non-trivial `RBLclass.Core`
+logic added here (search default, classify-to-root, banner signature matching
+if it lands in Core) ships with xUnit coverage.
+
+Decisions already taken with the maintainer are baked into each item below;
+the remaining **open questions** are called out inline.
+
+### A. Theming & layout foundations
+
+- [ ] **Theme-aware task-pane & dialog styling (fixes the readability +
+      dark-theme reports).** Today some CTP text is dark-on-dark-grey and the
+      search-results surface stays white under a dark Outlook theme. Read the
+      **Office UI theme** (White / Colorful / Dark Gray / Black) and apply a
+      matching background+foreground palette across the task pane **and every
+      modal window** (settings, folder picker, send guards, sent-item triage).
+      **Caveat:** the Office theme can itself be set to *"Use system
+      setting"* — in that case resolve the actual light/dark palette from the
+      **Windows app theme**. Centralise the colours in a shared WPF
+      `ResourceDictionary` (theme brushes) consumed by all views so nothing
+      hard-codes white/black again.
+      - Open Qs: react to a live theme switch while Outlook is running, or
+        resolve once at pane/dialog creation? Exact registry/API source for
+        the Office theme vs the Windows theme.
+- [ ] **Long folder-path display in the narrow vertical pane.** Folder paths
+      can exceed the CTP width; the informative end of the path (the leaf and
+      its immediate parents) must stay visible. Left-truncate with a leading
+      ellipsis (show the *end*, not the start) and expose the full path on
+      hover/tooltip. Applies to the unified list (below) and any path label.
+
+### B. Isolated correctness & UX fixes
+
+- [ ] **Make "contains" the default folder-search match mode.** Search
+      currently matches a keyword as a word *prefix*, so `security` misses
+      `Cybersecurity`. Flip the default `FolderMatchMode` to substring/contains
+      (the mode already exists, `FolderSearchService` / [[folder-search-match-mode]]);
+      word-prefix becomes the opt-in. Update the default in `Settings`, applied
+      to both the Open and Classify searches. xUnit: `security` matches
+      `Cybersecurity`; word-prefix still available via the setting.
+- [ ] **Allow classifying into a PST store's root node.** Users want to file
+      directly at the top of a `.pst`, above any folder. Make the **store root
+      node** a selectable destination in the folder tree / search results /
+      unified list, and support `Move` into the store root in the adapter.
+      - Open Q: do store roots also participate in keyword search results, or
+        only appear as an always-available "(root of <store>)" entry?
+- [ ] **Freeze the pane while a classify/move is running (anti-double-fire).**
+      A slow classify tempts a second Enter / Classify click, which today
+      queues an action that then fires against the *next* mail selected after
+      processing. While a classify or move is in flight, disable pane input
+      (search box, list, toggles, buttons, Enter) and show a busy indicator;
+      ignore repeat triggers; re-enable on completion. A clean re-entrancy
+      guard in `ClassifyViewModel.DoClassify`.
+- [ ] **Process encrypted conversation siblings correctly (Stormshield).**
+      When "process same conversation" is on and Stormshield is **not active**,
+      encrypted siblings of the conversation are currently dropped from the
+      run. Decision: **skip them but surface a notice** listing the items that
+      were not processed (rather than silently omitting them) — do not fail the
+      whole classify. Wire into the conversation-widening path used by classify
+      and sent-item triage.
+- [ ] **Position modal windows on the active Outlook monitor (multi-screen).**
+      The "process sent item" modal (and the other app modals) can open on the
+      primary monitor while Outlook lives on another. Centre each modal on its
+      **owner Outlook window** so it appears where the user is working.
+
+### C. Design-heavy redesigns (open questions inline)
+
+- [ ] **Unify the two pane modes into one always-open task pane.** Today a
+      single CTP swaps its whole body between an Open view and a Classify view
+      and the ribbon button toggles it shut — so it *feels* like two panes that
+      keep vanishing. Replace both with **one always-open pane built around a
+      single folder-search list**, with these row interactions:
+      - **single-click** → toggle the folder into the classify selection (check);
+      - **double-click** → file to that one folder immediately;
+      - **per-row button** → open/reveal that folder in the Outlook explorer.
+
+      The top of the pane carries the selected-mail count, the option toggles
+      (keep-a-copy, remove-attachments, widen-conversation, all-results), and a
+      **"Classify to N folders"** button (and Enter) for filing into all checked
+      folders at once. The ribbon "Open folder" / "Classify" buttons reveal/focus
+      the pane instead of toggling it closed. Retire the `PaneMode` /
+      `ShowOpenFolder` / `ShowClassify` split (`RblClassTaskPaneHost`,
+      `TaskPaneServices`, `RblClassAddIn.TogglePane`) in favour of the merged
+      view ([[prefer-isolated-new-ui-over-retrofit]] — build the merged list as a
+      new view rather than retrofitting either existing one).
+      - Open Qs: what the two ribbon buttons now mean (both just show the pane?);
+        where inline sub-folder creation lives in the merged layout; how the
+        list reflects single-mail vs multi-mail Outlook selections; keyboard
+        model (Enter = classify-to-checked vs classify-to-first).
+- [ ] **Rework the sent-item triage into a dropdown setting.** Replace the
+      on/off `SentItemTriagePrompt` with a **dropdown**: *Move-to-Inbox /
+      Delete / Leave / "Let me choose"*. A fixed value applies **automatically
+      with no modal**; *"Let me choose"* shows the modal with just those three
+      buttons. **Remove the "Class" action and the whole-conversation
+      checkbox** from triage (they no longer fit this model). Includes a
+      settings migration from the old boolean key
+      (`SentItemTriageViewModel` / `SentItemTriageWindow` / `SettingsKeys`).
+- [ ] **Strip the external-sender banner on reply and on classify.** The ugly
+      "external email" reminder banner varies per company, so RBLclass learns
+      it from a **sample the user teaches it once** (capture a real banner —
+      text/HTML — derive a signature, strip matching blocks). Two triggers:
+      1. **On reply / reply-all / forward** — auto-strip the banner from the
+         draft when a settings toggle is on.
+      2. **At classify time** — a tickbox (default value from settings) that
+         strips the banner from the **filed copy**.
+      - Open Qs (detailed design needed): the capture UX (paste vs "pick from
+        an open mail"); how robust the signature is (HTML structure vs plain
+        text, localised/variant banners, more than one banner per company);
+        filed-copy-only vs also-original semantics
+        ([[classify-attachments-on-copy]] sets the precedent: act on the copy,
+        leave the original intact); whether banner matching belongs in
+        `RBLclass.Core` (testable) or the Outlook adapter (HTML body access).
