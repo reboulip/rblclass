@@ -436,7 +436,7 @@ the remaining **open questions** are called out inline.
 
 ### A. Theming & layout foundations
 
-- [ ] **Theme-aware task-pane & dialog styling (fixes the readability +
+- [x] **Theme-aware task-pane & dialog styling (fixes the readability +
       dark-theme reports).** Today some CTP text is dark-on-dark-grey and the
       search-results surface stays white under a dark Outlook theme. Read the
       **Office UI theme** (White / Colorful / Dark Gray / Black) and apply a
@@ -450,7 +450,7 @@ the remaining **open questions** are called out inline.
       - Open Qs: react to a live theme switch while Outlook is running, or
         resolve once at pane/dialog creation? Exact registry/API source for
         the Office theme vs the Windows theme.
-- [ ] **Long folder-path display in the narrow vertical pane.** Folder paths
+- [x] **Long folder-path display in the narrow vertical pane.** Folder paths
       can exceed the CTP width; the informative end of the path (the leaf and
       its immediate parents) must stay visible. Left-truncate with a leading
       ellipsis (show the *end*, not the start) and expose the full path on
@@ -489,6 +489,23 @@ the remaining **open questions** are called out inline.
       The "process sent item" modal (and the other app modals) can open on the
       primary monitor while Outlook lives on another. Centre each modal on its
       **owner Outlook window** so it appears where the user is working.
+- [ ] **Pick up folders created/renamed directly in Outlook, via a manual
+      Refresh.** Reported in pilot testing: creating (or renaming) a sub-folder
+      by hand in the Outlook tree does not surface it in folder search — only
+      the add-in's own "New subfolder" action re-indexes. **Decision: add a
+      "Refresh folders" ribbon button** that re-walks the live stores on demand
+      (`IFolderTree.WalkAndPersist`, on the Outlook UI thread — the same path as
+      the first-run walk) and refreshes the cache, so created/renamed/deleted
+      folders all reconcile in one go. *Rejected for now,* with reasons recorded
+      so the trade-off is explicit: **live folder events** — Outlook has no
+      tree-wide folder-change event, so catching nested creation/rename needs
+      recursive `FolderAdd`/`FolderChange`/`FolderRemove` sinks on every folder
+      held all session: too much COM-lifetime sprawl and memory for the 32-bit
+      process, for an infrequent action; **periodic timer walk** — wasteful full
+      walks regardless of change, still stale between ticks. The button is
+      on-demand, robust, and adds no standing COM overhead. Revisit auto-sync
+      only if manual refresh proves painful. Underlying walk is already covered
+      by `FolderIndexServiceTests`; the button itself is shell wiring.
 
 ### C. Design-heavy redesigns (open questions inline)
 
