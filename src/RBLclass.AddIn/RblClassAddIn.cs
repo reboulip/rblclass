@@ -654,6 +654,54 @@ namespace RBLclass.AddIn
             }
         }
 
+        /// <summary>
+        /// Ribbon "Refresh folders": re-walk the live stores on demand so folders
+        /// created or renamed directly in Outlook (not via our own "New subfolder"
+        /// action) surface in search. Reuses the first-run walk path
+        /// (<see cref="IFolderTree.WalkAndPersist"/>); ribbon callbacks already run
+        /// on the Outlook UI (STA) thread, which is where COM access must happen.
+        /// </summary>
+        public void OnRefreshFoldersClick(Office.IRibbonControl control)
+        {
+            try
+            {
+                if (_folderTree == null)
+                {
+                    MessageBox.Show("The folder index is not ready yet.",
+                                    "RBLclass - Refresh folders",
+                                    MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    return;
+                }
+
+                Cursor.Current = Cursors.WaitCursor;
+                try
+                {
+                    var sw = Stopwatch.StartNew();
+                    _lastIndexResult = _folderTree.WalkAndPersist();
+                    sw.Stop();
+                    Log.Information(
+                        "Manual folder refresh: {Stores} stores, {Folders} folders in {Ms} ms.",
+                        _lastIndexResult.StoreCount, _lastIndexResult.FolderCount, sw.ElapsedMilliseconds);
+                }
+                finally
+                {
+                    Cursor.Current = Cursors.Default;
+                }
+
+                MessageBox.Show(
+                    "Folder index refreshed." + Environment.NewLine + Environment.NewLine +
+                    "Stores  : " + _lastIndexResult.StoreCount + Environment.NewLine +
+                    "Folders : " + _lastIndexResult.FolderCount + Environment.NewLine + Environment.NewLine +
+                    "Re-run your search to see newly created or renamed folders.",
+                    "RBLclass - Refresh folders",
+                    MessageBoxButtons.OK, MessageBoxIcon.Information);
+            }
+            catch (Exception ex)
+            {
+                ShowError("Refresh folders failed", ex);
+            }
+        }
+
         /// <summary>Ribbon "Settings": modal dialog over every user-facing option (legacy §7). Live-applies on every change.</summary>
         public void OnSettingsClick(Office.IRibbonControl control)
         {

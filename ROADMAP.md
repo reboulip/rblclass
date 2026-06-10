@@ -489,7 +489,7 @@ the remaining **open questions** are called out inline.
       The "process sent item" modal (and the other app modals) can open on the
       primary monitor while Outlook lives on another. Centre each modal on its
       **owner Outlook window** so it appears where the user is working.
-- [ ] **Pick up folders created/renamed directly in Outlook, via a manual
+- [x] **Pick up folders created/renamed directly in Outlook, via a manual
       Refresh.** Reported in pilot testing: creating (or renaming) a sub-folder
       by hand in the Outlook tree does not surface it in folder search — only
       the add-in's own "New subfolder" action re-indexes. **Decision: add a

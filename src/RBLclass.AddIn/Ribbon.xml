@@ -25,6 +25,13 @@
                   onAction="OnRemoveAttachmentsClick"
                   screentip="Remove attachments"
                   supertip="Strip all attachments from the selected mail(s), after confirmation." />
+          <button id="RefreshFoldersButton"
+                  label="Refresh folders"
+                  size="large"
+                  imageMso="Refresh"
+                  onAction="OnRefreshFoldersClick"
+                  screentip="Refresh the folder index"
+                  supertip="Re-scan your PST stores so folders you created or renamed directly in Outlook show up in search. Run this after adding folders by hand." />
           <button id="IndexStatusButton"
                   label="Index status"
                   size="large"
