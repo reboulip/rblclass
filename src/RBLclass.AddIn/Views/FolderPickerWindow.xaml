@@ -4,6 +4,7 @@
         mc:Ignorable="d"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:v="clr-namespace:RBLclass.AddIn.Views"
         Title="RBLclass - Choose a folder" Height="420" Width="340"
         WindowStartupLocation="CenterScreen"
         d:DesignHeight="420" d:DesignWidth="340">
@@ -23,10 +24,11 @@
                  ItemsSource="{Binding Results}"
                  SelectedItem="{Binding SelectedResult}"
                  MouseDoubleClick="ResultsList_MouseDoubleClick"
-                 HorizontalContentAlignment="Stretch">
+                 HorizontalContentAlignment="Stretch"
+                 ScrollViewer.HorizontalScrollBarVisibility="Disabled">
             <ListBox.ItemTemplate>
                 <DataTemplate>
-                    <TextBlock Text="{Binding DisplayPath}" TextTrimming="CharacterEllipsis" />
+                    <TextBlock v:PathTrim.FullPath="{Binding DisplayPath}" />
                 </DataTemplate>
             </ListBox.ItemTemplate>
         </ListBox>

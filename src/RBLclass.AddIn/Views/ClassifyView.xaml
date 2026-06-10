@@ -4,6 +4,7 @@
              mc:Ignorable="d"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:v="clr-namespace:RBLclass.AddIn.Views"
              d:DesignHeight="460" d:DesignWidth="320">
     <Grid Margin="8">
         <Grid.RowDefinitions>
@@ -30,11 +31,15 @@
              (no Ctrl needed). -->
         <ListBox Grid.Row="3" x:Name="ResultsList"
                  ItemsSource="{Binding Results}"
-                 HorizontalContentAlignment="Stretch">
+                 HorizontalContentAlignment="Stretch"
+                 ScrollViewer.HorizontalScrollBarVisibility="Disabled">
             <ListBox.ItemTemplate>
                 <DataTemplate>
                     <CheckBox IsChecked="{Binding IsSelected}"
-                              Content="{Binding DisplayPath}" />
+                              HorizontalContentAlignment="Stretch">
+                        <!-- Leading-ellipsis path so the leaf stays visible; full path on hover. -->
+                        <TextBlock v:PathTrim.FullPath="{Binding DisplayPath}" />
+                    </CheckBox>
                 </DataTemplate>
             </ListBox.ItemTemplate>
         </ListBox>

@@ -4,6 +4,7 @@
              mc:Ignorable="d"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:v="clr-namespace:RBLclass.AddIn.Views"
              d:DesignHeight="400" d:DesignWidth="320">
     <Grid Margin="8">
         <Grid.RowDefinitions>
@@ -25,10 +26,13 @@
                  ItemsSource="{Binding Results}"
                  SelectedItem="{Binding SelectedResult}"
                  MouseDoubleClick="ResultsList_MouseDoubleClick"
-                 HorizontalContentAlignment="Stretch">
+                 HorizontalContentAlignment="Stretch"
+                 ScrollViewer.HorizontalScrollBarVisibility="Disabled">
             <ListBox.ItemTemplate>
                 <DataTemplate>
-                    <TextBlock Text="{Binding DisplayPath}" TextTrimming="CharacterEllipsis" />
+                    <!-- Show the END of long paths (leading ellipsis) so the leaf
+                         stays visible in the narrow pane; full path on hover. -->
+                    <TextBlock v:PathTrim.FullPath="{Binding DisplayPath}" />
                 </DataTemplate>
             </ListBox.ItemTemplate>
         </ListBox>
