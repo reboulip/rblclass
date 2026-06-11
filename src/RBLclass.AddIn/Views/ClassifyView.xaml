@@ -6,7 +6,13 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:v="clr-namespace:RBLclass.AddIn.Views"
              d:DesignHeight="460" d:DesignWidth="320">
-    <Grid Margin="8">
+    <Grid>
+        <Grid.Resources>
+            <BooleanToVisibilityConverter x:Key="BoolToVis" />
+        </Grid.Resources>
+
+        <!-- Inputs are disabled while a classify is running (re-entrancy guard). -->
+        <Grid Margin="8" IsEnabled="{Binding IsNotBusy}">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />
             <RowDefinition Height="Auto" />
@@ -61,5 +67,13 @@
 
         <TextBlock Grid.Row="6" Margin="0,6,0,0" Style="{DynamicResource MutedText}"
                    Text="{Binding Status}" TextWrapping="Wrap" />
+        </Grid>
+
+        <!-- Busy overlay: dims the pane and blocks interaction during a classify. -->
+        <Border Background="{DynamicResource Theme.Background}" Opacity="0.85"
+                Visibility="{Binding IsBusy, Converter={StaticResource BoolToVis}}">
+            <TextBlock Text="Filing…" FontWeight="Bold"
+                       HorizontalAlignment="Center" VerticalAlignment="Center" />
+        </Border>
     </Grid>
 </UserControl>

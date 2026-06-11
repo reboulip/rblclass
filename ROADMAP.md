@@ -471,7 +471,7 @@ the remaining **open questions** are called out inline.
       unified list, and support `Move` into the store root in the adapter.
       - Open Q: do store roots also participate in keyword search results, or
         only appear as an always-available "(root of <store>)" entry?
-- [ ] **Freeze the pane while a classify/move is running (anti-double-fire).**
+- [x] **Freeze the pane while a classify/move is running (anti-double-fire).**
       A slow classify tempts a second Enter / Classify click, which today
       queues an action that then fires against the *next* mail selected after
       processing. While a classify or move is in flight, disable pane input

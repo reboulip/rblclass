@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
+using System.Windows.Threading;
 using RBLclass.AddIn.Mvvm;
 using RBLclass.Core;
 
@@ -29,6 +30,7 @@ namespace RBLclass.AddIn.ViewModels
         private bool _widenConversation;
         private string _selectionSummary = "No mail selected.";
         private string _status = string.Empty;
+        private bool _isBusy;
 
         public ClassifyViewModel(IFolderSearch search,
                                  IClassifier classifier,
@@ -105,6 +107,25 @@ namespace RBLclass.AddIn.ViewModels
             private set => SetProperty(ref _status, value);
         }
 
+        /// <summary>
+        /// True while a classify is running. Bound so the pane disables its
+        /// inputs and shows a busy overlay, and used as a re-entrancy guard so a
+        /// second Enter/click queued during the (UI-thread-blocking) classify is
+        /// ignored rather than applied to the next selected mail.
+        /// </summary>
+        public bool IsBusy
+        {
+            get => _isBusy;
+            private set
+            {
+                if (SetProperty(ref _isBusy, value))
+                    OnPropertyChanged(nameof(IsNotBusy));
+            }
+        }
+
+        /// <summary>Convenience inverse of <see cref="IsBusy"/> for IsEnabled bindings.</summary>
+        public bool IsNotBusy => !_isBusy;
+
         /// <summary>Update the "N mails selected" label (from the live SelectionChange event).</summary>
         public void SetSelectionCount(int count)
         {
@@ -121,6 +142,8 @@ namespace RBLclass.AddIn.ViewModels
         /// <summary>Classify into the checked destination folders (the Classify button).</summary>
         public void ClassifyChecked()
         {
+            if (_isBusy) return; // ignore a repeat trigger while a classify is in flight
+
             var destinations = Results.Where(r => r.IsSelected).Select(r => r.Folder).ToList();
             if (destinations.Count == 0)
             {
@@ -133,6 +156,8 @@ namespace RBLclass.AddIn.ViewModels
         /// <summary>Classify into the first result folder (Enter in the search box).</summary>
         public void ClassifyToFirst()
         {
+            if (_isBusy) return; // ignore a repeat trigger while a classify is in flight
+
             if (Results.Count == 0)
             {
                 Status = "No matching folder to file into.";
@@ -150,29 +175,47 @@ namespace RBLclass.AddIn.ViewModels
                 return;
             }
 
-            var preflight = _classifier.Preflight(items, _widenConversation);
+            IsBusy = true;
+            Status = "Filing…";
 
-            bool markTasksComplete = false;
-            if (preflight.FlaggedIncomplete.Count > 0 && _confirmMarkTasksComplete != null)
+            // Paint the busy overlay before the COM work blocks the UI thread.
+            Dispatcher.CurrentDispatcher.Invoke(new Action(() => { }), DispatcherPriority.Render);
+
+            try
             {
-                var answer = _confirmMarkTasksComplete(preflight.FlaggedIncomplete.Count);
-                if (answer == null)
+                var preflight = _classifier.Preflight(items, _widenConversation);
+
+                bool markTasksComplete = false;
+                if (preflight.FlaggedIncomplete.Count > 0 && _confirmMarkTasksComplete != null)
                 {
-                    Status = "Classify cancelled.";
-                    return;
+                    var answer = _confirmMarkTasksComplete(preflight.FlaggedIncomplete.Count);
+                    if (answer == null)
+                    {
+                        Status = "Classify cancelled.";
+                        return;
+                    }
+                    markTasksComplete = answer.Value;
                 }
-                markTasksComplete = answer.Value;
+
+                var result = _classifier.Classify(
+                    new ClassifyRequest(preflight.Items, destinations, _keepCopy, _removeAttachments, markTasksComplete));
+
+                string verb = _keepCopy ? "Copied" : "Filed";
+                Status = verb + " " + result.ItemsProcessed + " mail(s) to " +
+                         destinations.Count + " folder(s)" +
+                         (result.Errors > 0 ? " (" + result.Errors + " failed)" : "") + ".";
+
+                RefreshSelection();
             }
-
-            var result = _classifier.Classify(
-                new ClassifyRequest(preflight.Items, destinations, _keepCopy, _removeAttachments, markTasksComplete));
-
-            string verb = _keepCopy ? "Copied" : "Filed";
-            Status = verb + " " + result.ItemsProcessed + " mail(s) to " +
-                     destinations.Count + " folder(s)" +
-                     (result.Errors > 0 ? " (" + result.Errors + " failed)" : "") + ".";
-
-            RefreshSelection();
+            finally
+            {
+                // Re-enable only after any input queued during the blocking
+                // classify has drained (Input priority runs before Background) -
+                // the IsBusy guard ignores it, so a second Enter/click never fires
+                // against the next selected mail.
+                Dispatcher.CurrentDispatcher.BeginInvoke(
+                    new Action(() => IsBusy = false), DispatcherPriority.Background);
+            }
         }
 
         /// <summary>Create a sub-folder under the first checked folder, then re-run the search.</summary>
