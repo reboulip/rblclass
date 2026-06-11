@@ -478,13 +478,18 @@ the remaining **open questions** are called out inline.
       (search box, list, toggles, buttons, Enter) and show a busy indicator;
       ignore repeat triggers; re-enable on completion. A clean re-entrancy
       guard in `ClassifyViewModel.DoClassify`.
-- [ ] **Process encrypted conversation siblings correctly (Stormshield).**
+- [x] **Process encrypted conversation siblings correctly (Stormshield).**
+      *(Implemented; NOT verified live — no encrypted test message available on
+      the dev machine. Covered by unit tests only; re-verify on a workstation
+      that has S/MIME / Stormshield mail before relying on it for pilot.)*
       When "process same conversation" is on and Stormshield is **not active**,
       encrypted siblings of the conversation are currently dropped from the
       run. Decision: **skip them but surface a notice** listing the items that
       were not processed (rather than silently omitting them) — do not fail the
-      whole classify. Wire into the conversation-widening path used by classify
-      and sent-item triage.
+      whole classify. Wired into the conversation-widening path used by classify
+      and sent-item triage: `GetConversationSiblings` now returns a
+      `ConversationSiblings` (processable + skipped-encrypted subjects), carried
+      through `ClassifyPreflight` to a pane status note and a triage message box.
 - [ ] **Position modal windows on the active Outlook monitor (multi-screen).**
       The "process sent item" modal (and the other app modals) can open on the
       primary monitor while Outlook lives on another. Centre each modal on its

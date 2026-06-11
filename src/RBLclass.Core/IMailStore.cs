@@ -56,10 +56,13 @@ namespace RBLclass.Core
         /// Items sharing <paramref name="item"/>'s conversation, restricted to
         /// the default store's Inbox and Sent Items and excluding
         /// <paramref name="item"/> itself (legacy "conversation widening",
-        /// 5b step 2). Returns an empty list when the item has no conversation
-        /// or none of its siblings live in those two folders.
+        /// 5b step 2). Encrypted/signed (S/MIME) siblings can't be safely
+        /// processed when the provider (e.g. Stormshield) is inactive, so they
+        /// are reported separately (<see cref="ConversationSiblings.SkippedEncryptedSubjects"/>)
+        /// rather than included. Returns <see cref="ConversationSiblings.Empty"/>
+        /// when the item has no in-scope conversation.
         /// </summary>
-        IReadOnlyList<MailItemRef> GetConversationSiblings(MailItemRef item);
+        ConversationSiblings GetConversationSiblings(MailItemRef item);
 
         /// <summary>
         /// True when the item carries a follow-up flag that has not been marked

@@ -331,27 +331,30 @@ namespace RBLclass.Outlook.Adapter
             }
         }
 
-        public IReadOnlyList<MailItemRef> GetConversationSiblings(MailItemRef item)
+        public ConversationSiblings GetConversationSiblings(MailItemRef item)
         {
             var result = new List<MailItemRef>();
-            if (item == null) return result;
+            var skipped = new List<string>();
+            ConversationSiblings Outcome() => new ConversationSiblings(result, skipped);
+
+            if (item == null) return Outcome();
 
             using (var session = new ComRef<OutlookOM.NameSpace>(_app.Session))
             {
                 object rawItem;
                 try { rawItem = session.Value.GetItemFromID(item.EntryId, item.StoreId); }
-                catch { return result; }
+                catch { return Outcome(); }
 
                 using (var comItem = new ComRef<object>(rawItem))
                 {
                     var mail = comItem.Value as OutlookOM.MailItem;
-                    if (mail == null) return result;
+                    if (mail == null) return Outcome();
 
                     OutlookOM.Conversation rawConversation;
                     try { rawConversation = mail.GetConversation(); }
-                    catch { return result; } // conversation tracking unavailable - tolerate
+                    catch { return Outcome(); } // conversation tracking unavailable - tolerate
 
-                    if (rawConversation == null) return result;
+                    if (rawConversation == null) return Outcome();
 
                     using (var conversation = new ComRef<OutlookOM.Conversation>(rawConversation))
                     {
@@ -366,11 +369,11 @@ namespace RBLclass.Outlook.Adapter
                             session.Value, OutlookOM.OlDefaultFolders.olFolderInbox);
                         string sentEntryId = SafeNamespaceDefaultFolderEntryId(
                             session.Value, OutlookOM.OlDefaultFolders.olFolderSentMail);
-                        if (inboxEntryId == null && sentEntryId == null) return result;
+                        if (inboxEntryId == null && sentEntryId == null) return Outcome();
 
                         OutlookOM.Table rawTable;
                         try { rawTable = conversation.Value.GetTable(); }
-                        catch { return result; }
+                        catch { return Outcome(); }
 
                         using (var table = new ComRef<OutlookOM.Table>(rawTable))
                         {
@@ -387,25 +390,28 @@ namespace RBLclass.Outlook.Adapter
                                 if (entryId == null || !seen.Add(entryId)) continue;
 
                                 AddSiblingIfInScope(session.Value, entryId,
-                                                     inboxEntryId, sentEntryId, result);
+                                                     inboxEntryId, sentEntryId, result, skipped);
                             }
                         }
                     }
                 }
             }
 
-            return result;
+            return Outcome();
         }
 
         /// <summary>
-        /// Resolve <paramref name="entryId"/> and, if it is a plain mail item
-        /// living directly in the Inbox or Sent Items (by folder EntryID, and
-        /// not S/MIME-signed/encrypted - legacy skips <c>IPM.Note.SMIME</c>),
-        /// append it to <paramref name="result"/>.
+        /// Resolve <paramref name="entryId"/> and, if it is a mail item living
+        /// directly in the Inbox or Sent Items (by folder EntryID), either append
+        /// it to <paramref name="result"/> or - when it is S/MIME-signed/encrypted
+        /// (<c>IPM.Note.SMIME</c>, e.g. Stormshield, which can't be safely
+        /// processed with the provider inactive) - record its subject in
+        /// <paramref name="skipped"/> so the caller can warn instead of silently
+        /// leaving it behind.
         /// </summary>
         private static void AddSiblingIfInScope(OutlookOM.NameSpace session, string entryId,
                                                  string inboxEntryId, string sentEntryId,
-                                                 List<MailItemRef> result)
+                                                 List<MailItemRef> result, List<string> skipped)
         {
             object rawSibling;
             try { rawSibling = session.GetItemFromID(entryId); }
@@ -415,11 +421,17 @@ namespace RBLclass.Outlook.Adapter
             {
                 var sibling = comSibling.Value as OutlookOM.MailItem;
                 if (sibling == null) return;
-                if (Safe(() => sibling.MessageClass, string.Empty) == "IPM.Note.SMIME") return;
 
                 if (!TryGetFolderInfo(sibling, out string storeId, out string folderEntryId))
                     return;
                 if (folderEntryId != inboxEntryId && folderEntryId != sentEntryId) return;
+
+                // In scope. Encrypted/signed S/MIME is skipped but reported.
+                if (Safe(() => sibling.MessageClass, string.Empty) == "IPM.Note.SMIME")
+                {
+                    skipped.Add(Safe(() => sibling.Subject, "(encrypted message)"));
+                    return;
+                }
 
                 result.Add(new MailItemRef(storeId, entryId, Safe(() => sibling.Subject, string.Empty)));
             }

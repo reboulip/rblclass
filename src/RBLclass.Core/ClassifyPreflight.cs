@@ -11,10 +11,12 @@ namespace RBLclass.Core
     public sealed class ClassifyPreflight
     {
         public ClassifyPreflight(IReadOnlyList<MailItemRef> items,
-                                 IReadOnlyList<MailItemRef> flaggedIncomplete)
+                                 IReadOnlyList<MailItemRef> flaggedIncomplete,
+                                 IReadOnlyList<string> skippedEncrypted = null)
         {
             Items = items;
             FlaggedIncomplete = flaggedIncomplete;
+            SkippedEncrypted = skippedEncrypted ?? new string[0];
         }
 
         /// <summary>
@@ -30,5 +32,13 @@ namespace RBLclass.Core
         /// caller should only prompt when this is non-empty.
         /// </summary>
         public IReadOnlyList<MailItemRef> FlaggedIncomplete { get; }
+
+        /// <summary>
+        /// Subjects of conversation siblings that were skipped because they are
+        /// encrypted/signed (the encryption provider is inactive). Empty unless
+        /// widening was requested and an in-scope encrypted sibling was found -
+        /// the caller should warn the user these were left in place.
+        /// </summary>
+        public IReadOnlyList<string> SkippedEncrypted { get; }
     }
 }

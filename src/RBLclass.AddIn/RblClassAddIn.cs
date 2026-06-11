@@ -499,8 +499,10 @@ namespace RBLclass.AddIn
             switch (action)
             {
                 case SentItemTriageAction.Delete:
-                    foreach (var i in _classifier.Preflight(new[] { item }, widenConversation).Items)
+                    var deletePreflight = _classifier.Preflight(new[] { item }, widenConversation);
+                    foreach (var i in deletePreflight.Items)
                         _mailStore.DeleteItem(i);
+                    WarnIfEncryptedSkipped(deletePreflight);
                     break;
 
                 case SentItemTriageAction.MoveToInbox:
@@ -548,6 +550,25 @@ namespace RBLclass.AddIn
             Log.Information(
                 "Sent-item triage classified {Processed} mail(s) to {Destinations} folder(s) ({Errors} failed).",
                 result.ItemsProcessed, destinations.Count, result.Errors);
+
+            WarnIfEncryptedSkipped(preflight);
+        }
+
+        /// <summary>
+        /// Warn the user about encrypted conversation siblings that were left in
+        /// place (the encryption provider, e.g. Stormshield, is inactive so they
+        /// can't be safely processed) - rather than silently dropping them.
+        /// </summary>
+        private void WarnIfEncryptedSkipped(ClassifyPreflight preflight)
+        {
+            if (preflight == null || preflight.SkippedEncrypted.Count == 0) return;
+
+            MessageBox.Show(
+                "These encrypted message(s) in the conversation were left in place " +
+                "(the encryption provider is not active):" + Environment.NewLine + Environment.NewLine +
+                " - " + string.Join(Environment.NewLine + " - ", preflight.SkippedEncrypted),
+                "RBLclass - Encrypted messages skipped",
+                MessageBoxButtons.OK, MessageBoxIcon.Information);
         }
 
         /// <summary>Show the small modal folder-picker; null if the user cancelled.</summary>

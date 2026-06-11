@@ -205,6 +205,10 @@ namespace RBLclass.AddIn.ViewModels
                          destinations.Count + " folder(s)" +
                          (result.Errors > 0 ? " (" + result.Errors + " failed)" : "") + ".";
 
+                if (preflight.SkippedEncrypted.Count > 0)
+                    Status += " " + preflight.SkippedEncrypted.Count +
+                              " encrypted message(s) in the conversation were left in place.";
+
                 RefreshSelection();
             }
             finally
