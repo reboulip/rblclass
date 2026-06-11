@@ -36,7 +36,7 @@ namespace RBLclass.Core.Tests
 
             settings.OpenInNewWindow.Should().BeFalse();
             settings.AllResults.Should().BeFalse();
-            settings.FolderMatchMode.Should().Be(FolderMatchMode.WordPrefix);
+            settings.FolderMatchMode.Should().Be(FolderMatchMode.Substring);
             settings.MaxResults.Should().Be(FolderSearchOptions.DefaultMaxResults);
             settings.KeepCopy.Should().BeFalse();
             settings.RemoveAttachments.Should().BeFalse();
@@ -107,10 +107,10 @@ namespace RBLclass.Core.Tests
         }
 
         [Fact]
-        public void Load_falls_back_to_word_prefix_when_the_stored_match_mode_is_unrecognised()
+        public void Load_falls_back_to_the_default_substring_when_the_stored_match_mode_is_unrecognised()
         {
             _store.Set(SettingsKeys.FolderMatchMode, "Fuzzy");
-            Settings.Load(_store).FolderMatchMode.Should().Be(FolderMatchMode.WordPrefix);
+            Settings.Load(_store).FolderMatchMode.Should().Be(FolderMatchMode.Substring);
         }
     }
 }

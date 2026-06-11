@@ -458,7 +458,7 @@ the remaining **open questions** are called out inline.
 
 ### B. Isolated correctness & UX fixes
 
-- [ ] **Make "contains" the default folder-search match mode.** Search
+- [x] **Make "contains" the default folder-search match mode.** Search
       currently matches a keyword as a word *prefix*, so `security` misses
       `Cybersecurity`. Flip the default `FolderMatchMode` to substring/contains
       (the mode already exists, `FolderSearchService` / [[folder-search-match-mode]]);

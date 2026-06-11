@@ -203,7 +203,7 @@ namespace RBLclass.AddIn.ViewModels
 
         private void Refresh()
         {
-            var matchMode = FolderMatchMode.WordPrefix;
+            var matchMode = FolderMatchMode.Substring;
             var maxResults = FolderSearchOptions.DefaultMaxResults;
             if (_settings != null)
             {

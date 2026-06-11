@@ -68,7 +68,9 @@ namespace RBLclass.Core
         private static FolderMatchMode ParseMatchMode(string raw)
         {
             FolderMatchMode mode;
-            return Enum.TryParse(raw, out mode) ? mode : FolderMatchMode.WordPrefix;
+            // Default (and fallback for an unrecognised value) is the broader
+            // "contains" search; word-prefix is opt-in.
+            return Enum.TryParse(raw, out mode) ? mode : FolderMatchMode.Substring;
         }
 
         private static int ParseMaxResults(string raw)
