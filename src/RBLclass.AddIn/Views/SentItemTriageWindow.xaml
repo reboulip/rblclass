@@ -5,7 +5,7 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         Title="RBLclass - Sent mail" Height="230" Width="380"
-        WindowStartupLocation="CenterScreen" ResizeMode="NoResize"
+        WindowStartupLocation="CenterOwner" ResizeMode="NoResize"
         d:DesignHeight="230" d:DesignWidth="380">
     <Grid Margin="12">
         <Grid.RowDefinitions>

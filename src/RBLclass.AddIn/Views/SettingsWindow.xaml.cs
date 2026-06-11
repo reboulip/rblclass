@@ -13,6 +13,7 @@ namespace RBLclass.AddIn.Views
         public SettingsWindow()
         {
             InitializeComponent();
+            DialogPlacement.OwnByOutlook(this);
             ThemeService.Apply(this);
         }
 

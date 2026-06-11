@@ -490,10 +490,15 @@ the remaining **open questions** are called out inline.
       and sent-item triage: `GetConversationSiblings` now returns a
       `ConversationSiblings` (processable + skipped-encrypted subjects), carried
       through `ClassifyPreflight` to a pane status note and a triage message box.
-- [ ] **Position modal windows on the active Outlook monitor (multi-screen).**
-      The "process sent item" modal (and the other app modals) can open on the
-      primary monitor while Outlook lives on another. Centre each modal on its
-      **owner Outlook window** so it appears where the user is working.
+- [x] **Position modal windows on the active Outlook monitor (multi-screen).**
+      *(Implemented; NOT verified live — single-monitor dev machine. Re-verify on
+      a multi-monitor workstation.)* The "process sent item" modal (and the other
+      app modals) can open on the primary monitor while Outlook lives on another.
+      Each WPF dialog (settings, folder picker, sent-item triage) is now owned by
+      the Outlook main window (`DialogPlacement.OwnByOutlook` via the process
+      main-window handle) and uses `WindowStartupLocation="CenterOwner"`, so it
+      centres over Outlook wherever it lives, falling back to the primary screen
+      if the handle can't be resolved. Plain Win32 message boxes are out of scope.
 - [x] **Pick up folders created/renamed directly in Outlook, via a manual
       Refresh.** Reported in pilot testing: creating (or renaming) a sub-folder
       by hand in the Outlook tree does not surface it in folder search — only

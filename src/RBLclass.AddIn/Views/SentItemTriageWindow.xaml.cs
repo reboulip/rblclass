@@ -16,6 +16,7 @@ namespace RBLclass.AddIn.Views
         public SentItemTriageWindow()
         {
             InitializeComponent();
+            DialogPlacement.OwnByOutlook(this);
             ThemeService.Apply(this);
             DataContextChanged += OnDataContextChanged;
         }

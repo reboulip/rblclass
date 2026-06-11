@@ -17,6 +17,7 @@ namespace RBLclass.AddIn.Views
         public FolderPickerWindow()
         {
             InitializeComponent();
+            DialogPlacement.OwnByOutlook(this);
             ThemeService.Apply(this);
             Loaded += (s, e) => QueryBox.Focus();
         }

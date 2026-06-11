@@ -6,7 +6,7 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:v="clr-namespace:RBLclass.AddIn.Views"
         Title="RBLclass - Choose a folder" Height="420" Width="340"
-        WindowStartupLocation="CenterScreen"
+        WindowStartupLocation="CenterOwner"
         d:DesignHeight="420" d:DesignWidth="340">
     <Grid Margin="12">
         <Grid.RowDefinitions>
