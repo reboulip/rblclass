@@ -91,6 +91,19 @@ namespace RBLclass.Outlook.Adapter
                     using (var root = new ComRef<OutlookOM.Folder>(rawRoot))
                     {
                         string rootName = Safe(() => root.Value.Name, string.Empty);
+
+                        // Index the store root itself as a fileable destination so
+                        // users can classify directly at the top of a PST. It sits
+                        // alongside the top-level folders (ParentEntryId null), so it
+                        // surfaces when the store name is searched without re-parenting
+                        // the rest of the tree. CopyItemToFolder resolves it by EntryID
+                        // like any other folder.
+                        string rootEntryId = Safe(() => root.Value.EntryID, null);
+                        if (rootEntryId != null)
+                            result.Add(new FolderNode(storeId, rootEntryId,
+                                                      parentEntryId: null, name: rootName,
+                                                      fullPath: rootName, isLeaf: false));
+
                         WalkChildren(root.Value, storeId,
                                      parentEntryId: null, parentPath: rootName,
                                      deletedItemsEntryId, result);
@@ -261,21 +274,36 @@ namespace RBLclass.Outlook.Adapter
                     catch { return null; }
 
                     using (var destFolder = new ComRef<OutlookOM.Folder>(rawDest))
-                    using (var comCopy = new ComRef<object>(mail.Copy()))
                     {
-                        var copy = comCopy.Value as OutlookOM.MailItem;
-                        if (copy == null) return null;
-
-                        // Move returns the moved item; the copy reference is now
-                        // invalid (CLAUDE.md). Read the moved item's id for the
-                        // returned ref, then release it.
-                        using (var comMoved = new ComRef<object>(copy.Move(destFolder.Value)))
+                        try
                         {
-                            var moved = comMoved.Value as OutlookOM.MailItem;
-                            if (moved == null) return null;
-                            string movedEntryId = Safe(() => moved.EntryID, null);
-                            if (movedEntryId == null) return null;
-                            return new MailItemRef(destination.StoreId, movedEntryId, item.Subject);
+                            using (var comCopy = new ComRef<object>(mail.Copy()))
+                            {
+                                var copy = comCopy.Value as OutlookOM.MailItem;
+                                if (copy == null) return null;
+
+                                // Move returns the moved item; the copy reference is now
+                                // invalid (CLAUDE.md). Read the moved item's id for the
+                                // returned ref, then release it.
+                                using (var comMoved = new ComRef<object>(copy.Move(destFolder.Value)))
+                                {
+                                    var moved = comMoved.Value as OutlookOM.MailItem;
+                                    if (moved == null) return null;
+                                    string movedEntryId = Safe(() => moved.EntryID, null);
+                                    if (movedEntryId == null) return null;
+                                    return new MailItemRef(destination.StoreId, movedEntryId, item.Subject);
+                                }
+                            }
+                        }
+                        catch (Exception ex)
+                        {
+                            // Some folders (notably a store root) can reject items.
+                            // Log the cause and rethrow so the classifier counts this
+                            // destination as failed and keeps the original intact.
+                            Log.Warning(ex,
+                                "Filing into folder {Path} ({EntryId}) failed; it may not accept items.",
+                                destination.FullPath, destination.EntryId);
+                            throw;
                         }
                     }
                 }

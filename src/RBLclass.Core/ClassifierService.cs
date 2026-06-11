@@ -46,36 +46,54 @@ namespace RBLclass.Core
                 try
                 {
                     bool markComplete = request.MarkTasksComplete && SafeIsFlaggedIncomplete(item);
+                    int filed = 0;
 
                     foreach (var destination in request.Destinations)
                     {
-                        var copy = _store.CopyItemToFolder(item, destination);
-                        copies++;
-
-                        // Strip attachments / mark the task complete on the
-                        // FILED COPY only, never the original - so "keep a
-                        // copy" leaves the original (and its flag/attachments)
-                        // untouched.
-                        if (copy != null)
+                        // Isolate each destination: one that refuses the item
+                        // (e.g. a store root that can't hold mail) must not abort
+                        // filing into the others.
+                        try
                         {
-                            if (request.RemoveAttachments)
-                                _store.RemoveAttachments(copy);
-                            if (markComplete)
-                                _store.MarkTaskComplete(copy);
+                            var copy = _store.CopyItemToFolder(item, destination);
+                            copies++;
+                            filed++;
+
+                            // Strip attachments / mark the task complete on the
+                            // FILED COPY only, never the original - so "keep a
+                            // copy" leaves the original (and its flag/attachments)
+                            // untouched.
+                            if (copy != null)
+                            {
+                                if (request.RemoveAttachments)
+                                    _store.RemoveAttachments(copy);
+                                if (markComplete)
+                                    _store.MarkTaskComplete(copy);
+                            }
+                        }
+                        catch
+                        {
+                            // This destination failed; the adapter logs the cause.
+                            errors++;
                         }
                     }
 
-                    if (!request.KeepCopy)
+                    // Only delete the original once it has actually been filed
+                    // somewhere; never delete a mail we could not copy to any
+                    // destination (no data loss on a total failure).
+                    if (filed > 0)
                     {
-                        _store.DeleteItem(item);
-                        deleted++;
+                        if (!request.KeepCopy)
+                        {
+                            _store.DeleteItem(item);
+                            deleted++;
+                        }
+                        processed++;
                     }
-
-                    processed++;
                 }
                 catch
                 {
-                    // Skip this item, keep going; the adapter/caller logs details.
+                    // Unexpected per-item failure (e.g. the flag check); keep going.
                     errors++;
                 }
             }

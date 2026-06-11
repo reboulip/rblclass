@@ -204,6 +204,47 @@ namespace RBLclass.Core.Tests
         }
 
         [Fact]
+        public void A_failing_destination_does_not_prevent_filing_into_the_others()
+        {
+            var store = Substitute.For<IMailStore>();
+            var item = Item("e1");
+            // D1 (e.g. a store root that refuses items) fails; D2 must still get it.
+            store.When(s => s.CopyItemToFolder(item, D1))
+                 .Do(_ => throw new InvalidOperationException("root refuses items"));
+            store.CopyItemToFolder(item, D2).Returns(new MailItemRef("s1", "copy", "e1"));
+            var sut = new ClassifierService(store);
+
+            var result = sut.Classify(new ClassifyRequest(
+                new[] { item }, new[] { D1, D2 },
+                keepCopy: false, removeAttachments: false));
+
+            store.Received(1).CopyItemToFolder(item, D2); // the good destination still got it
+            result.CopiesMade.Should().Be(1);             // only D2
+            result.Errors.Should().Be(1);                 // the failing D1
+            result.ItemsProcessed.Should().Be(1);
+            store.Received(1).DeleteItem(item);            // filed somewhere -> original removed
+        }
+
+        [Fact]
+        public void Original_is_kept_when_every_destination_fails()
+        {
+            var store = Substitute.For<IMailStore>();
+            var item = Item("e1");
+            store.When(s => s.CopyItemToFolder(item, Arg.Any<FolderNode>()))
+                 .Do(_ => throw new InvalidOperationException("boom"));
+            var sut = new ClassifierService(store);
+
+            var result = sut.Classify(new ClassifyRequest(
+                new[] { item }, new[] { D1, D2 },
+                keepCopy: false, removeAttachments: false));
+
+            store.DidNotReceive().DeleteItem(item); // never delete a mail we couldn't file anywhere
+            result.Errors.Should().Be(2);
+            result.ItemsProcessed.Should().Be(0);
+            result.OriginalsDeleted.Should().Be(0);
+        }
+
+        [Fact]
         public void One_failing_item_is_counted_and_the_rest_still_process()
         {
             var store = Substitute.For<IMailStore>();

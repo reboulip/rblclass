@@ -465,7 +465,7 @@ the remaining **open questions** are called out inline.
       word-prefix becomes the opt-in. Update the default in `Settings`, applied
       to both the Open and Classify searches. xUnit: `security` matches
       `Cybersecurity`; word-prefix still available via the setting.
-- [ ] **Allow classifying into a PST store's root node.** Users want to file
+- [x] **Allow classifying into a PST store's root node.** Users want to file
       directly at the top of a `.pst`, above any folder. Make the **store root
       node** a selectable destination in the folder tree / search results /
       unified list, and support `Move` into the store root in the adapter.
