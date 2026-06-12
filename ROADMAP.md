@@ -584,7 +584,8 @@ ribbon, and the encrypted-attachment rule).
 
 ### A. Search correctness & responsiveness
 
-- [ ] **Fix special characters in folder search ("R&D").** Reported: a
+- [x] *(verified live 2026-06-12)* **Fix special characters in folder
+      search ("R&D").** Reported: a
       folder named `R&D` is not found by the query `R&D`. Root cause: in
       word-prefix mode `FolderSearchService.SplitWords` keeps only
       letters/digits, so the path word list for "R&D" is `r`,`d` and the
@@ -592,7 +593,8 @@ ribbon, and the encrypted-attachment rule).
       non-alphanumeric character falls back to substring containment (by
       definition it cannot be a word prefix). xUnit: `R&D` matches in
       both match modes; plain tokens keep word-prefix semantics.
-- [ ] **Minimum query length + typing debounce.** Today the first
+- [x] *(verified live 2026-06-12)* **Minimum query length + typing
+      debounce.** Today the first
       keystroke already searches, matching a huge folder set and
       stuttering the pane. Two new persisted settings (Settings dialog,
       "Folder search" group; [[settings-always-persistent]]):
@@ -603,15 +605,18 @@ ribbon, and the encrypted-attachment rule).
         re-search fires only after the user stops typing for that long
         (`DispatcherTimer` in `MainPaneViewModel`; checkbox toggles and
         sub-folder creation still refresh immediately).
-- [ ] **Ctrl toggles "List every matching folder" from the search box.**
+- [x] *(verified live 2026-06-12)* **Ctrl toggles "List every matching
+      folder" from the search box.**
       With focus in the query box, pressing and releasing Ctrl *alone*
       toggles the AllResults checkbox; Ctrl+key combinations (Ctrl+A,
       Ctrl+C…) are not affected.
-- [ ] **"Open folders in a new window" becomes settings-only.** The
+- [x] *(verified live 2026-06-12)* **"Open folders in a new window"
+      becomes settings-only.** The
       checkbox leaves the task pane (it is configuration, not a
       per-action choice); the Settings dialog remains the single editor
       and the pane reads the stored value live at navigation time.
-- [ ] **Select all text when the search box gains focus by click.**
+- [x] *(verified live 2026-06-12)* **Select all text when the search box
+      gains focus by click.**
       (Added 2026-06-12.) When focus is *outside* the search bar and the
       user clicks into it, the existing query is fully selected so
       typing replaces it — sequential classifying nearly always starts a
