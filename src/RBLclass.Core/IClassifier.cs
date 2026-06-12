@@ -21,5 +21,14 @@ namespace RBLclass.Core
         ClassifyPreflight Preflight(IReadOnlyList<MailItemRef> items, bool widenConversation);
 
         ClassifyResult Classify(ClassifyRequest request);
+
+        /// <summary>
+        /// Reverse a previous classify (v2.2 Undo): re-mark un-completed flags,
+        /// permanently delete the copies it created, and move the moved items
+        /// back to their source folders. Best-effort per action - one failure
+        /// is counted and the rest still execute. Stripped attachments cannot
+        /// be restored (<see cref="ClassifyUndoPlan.AttachmentStrips"/>).
+        /// </summary>
+        UndoResult Undo(ClassifyUndoPlan plan);
     }
 }

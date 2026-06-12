@@ -106,8 +106,12 @@
                 </ItemsControl>
             </StackPanel>
 
-            <Button Grid.Row="5" Margin="0,8,0,0" Padding="12,4" HorizontalAlignment="Left"
-                    Content="{Binding ClassifyButtonText}" Click="Classify_Click" />
+            <StackPanel Grid.Row="5" Orientation="Horizontal" Margin="0,8,0,0">
+                <Button Padding="12,4" Content="{Binding ClassifyButtonText}" Click="Classify_Click" />
+                <Button Padding="12,4" Margin="6,0,0,0" Content="Undo"
+                        IsEnabled="{Binding CanUndo}" Click="Undo_Click"
+                        ToolTip="Undo the last filing: put moved mails back and remove the filed copies" />
+            </StackPanel>
 
             <TextBlock Grid.Row="6" Margin="0,6,0,0" Style="{DynamicResource MutedText}"
                        Text="{Binding Status}" TextWrapping="Wrap" />

@@ -4,13 +4,15 @@ namespace RBLclass.Core
     public sealed class ClassifyResult
     {
         public ClassifyResult(int itemsProcessed, int copiesMade, int originalsMoved,
-                              int errors, int encryptedStripSkips = 0)
+                              int errors, int encryptedStripSkips = 0,
+                              ClassifyUndoPlan undo = null)
         {
             ItemsProcessed = itemsProcessed;
             CopiesMade = copiesMade;
             OriginalsMoved = originalsMoved;
             Errors = errors;
             EncryptedStripSkips = encryptedStripSkips;
+            Undo = undo;
         }
 
         /// <summary>Items filed without error.</summary>
@@ -35,5 +37,11 @@ namespace RBLclass.Core
         /// attachments are the message itself - never stripped).
         /// </summary>
         public int EncryptedStripSkips { get; }
+
+        /// <summary>
+        /// How to reverse this classify (v2.2 Undo), or null when nothing
+        /// reversible happened.
+        /// </summary>
+        public ClassifyUndoPlan Undo { get; }
     }
 }

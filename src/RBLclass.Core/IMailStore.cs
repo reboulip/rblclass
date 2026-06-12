@@ -72,6 +72,26 @@ namespace RBLclass.Core
         FolderNode GetDeletedItemsFolder(string storeId);
 
         /// <summary>
+        /// The folder currently containing <paramref name="item"/>, or null
+        /// when it no longer resolves. Recorded before a classify move so Undo
+        /// knows where to put the item back (v2.2).
+        /// </summary>
+        FolderNode GetParentFolder(MailItemRef item);
+
+        /// <summary>
+        /// Permanently delete a mail item (v2.2 Undo removing the copies a
+        /// classify created - "completely", not into Deleted Items).
+        /// </summary>
+        void DeleteItemPermanently(MailItemRef item);
+
+        /// <summary>
+        /// Re-mark an item's follow-up flag as incomplete
+        /// (<c>OlFlagStatus.olFlagMarked</c>) and save it - the v2.2 Undo
+        /// counterpart of <see cref="MarkTaskComplete"/>.
+        /// </summary>
+        void MarkTaskIncomplete(MailItemRef item);
+
+        /// <summary>
         /// Items sharing <paramref name="item"/>'s conversation, restricted to
         /// the default store's Inbox and Sent Items and excluding
         /// <paramref name="item"/> itself (legacy "conversation widening",

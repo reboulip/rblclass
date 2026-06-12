@@ -50,12 +50,27 @@ namespace RBLclass.Core
             // (only needed for the opt-in safety copy). Misses are cached too.
             Dictionary<string, FolderNode> deletedItemsByStore = null;
 
+            // Everything reversible, recorded as it happens (v2.2 Undo).
+            var undoMoves = new List<UndoableMove>();
+            var undoCopies = new List<MailItemRef>();
+            var undoFlags = new List<MailItemRef>();
+            int strips = 0;
+
             foreach (var item in request.Items)
             {
                 try
                 {
                     bool markComplete = request.MarkTasksComplete && SafeIsFlaggedIncomplete(item);
                     int filed = 0;
+
+                    // Where the item lives now - so Undo can put a moved
+                    // original back. Resolved before anything moves it.
+                    FolderNode sourceFolder = null;
+                    if (!request.KeepCopy)
+                    {
+                        try { sourceFolder = _store.GetParentFolder(item); }
+                        catch { /* tolerated: the move just won't be undoable */ }
+                    }
 
                     // Copies first (the original must stay put while it is the
                     // copy source); the original itself is then moved into the
@@ -85,6 +100,8 @@ namespace RBLclass.Core
                                     continue;
                                 }
                                 moved++;
+                                if (sourceFolder != null)
+                                    undoMoves.Add(new UndoableMove(filedRef, sourceFolder));
 
                                 // Opt-in guardrail: leave a copy in the source
                                 // store's Deleted Items, taken from the moved
@@ -99,7 +116,10 @@ namespace RBLclass.Core
                                         var deletedItems = ResolveDeletedItems(
                                             item.StoreId, ref deletedItemsByStore);
                                         if (deletedItems != null)
-                                            _store.CopyItemToFolder(filedRef, deletedItems);
+                                        {
+                                            var safety = _store.CopyItemToFolder(filedRef, deletedItems);
+                                            if (safety != null) undoCopies.Add(safety);
+                                        }
                                     }
                                     catch { /* guardrail only; the adapter logs the cause */ }
                                 }
@@ -108,6 +128,7 @@ namespace RBLclass.Core
                             {
                                 filedRef = _store.CopyItemToFolder(item, destination);
                                 copies++;
+                                if (filedRef != null) undoCopies.Add(filedRef);
                             }
                             filed++;
 
@@ -119,10 +140,16 @@ namespace RBLclass.Core
                             // the skip so the UI can say so.
                             if (filedRef != null)
                             {
-                                if (request.RemoveAttachments && !_store.RemoveAttachments(filedRef))
-                                    encryptedSkips++;
+                                if (request.RemoveAttachments)
+                                {
+                                    if (_store.RemoveAttachments(filedRef)) strips++;
+                                    else encryptedSkips++;
+                                }
                                 if (markComplete)
+                                {
                                     _store.MarkTaskComplete(filedRef);
+                                    undoFlags.Add(filedRef);
+                                }
                             }
                         }
                         catch
@@ -144,7 +171,47 @@ namespace RBLclass.Core
                 }
             }
 
-            return new ClassifyResult(processed, copies, moved, errors, encryptedSkips);
+            var plan = new ClassifyUndoPlan(undoMoves, undoCopies, undoFlags, strips);
+            return new ClassifyResult(processed, copies, moved, errors, encryptedSkips,
+                                      plan.IsEmpty ? null : plan);
+        }
+
+        public UndoResult Undo(ClassifyUndoPlan plan)
+        {
+            if (plan == null) throw new ArgumentNullException(nameof(plan));
+
+            int movesRestored = 0, copiesDeleted = 0, flagsRestored = 0, errors = 0;
+
+            // Flags first: their references point at the filed items where they
+            // are NOW - they become stale once the moves below put items back.
+            foreach (var flagged in plan.CompletedFlags)
+            {
+                try { _store.MarkTaskIncomplete(flagged); flagsRestored++; }
+                catch { errors++; }
+            }
+
+            // Copies the classify created are removed outright ("undo
+            // completely" - they were never user data, just our duplicates).
+            foreach (var copy in plan.CreatedCopies)
+            {
+                try { _store.DeleteItemPermanently(copy); copiesDeleted++; }
+                catch { errors++; }
+            }
+
+            // Finally put each moved original back where it came from.
+            foreach (var move in plan.Moves)
+            {
+                try
+                {
+                    if (_store.MoveItemToFolder(move.Current, move.SourceFolder) != null)
+                        movesRestored++;
+                    else
+                        errors++;
+                }
+                catch { errors++; }
+            }
+
+            return new UndoResult(movesRestored, copiesDeleted, flagsRestored, errors);
         }
 
         /// <summary>

@@ -40,6 +40,10 @@ namespace RBLclass.AddIn.ViewModels
         // user has paused for Settings.SearchDebounceMs (v2.2).
         private DispatcherTimer _searchTimer;
 
+        // Single-slot undo: the latest classify's reversal plan (v2.2). A new
+        // classify overwrites it; executing it clears it.
+        private ClassifyUndoPlan _lastUndo;
+
         public MainPaneViewModel(
             IFolderSearch search,
             IClassifier classifier,
@@ -151,6 +155,41 @@ namespace RBLclass.AddIn.ViewModels
         }
 
         public bool IsNotBusy => !_isBusy;
+
+        /// <summary>True when the last classify can be undone (enables the Undo button).</summary>
+        public bool CanUndo => _lastUndo != null;
+
+        /// <summary>Reverse the last filing action completely (the Undo button).</summary>
+        public void UndoLast()
+        {
+            if (_isBusy || _lastUndo == null) return;
+
+            var plan = _lastUndo;
+            _lastUndo = null;
+            OnPropertyChanged(nameof(CanUndo));
+
+            IsBusy = true;
+            Status = "Undoing…";
+            Dispatcher.CurrentDispatcher.Invoke(new Action(() => { }), DispatcherPriority.Render);
+
+            try
+            {
+                var undone = _classifier.Undo(plan);
+
+                Status = "Undid the last filing: " + undone.MovesRestored + " mail(s) put back, " +
+                         undone.CopiesDeleted + " filed cop(ies) removed" +
+                         (undone.Errors > 0 ? " (" + undone.Errors + " step(s) failed)" : "") + ".";
+                if (plan.AttachmentStrips > 0)
+                    Status += " Removed attachments could not be restored.";
+
+                RefreshSelection();
+            }
+            finally
+            {
+                Dispatcher.CurrentDispatcher.BeginInvoke(
+                    new Action(() => IsBusy = false), DispatcherPriority.Background);
+            }
+        }
 
         public void SetSelectionCount(int count) =>
             SelectionSummary = count == 1 ? "1 mail selected." : count + " mails selected.";
@@ -303,6 +342,9 @@ namespace RBLclass.AddIn.ViewModels
                 if (preflight.SkippedEncrypted.Count > 0)
                     Status += " " + preflight.SkippedEncrypted.Count +
                               " encrypted message(s) in the conversation were left in place.";
+
+                _lastUndo = result.Undo; // a non-undoable run clears the slot (null)
+                OnPropertyChanged(nameof(CanUndo));
 
                 RefreshSelection();
                 return true;

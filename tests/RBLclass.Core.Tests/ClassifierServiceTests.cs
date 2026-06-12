@@ -177,6 +177,129 @@ namespace RBLclass.Core.Tests
         }
 
         [Fact]
+        public void Classify_records_an_undo_plan_with_moves_copies_and_flags()
+        {
+            var store = StoreWithWorkingMove();
+            var source = Dest("src", "Inbox");
+            store.GetParentFolder(Arg.Any<MailItemRef>()).Returns(source);
+            store.IsFlaggedIncomplete(Arg.Any<MailItemRef>()).Returns(true);
+            store.CopyItemToFolder(Arg.Any<MailItemRef>(), D1)
+                 .Returns(new MailItemRef("s1", "copy-d1", "e1"));
+            var sut = new ClassifierService(store);
+
+            var result = sut.Classify(new ClassifyRequest(
+                new[] { Item("e1") }, new[] { D1, D2 },
+                keepCopy: false, removeAttachments: false, markTasksComplete: true));
+
+            var plan = result.Undo;
+            plan.Should().NotBeNull();
+            plan.Moves.Should().ContainSingle();
+            plan.Moves[0].Current.EntryId.Should().Be("moved-e1");
+            plan.Moves[0].SourceFolder.Should().BeSameAs(source);
+            plan.CreatedCopies.Should().ContainSingle().Which.EntryId.Should().Be("copy-d1");
+            plan.CompletedFlags.Select(f => f.EntryId)
+                .Should().BeEquivalentTo(new[] { "copy-d1", "moved-e1" });
+            plan.AttachmentStrips.Should().Be(0);
+        }
+
+        [Fact]
+        public void Undo_restores_flags_then_deletes_copies_then_moves_items_back()
+        {
+            var store = StoreWithWorkingMove();
+            var source = Dest("src", "Inbox");
+            var movedRef = new MailItemRef("s1", "moved-e1", "e1");
+            var copyRef = new MailItemRef("s1", "copy-d1", "e1");
+            var sut = new ClassifierService(store);
+
+            var plan = new ClassifyUndoPlan(
+                new[] { new UndoableMove(movedRef, source) },
+                new[] { copyRef },
+                new[] { movedRef },
+                attachmentStrips: 0);
+
+            var result = sut.Undo(plan);
+
+            Received.InOrder(() =>
+            {
+                store.MarkTaskIncomplete(movedRef);      // flags while refs are valid
+                store.DeleteItemPermanently(copyRef);    // our duplicates go for good
+                store.MoveItemToFolder(movedRef, source); // then the item goes home
+            });
+            result.MovesRestored.Should().Be(1);
+            result.CopiesDeleted.Should().Be(1);
+            result.FlagsRestored.Should().Be(1);
+            result.Errors.Should().Be(0);
+        }
+
+        [Fact]
+        public void Undo_counts_failures_but_keeps_going()
+        {
+            var store = StoreWithWorkingMove();
+            var source = Dest("src", "Inbox");
+            var copy1 = new MailItemRef("s1", "c1", "x");
+            var copy2 = new MailItemRef("s1", "c2", "x");
+            store.When(s => s.DeleteItemPermanently(copy1))
+                 .Do(_ => throw new InvalidOperationException("boom"));
+            var sut = new ClassifierService(store);
+
+            var result = sut.Undo(new ClassifyUndoPlan(
+                new[] { new UndoableMove(new MailItemRef("s1", "m1", "x"), source) },
+                new[] { copy1, copy2 },
+                new MailItemRef[0],
+                attachmentStrips: 0));
+
+            result.CopiesDeleted.Should().Be(1);  // copy2 still removed
+            result.MovesRestored.Should().Be(1);  // the move still undone
+            result.Errors.Should().Be(1);         // copy1's failure counted
+        }
+
+        [Fact]
+        public void Keep_copy_classify_yields_a_copies_only_undo_plan()
+        {
+            var store = Substitute.For<IMailStore>();
+            var copyRef = new MailItemRef("s1", "copy-d1", "e1");
+            store.CopyItemToFolder(Arg.Any<MailItemRef>(), D1).Returns(copyRef);
+            var sut = new ClassifierService(store);
+
+            var result = sut.Classify(new ClassifyRequest(
+                new[] { Item("e1") }, new[] { D1 },
+                keepCopy: true, removeAttachments: false));
+
+            result.Undo.Should().NotBeNull();
+            result.Undo.Moves.Should().BeEmpty();
+            result.Undo.CreatedCopies.Should().ContainSingle().Which.Should().BeSameAs(copyRef);
+            store.DidNotReceive().GetParentFolder(Arg.Any<MailItemRef>()); // not needed without a move
+        }
+
+        [Fact]
+        public void A_totally_failed_classify_has_no_undo_plan()
+        {
+            var store = Substitute.For<IMailStore>(); // move returns null -> error
+            var sut = new ClassifierService(store);
+
+            var result = sut.Classify(new ClassifyRequest(
+                new[] { Item("e1") }, new[] { D1 },
+                keepCopy: false, removeAttachments: false));
+
+            result.Undo.Should().BeNull();
+        }
+
+        [Fact]
+        public void Undo_plan_counts_attachment_strips_for_the_unrecoverable_warning()
+        {
+            var store = StoreWithWorkingMove();
+            store.GetParentFolder(Arg.Any<MailItemRef>()).Returns(Dest("src", "Inbox"));
+            store.RemoveAttachments(Arg.Any<MailItemRef>()).Returns(true);
+            var sut = new ClassifierService(store);
+
+            var result = sut.Classify(new ClassifyRequest(
+                new[] { Item("e1") }, new[] { D1 },
+                keepCopy: false, removeAttachments: true));
+
+            result.Undo.AttachmentStrips.Should().Be(1);
+        }
+
+        [Fact]
         public void A_move_that_resolves_nothing_counts_as_an_error_and_processes_nothing()
         {
             var store = Substitute.For<IMailStore>(); // MoveItemToFolder returns null

@@ -97,6 +97,8 @@ namespace RBLclass.AddIn.Views
 
         private void ClearSelection_Click(object sender, RoutedEventArgs e) => Vm?.ClearDestinations();
 
+        private void Undo_Click(object sender, RoutedEventArgs e) => Vm?.UndoLast();
+
         private void OpenFolder_Click(object sender, RoutedEventArgs e)
         {
             var folder = (sender as FrameworkElement)?.DataContext as SelectableFolder;

@@ -670,7 +670,8 @@ ribbon, and the encrypted-attachment rule).
 
 ### C. Filing features
 
-- [ ] **Accumulate destinations across successive searches.** Checked
+- [x] *(verified live 2026-06-13)* **Accumulate destinations across
+      successive searches.** Checked
       folders persist in a selection set (keyed StoreId+EntryId) that
       survives re-searches: search kw1 → check folders → search kw2 →
       check more → one "Classify to N folders". A chip strip above the

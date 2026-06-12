@@ -385,6 +385,103 @@ namespace RBLclass.Outlook.Adapter
             }
         }
 
+        public FolderNode GetParentFolder(MailItemRef item)
+        {
+            if (item == null) return null;
+
+            using (var session = new ComRef<OutlookOM.NameSpace>(_app.Session))
+            {
+                object rawItem;
+                try { rawItem = session.Value.GetItemFromID(item.EntryId, item.StoreId); }
+                catch { return null; } // item no longer resolves - tolerate the miss
+
+                using (var comItem = new ComRef<object>(rawItem))
+                {
+                    var mail = comItem.Value as OutlookOM.MailItem;
+                    if (mail == null) return null;
+
+                    ComRef<OutlookOM.Folder> parent = null;
+                    try
+                    {
+                        parent = new ComRef<OutlookOM.Folder>((OutlookOM.Folder)mail.Parent);
+                        string storeId = Safe(() => parent.Value.StoreID, null);
+                        string entryId = Safe(() => parent.Value.EntryID, null);
+                        if (storeId == null || entryId == null) return null;
+
+                        string name = Safe(() => parent.Value.Name, string.Empty);
+                        // FolderPath is "\\Store\A\B"; good enough for Undo's
+                        // purposes (a destination ref + logging) without a walk.
+                        string fullPath = Safe(() => parent.Value.FolderPath, name);
+                        return new FolderNode(storeId, entryId, parentEntryId: null,
+                                              name: name, fullPath: fullPath, isLeaf: false);
+                    }
+                    catch { return null; }
+                    finally { parent?.Dispose(); }
+                }
+            }
+        }
+
+        public void DeleteItemPermanently(MailItemRef item)
+        {
+            if (item == null) return;
+
+            // The OM has no direct hard delete: Delete() only moves to Deleted
+            // Items, under a NEW EntryID we never learn. So: move it to Deleted
+            // Items ourselves (keeping the reference), then Delete() there -
+            // deleting an item already in Deleted Items removes it for good.
+            var deletedItems = GetDeletedItemsFolder(item.StoreId);
+            MailItemRef inTrash = deletedItems != null
+                ? MoveItemToFolder(item, deletedItems)
+                : null;
+            if (inTrash == null)
+            {
+                // No Deleted Items / move failed - fall back to a soft delete.
+                DeleteItem(item);
+                return;
+            }
+
+            using (var session = new ComRef<OutlookOM.NameSpace>(_app.Session))
+            {
+                object rawItem;
+                try { rawItem = session.Value.GetItemFromID(inTrash.EntryId, inTrash.StoreId); }
+                catch { return; } // already gone - close enough
+
+                using (var comItem = new ComRef<object>(rawItem))
+                {
+                    var mail = comItem.Value as OutlookOM.MailItem;
+                    if (mail != null)
+                    {
+                        try { mail.Delete(); } catch { }
+                    }
+                }
+            }
+        }
+
+        public void MarkTaskIncomplete(MailItemRef item)
+        {
+            if (item == null) return;
+
+            using (var session = new ComRef<OutlookOM.NameSpace>(_app.Session))
+            {
+                object rawItem;
+                try { rawItem = session.Value.GetItemFromID(item.EntryId, item.StoreId); }
+                catch { return; }
+
+                using (var comItem = new ComRef<object>(rawItem))
+                {
+                    var mail = comItem.Value as OutlookOM.MailItem;
+                    if (mail == null) return;
+
+                    try
+                    {
+                        mail.FlagStatus = OutlookOM.OlFlagStatus.olFlagMarked;
+                        mail.Save();
+                    }
+                    catch { }
+                }
+            }
+        }
+
         public FolderNode GetDeletedItemsFolder(string storeId)
         {
             if (storeId == null) return null;
