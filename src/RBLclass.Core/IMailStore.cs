@@ -65,6 +65,13 @@ namespace RBLclass.Core
         void DeleteItem(MailItemRef item);
 
         /// <summary>
+        /// Resolve a store's Deleted Items folder as a filing destination (the
+        /// v2.2 opt-in classify safety copy), or null when the store has none /
+        /// no longer resolves. Touches COM - call on the Outlook UI thread.
+        /// </summary>
+        FolderNode GetDeletedItemsFolder(string storeId);
+
+        /// <summary>
         /// Items sharing <paramref name="item"/>'s conversation, restricted to
         /// the default store's Inbox and Sent Items and excluding
         /// <paramref name="item"/> itself (legacy "conversation widening",

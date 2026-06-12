@@ -536,7 +536,10 @@ namespace RBLclass.AddIn
                     }
                     var result = _classifier.Classify(
                         new ClassifyRequest(new[] { item }, new[] { inbox },
-                                            keepCopy: false, removeAttachments: false));
+                                            keepCopy: false, removeAttachments: false,
+                                            markTasksComplete: false,
+                                            safetyCopy: _settingsStore.GetBool(
+                                                SettingsKeys.ClassifySafetyCopy, false)));
                     Log.Information(
                         "Sent-item triage moved {Processed} mail(s) to the Inbox ({Errors} failed).",
                         result.ItemsProcessed, result.Errors);

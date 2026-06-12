@@ -46,6 +46,10 @@ namespace RBLclass.Core
 
             int processed = 0, copies = 0, moved = 0, errors = 0, encryptedSkips = 0;
 
+            // Deleted Items per source store, resolved at most once per call
+            // (only needed for the opt-in safety copy). Misses are cached too.
+            Dictionary<string, FolderNode> deletedItemsByStore = null;
+
             foreach (var item in request.Items)
             {
                 try
@@ -81,6 +85,24 @@ namespace RBLclass.Core
                                     continue;
                                 }
                                 moved++;
+
+                                // Opt-in guardrail: leave a copy in the source
+                                // store's Deleted Items, taken from the moved
+                                // item at its destination (never a transient in
+                                // the displayed folder) and BEFORE stripping so
+                                // the guardrail copy keeps its attachments. Its
+                                // failure never fails the filing itself.
+                                if (request.SafetyCopy)
+                                {
+                                    try
+                                    {
+                                        var deletedItems = ResolveDeletedItems(
+                                            item.StoreId, ref deletedItemsByStore);
+                                        if (deletedItems != null)
+                                            _store.CopyItemToFolder(filedRef, deletedItems);
+                                    }
+                                    catch { /* guardrail only; the adapter logs the cause */ }
+                                }
                             }
                             else
                             {
@@ -167,6 +189,20 @@ namespace RBLclass.Core
                 if (item != null && seen.Add((item.StoreId, item.EntryId)))
                     result.Add(item);
             return result;
+        }
+
+        private FolderNode ResolveDeletedItems(string storeId,
+                                               ref Dictionary<string, FolderNode> cache)
+        {
+            if (cache == null) cache = new Dictionary<string, FolderNode>();
+            FolderNode node;
+            if (!cache.TryGetValue(storeId, out node))
+            {
+                try { node = _store.GetDeletedItemsFolder(storeId); }
+                catch { node = null; }
+                cache[storeId] = node; // cache misses too
+            }
+            return node;
         }
 
         private bool SafeIsFlaggedIncomplete(MailItemRef item)

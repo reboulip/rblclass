@@ -33,6 +33,14 @@ namespace RBLclass.Core
         /// <summary>Strip attachments when classifying (legacy settingsRemoveAttachments).</summary>
         public const string RemoveAttachments = "RemoveAttachments";
 
+        /// <summary>
+        /// Also place a copy of each classified mail in Deleted Items when not
+        /// keeping the original (v2.2). Off by default: a move never loses data
+        /// and Undo is the designed guardrail; this restores the old
+        /// delete-after-copy side effect for users who relied on it.
+        /// </summary>
+        public const string ClassifySafetyCopy = "ClassifySafetyCopy";
+
         /// <summary>Widen the classify set to conversation siblings in Inbox/Sent (legacy settingsWholeConversation).</summary>
         public const string WidenConversation = "WidenConversation";
 

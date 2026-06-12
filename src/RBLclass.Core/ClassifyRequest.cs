@@ -20,13 +20,15 @@ namespace RBLclass.Core
                                IReadOnlyList<FolderNode> destinations,
                                bool keepCopy,
                                bool removeAttachments,
-                               bool markTasksComplete = false)
+                               bool markTasksComplete = false,
+                               bool safetyCopy = false)
         {
             Items = (items ?? throw new ArgumentNullException(nameof(items))).ToArray();
             Destinations = (destinations ?? throw new ArgumentNullException(nameof(destinations))).ToArray();
             KeepCopy = keepCopy;
             RemoveAttachments = removeAttachments;
             MarkTasksComplete = markTasksComplete;
+            SafetyCopy = safetyCopy;
         }
 
         /// <summary>The mail items to file (already widened, if requested).</summary>
@@ -52,5 +54,17 @@ namespace RBLclass.Core
         /// attachment removal - the original is left untouched.
         /// </summary>
         public bool MarkTasksComplete { get; }
+
+        /// <summary>
+        /// When true (and <see cref="KeepCopy"/> is off), each successfully
+        /// moved original also leaves a copy in its source store's Deleted
+        /// Items - the old delete-after-copy side effect, restored as an
+        /// opt-in guardrail (v2.2 setting). The copy is taken from the moved
+        /// item at its destination (out of the displayed folder, so it never
+        /// re-creates the transient-item race other add-ins choked on) and
+        /// BEFORE attachment stripping, so the guardrail copy keeps its
+        /// attachments. A safety-copy failure never fails the classify.
+        /// </summary>
+        public bool SafetyCopy { get; }
     }
 }

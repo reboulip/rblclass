@@ -626,7 +626,11 @@ ribbon, and the encrypted-attachment rule).
 
 ### B. Classify engine rework
 
-- [ ] **Stop provoking Stormshield's `MAPI_E_NOT_FOUND` on classify.**
+- [x] *(implemented 2026-06-13; move/copy/strip/triage paths verified live
+      on the dev machine. NOT yet verifiable here: the Stormshield error
+      itself and the encrypted-skip rule - no Stormshield/S-MIME mail on
+      this machine; re-verify both on the 32-bit target before pilot.)*
+      **Stop provoking Stormshield's `MAPI_E_NOT_FOUND` on classify.**
       Reported error (`IMessage.GetAttachmentTable: MAPI_E_NOT_FOUND` in
       `Arkoon.SecurityBox...OnBeforeReadAsync`) is thrown by the
       Stormshield add-in's own async reader against items our classify
@@ -653,6 +657,16 @@ ribbon, and the encrypted-attachment rule).
         deletion in that configuration anyway).
       - xUnit: ClassifierService move/copy orchestration for 1 and n
         destinations × KeepCopy on/off; encrypted-skip behaviour.
+      - **Decision (2026-06-13, after live verification):** the old "a
+        copy always lands in Deleted Items" side effect returns as an
+        **opt-in setting** (`ClassifySafetyCopy`, default off): when on
+        (and keep-a-copy off), each moved original also leaves a copy in
+        its source store's Deleted Items - taken from the moved item *at
+        its destination* (never a transient in the displayed folder, so
+        the Stormshield race is not re-created) and before attachment
+        stripping. Best-effort: its failure never fails the filing.
+        Undo (below) is the designed guardrail; this is for users who
+        relied on the Deleted Items copy.
 
 ### C. Filing features
 

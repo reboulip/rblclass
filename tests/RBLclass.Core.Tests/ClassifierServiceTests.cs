@@ -116,6 +116,67 @@ namespace RBLclass.Core.Tests
         }
 
         [Fact]
+        public void Safety_copy_puts_a_copy_of_the_moved_item_in_the_source_stores_deleted_items()
+        {
+            var store = StoreWithWorkingMove();
+            var deletedItems = Dest("del", "Deleted Items");
+            store.GetDeletedItemsFolder("s1").Returns(deletedItems);
+            store.RemoveAttachments(Arg.Any<MailItemRef>()).Returns(true);
+            var sut = new ClassifierService(store);
+
+            sut.Classify(new ClassifyRequest(
+                new[] { Item("e1") }, new[] { D1 },
+                keepCopy: false, removeAttachments: true,
+                markTasksComplete: false, safetyCopy: true));
+
+            // Copied from the moved item (at its destination) into Deleted
+            // Items, and BEFORE stripping - the guardrail keeps attachments.
+            Received.InOrder(() =>
+            {
+                store.MoveItemToFolder(Arg.Is<MailItemRef>(m => m.EntryId == "e1"), D1);
+                store.CopyItemToFolder(Arg.Is<MailItemRef>(m => m.EntryId == "moved-e1"), deletedItems);
+                store.RemoveAttachments(Arg.Is<MailItemRef>(m => m.EntryId == "moved-e1"));
+            });
+        }
+
+        [Fact]
+        public void Safety_copy_off_or_keep_copy_on_never_touches_deleted_items()
+        {
+            var store = StoreWithWorkingMove();
+            var sut = new ClassifierService(store);
+
+            sut.Classify(new ClassifyRequest(
+                new[] { Item("e1") }, new[] { D1 },
+                keepCopy: false, removeAttachments: false)); // safetyCopy default off
+            sut.Classify(new ClassifyRequest(
+                new[] { Item("e2") }, new[] { D1 },
+                keepCopy: true, removeAttachments: false,
+                markTasksComplete: false, safetyCopy: true)); // keep-copy wins: no move, no guardrail
+
+            store.DidNotReceive().GetDeletedItemsFolder(Arg.Any<string>());
+        }
+
+        [Fact]
+        public void A_failed_safety_copy_does_not_fail_the_filing()
+        {
+            var store = StoreWithWorkingMove();
+            store.GetDeletedItemsFolder("s1").Returns(Dest("del", "Deleted Items"));
+            store.When(s => s.CopyItemToFolder(
+                    Arg.Is<MailItemRef>(m => m.EntryId == "moved-e1"), Arg.Any<FolderNode>()))
+                 .Do(_ => throw new InvalidOperationException("boom"));
+            var sut = new ClassifierService(store);
+
+            var result = sut.Classify(new ClassifyRequest(
+                new[] { Item("e1") }, new[] { D1 },
+                keepCopy: false, removeAttachments: false,
+                markTasksComplete: false, safetyCopy: true));
+
+            result.ItemsProcessed.Should().Be(1);
+            result.OriginalsMoved.Should().Be(1);
+            result.Errors.Should().Be(0); // the guardrail is best-effort
+        }
+
+        [Fact]
         public void A_move_that_resolves_nothing_counts_as_an_error_and_processes_nothing()
         {
             var store = Substitute.For<IMailStore>(); // MoveItemToFolder returns null

@@ -38,6 +38,7 @@ namespace RBLclass.Core
         public int SearchDebounceMs { get; set; }
         public bool KeepCopy { get; set; }
         public bool RemoveAttachments { get; set; }
+        public bool ClassifySafetyCopy { get; set; }
         public bool WidenConversation { get; set; }
         public bool SendExternalWarning { get; set; }
         public IReadOnlyList<string> InternalDomains { get; set; }
@@ -59,6 +60,7 @@ namespace RBLclass.Core
                     DefaultSearchDebounceMs, 0, MaxSearchDebounceMs),
                 KeepCopy = store.GetBool(SettingsKeys.KeepCopy, false),
                 RemoveAttachments = store.GetBool(SettingsKeys.RemoveAttachments, false),
+                ClassifySafetyCopy = store.GetBool(SettingsKeys.ClassifySafetyCopy, false),
                 WidenConversation = store.GetBool(SettingsKeys.WidenConversation, false),
                 SendExternalWarning = store.GetBool(SettingsKeys.SendExternalWarning, true),
                 InternalDomains = ParseList(store.Get(SettingsKeys.InternalDomains, string.Empty)),
@@ -81,6 +83,7 @@ namespace RBLclass.Core
             store.Set(SettingsKeys.SearchDebounceMs, SearchDebounceMs.ToString(CultureInfo.InvariantCulture));
             store.SetBool(SettingsKeys.KeepCopy, KeepCopy);
             store.SetBool(SettingsKeys.RemoveAttachments, RemoveAttachments);
+            store.SetBool(SettingsKeys.ClassifySafetyCopy, ClassifySafetyCopy);
             store.SetBool(SettingsKeys.WidenConversation, WidenConversation);
             store.SetBool(SettingsKeys.SendExternalWarning, SendExternalWarning);
             store.Set(SettingsKeys.InternalDomains, FormatList(InternalDomains));

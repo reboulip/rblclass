@@ -385,6 +385,37 @@ namespace RBLclass.Outlook.Adapter
             }
         }
 
+        public FolderNode GetDeletedItemsFolder(string storeId)
+        {
+            if (storeId == null) return null;
+
+            using (var session = new ComRef<OutlookOM.NameSpace>(_app.Session))
+            {
+                OutlookOM.Store rawStore;
+                try { rawStore = session.Value.GetStoreFromID(storeId); }
+                catch { return null; } // store no longer open - tolerate the miss
+
+                using (var store = new ComRef<OutlookOM.Store>(rawStore))
+                {
+                    ComRef<OutlookOM.Folder> deleted = null;
+                    try
+                    {
+                        deleted = new ComRef<OutlookOM.Folder>(
+                            (OutlookOM.Folder)store.Value.GetDefaultFolder(
+                                OutlookOM.OlDefaultFolders.olFolderDeletedItems));
+
+                        string entryId = Safe(() => deleted.Value.EntryID, null);
+                        if (entryId == null) return null;
+                        string name = Safe(() => deleted.Value.Name, "Deleted Items");
+                        return new FolderNode(storeId, entryId, parentEntryId: null,
+                                              name: name, fullPath: name, isLeaf: false);
+                    }
+                    catch { return null; } // store has no Deleted Items default - fine
+                    finally { deleted?.Dispose(); }
+                }
+            }
+        }
+
         public ConversationSiblings GetConversationSiblings(MailItemRef item)
         {
             var result = new List<MailItemRef>();

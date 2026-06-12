@@ -48,6 +48,10 @@
                                   Content="Keep the original after classifying" />
                         <CheckBox Margin="0,3" IsChecked="{Binding RemoveAttachments}"
                                   Content="Remove attachments from the filed copy" />
+                        <CheckBox Margin="0,3" IsChecked="{Binding ClassifySafetyCopy}">
+                            <TextBlock TextWrapping="Wrap" MaxWidth="400"
+                                       Text="Keep a safety copy in Deleted Items when filing (only applies when the original is not kept)" />
+                        </CheckBox>
                         <CheckBox Margin="0,3" IsChecked="{Binding WidenConversation}"
                                   Content="Apply to the whole conversation by default" />
                     </StackPanel>

@@ -132,6 +132,17 @@ namespace RBLclass.AddIn.ViewModels
             set => Apply(_settings.RemoveAttachments, value, v => _settings.RemoveAttachments = v);
         }
 
+        /// <summary>
+        /// Opt-in v2.2 guardrail: classify (without keep-a-copy) also leaves a
+        /// copy of each filed mail in Deleted Items, like the old
+        /// delete-after-copy behaviour did as a side effect.
+        /// </summary>
+        public bool ClassifySafetyCopy
+        {
+            get => _settings.ClassifySafetyCopy;
+            set => Apply(_settings.ClassifySafetyCopy, value, v => _settings.ClassifySafetyCopy = v);
+        }
+
         public bool WidenConversation
         {
             get => _settings.WidenConversation;

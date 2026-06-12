@@ -207,8 +207,11 @@ namespace RBLclass.AddIn.ViewModels
                     markTasksComplete = answer.Value;
                 }
 
+                bool safetyCopy = _settings != null
+                    && _settings.GetBool(SettingsKeys.ClassifySafetyCopy, false);
                 var result = _classifier.Classify(
-                    new ClassifyRequest(preflight.Items, destinations, _keepCopy, _removeAttachments, markTasksComplete));
+                    new ClassifyRequest(preflight.Items, destinations, _keepCopy,
+                                        _removeAttachments, markTasksComplete, safetyCopy));
 
                 string verb = _keepCopy ? "Copied" : "Filed";
                 Status = verb + " " + result.ItemsProcessed + " mail(s) to " +
