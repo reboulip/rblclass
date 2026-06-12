@@ -551,7 +551,8 @@ the remaining **open questions** are called out inline.
       checkbox** from triage (they no longer fit this model). Includes a
       settings migration from the old boolean key
       (`SentItemTriageViewModel` / `SentItemTriageWindow` / `SettingsKeys`).
-- [ ] **Strip the external-sender banner on reply and on classify.** The ugly
+- [ ] *(carried into the v2.2.0.0 sprint backlog — still open)*
+      **Strip the external-sender banner on reply and on classify.** The ugly
       "external email" reminder banner varies per company, so RBLclass learns
       it from a **sample the user teaches it once** (capture a real banner —
       text/HTML — derive a signature, strip matching blocks). Two triggers:
@@ -566,3 +567,120 @@ the remaining **open questions** are called out inline.
         ([[classify-attachments-on-copy]] sets the precedent: act on the copy,
         leave the original intact); whether banner matching belongs in
         `RBLclass.Core` (testable) or the Outlook adapter (HTML body access).
+
+## v2.2.0.0 — Second feedback wave (sprint started 2026-06-12)
+
+Eight items from continued operational use, analysed and sequenced
+2026-06-12. Ordering: quick search-correctness fixes first, then the
+classify-engine rework (the Stormshield fix) that Undo and Auto-class
+build on, then the feature work. Every task ends with a build,
+`/reload-addin`, and a manual verification pass in Outlook before the
+next one starts. Non-trivial `RBLclass.Core` logic ships with xUnit
+coverage per CLAUDE.md. Product version bumps to 2.2.0.0 at ship.
+
+Decisions taken with the maintainer on 2026-06-12 are baked into the
+items below (multi-search chip UX, Undo in the pane, Auto-class on the
+ribbon, and the encrypted-attachment rule).
+
+### A. Search correctness & responsiveness
+
+- [ ] **Fix special characters in folder search ("R&D").** Reported: a
+      folder named `R&D` is not found by the query `R&D`. Root cause: in
+      word-prefix mode `FolderSearchService.SplitWords` keeps only
+      letters/digits, so the path word list for "R&D" is `r`,`d` and the
+      token `r&d` can never prefix any word. Fix: a token containing a
+      non-alphanumeric character falls back to substring containment (by
+      definition it cannot be a word prefix). xUnit: `R&D` matches in
+      both match modes; plain tokens keep word-prefix semantics.
+- [ ] **Minimum query length + typing debounce.** Today the first
+      keystroke already searches, matching a huge folder set and
+      stuttering the pane. Two new persisted settings (Settings dialog,
+      "Folder search" group; [[settings-always-persistent]]):
+      - `MinSearchLength` — default **2**, search runs only once the
+        query reaches it (enforced in `FolderSearchOptions`/Service so
+        it is unit-testable).
+      - `SearchDebounceMs` — default **200 ms** (clamped 0–2000):
+        re-search fires only after the user stops typing for that long
+        (`DispatcherTimer` in `MainPaneViewModel`; checkbox toggles and
+        sub-folder creation still refresh immediately).
+- [ ] **Ctrl toggles "List every matching folder" from the search box.**
+      With focus in the query box, pressing and releasing Ctrl *alone*
+      toggles the AllResults checkbox; Ctrl+key combinations (Ctrl+A,
+      Ctrl+C…) are not affected.
+- [ ] **"Open folders in a new window" becomes settings-only.** The
+      checkbox leaves the task pane (it is configuration, not a
+      per-action choice); the Settings dialog remains the single editor
+      and the pane reads the stored value live at navigation time.
+- [ ] **Select all text when the search box gains focus by click.**
+      (Added 2026-06-12.) When focus is *outside* the search bar and the
+      user clicks into it, the existing query is fully selected so
+      typing replaces it — sequential classifying nearly always starts a
+      fresh keyword search, and manually erasing the old query every
+      time is friction. Clicking again once focused keeps normal caret
+      behaviour (so the user can still edit/position within the text).
+
+### B. Classify engine rework
+
+- [ ] **Stop provoking Stormshield's `MAPI_E_NOT_FOUND` on classify.**
+      Reported error (`IMessage.GetAttachmentTable: MAPI_E_NOT_FOUND` in
+      `Arkoon.SecurityBox...OnBeforeReadAsync`) is thrown by the
+      Stormshield add-in's own async reader against items our classify
+      creates and immediately destroys: `mail.Copy()` materialises a
+      transient copy in the *source* folder which `Move` then yanks
+      away, and the original is afterwards `Delete`d into Deleted Items
+      — by the time Stormshield's `OnBeforeRead` inspects either, the
+      underlying MAPI message is gone. Fix — make classify move-based:
+      - KeepCopy **off**: copies are made only for destinations 1…n−1;
+        the original is **moved** to the last destination (single
+        destination ⇒ a pure `Move`, no transient copy, no delete, no
+        Deleted Items churn). `IMailStore` gains `MoveItemToFolder`.
+      - KeepCopy **on**: unchanged (copy per destination, original
+        untouched).
+      - Sent-item triage "Move to Inbox" rides the same path and becomes
+        a true move.
+      - **Decision (2026-06-12): encrypted mail (`IPM.Note.SMIME`) is
+        never stripped of attachments** — its attachments *are* the
+        message. Applies to classify-time stripping and the standalone
+        "Remove attachments" command alike; skipped items are reported.
+        Accepted trade-off: for regular mail with KeepCopy off, "remove
+        attachments" now strips the moved item itself (nothing lands in
+        Deleted Items any more — the user accepted the original's
+        deletion in that configuration anyway).
+      - xUnit: ClassifierService move/copy orchestration for 1 and n
+        destinations × KeepCopy on/off; encrypted-skip behaviour.
+
+### C. Filing features
+
+- [ ] **Accumulate destinations across successive searches.** Checked
+      folders persist in a selection set (keyed StoreId+EntryId) that
+      survives re-searches: search kw1 → check folders → search kw2 →
+      check more → one "Classify to N folders". A chip strip above the
+      Classify button lists the selection (per-chip ✕, plus clear-all);
+      re-searching re-checks rows already selected; the set clears
+      automatically after a successful classify.
+- [ ] **Undo the last filing action.** `ClassifierService.Classify`
+      returns an undo plan alongside the result: every move performed
+      (with the item's source folder), every copy created, every flag
+      set, and (once Auto-class lands) the history rows written. A
+      single-slot Undo button next to Classify — enabled only when a
+      plan exists — reverses it: moves items back to their source
+      folders, deletes the created copies, restores flags, rolls back
+      history rows. Stripped attachments cannot be restored; Undo says
+      so when that applies. xUnit over a fake store.
+- [ ] **Auto-class.** Schema **v2** adds
+      `ClassificationHistory(ConversationKey, DestStoreId, DestEntryId,
+      WhenUtc)`, appended on every successful classify (conversation key
+      read from the Outlook item at selection time). A ribbon
+      **Auto-class** button files each selected mail to its
+      conversation's most recent recorded destination(s) — validated
+      against the current folder index — and reports a summary
+      (filed / no-history / stale-folder counts). Office offers add-ins
+      no API to pin to the Quick Access Toolbar; the user pins the
+      ribbon button manually (right-click → "Add to Quick Access
+      Toolbar"). Undo covers auto-class filings like any other.
+
+### Carried over from v2.1.0.0
+
+- [ ] **Strip the external-sender banner on reply and on classify** —
+      unchanged scope, still parked behind the items above (open design
+      questions recorded in the v2.1.0.0 section).
