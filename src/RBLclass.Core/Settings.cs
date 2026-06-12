@@ -17,10 +17,25 @@ namespace RBLclass.Core
         /// <summary>Legacy hard-coded forgotten-attachment keyword list.</summary>
         public const string DefaultForgottenAttachmentKeywords = "attach;enclos;joint;PJ";
 
+        /// <summary>
+        /// Default pause after the last keystroke before folder search fires.
+        /// ~100 ms is a typical inter-keystroke gap when typing a word, so
+        /// 200 ms lets a burst finish yet still feels immediate after a stop.
+        /// </summary>
+        public const int DefaultSearchDebounceMs = 200;
+
+        /// <summary>Upper clamp for <see cref="SearchDebounceMs"/> - beyond this the pane just feels broken.</summary>
+        public const int MaxSearchDebounceMs = 2000;
+
+        /// <summary>Upper clamp for <see cref="MinSearchLength"/>.</summary>
+        public const int MaxMinSearchLength = 10;
+
         public bool OpenInNewWindow { get; set; }
         public bool AllResults { get; set; }
         public FolderMatchMode FolderMatchMode { get; set; }
         public int MaxResults { get; set; }
+        public int MinSearchLength { get; set; }
+        public int SearchDebounceMs { get; set; }
         public bool KeepCopy { get; set; }
         public bool RemoveAttachments { get; set; }
         public bool WidenConversation { get; set; }
@@ -38,6 +53,10 @@ namespace RBLclass.Core
                 AllResults = store.GetBool(SettingsKeys.AllResults, false),
                 FolderMatchMode = ParseMatchMode(store.Get(SettingsKeys.FolderMatchMode, null)),
                 MaxResults = ParseMaxResults(store.Get(SettingsKeys.MaxResults, null)),
+                MinSearchLength = ParseClampedInt(store.Get(SettingsKeys.MinSearchLength, null),
+                    FolderSearchOptions.DefaultMinQueryLength, 1, MaxMinSearchLength),
+                SearchDebounceMs = ParseClampedInt(store.Get(SettingsKeys.SearchDebounceMs, null),
+                    DefaultSearchDebounceMs, 0, MaxSearchDebounceMs),
                 KeepCopy = store.GetBool(SettingsKeys.KeepCopy, false),
                 RemoveAttachments = store.GetBool(SettingsKeys.RemoveAttachments, false),
                 WidenConversation = store.GetBool(SettingsKeys.WidenConversation, false),
@@ -58,6 +77,8 @@ namespace RBLclass.Core
             store.SetBool(SettingsKeys.AllResults, AllResults);
             store.Set(SettingsKeys.FolderMatchMode, FolderMatchMode.ToString());
             store.Set(SettingsKeys.MaxResults, MaxResults.ToString(CultureInfo.InvariantCulture));
+            store.Set(SettingsKeys.MinSearchLength, MinSearchLength.ToString(CultureInfo.InvariantCulture));
+            store.Set(SettingsKeys.SearchDebounceMs, SearchDebounceMs.ToString(CultureInfo.InvariantCulture));
             store.SetBool(SettingsKeys.KeepCopy, KeepCopy);
             store.SetBool(SettingsKeys.RemoveAttachments, RemoveAttachments);
             store.SetBool(SettingsKeys.WidenConversation, WidenConversation);
@@ -91,6 +112,17 @@ namespace RBLclass.Core
             int value;
             if (!int.TryParse(raw, NumberStyles.Integer, CultureInfo.InvariantCulture, out value) || value < 1)
                 return FolderSearchOptions.DefaultMaxResults;
+            return value;
+        }
+
+        /// <summary>Unparseable values fall back to the default; out-of-range values clamp to the nearest bound.</summary>
+        private static int ParseClampedInt(string raw, int fallback, int min, int max)
+        {
+            int value;
+            if (!int.TryParse(raw, NumberStyles.Integer, CultureInfo.InvariantCulture, out value))
+                return fallback;
+            if (value < min) return min;
+            if (value > max) return max;
             return value;
         }
 

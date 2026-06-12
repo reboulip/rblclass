@@ -29,6 +29,16 @@
                             <TextBox DockPanel.Dock="Right" Width="60" Margin="6,0,0,0"
                                      Text="{Binding MaxResultsText, UpdateSourceTrigger=LostFocus}" />
                         </DockPanel>
+                        <DockPanel Margin="0,4,0,2" LastChildFill="False">
+                            <TextBlock Text="Search after typing at least (characters):" VerticalAlignment="Center" />
+                            <TextBox DockPanel.Dock="Right" Width="60" Margin="6,0,0,0"
+                                     Text="{Binding MinSearchLengthText, UpdateSourceTrigger=LostFocus}" />
+                        </DockPanel>
+                        <DockPanel Margin="0,4,0,2" LastChildFill="False">
+                            <TextBlock Text="Pause before searching (milliseconds):" VerticalAlignment="Center" />
+                            <TextBox DockPanel.Dock="Right" Width="60" Margin="6,0,0,0"
+                                     Text="{Binding SearchDebounceMsText, UpdateSourceTrigger=LostFocus}" />
+                        </DockPanel>
                     </StackPanel>
                 </GroupBox>
 

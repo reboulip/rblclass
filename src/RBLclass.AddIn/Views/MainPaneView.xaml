@@ -27,15 +27,19 @@
 
             <TextBox Grid.Row="1" x:Name="QueryBox" Margin="0,0,0,6"
                      Text="{Binding Query, UpdateSourceTrigger=PropertyChanged}"
-                     KeyDown="QueryBox_KeyDown" />
+                     KeyDown="QueryBox_KeyDown"
+                     PreviewKeyDown="QueryBox_PreviewKeyDown"
+                     KeyUp="QueryBox_KeyUp"
+                     PreviewMouseLeftButtonDown="QueryBox_PreviewMouseLeftButtonDown"
+                     GotKeyboardFocus="QueryBox_GotKeyboardFocus"
+                     ToolTip="Press Ctrl alone to toggle 'List every matching folder'" />
 
-            <!-- Options. -->
+            <!-- Options. "Open folders in a new window" moved to Settings (v2.2). -->
             <StackPanel Grid.Row="2" Margin="0,0,0,6">
                 <CheckBox Content="List every matching folder" IsChecked="{Binding AllResults}" />
                 <CheckBox Content="Keep a copy (don't delete originals)" Margin="0,3,0,0" IsChecked="{Binding KeepCopy}" />
                 <CheckBox Content="Remove attachments from the filed copy" Margin="0,3,0,0" IsChecked="{Binding RemoveAttachments}" />
                 <CheckBox Content="Include the whole conversation" Margin="0,3,0,0" IsChecked="{Binding WidenConversation}" />
-                <CheckBox Content="Open folders in a new window" Margin="0,3,0,0" IsChecked="{Binding OpenInNewWindow}" />
             </StackPanel>
 
             <!-- The shared list. Single-click toggles a folder as a destination;

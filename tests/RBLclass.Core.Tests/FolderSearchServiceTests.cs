@@ -57,6 +57,28 @@ namespace RBLclass.Core.Tests
         }
 
         [Fact]
+        public void Query_shorter_than_the_minimum_length_returns_empty()
+        {
+            // Default minimum is 2: a single keystroke must not search yet.
+            DefaultSearch().Search("a").Results.Should().BeEmpty();
+            DefaultSearch().Search(" a ").Results.Should().BeEmpty(); // trimmed length counts
+
+            // A custom minimum applies too.
+            DefaultSearch().Search("proj",
+                new FolderSearchOptions(minQueryLength: 5)).Results.Should().BeEmpty();
+        }
+
+        [Fact]
+        public void Query_at_the_minimum_length_searches()
+        {
+            var search = SearchOver(
+                new FolderNode("s1", "x1", null, "IT", "Archive / IT", isLeaf: true));
+
+            search.Search("it").Results.Should().ContainSingle()
+                  .Which.Folder.EntryId.Should().Be("x1");
+        }
+
+        [Fact]
         public void WordPrefix_matched_non_leaf_collapses_to_topmost()
         {
             // "proj" matches Projects and (via the "Projects" path word) both of

@@ -21,6 +21,12 @@ namespace RBLclass.Core
         /// <summary>Cap on displayed folder-search results (legacy settingsMaxResults).</summary>
         public const string MaxResults = "MaxResults";
 
+        /// <summary>Minimum (trimmed) query length before folder search runs (v2.2).</summary>
+        public const string MinSearchLength = "MinSearchLength";
+
+        /// <summary>Pause after the last keystroke before folder search fires, in ms (v2.2).</summary>
+        public const string SearchDebounceMs = "SearchDebounceMs";
+
         /// <summary>Keep originals after classify, i.e. don't delete (inverse of legacy settingsdeleteProcessedElts).</summary>
         public const string KeepCopy = "KeepCopy";
 

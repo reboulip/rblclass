@@ -19,6 +19,10 @@ namespace RBLclass.AddIn.Views
 
         private MainPaneViewModel Vm => DataContext as MainPaneViewModel;
 
+        // True when Ctrl was used as a modifier (Ctrl+A, Ctrl+C...) since it was
+        // pressed - releasing it must then NOT toggle "List every matching folder".
+        private bool _ctrlComboUsed;
+
         private void QueryBox_KeyDown(object sender, KeyEventArgs e)
         {
             if (e.Key == Key.Enter)
@@ -26,6 +30,49 @@ namespace RBLclass.AddIn.Views
                 Vm?.FileToHighlighted();
                 e.Handled = true;
             }
+        }
+
+        private void QueryBox_PreviewKeyDown(object sender, KeyEventArgs e)
+        {
+            var key = e.Key == Key.System ? e.SystemKey : e.Key;
+            if (key == Key.LeftCtrl || key == Key.RightCtrl)
+            {
+                if (!e.IsRepeat) _ctrlComboUsed = false; // fresh Ctrl press
+            }
+            else if ((Keyboard.Modifiers & ModifierKeys.Control) != 0)
+            {
+                _ctrlComboUsed = true; // Ctrl is acting as a modifier
+            }
+        }
+
+        /// <summary>Ctrl pressed and released on its own toggles "List every matching folder" (v2.2).</summary>
+        private void QueryBox_KeyUp(object sender, KeyEventArgs e)
+        {
+            if ((e.Key == Key.LeftCtrl || e.Key == Key.RightCtrl)
+                && (Keyboard.Modifiers & ModifierKeys.Control) == 0)
+            {
+                if (!_ctrlComboUsed && Vm != null)
+                    Vm.AllResults = !Vm.AllResults;
+                _ctrlComboUsed = false;
+            }
+        }
+
+        /// <summary>
+        /// Clicking into the unfocused search box selects the whole query so
+        /// typing replaces it - sequential classifying nearly always starts a
+        /// fresh search (v2.2). Clicks while already focused keep normal caret
+        /// placement.
+        /// </summary>
+        private void QueryBox_PreviewMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+        {
+            if (QueryBox.IsKeyboardFocusWithin) return;
+            QueryBox.Focus(); // triggers GotKeyboardFocus -> SelectAll
+            e.Handled = true; // don't let the click collapse the selection to a caret
+        }
+
+        private void QueryBox_GotKeyboardFocus(object sender, KeyboardFocusChangedEventArgs e)
+        {
+            QueryBox.SelectAll();
         }
 
         private void ResultsList_MouseDoubleClick(object sender, MouseButtonEventArgs e)

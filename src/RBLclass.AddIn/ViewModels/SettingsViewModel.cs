@@ -20,12 +20,16 @@ namespace RBLclass.AddIn.ViewModels
         private readonly ISettingsStore _store;
         private readonly Settings _settings;
         private string _maxResultsText;
+        private string _minSearchLengthText;
+        private string _searchDebounceMsText;
 
         public SettingsViewModel(ISettingsStore store)
         {
             _store = store ?? throw new ArgumentNullException(nameof(store));
             _settings = Settings.Load(_store);
             _maxResultsText = _settings.MaxResults.ToString(CultureInfo.InvariantCulture);
+            _minSearchLengthText = _settings.MinSearchLength.ToString(CultureInfo.InvariantCulture);
+            _searchDebounceMsText = _settings.SearchDebounceMs.ToString(CultureInfo.InvariantCulture);
         }
 
         public bool OpenInNewWindow
@@ -68,6 +72,49 @@ namespace RBLclass.AddIn.ViewModels
                 if (int.TryParse(value, NumberStyles.Integer, CultureInfo.InvariantCulture, out parsed) && parsed >= 1)
                 {
                     _settings.MaxResults = parsed;
+                    _settings.Save(_store);
+                }
+            }
+        }
+
+        /// <summary>
+        /// Free-text editor for <see cref="Settings.MinSearchLength"/> (v2.2):
+        /// search starts only once the query has this many characters. Commits
+        /// on a valid value in range, like <see cref="MaxResultsText"/>.
+        /// </summary>
+        public string MinSearchLengthText
+        {
+            get => _minSearchLengthText;
+            set
+            {
+                if (!SetProperty(ref _minSearchLengthText, value)) return;
+
+                int parsed;
+                if (int.TryParse(value, NumberStyles.Integer, CultureInfo.InvariantCulture, out parsed)
+                    && parsed >= 1 && parsed <= Settings.MaxMinSearchLength)
+                {
+                    _settings.MinSearchLength = parsed;
+                    _settings.Save(_store);
+                }
+            }
+        }
+
+        /// <summary>
+        /// Free-text editor for <see cref="Settings.SearchDebounceMs"/> (v2.2):
+        /// how long after the last keystroke the folder search fires.
+        /// </summary>
+        public string SearchDebounceMsText
+        {
+            get => _searchDebounceMsText;
+            set
+            {
+                if (!SetProperty(ref _searchDebounceMsText, value)) return;
+
+                int parsed;
+                if (int.TryParse(value, NumberStyles.Integer, CultureInfo.InvariantCulture, out parsed)
+                    && parsed >= 0 && parsed <= Settings.MaxSearchDebounceMs)
+                {
+                    _settings.SearchDebounceMs = parsed;
                     _settings.Save(_store);
                 }
             }

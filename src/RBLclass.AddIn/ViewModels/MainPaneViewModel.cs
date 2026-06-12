@@ -30,11 +30,15 @@ namespace RBLclass.AddIn.ViewModels
         private readonly Func<string, string> _promptForName;
 
         private string _query = string.Empty;
-        private bool _allResults, _keepCopy, _removeAttachments, _widenConversation, _openInNewWindow;
+        private bool _allResults, _keepCopy, _removeAttachments, _widenConversation;
         private SelectableFolder _selectedResult;
         private string _selectionSummary = "No mail selected.";
         private string _status = string.Empty;
         private bool _isBusy;
+
+        // Debounces typing in the search box: re-search fires only once the
+        // user has paused for Settings.SearchDebounceMs (v2.2).
+        private DispatcherTimer _searchTimer;
 
         public MainPaneViewModel(
             IFolderSearch search,
@@ -61,7 +65,6 @@ namespace RBLclass.AddIn.ViewModels
                 _keepCopy = _settings.GetBool(SettingsKeys.KeepCopy, false);
                 _removeAttachments = _settings.GetBool(SettingsKeys.RemoveAttachments, false);
                 _widenConversation = _settings.GetBool(SettingsKeys.WidenConversation, false);
-                _openInNewWindow = _settings.GetBool(SettingsKeys.OpenInNewWindow, false);
             }
         }
 
@@ -71,7 +74,7 @@ namespace RBLclass.AddIn.ViewModels
         public string Query
         {
             get => _query;
-            set { if (SetProperty(ref _query, value)) Refresh(); }
+            set { if (SetProperty(ref _query, value)) ScheduleRefresh(); }
         }
 
         public bool AllResults
@@ -96,12 +99,6 @@ namespace RBLclass.AddIn.ViewModels
         {
             get => _widenConversation;
             set { if (SetProperty(ref _widenConversation, value)) _settings?.SetBool(SettingsKeys.WidenConversation, value); }
-        }
-
-        public bool OpenInNewWindow
-        {
-            get => _openInNewWindow;
-            set { if (SetProperty(ref _openInNewWindow, value)) _settings?.SetBool(SettingsKeys.OpenInNewWindow, value); }
         }
 
         public SelectableFolder SelectedResult
@@ -137,15 +134,22 @@ namespace RBLclass.AddIn.ViewModels
         public void RefreshSelection() =>
             SetSelectionCount(_getSelection != null ? _getSelection().Count : 0);
 
-        /// <summary>Navigate Outlook to a folder (the per-row open button).</summary>
+        /// <summary>
+        /// Navigate Outlook to a folder (the per-row open button). New-window
+        /// behaviour is read live from settings - since v2.2 it is configured
+        /// only in the Settings dialog, no longer toggled in the pane.
+        /// </summary>
         public void OpenFolder(FolderNode folder)
         {
-            if (folder != null) _navigate?.Invoke(folder, _openInNewWindow);
+            if (folder == null) return;
+            bool newWindow = _settings != null && _settings.GetBool(SettingsKeys.OpenInNewWindow, false);
+            _navigate?.Invoke(folder, newWindow);
         }
 
         /// <summary>File into the highlighted (or first) folder - Enter in the search box.</summary>
         public void FileToHighlighted()
         {
+            FlushPendingSearch(); // never file based on stale, pre-debounce results
             var folder = (SelectedResult ?? (Results.Count > 0 ? Results[0] : null))?.Folder;
             if (folder == null) { Status = "No matching folder to file into."; return; }
             DoClassify(new[] { folder });
@@ -224,25 +228,69 @@ namespace RBLclass.AddIn.ViewModels
             }
         }
 
+        /// <summary>
+        /// Re-search after the typing pause configured in settings (immediate
+        /// when the debounce is 0). Toggles and folder creation bypass this and
+        /// call <see cref="Refresh"/> directly.
+        /// </summary>
+        private void ScheduleRefresh()
+        {
+            int debounceMs = _settings != null
+                ? Settings.Load(_settings).SearchDebounceMs
+                : Settings.DefaultSearchDebounceMs;
+            if (debounceMs <= 0) { Refresh(); return; }
+
+            if (_searchTimer == null)
+            {
+                _searchTimer = new DispatcherTimer(DispatcherPriority.Input);
+                _searchTimer.Tick += (s, e) => { _searchTimer.Stop(); Refresh(); };
+            }
+
+            _searchTimer.Stop();
+            _searchTimer.Interval = TimeSpan.FromMilliseconds(debounceMs);
+            _searchTimer.Start();
+        }
+
+        /// <summary>Run a pending debounced search now (before acting on the results).</summary>
+        private void FlushPendingSearch()
+        {
+            if (_searchTimer != null && _searchTimer.IsEnabled)
+            {
+                _searchTimer.Stop();
+                Refresh();
+            }
+        }
+
         private void Refresh()
         {
             var matchMode = FolderMatchMode.Substring;
             var maxResults = FolderSearchOptions.DefaultMaxResults;
+            var minLength = FolderSearchOptions.DefaultMinQueryLength;
             if (_settings != null)
             {
                 var settings = Settings.Load(_settings);
                 matchMode = settings.FolderMatchMode;
                 maxResults = settings.MaxResults;
+                minLength = settings.MinSearchLength;
             }
 
-            var outcome = _search.Search(_query, new FolderSearchOptions(matchMode, _allResults, maxResults));
+            var outcome = _search.Search(_query,
+                new FolderSearchOptions(matchMode, _allResults, maxResults, minLength));
 
             Results.Clear();
             foreach (var r in outcome.Results)
                 Results.Add(new SelectableFolder(r));
 
+            string trimmed = (_query ?? string.Empty).Trim();
             if (outcome.TotalMatchCount == 0)
-                Status = string.IsNullOrWhiteSpace(_query) ? string.Empty : "No matching folders.";
+            {
+                if (trimmed.Length == 0)
+                    Status = string.Empty;
+                else if (trimmed.Length < minLength)
+                    Status = "Type at least " + minLength + " characters to search.";
+                else
+                    Status = "No matching folders.";
+            }
             else if (outcome.LimitExceeded)
                 Status = "Showing " + Results.Count + " of " + outcome.TotalMatchCount + " - refine your search.";
             else
