@@ -89,6 +89,14 @@ namespace RBLclass.AddIn.Views
 
         private void Classify_Click(object sender, RoutedEventArgs e) => Vm?.ClassifyChecked();
 
+        private void RemoveDestination_Click(object sender, RoutedEventArgs e)
+        {
+            var folder = (sender as FrameworkElement)?.DataContext as RBLclass.Core.FolderNode;
+            if (folder != null) Vm?.RemoveDestination(folder);
+        }
+
+        private void ClearSelection_Click(object sender, RoutedEventArgs e) => Vm?.ClearDestinations();
+
         private void OpenFolder_Click(object sender, RoutedEventArgs e)
         {
             var folder = (sender as FrameworkElement)?.DataContext as SelectableFolder;

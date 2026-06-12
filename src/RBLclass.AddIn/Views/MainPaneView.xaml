@@ -20,6 +20,7 @@
                 <RowDefinition Height="*" />
                 <RowDefinition Height="Auto" />
                 <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
             </Grid.RowDefinitions>
 
             <TextBlock Grid.Row="0" Margin="0,0,0,6" FontWeight="Bold"
@@ -68,10 +69,47 @@
                 </ListBox.ItemTemplate>
             </ListBox>
 
-            <Button Grid.Row="4" Margin="0,8,0,0" Padding="12,4" HorizontalAlignment="Left"
-                    Content="Classify to checked folders" Click="Classify_Click" />
+            <!-- Destinations accumulated across searches (v2.2): removable
+                 chips; survives re-searches; clears after a classify. -->
+            <StackPanel Grid.Row="4" Margin="0,6,0,0"
+                        Visibility="{Binding HasSelectedDestinations, Converter={StaticResource BoolToVis}}">
+                <DockPanel LastChildFill="False">
+                    <TextBlock Text="{Binding SelectionHeader}" FontWeight="Bold"
+                               VerticalAlignment="Center" />
+                    <Button DockPanel.Dock="Right" Content="clear" Padding="6,0"
+                            Click="ClearSelection_Click"
+                            ToolTip="Drop all selected destinations" />
+                </DockPanel>
+                <ItemsControl ItemsSource="{Binding SelectedDestinations}" Margin="0,3,0,0">
+                    <ItemsControl.ItemsPanel>
+                        <ItemsPanelTemplate>
+                            <WrapPanel />
+                        </ItemsPanelTemplate>
+                    </ItemsControl.ItemsPanel>
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <Border Background="{DynamicResource Theme.SelectionBackground}"
+                                    BorderBrush="{DynamicResource Theme.ControlBorder}"
+                                    BorderThickness="1" CornerRadius="9"
+                                    Padding="6,1" Margin="0,0,4,4"
+                                    ToolTip="{Binding FullPath}">
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock Text="{Binding Name}" VerticalAlignment="Center" />
+                                    <Button Content="✕" Margin="4,0,0,0" Padding="2,0"
+                                            BorderThickness="0" Background="Transparent"
+                                            Click="RemoveDestination_Click"
+                                            ToolTip="Remove this destination" />
+                                </StackPanel>
+                            </Border>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </StackPanel>
 
-            <TextBlock Grid.Row="5" Margin="0,6,0,0" Style="{DynamicResource MutedText}"
+            <Button Grid.Row="5" Margin="0,8,0,0" Padding="12,4" HorizontalAlignment="Left"
+                    Content="{Binding ClassifyButtonText}" Click="Classify_Click" />
+
+            <TextBlock Grid.Row="6" Margin="0,6,0,0" Style="{DynamicResource MutedText}"
                        Text="{Binding Status}" TextWrapping="Wrap" />
         </Grid>
 

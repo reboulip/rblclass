@@ -71,6 +71,30 @@ namespace RBLclass.AddIn.ViewModels
         public ObservableCollection<SelectableFolder> Results { get; } =
             new ObservableCollection<SelectableFolder>();
 
+        /// <summary>
+        /// Destinations accumulated across searches (v2.2): checking a row adds
+        /// its folder here, and the set survives re-searches so multi-keyword
+        /// destinations can be built up (search kw1, check, search kw2, check,
+        /// classify once). Rendered as a removable chip strip; cleared after a
+        /// successful "Classify to N folders".
+        /// </summary>
+        public ObservableCollection<FolderNode> SelectedDestinations { get; } =
+            new ObservableCollection<FolderNode>();
+
+        private readonly HashSet<string> _selectedKeys = new HashSet<string>();
+
+        private static string KeyOf(FolderNode f) => f.StoreId + " " + f.EntryId;
+
+        public bool HasSelectedDestinations => SelectedDestinations.Count > 0;
+
+        public string SelectionHeader =>
+            "Selected: " + SelectedDestinations.Count + " folder(s)";
+
+        public string ClassifyButtonText =>
+            SelectedDestinations.Count == 0
+                ? "Classify"
+                : "Classify to " + SelectedDestinations.Count + " folder(s)";
+
         public string Query
         {
             get => _query;
@@ -161,12 +185,65 @@ namespace RBLclass.AddIn.ViewModels
             if (folder != null) DoClassify(new[] { folder });
         }
 
-        /// <summary>File into every checked folder (the Classify button).</summary>
+        /// <summary>File into every accumulated destination (the Classify button).</summary>
         public void ClassifyChecked()
         {
-            var destinations = Results.Where(r => r.IsSelected).Select(r => r.Folder).ToList();
+            var destinations = SelectedDestinations.ToList();
             if (destinations.Count == 0) { Status = "Check at least one destination folder."; return; }
-            DoClassify(destinations);
+            if (DoClassify(destinations))
+                ClearDestinations(); // the batch is filed - start the next one clean
+        }
+
+        /// <summary>Remove one accumulated destination (a chip's ✕, or unchecking its row).</summary>
+        public void RemoveDestination(FolderNode folder)
+        {
+            if (folder == null || !_selectedKeys.Remove(KeyOf(folder))) return;
+
+            for (int i = SelectedDestinations.Count - 1; i >= 0; i--)
+            {
+                if (KeyOf(SelectedDestinations[i]) == KeyOf(folder))
+                    SelectedDestinations.RemoveAt(i);
+            }
+
+            // Uncheck the matching visible row, if any (its change handler
+            // re-enters here and no-ops - the key is already gone).
+            foreach (var row in Results)
+            {
+                if (KeyOf(row.Folder) == KeyOf(folder))
+                    row.IsSelected = false;
+            }
+
+            NotifySelectionMeta();
+        }
+
+        /// <summary>Drop the whole accumulated selection (the clear-all link, or after classify).</summary>
+        public void ClearDestinations()
+        {
+            _selectedKeys.Clear();
+            SelectedDestinations.Clear();
+            foreach (var row in Results)
+                row.IsSelected = false; // re-entrant removes no-op on the empty set
+            NotifySelectionMeta();
+        }
+
+        private void AddDestination(FolderNode folder)
+        {
+            if (folder == null || !_selectedKeys.Add(KeyOf(folder))) return;
+            SelectedDestinations.Add(folder);
+            NotifySelectionMeta();
+        }
+
+        private void OnRowSelectionChanged(SelectableFolder row)
+        {
+            if (row.IsSelected) AddDestination(row.Folder);
+            else RemoveDestination(row.Folder);
+        }
+
+        private void NotifySelectionMeta()
+        {
+            OnPropertyChanged(nameof(HasSelectedDestinations));
+            OnPropertyChanged(nameof(SelectionHeader));
+            OnPropertyChanged(nameof(ClassifyButtonText));
         }
 
         /// <summary>Create a sub-folder under a specific folder (the per-row "+").</summary>
@@ -184,12 +261,13 @@ namespace RBLclass.AddIn.ViewModels
             Refresh();
         }
 
-        private void DoClassify(IReadOnlyList<FolderNode> destinations)
+        /// <summary>Runs the classify; true when it actually executed (not busy/empty/cancelled).</summary>
+        private bool DoClassify(IReadOnlyList<FolderNode> destinations)
         {
-            if (_isBusy) return; // ignore a repeat trigger while a classify is in flight
+            if (_isBusy) return false; // ignore a repeat trigger while a classify is in flight
 
             var items = _getSelection != null ? _getSelection() : new MailItemRef[0];
-            if (items.Count == 0) { Status = "Select one or more mails in Outlook first."; return; }
+            if (items.Count == 0) { Status = "Select one or more mails in Outlook first."; return false; }
 
             IsBusy = true;
             Status = "Filing…";
@@ -203,7 +281,7 @@ namespace RBLclass.AddIn.ViewModels
                 if (preflight.FlaggedIncomplete.Count > 0 && _confirmMarkTasksComplete != null)
                 {
                     var answer = _confirmMarkTasksComplete(preflight.FlaggedIncomplete.Count);
-                    if (answer == null) { Status = "Classify cancelled."; return; }
+                    if (answer == null) { Status = "Classify cancelled."; return false; }
                     markTasksComplete = answer.Value;
                 }
 
@@ -227,6 +305,7 @@ namespace RBLclass.AddIn.ViewModels
                               " encrypted message(s) in the conversation were left in place.";
 
                 RefreshSelection();
+                return true;
             }
             finally
             {
@@ -286,7 +365,18 @@ namespace RBLclass.AddIn.ViewModels
 
             Results.Clear();
             foreach (var r in outcome.Results)
-                Results.Add(new SelectableFolder(r));
+            {
+                var row = new SelectableFolder(r);
+                // Re-check rows already in the accumulated selection (the Add
+                // below is idempotent), then track checkbox changes.
+                row.IsSelected = _selectedKeys.Contains(KeyOf(row.Folder));
+                row.PropertyChanged += (s, e) =>
+                {
+                    if (e.PropertyName == nameof(SelectableFolder.IsSelected))
+                        OnRowSelectionChanged((SelectableFolder)s);
+                };
+                Results.Add(row);
+            }
 
             string trimmed = (_query ?? string.Empty).Trim();
             if (outcome.TotalMatchCount == 0)
