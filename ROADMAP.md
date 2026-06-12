@@ -519,7 +519,7 @@ the remaining **open questions** are called out inline.
 
 ### C. Design-heavy redesigns (open questions inline)
 
-- [ ] **Unify the two pane modes into one always-open task pane.** Today a
+- [x] **Unify the two pane modes into one always-open task pane.** Today a
       single CTP swaps its whole body between an Open view and a Classify view
       and the ribbon button toggles it shut — so it *feels* like two panes that
       keep vanishing. Replace both with **one always-open pane built around a
@@ -537,10 +537,12 @@ the remaining **open questions** are called out inline.
       `TaskPaneServices`, `RblClassAddIn.TogglePane`) in favour of the merged
       view ([[prefer-isolated-new-ui-over-retrofit]] — build the merged list as a
       new view rather than retrofitting either existing one).
-      - Open Qs: what the two ribbon buttons now mean (both just show the pane?);
-        where inline sub-folder creation lives in the merged layout; how the
-        list reflects single-mail vs multi-mail Outlook selections; keyboard
-        model (Enter = classify-to-checked vs classify-to-first).
+      - Resolved: a **single "RBLclass pane" ribbon toggle** (the two-button
+        split retired); **per-row "+"** for sub-folder creation (prompts via a
+        small `NamePromptWindow`); **Enter files to the highlighted/first** result
+        (double-click files to the row under the cursor). Shipped as new
+        `MainPaneView` + `MainPaneViewModel` + `NamePromptWindow`; old
+        `FolderSearchView`/`ClassifyView` (+ their VMs) and `PaneMode` deleted.
 - [ ] **Rework the sent-item triage into a dropdown setting.** Replace the
       on/off `SentItemTriagePrompt` with a **dropdown**: *Move-to-Inbox /
       Delete / Leave / "Let me choose"*. A fixed value applies **automatically

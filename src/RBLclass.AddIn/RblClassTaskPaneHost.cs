@@ -14,8 +14,8 @@ namespace RBLclass.AddIn
     /// Office instantiates it via COM (ICTPFactory.CreateCTP by ProgId), so it
     /// must be ComVisible with a stable [Guid]/[ProgId] matching
     /// release.config.json and be registered as an ActiveX control by the
-    /// installer. It hosts WPF views through ElementHost and switches between the
-    /// Open-folder and Classify views on demand.
+    /// installer. It hosts one WPF view (<see cref="MainPaneView"/>) through
+    /// ElementHost - the unified open-and-classify pane.
     /// </summary>
     [ComVisible(true)]
     [Guid(ClsidString)]
@@ -28,22 +28,19 @@ namespace RBLclass.AddIn
         public const string ProgIdString = "RBLclass.TaskPaneHost";
 
         private readonly ElementHost _elementHost;
-        private FolderSearchView _openView;
-        private ClassifyView _classifyView;
-
-        public PaneMode CurrentMode { get; private set; } = PaneMode.OpenFolder;
+        private MainPaneView _view;
 
         public RblClassTaskPaneHost()
         {
             try
             {
-                // Publish ourselves so ribbon callbacks can switch our mode.
+                // Publish ourselves so ribbon callbacks can show/refresh the pane.
                 TaskPaneServices.Host = this;
 
                 _elementHost = new ElementHost { Dock = DockStyle.Fill };
                 Controls.Add(_elementHost);
 
-                ShowOpenFolder();
+                EnsureView();
                 Log.Information("TaskPaneHost initialized (searchWired={Wired}).",
                     TaskPaneServices.Search != null);
             }
@@ -53,61 +50,50 @@ namespace RBLclass.AddIn
             }
         }
 
-        public void ShowOpenFolder()
+        private void EnsureView()
         {
-            if (_openView == null)
+            if (_view == null)
             {
-                _openView = new FolderSearchView();
-                if (TaskPaneServices.Search != null)
-                    _openView.DataContext = new FolderSearchViewModel(
-                        TaskPaneServices.Search, TaskPaneServices.Navigate, TaskPaneServices.Settings);
-            }
-
-            ApplyTheme(_openView);
-            _elementHost.Child = _openView;
-            CurrentMode = PaneMode.OpenFolder;
-        }
-
-        public void ShowClassify()
-        {
-            if (_classifyView == null)
-            {
-                _classifyView = new ClassifyView();
+                _view = new MainPaneView();
                 if (TaskPaneServices.Search != null && TaskPaneServices.Classifier != null)
-                    _classifyView.DataContext = new ClassifyViewModel(
+                    _view.DataContext = new MainPaneViewModel(
                         TaskPaneServices.Search,
                         TaskPaneServices.Classifier,
                         TaskPaneServices.GetSelection,
                         TaskPaneServices.CreateSubfolder,
+                        TaskPaneServices.Navigate,
                         TaskPaneServices.Settings,
-                        TaskPaneServices.ConfirmMarkTasksComplete);
+                        TaskPaneServices.ConfirmMarkTasksComplete,
+                        TaskPaneServices.PromptForName);
+
+                _elementHost.Child = _view;
             }
 
-            // Re-read the live mail selection each time the pane is shown.
-            (_classifyView.DataContext as ClassifyViewModel)?.RefreshSelection();
-
-            ApplyTheme(_classifyView);
-            _elementHost.Child = _classifyView;
-            CurrentMode = PaneMode.Classify;
+            ApplyThemeAndSelection();
         }
 
         /// <summary>
-        /// Theme the given view to the current Outlook look and match the
-        /// WinForms host background so no white border shows around it. Called
-        /// on each show, so a theme switch made while Outlook is running is
-        /// picked up the next time the pane is opened.
+        /// Re-read the live mail selection and re-apply the theme. Called on each
+        /// show so a theme switch or a changed selection is picked up.
         /// </summary>
-        private void ApplyTheme(System.Windows.FrameworkElement view)
+        public void RefreshOnShow()
         {
-            var mode = ThemeService.Apply(view);
-            BackColor = ThemeService.WinFormsBackColor(mode);
-            _elementHost.BackColor = BackColor;
+            EnsureView();
         }
 
-        /// <summary>Push a live selection count into the classify view model, if it exists.</summary>
+        /// <summary>Push a live selection count into the pane view model.</summary>
         public void SetSelectionCount(int count)
         {
-            (_classifyView?.DataContext as ClassifyViewModel)?.SetSelectionCount(count);
+            (_view?.DataContext as MainPaneViewModel)?.SetSelectionCount(count);
+        }
+
+        private void ApplyThemeAndSelection()
+        {
+            (_view?.DataContext as MainPaneViewModel)?.RefreshSelection();
+
+            var mode = ThemeService.Apply(_view);
+            BackColor = ThemeService.WinFormsBackColor(mode);
+            _elementHost.BackColor = BackColor;
         }
     }
 }

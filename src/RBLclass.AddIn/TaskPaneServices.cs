@@ -62,8 +62,16 @@ namespace RBLclass.AddIn
         public static Func<IReadOnlyList<RecipientAddress>, bool> ConfirmSendToExternal;
 
         /// <summary>
+        /// Prompt the user for a single line of text (the new sub-folder name),
+        /// pre-filled with the parent folder name as context. Returns null/empty
+        /// when cancelled. A small modal dialog under the hood - kept out of the
+        /// WPF-agnostic view model as a plain delegate.
+        /// </summary>
+        public static Func<string, string> PromptForName;
+
+        /// <summary>
         /// The live pane host control (set by its ctor), so ribbon callbacks can
-        /// switch the pane between Open-folder and Classify modes.
+        /// show/refresh the single task pane.
         /// </summary>
         public static RblClassTaskPaneHost Host;
     }

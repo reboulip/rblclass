@@ -9,7 +9,7 @@ namespace RBLclass.AddIn.ViewModels
     /// View model for the small modal folder-picker dialog used by the
     /// sent-item triage prompt's "Class…" action: type-ahead search over
     /// <see cref="IFolderSearch"/>, pick one folder and confirm. Deliberately
-    /// separate from <see cref="ClassifyViewModel"/> - it drives a fixed item
+    /// separate from <see cref="MainPaneViewModel"/> - it drives a fixed item
     /// set rather than the live Outlook selection, and keeping it standalone
     /// avoids teaching the working Classify pane a second selection model.
     /// </summary>

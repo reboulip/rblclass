@@ -9,42 +9,51 @@ using RBLclass.Core;
 namespace RBLclass.AddIn.ViewModels
 {
     /// <summary>
-    /// View model for the Classify pane: search destination folders (toggled
-    /// with checkboxes), and file the current Outlook mail selection into the
-    /// checked folders, with the legacy toggles (keep a copy, remove
-    /// attachments, all results) persisted.
+    /// The single always-open RBLclass pane: one folder-search list that does
+    /// both "open a folder" and "classify". A row's checkbox toggles it as a
+    /// classify destination (single click); double-click - or Enter on the
+    /// highlighted row - files the current Outlook mail selection into that one
+    /// folder; the per-row open button navigates Outlook to it; the per-row "+"
+    /// creates a sub-folder under it. "Classify to checked folders" files into
+    /// every checked folder at once. Replaces the former Open/Classify split
+    /// (built fresh rather than retrofitted - [[prefer-isolated-new-ui-over-retrofit]]).
     /// </summary>
-    public sealed class ClassifyViewModel : ObservableObject
+    public sealed class MainPaneViewModel : ObservableObject
     {
         private readonly IFolderSearch _search;
         private readonly IClassifier _classifier;
         private readonly Func<IReadOnlyList<MailItemRef>> _getSelection;
         private readonly Func<FolderNode, string, FolderNode> _createSubfolder;
+        private readonly Action<FolderNode, bool> _navigate;
         private readonly ISettingsStore _settings;
         private readonly Func<int, bool?> _confirmMarkTasksComplete;
+        private readonly Func<string, string> _promptForName;
 
         private string _query = string.Empty;
-        private bool _allResults;
-        private bool _keepCopy;
-        private bool _removeAttachments;
-        private bool _widenConversation;
+        private bool _allResults, _keepCopy, _removeAttachments, _widenConversation, _openInNewWindow;
+        private SelectableFolder _selectedResult;
         private string _selectionSummary = "No mail selected.";
         private string _status = string.Empty;
         private bool _isBusy;
 
-        public ClassifyViewModel(IFolderSearch search,
-                                 IClassifier classifier,
-                                 Func<IReadOnlyList<MailItemRef>> getSelection,
-                                 Func<FolderNode, string, FolderNode> createSubfolder = null,
-                                 ISettingsStore settings = null,
-                                 Func<int, bool?> confirmMarkTasksComplete = null)
+        public MainPaneViewModel(
+            IFolderSearch search,
+            IClassifier classifier,
+            Func<IReadOnlyList<MailItemRef>> getSelection,
+            Func<FolderNode, string, FolderNode> createSubfolder = null,
+            Action<FolderNode, bool> navigate = null,
+            ISettingsStore settings = null,
+            Func<int, bool?> confirmMarkTasksComplete = null,
+            Func<string, string> promptForName = null)
         {
             _search = search ?? throw new ArgumentNullException(nameof(search));
             _classifier = classifier ?? throw new ArgumentNullException(nameof(classifier));
             _getSelection = getSelection;
             _createSubfolder = createSubfolder;
+            _navigate = navigate;
             _settings = settings;
             _confirmMarkTasksComplete = confirmMarkTasksComplete;
+            _promptForName = promptForName;
 
             if (_settings != null)
             {
@@ -52,6 +61,7 @@ namespace RBLclass.AddIn.ViewModels
                 _keepCopy = _settings.GetBool(SettingsKeys.KeepCopy, false);
                 _removeAttachments = _settings.GetBool(SettingsKeys.RemoveAttachments, false);
                 _widenConversation = _settings.GetBool(SettingsKeys.WidenConversation, false);
+                _openInNewWindow = _settings.GetBool(SettingsKeys.OpenInNewWindow, false);
             }
         }
 
@@ -67,14 +77,7 @@ namespace RBLclass.AddIn.ViewModels
         public bool AllResults
         {
             get => _allResults;
-            set
-            {
-                if (SetProperty(ref _allResults, value))
-                {
-                    _settings?.SetBool(SettingsKeys.AllResults, value);
-                    Refresh();
-                }
-            }
+            set { if (SetProperty(ref _allResults, value)) { _settings?.SetBool(SettingsKeys.AllResults, value); Refresh(); } }
         }
 
         public bool KeepCopy
@@ -95,6 +98,18 @@ namespace RBLclass.AddIn.ViewModels
             set { if (SetProperty(ref _widenConversation, value)) _settings?.SetBool(SettingsKeys.WidenConversation, value); }
         }
 
+        public bool OpenInNewWindow
+        {
+            get => _openInNewWindow;
+            set { if (SetProperty(ref _openInNewWindow, value)) _settings?.SetBool(SettingsKeys.OpenInNewWindow, value); }
+        }
+
+        public SelectableFolder SelectedResult
+        {
+            get => _selectedResult;
+            set => SetProperty(ref _selectedResult, value);
+        }
+
         public string SelectionSummary
         {
             get => _selectionSummary;
@@ -107,78 +122,73 @@ namespace RBLclass.AddIn.ViewModels
             private set => SetProperty(ref _status, value);
         }
 
-        /// <summary>
-        /// True while a classify is running. Bound so the pane disables its
-        /// inputs and shows a busy overlay, and used as a re-entrancy guard so a
-        /// second Enter/click queued during the (UI-thread-blocking) classify is
-        /// ignored rather than applied to the next selected mail.
-        /// </summary>
+        /// <summary>True while a classify runs - disables the pane and guards against double-firing.</summary>
         public bool IsBusy
         {
             get => _isBusy;
-            private set
-            {
-                if (SetProperty(ref _isBusy, value))
-                    OnPropertyChanged(nameof(IsNotBusy));
-            }
+            private set { if (SetProperty(ref _isBusy, value)) OnPropertyChanged(nameof(IsNotBusy)); }
         }
 
-        /// <summary>Convenience inverse of <see cref="IsBusy"/> for IsEnabled bindings.</summary>
         public bool IsNotBusy => !_isBusy;
 
-        /// <summary>Update the "N mails selected" label (from the live SelectionChange event).</summary>
-        public void SetSelectionCount(int count)
-        {
+        public void SetSelectionCount(int count) =>
             SelectionSummary = count == 1 ? "1 mail selected." : count + " mails selected.";
-        }
 
-        /// <summary>Re-read the current Outlook mail selection (call when shown).</summary>
-        public void RefreshSelection()
+        public void RefreshSelection() =>
+            SetSelectionCount(_getSelection != null ? _getSelection().Count : 0);
+
+        /// <summary>Navigate Outlook to a folder (the per-row open button).</summary>
+        public void OpenFolder(FolderNode folder)
         {
-            int count = _getSelection != null ? _getSelection().Count : 0;
-            SetSelectionCount(count);
+            if (folder != null) _navigate?.Invoke(folder, _openInNewWindow);
         }
 
-        /// <summary>Classify into the checked destination folders (the Classify button).</summary>
+        /// <summary>File into the highlighted (or first) folder - Enter in the search box.</summary>
+        public void FileToHighlighted()
+        {
+            var folder = (SelectedResult ?? (Results.Count > 0 ? Results[0] : null))?.Folder;
+            if (folder == null) { Status = "No matching folder to file into."; return; }
+            DoClassify(new[] { folder });
+        }
+
+        /// <summary>File into one specific folder - the double-clicked row.</summary>
+        public void FileToFolder(FolderNode folder)
+        {
+            if (folder != null) DoClassify(new[] { folder });
+        }
+
+        /// <summary>File into every checked folder (the Classify button).</summary>
         public void ClassifyChecked()
         {
-            if (_isBusy) return; // ignore a repeat trigger while a classify is in flight
-
             var destinations = Results.Where(r => r.IsSelected).Select(r => r.Folder).ToList();
-            if (destinations.Count == 0)
-            {
-                Status = "Check at least one destination folder.";
-                return;
-            }
+            if (destinations.Count == 0) { Status = "Check at least one destination folder."; return; }
             DoClassify(destinations);
         }
 
-        /// <summary>Classify into the first result folder (Enter in the search box).</summary>
-        public void ClassifyToFirst()
+        /// <summary>Create a sub-folder under a specific folder (the per-row "+").</summary>
+        public void CreateSubfolderUnder(FolderNode parent)
         {
-            if (_isBusy) return; // ignore a repeat trigger while a classify is in flight
+            if (_isBusy || parent == null || _createSubfolder == null) return;
 
-            if (Results.Count == 0)
-            {
-                Status = "No matching folder to file into.";
-                return;
-            }
-            DoClassify(new[] { Results[0].Folder });
+            string name = _promptForName != null ? _promptForName(parent.Name) : null;
+            if (string.IsNullOrWhiteSpace(name)) return;
+
+            var created = _createSubfolder(parent, name.Trim());
+            if (created == null) { Status = "Could not create the folder."; return; }
+
+            Status = "Created \"" + created.Name + "\" under " + parent.Name + ".";
+            Refresh();
         }
 
         private void DoClassify(IReadOnlyList<FolderNode> destinations)
         {
+            if (_isBusy) return; // ignore a repeat trigger while a classify is in flight
+
             var items = _getSelection != null ? _getSelection() : new MailItemRef[0];
-            if (items.Count == 0)
-            {
-                Status = "Select one or more mails in Outlook first.";
-                return;
-            }
+            if (items.Count == 0) { Status = "Select one or more mails in Outlook first."; return; }
 
             IsBusy = true;
             Status = "Filing…";
-
-            // Paint the busy overlay before the COM work blocks the UI thread.
             Dispatcher.CurrentDispatcher.Invoke(new Action(() => { }), DispatcherPriority.Render);
 
             try
@@ -189,11 +199,7 @@ namespace RBLclass.AddIn.ViewModels
                 if (preflight.FlaggedIncomplete.Count > 0 && _confirmMarkTasksComplete != null)
                 {
                     var answer = _confirmMarkTasksComplete(preflight.FlaggedIncomplete.Count);
-                    if (answer == null)
-                    {
-                        Status = "Classify cancelled.";
-                        return;
-                    }
+                    if (answer == null) { Status = "Classify cancelled."; return; }
                     markTasksComplete = answer.Value;
                 }
 
@@ -213,39 +219,9 @@ namespace RBLclass.AddIn.ViewModels
             }
             finally
             {
-                // Re-enable only after any input queued during the blocking
-                // classify has drained (Input priority runs before Background) -
-                // the IsBusy guard ignores it, so a second Enter/click never fires
-                // against the next selected mail.
                 Dispatcher.CurrentDispatcher.BeginInvoke(
                     new Action(() => IsBusy = false), DispatcherPriority.Background);
             }
-        }
-
-        /// <summary>Create a sub-folder under the first checked folder, then re-run the search.</summary>
-        public void CreateSubfolder(string name)
-        {
-            var parent = Results.FirstOrDefault(r => r.IsSelected)?.Folder;
-            if (parent == null)
-            {
-                Status = "Check the parent folder first, then create the sub-folder.";
-                return;
-            }
-            if (string.IsNullOrWhiteSpace(name))
-            {
-                Status = "Enter a name for the new folder.";
-                return;
-            }
-
-            var created = _createSubfolder != null ? _createSubfolder(parent, name.Trim()) : null;
-            if (created == null)
-            {
-                Status = "Could not create the folder.";
-                return;
-            }
-
-            Status = "Created \"" + created.Name + "\" under " + parent.Name + ".";
-            Refresh();
         }
 
         private void Refresh()
@@ -259,12 +235,18 @@ namespace RBLclass.AddIn.ViewModels
                 maxResults = settings.MaxResults;
             }
 
-            var options = new FolderSearchOptions(matchMode, _allResults, maxResults);
-            var outcome = _search.Search(_query, options);
+            var outcome = _search.Search(_query, new FolderSearchOptions(matchMode, _allResults, maxResults));
 
             Results.Clear();
             foreach (var r in outcome.Results)
                 Results.Add(new SelectableFolder(r));
+
+            if (outcome.TotalMatchCount == 0)
+                Status = string.IsNullOrWhiteSpace(_query) ? string.Empty : "No matching folders.";
+            else if (outcome.LimitExceeded)
+                Status = "Showing " + Results.Count + " of " + outcome.TotalMatchCount + " - refine your search.";
+            else
+                Status = outcome.TotalMatchCount + " folder(s).";
         }
     }
 }

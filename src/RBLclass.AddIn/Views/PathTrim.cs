@@ -31,6 +31,24 @@ namespace RBLclass.AddIn.Views
         public static void SetFullPath(DependencyObject d, string value) => d.SetValue(FullPathProperty, value);
         public static string GetFullPath(DependencyObject d) => (string)d.GetValue(FullPathProperty);
 
+        /// <summary>
+        /// Extra width (px) to keep clear on the right - e.g. for per-row buttons
+        /// that sit beside the path. Subtracted from the available width so the
+        /// truncated text never runs under them.
+        /// </summary>
+        public static readonly DependencyProperty RightReserveProperty =
+            DependencyProperty.RegisterAttached(
+                "RightReserve", typeof(double), typeof(PathTrim),
+                new PropertyMetadata(0.0, OnRightReserveChanged));
+
+        public static void SetRightReserve(DependencyObject d, double value) => d.SetValue(RightReserveProperty, value);
+        public static double GetRightReserve(DependencyObject d) => (double)d.GetValue(RightReserveProperty);
+
+        private static void OnRightReserveChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
+        {
+            if (d is TextBlock tb) Apply(tb);
+        }
+
         private static void OnFullPathChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
         {
             if (!(d is TextBlock tb)) return;
@@ -89,7 +107,7 @@ namespace RBLclass.AddIn.Views
                 {
                     var offset = tb.TransformToAncestor(list).Transform(new Point(0, 0));
                     const double rightInset = 24; // vertical scrollbar + padding breathing room
-                    double width = list.ActualWidth - offset.X - rightInset;
+                    double width = list.ActualWidth - offset.X - rightInset - GetRightReserve(tb);
                     if (width > 0) return width;
                 }
                 catch

@@ -186,6 +186,11 @@ namespace RBLclass.AddIn
                         Log.Error(ex, "NavigateTo failed for {Path}", folder.FullPath);
                     }
                 };
+                TaskPaneServices.PromptForName = parentFolderName =>
+                {
+                    var prompt = new NamePromptWindow(parentFolderName);
+                    return prompt.ShowDialog() == true ? prompt.EnteredName : null;
+                };
                 TaskPaneServices.ConfirmMarkTasksComplete = count =>
                 {
                     string noun = count == 1 ? "item is" : "items are";
@@ -349,18 +354,11 @@ namespace RBLclass.AddIn
             }
         }
 
-        /// <summary>Ribbon "Open folder": show the pane in Open-folder mode (toggle off if already there).</summary>
-        public void OnOpenFolderClick(Office.IRibbonControl control)
+        /// <summary>Ribbon "RBLclass pane": show or hide the single unified task pane.</summary>
+        public void OnTogglePaneClick(Office.IRibbonControl control)
         {
-            try { ShowPane(PaneMode.OpenFolder); }
-            catch (Exception ex) { ShowError("Open folder failed", ex); }
-        }
-
-        /// <summary>Ribbon "Classify": show the pane in Classify mode (toggle off if already there).</summary>
-        public void OnClassifyClick(Office.IRibbonControl control)
-        {
-            try { ShowPane(PaneMode.Classify); }
-            catch (Exception ex) { ShowError("Classify failed", ex); }
+            try { TogglePane(); }
+            catch (Exception ex) { ShowError("RBLclass pane failed", ex); }
         }
 
         /// <summary>
@@ -529,7 +527,7 @@ namespace RBLclass.AddIn
         /// <summary>
         /// Preflight + (optional) task-completion confirmation + classify,
         /// shared by the triage prompt's "Class" and "Move to Inbox" actions -
-        /// the same dance <see cref="ClassifyViewModel"/> runs for the pane.
+        /// the same dance <see cref="MainPaneViewModel"/> runs for the pane.
         /// </summary>
         private void RunTriageClassify(MailItemRef item, bool widenConversation,
                                         IReadOnlyList<FolderNode> destinations,
@@ -588,26 +586,14 @@ namespace RBLclass.AddIn
                         .ToArray();
         }
 
-        private void ShowPane(PaneMode mode)
+        private void TogglePane()
         {
             EnsureTaskPane();
             if (_taskPane == null) return;
 
-            var host = TaskPaneServices.Host;
-
-            // Re-clicking the active mode's button hides the pane.
-            if (_taskPane.Visible && host != null && host.CurrentMode == mode)
-            {
-                _taskPane.Visible = false;
-                return;
-            }
-
-            if (host != null)
-            {
-                if (mode == PaneMode.Classify) host.ShowClassify();
-                else host.ShowOpenFolder();
-            }
-            _taskPane.Visible = true;
+            _taskPane.Visible = !_taskPane.Visible;
+            if (_taskPane.Visible)
+                TaskPaneServices.Host?.RefreshOnShow();
         }
 
         private void EnsureTaskPane()
