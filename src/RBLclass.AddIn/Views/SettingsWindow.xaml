@@ -58,10 +58,17 @@
 
                 <GroupBox Header="Sent items">
                     <StackPanel Margin="6">
-                        <CheckBox Margin="0,3" IsChecked="{Binding SentItemTriagePrompt}">
-                            <TextBlock TextWrapping="Wrap" MaxWidth="400"
-                                       Text="Prompt for an action when a mail lands in Sent Items" />
-                        </CheckBox>
+                        <TextBlock Text="When a mail lands in Sent Items:" />
+                        <ComboBox Margin="0,4,0,0" Width="220" HorizontalAlignment="Left"
+                                  ItemsSource="{Binding TriageModes}"
+                                  SelectedValuePath="Mode"
+                                  SelectedValue="{Binding SentItemTriageMode}">
+                            <ComboBox.ItemTemplate>
+                                <DataTemplate>
+                                    <TextBlock Text="{Binding Label}" />
+                                </DataTemplate>
+                            </ComboBox.ItemTemplate>
+                        </ComboBox>
                     </StackPanel>
                 </GroupBox>
             </StackPanel>

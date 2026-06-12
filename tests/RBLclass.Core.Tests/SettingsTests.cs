@@ -44,7 +44,7 @@ namespace RBLclass.Core.Tests
             settings.SendExternalWarning.Should().BeTrue();
             settings.InternalDomains.Should().BeEmpty();
             settings.ForgottenAttachmentKeywords.Should().Equal("attach", "enclos", "joint", "PJ");
-            settings.SentItemTriagePrompt.Should().BeTrue();
+            settings.SentItemTriageMode.Should().Be(SentItemTriageMode.AskEveryTime);
         }
 
         [Fact]
@@ -62,7 +62,7 @@ namespace RBLclass.Core.Tests
                 SendExternalWarning = false,
                 InternalDomains = new[] { "example.com", "example.org" },
                 ForgottenAttachmentKeywords = new[] { "pièce jointe", "ci-joint" },
-                SentItemTriagePrompt = false
+                SentItemTriageMode = SentItemTriageMode.Delete
             };
 
             settings.Save(_store);
@@ -78,7 +78,27 @@ namespace RBLclass.Core.Tests
             reloaded.SendExternalWarning.Should().BeFalse();
             reloaded.InternalDomains.Should().Equal("example.com", "example.org");
             reloaded.ForgottenAttachmentKeywords.Should().Equal("pièce jointe", "ci-joint");
-            reloaded.SentItemTriagePrompt.Should().BeFalse();
+            reloaded.SentItemTriageMode.Should().Be(SentItemTriageMode.Delete);
+        }
+
+        [Theory]
+        [InlineData(true, SentItemTriageMode.AskEveryTime)]
+        [InlineData(false, SentItemTriageMode.Leave)]
+        public void Load_migrates_the_legacy_triage_prompt_flag_when_no_mode_is_stored(
+            bool legacyPromptOn, SentItemTriageMode expected)
+        {
+            _store.SetBool(SettingsKeys.SentItemTriagePrompt, legacyPromptOn);
+
+            Settings.Load(_store).SentItemTriageMode.Should().Be(expected);
+        }
+
+        [Fact]
+        public void Load_prefers_a_stored_triage_mode_over_the_legacy_flag()
+        {
+            _store.SetBool(SettingsKeys.SentItemTriagePrompt, false); // legacy says "leave"
+            _store.Set(SettingsKeys.SentItemTriageMode, SentItemTriageMode.MoveToInbox.ToString());
+
+            Settings.Load(_store).SentItemTriageMode.Should().Be(SentItemTriageMode.MoveToInbox);
         }
 
         [Fact]

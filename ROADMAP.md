@@ -543,7 +543,7 @@ the remaining **open questions** are called out inline.
         (double-click files to the row under the cursor). Shipped as new
         `MainPaneView` + `MainPaneViewModel` + `NamePromptWindow`; old
         `FolderSearchView`/`ClassifyView` (+ their VMs) and `PaneMode` deleted.
-- [ ] **Rework the sent-item triage into a dropdown setting.** Replace the
+- [x] **Rework the sent-item triage into a dropdown setting.** Replace the
       on/off `SentItemTriagePrompt` with a **dropdown**: *Move-to-Inbox /
       Delete / Leave / "Let me choose"*. A fixed value applies **automatically
       with no modal**; *"Let me choose"* shows the modal with just those three

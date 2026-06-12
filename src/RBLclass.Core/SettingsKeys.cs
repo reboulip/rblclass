@@ -48,7 +48,18 @@ namespace RBLclass.Core
         /// </summary>
         public const string ForgottenAttachmentKeywords = "ForgottenAttachmentKeywords";
 
-        /// <summary>Show the sent-item triage prompt (legacy settingsUFsent).</summary>
+        /// <summary>
+        /// What to do with a mail that lands in Sent Items: one of
+        /// <see cref="SentItemTriageMode"/> (stored by name). Supersedes
+        /// <see cref="SentItemTriagePrompt"/>.
+        /// </summary>
+        public const string SentItemTriageMode = "SentItemTriageMode";
+
+        /// <summary>
+        /// Legacy on/off sent-item triage flag (legacy settingsUFsent). Kept only
+        /// to migrate existing installs to <see cref="SentItemTriageMode"/>; no
+        /// longer written.
+        /// </summary>
         public const string SentItemTriagePrompt = "SentItemTriagePrompt";
     }
 }

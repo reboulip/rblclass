@@ -27,7 +27,7 @@ namespace RBLclass.Core
         public bool SendExternalWarning { get; set; }
         public IReadOnlyList<string> InternalDomains { get; set; }
         public IReadOnlyList<string> ForgottenAttachmentKeywords { get; set; }
-        public bool SentItemTriagePrompt { get; set; }
+        public SentItemTriageMode SentItemTriageMode { get; set; }
 
         /// <summary>Read every key, falling back to the same defaults the individual call sites use today.</summary>
         public static Settings Load(ISettingsStore store)
@@ -45,7 +45,9 @@ namespace RBLclass.Core
                 InternalDomains = ParseList(store.Get(SettingsKeys.InternalDomains, string.Empty)),
                 ForgottenAttachmentKeywords = ParseList(store.Get(
                     SettingsKeys.ForgottenAttachmentKeywords, DefaultForgottenAttachmentKeywords)),
-                SentItemTriagePrompt = store.GetBool(SettingsKeys.SentItemTriagePrompt, true)
+                SentItemTriageMode = ParseTriageMode(
+                    store.Get(SettingsKeys.SentItemTriageMode, null),
+                    store.GetBool(SettingsKeys.SentItemTriagePrompt, true))
             };
         }
 
@@ -62,7 +64,18 @@ namespace RBLclass.Core
             store.SetBool(SettingsKeys.SendExternalWarning, SendExternalWarning);
             store.Set(SettingsKeys.InternalDomains, FormatList(InternalDomains));
             store.Set(SettingsKeys.ForgottenAttachmentKeywords, FormatList(ForgottenAttachmentKeywords));
-            store.SetBool(SettingsKeys.SentItemTriagePrompt, SentItemTriagePrompt);
+            store.Set(SettingsKeys.SentItemTriageMode, SentItemTriageMode.ToString());
+        }
+
+        private static SentItemTriageMode ParseTriageMode(string raw, bool legacyPromptOn)
+        {
+            SentItemTriageMode mode;
+            if (System.Enum.TryParse(raw, out mode) && System.Enum.IsDefined(typeof(SentItemTriageMode), mode))
+                return mode;
+
+            // No stored mode: migrate the legacy on/off prompt (on -> ask, off ->
+            // leave). Fresh installs default to asking each time.
+            return legacyPromptOn ? SentItemTriageMode.AskEveryTime : SentItemTriageMode.Leave;
         }
 
         private static FolderMatchMode ParseMatchMode(string raw)
