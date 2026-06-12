@@ -7,16 +7,17 @@ namespace RBLclass.Core
     public enum FolderMatchMode
     {
         /// <summary>
-        /// Default. Each keyword must be the prefix of some word in the path
-        /// (words split on non-alphanumeric; case- and accent-insensitive).
-        /// e.g. "proj" matches "Projects". Less noisy than substring.
+        /// Opt-in stricter mode. Each keyword must be the prefix of some word in
+        /// the path (words split on non-alphanumeric; case- and accent-
+        /// insensitive). e.g. "proj" matches "Projects" but "security" does NOT
+        /// match "Cybersecurity". Less noisy than substring.
         /// </summary>
         WordPrefix = 0,
 
         /// <summary>
-        /// Legacy behaviour: each keyword may appear anywhere in the path
-        /// (spaces removed; case- and accent-insensitive). e.g. "juri" matches
-        /// inside "ProjetJuridique". More matches, more noise - opt-in.
+        /// Default. Each keyword may appear anywhere in the path (spaces removed;
+        /// case- and accent-insensitive). e.g. "security" matches "Cybersecurity"
+        /// and "juri" matches inside "ProjetJuridique". Broadest, most forgiving.
         /// </summary>
         Substring = 1
     }

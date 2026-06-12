@@ -6,8 +6,8 @@
     shipped to pilot users.
 
 .DESCRIPTION
-    Product-grade adaptation of the validated POC staging flow
-    (poc/scripts/Stage-TargetRelease.ps1). Self-contained and idempotent.
+    Product-grade adaptation of the validated POC staging flow.
+    Self-contained and idempotent.
     Runs from any PowerShell (no Developer PowerShell needed):
 
       0. Reads release.config.json (single source of truth for COM
@@ -118,10 +118,9 @@ $buildOut = Join-Path $repoRoot ($config.AddInProjectOutput -replace "\{Configur
 if (-not (Test-Path $sln)) {
     throw @"
 Solution not found at '$sln'.
-The Phase 1 product solution does not exist yet (only the Phase 0 POC
-under poc/ builds today). /make-release targets the real product; build
-the Phase 1 skeleton first, or run the POC's own
-poc/scripts/Stage-TargetRelease.ps1 to ship the POC.
+/make-release builds the product solution at the repo root; it is missing
+or its path in release.config.json is wrong. Check it out / fix the path
+and re-run.
 "@
 }
 

@@ -201,8 +201,6 @@ cause Outlook crashes and memory leaks.
 /installer                    WiX MSI project (Phase 1)
 /tests
   /RBLclass.Core.Tests        xUnit
-/poc                          Phase 0 throwaway POC — not part of the
-                              Phase 1 solution
 /docs
   /architecture.md
   /derisking.md
@@ -294,9 +292,6 @@ steps are in the skill.
   signature to load a COM add-in (validated in Phase 0).
 - Distribution: internal HTTPS share documented in
   `docs/deployment.md`.
-- The Phase 0 POC has its own throwaway publishing flow in `/poc/scripts/`
-  (`Stage-TargetRelease.ps1`); it is not part of the product release chain
-  and is not what `/make-release` builds.
 
 ## Repository management
 

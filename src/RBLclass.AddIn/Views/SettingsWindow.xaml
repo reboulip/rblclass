@@ -5,7 +5,7 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         Title="RBLclass - Settings" Height="640" Width="480"
-        WindowStartupLocation="CenterScreen" ResizeMode="NoResize"
+        WindowStartupLocation="CenterOwner" ResizeMode="NoResize"
         d:DesignHeight="640" d:DesignWidth="480">
     <DockPanel Margin="12">
         <Button DockPanel.Dock="Bottom" Content="Close" Click="Close_Click"
@@ -18,9 +18,9 @@
                     <StackPanel Margin="6">
                         <CheckBox Margin="0,3" IsChecked="{Binding AllResults}"
                                   Content="List every matching folder individually" />
-                        <CheckBox Margin="0,3" IsChecked="{Binding UseSubstringMatch}">
+                        <CheckBox Margin="0,3" IsChecked="{Binding UseWordPrefixMatch}">
                             <TextBlock TextWrapping="Wrap" MaxWidth="400"
-                                       Text="Match keywords anywhere in the folder name (substring, not just word-prefix)" />
+                                       Text="Match only the start of words (stricter than the default 'contains' search)" />
                         </CheckBox>
                         <CheckBox Margin="0,3" IsChecked="{Binding OpenInNewWindow}"
                                   Content="Open folders in a new explorer window" />
@@ -58,10 +58,17 @@
 
                 <GroupBox Header="Sent items">
                     <StackPanel Margin="6">
-                        <CheckBox Margin="0,3" IsChecked="{Binding SentItemTriagePrompt}">
-                            <TextBlock TextWrapping="Wrap" MaxWidth="400"
-                                       Text="Prompt for an action when a mail lands in Sent Items" />
-                        </CheckBox>
+                        <TextBlock Text="When a mail lands in Sent Items:" />
+                        <ComboBox Margin="0,4,0,0" Width="220" HorizontalAlignment="Left"
+                                  ItemsSource="{Binding TriageModes}"
+                                  SelectedValuePath="Mode"
+                                  SelectedValue="{Binding SentItemTriageMode}">
+                            <ComboBox.ItemTemplate>
+                                <DataTemplate>
+                                    <TextBlock Text="{Binding Label}" />
+                                </DataTemplate>
+                            </ComboBox.ItemTemplate>
+                        </ComboBox>
                     </StackPanel>
                 </GroupBox>
             </StackPanel>

@@ -4,20 +4,13 @@
     <tabs>
       <tab id="RBLclassTab" label="RBLclass">
         <group id="RBLclassGroup" label="RBLclass">
-          <button id="OpenFolderButton"
-                  label="Open folder"
-                  size="large"
-                  imageMso="FileOpen"
-                  onAction="OnOpenFolderClick"
-                  screentip="Open a folder"
-                  supertip="Toggle the RBLclass task pane to search the folder tree and jump to a folder." />
-          <button id="ClassifyButton"
-                  label="Classify"
+          <button id="TogglePaneButton"
+                  label="RBLclass pane"
                   size="large"
                   imageMso="MoveToFolder"
-                  onAction="OnClassifyClick"
-                  screentip="Classify selected mail"
-                  supertip="File the selected mail into one or more folders. Multi-select destinations; toggle keep-a-copy and remove-attachments." />
+                  onAction="OnTogglePaneClick"
+                  screentip="Show or hide the RBLclass pane"
+                  supertip="Open the RBLclass pane: search the folder tree, jump to a folder (open button), and file the selected mail - single-click a folder to add it as a destination, double-click to file into it." />
           <button id="RemoveAttachmentsButton"
                   label="Remove attachments"
                   size="large"
@@ -25,6 +18,13 @@
                   onAction="OnRemoveAttachmentsClick"
                   screentip="Remove attachments"
                   supertip="Strip all attachments from the selected mail(s), after confirmation." />
+          <button id="RefreshFoldersButton"
+                  label="Refresh folders"
+                  size="large"
+                  imageMso="Refresh"
+                  onAction="OnRefreshFoldersClick"
+                  screentip="Refresh the folder index"
+                  supertip="Re-scan your PST stores so folders you created or renamed directly in Outlook show up in search. Run this after adding folders by hand." />
           <button id="IndexStatusButton"
                   label="Index status"
                   size="large"

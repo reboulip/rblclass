@@ -186,6 +186,11 @@ namespace RBLclass.AddIn
                         Log.Error(ex, "NavigateTo failed for {Path}", folder.FullPath);
                     }
                 };
+                TaskPaneServices.PromptForName = parentFolderName =>
+                {
+                    var prompt = new NamePromptWindow(parentFolderName);
+                    return prompt.ShowDialog() == true ? prompt.EnteredName : null;
+                };
                 TaskPaneServices.ConfirmMarkTasksComplete = count =>
                 {
                     string noun = count == 1 ? "item is" : "items are";
@@ -349,18 +354,11 @@ namespace RBLclass.AddIn
             }
         }
 
-        /// <summary>Ribbon "Open folder": show the pane in Open-folder mode (toggle off if already there).</summary>
-        public void OnOpenFolderClick(Office.IRibbonControl control)
+        /// <summary>Ribbon "RBLclass pane": show or hide the single unified task pane.</summary>
+        public void OnTogglePaneClick(Office.IRibbonControl control)
         {
-            try { ShowPane(PaneMode.OpenFolder); }
-            catch (Exception ex) { ShowError("Open folder failed", ex); }
-        }
-
-        /// <summary>Ribbon "Classify": show the pane in Classify mode (toggle off if already there).</summary>
-        public void OnClassifyClick(Office.IRibbonControl control)
-        {
-            try { ShowPane(PaneMode.Classify); }
-            catch (Exception ex) { ShowError("Classify failed", ex); }
+            try { TogglePane(); }
+            catch (Exception ex) { ShowError("RBLclass pane failed", ex); }
         }
 
         /// <summary>
@@ -461,31 +459,44 @@ namespace RBLclass.AddIn
         }
 
         /// <summary>
-        /// Sent-item triage (legacy 6c): on a fresh item in Sent Items, offer
-        /// Class / Delete / Move-to-Inbox / Leave, optionally widened to the
-        /// whole conversation. Suppressed while we're acting on a previous
-        /// choice (a classify/move makes a copy transit Sent Items, which
-        /// would otherwise re-trigger this handler on the transient copy -
-        /// the roadmap's replacement for the legacy detach/reattach dance).
+        /// Sent-item triage (legacy 6c, reworked): on a fresh item in Sent Items,
+        /// apply the configured <see cref="SentItemTriageMode"/> - a fixed action
+        /// runs automatically; "Ask me each time" shows the prompt. Acts on the
+        /// single sent item (conversation widening was dropped). Suppressed while
+        /// we're acting on a previous choice (a move makes a copy transit Sent
+        /// Items, which would otherwise re-trigger this handler on the transient
+        /// copy).
         /// </summary>
         private void SentItems_ItemAdd(object item)
         {
             try
             {
                 if (_suppressSentItemTriage) return;
-                if (!_settingsStore.GetBool(SettingsKeys.SentItemTriagePrompt, true)) return;
+
+                var mode = Settings.Load(_settingsStore).SentItemTriageMode;
+                if (mode == SentItemTriageMode.Leave) return;
 
                 var reference = _mailStore.ResolveMailItem(item);
                 if (reference == null) return; // not a mail item (meeting response, report...)
 
-                var triageVm = new SentItemTriageViewModel(reference.Subject, _settingsStore);
-                new SentItemTriageWindow { DataContext = triageVm }.ShowDialog();
-
-                var action = triageVm.SelectedAction;
-                if (action == null || action == SentItemTriageAction.Leave) return;
+                SentItemTriageAction action;
+                if (mode == SentItemTriageMode.AskEveryTime)
+                {
+                    var triageVm = new SentItemTriageViewModel(reference.Subject);
+                    new SentItemTriageWindow { DataContext = triageVm }.ShowDialog();
+                    if (triageVm.SelectedAction == null || triageVm.SelectedAction == SentItemTriageAction.Leave)
+                        return;
+                    action = triageVm.SelectedAction.Value;
+                }
+                else
+                {
+                    action = mode == SentItemTriageMode.Delete
+                        ? SentItemTriageAction.Delete
+                        : SentItemTriageAction.MoveToInbox;
+                }
 
                 _suppressSentItemTriage = true;
-                try { ApplySentItemTriage(action.Value, reference, triageVm.WholeConversation); }
+                try { ApplySentItemTriage(action, reference); }
                 finally { _suppressSentItemTriage = false; }
             }
             catch (Exception ex)
@@ -494,13 +505,17 @@ namespace RBLclass.AddIn
             }
         }
 
-        private void ApplySentItemTriage(SentItemTriageAction action, MailItemRef item, bool widenConversation)
+        /// <summary>
+        /// Apply a triage action to the single sent item (no conversation
+        /// widening, no destination picker - those were dropped in the rework).
+        /// </summary>
+        private void ApplySentItemTriage(SentItemTriageAction action, MailItemRef item)
         {
             switch (action)
             {
                 case SentItemTriageAction.Delete:
-                    foreach (var i in _classifier.Preflight(new[] { item }, widenConversation).Items)
-                        _mailStore.DeleteItem(i);
+                    _mailStore.DeleteItem(item);
+                    Log.Information("Sent-item triage deleted the sent mail.");
                     break;
 
                 case SentItemTriageAction.MoveToInbox:
@@ -510,51 +525,14 @@ namespace RBLclass.AddIn
                         Log.Warning("Sent-item triage: could not resolve the Inbox folder.");
                         return;
                     }
-                    RunTriageClassify(item, widenConversation, new[] { inbox },
-                                      keepCopy: false, removeAttachments: false);
-                    break;
-
-                case SentItemTriageAction.Class:
-                    var destination = ShowFolderPicker();
-                    if (destination == null) return;
-                    RunTriageClassify(item, widenConversation, new[] { destination },
-                                      keepCopy: _settingsStore.GetBool(SettingsKeys.KeepCopy, false),
-                                      removeAttachments: _settingsStore.GetBool(SettingsKeys.RemoveAttachments, false));
+                    var result = _classifier.Classify(
+                        new ClassifyRequest(new[] { item }, new[] { inbox },
+                                            keepCopy: false, removeAttachments: false));
+                    Log.Information(
+                        "Sent-item triage moved {Processed} mail(s) to the Inbox ({Errors} failed).",
+                        result.ItemsProcessed, result.Errors);
                     break;
             }
-        }
-
-        /// <summary>
-        /// Preflight + (optional) task-completion confirmation + classify,
-        /// shared by the triage prompt's "Class" and "Move to Inbox" actions -
-        /// the same dance <see cref="ClassifyViewModel"/> runs for the pane.
-        /// </summary>
-        private void RunTriageClassify(MailItemRef item, bool widenConversation,
-                                        IReadOnlyList<FolderNode> destinations,
-                                        bool keepCopy, bool removeAttachments)
-        {
-            var preflight = _classifier.Preflight(new[] { item }, widenConversation);
-
-            bool markTasksComplete = false;
-            if (preflight.FlaggedIncomplete.Count > 0 && TaskPaneServices.ConfirmMarkTasksComplete != null)
-            {
-                var answer = TaskPaneServices.ConfirmMarkTasksComplete(preflight.FlaggedIncomplete.Count);
-                if (answer == null) return; // cancelled
-                markTasksComplete = answer.Value;
-            }
-
-            var result = _classifier.Classify(
-                new ClassifyRequest(preflight.Items, destinations, keepCopy, removeAttachments, markTasksComplete));
-            Log.Information(
-                "Sent-item triage classified {Processed} mail(s) to {Destinations} folder(s) ({Errors} failed).",
-                result.ItemsProcessed, destinations.Count, result.Errors);
-        }
-
-        /// <summary>Show the small modal folder-picker; null if the user cancelled.</summary>
-        private FolderNode ShowFolderPicker()
-        {
-            var window = new FolderPickerWindow { DataContext = new FolderPickerViewModel(_folderSearch, _settingsStore) };
-            return window.ShowDialog() == true ? window.ChosenFolder : null;
         }
 
         /// <summary>Split a semicolon-separated settings value into trimmed, non-empty entries.</summary>
@@ -567,26 +545,14 @@ namespace RBLclass.AddIn
                         .ToArray();
         }
 
-        private void ShowPane(PaneMode mode)
+        private void TogglePane()
         {
             EnsureTaskPane();
             if (_taskPane == null) return;
 
-            var host = TaskPaneServices.Host;
-
-            // Re-clicking the active mode's button hides the pane.
-            if (_taskPane.Visible && host != null && host.CurrentMode == mode)
-            {
-                _taskPane.Visible = false;
-                return;
-            }
-
-            if (host != null)
-            {
-                if (mode == PaneMode.Classify) host.ShowClassify();
-                else host.ShowOpenFolder();
-            }
-            _taskPane.Visible = true;
+            _taskPane.Visible = !_taskPane.Visible;
+            if (_taskPane.Visible)
+                TaskPaneServices.Host?.RefreshOnShow();
         }
 
         private void EnsureTaskPane()
@@ -651,6 +617,54 @@ namespace RBLclass.AddIn
             catch (Exception ex)
             {
                 ShowError("Index status failed", ex);
+            }
+        }
+
+        /// <summary>
+        /// Ribbon "Refresh folders": re-walk the live stores on demand so folders
+        /// created or renamed directly in Outlook (not via our own "New subfolder"
+        /// action) surface in search. Reuses the first-run walk path
+        /// (<see cref="IFolderTree.WalkAndPersist"/>); ribbon callbacks already run
+        /// on the Outlook UI (STA) thread, which is where COM access must happen.
+        /// </summary>
+        public void OnRefreshFoldersClick(Office.IRibbonControl control)
+        {
+            try
+            {
+                if (_folderTree == null)
+                {
+                    MessageBox.Show("The folder index is not ready yet.",
+                                    "RBLclass - Refresh folders",
+                                    MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    return;
+                }
+
+                Cursor.Current = Cursors.WaitCursor;
+                try
+                {
+                    var sw = Stopwatch.StartNew();
+                    _lastIndexResult = _folderTree.WalkAndPersist();
+                    sw.Stop();
+                    Log.Information(
+                        "Manual folder refresh: {Stores} stores, {Folders} folders in {Ms} ms.",
+                        _lastIndexResult.StoreCount, _lastIndexResult.FolderCount, sw.ElapsedMilliseconds);
+                }
+                finally
+                {
+                    Cursor.Current = Cursors.Default;
+                }
+
+                MessageBox.Show(
+                    "Folder index refreshed." + Environment.NewLine + Environment.NewLine +
+                    "Stores  : " + _lastIndexResult.StoreCount + Environment.NewLine +
+                    "Folders : " + _lastIndexResult.FolderCount + Environment.NewLine + Environment.NewLine +
+                    "Re-run your search to see newly created or renamed folders.",
+                    "RBLclass - Refresh folders",
+                    MessageBoxButtons.OK, MessageBoxIcon.Information);
+            }
+            catch (Exception ex)
+            {
+                ShowError("Refresh folders failed", ex);
             }
         }
 

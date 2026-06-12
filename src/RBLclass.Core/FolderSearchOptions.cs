@@ -11,7 +11,7 @@ namespace RBLclass.Core
         public const int DefaultMaxResults = 100;
 
         public FolderSearchOptions(
-            FolderMatchMode matchMode = FolderMatchMode.WordPrefix,
+            FolderMatchMode matchMode = FolderMatchMode.Substring,
             bool allResults = false,
             int maxResults = DefaultMaxResults)
         {

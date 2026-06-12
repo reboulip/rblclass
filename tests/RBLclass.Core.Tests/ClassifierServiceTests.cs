@@ -121,14 +121,48 @@ namespace RBLclass.Core.Tests
             var sibling = new MailItemRef("s1", "sib", "reply");
             // e1's siblings include e2 (already selected) and a genuinely new one;
             // e2 reports the same new sibling back (e.g. both ends of a thread).
-            store.GetConversationSiblings(e1).Returns(new[] { e2, sibling });
-            store.GetConversationSiblings(e2).Returns(new[] { sibling });
+            store.GetConversationSiblings(e1).Returns(new ConversationSiblings(new[] { e2, sibling }, new string[0]));
+            store.GetConversationSiblings(e2).Returns(new ConversationSiblings(new[] { sibling }, new string[0]));
             var sut = new ClassifierService(store);
 
             var preflight = sut.Preflight(new[] { e1, e2 }, widenConversation: true);
 
             preflight.Items.Select(i => i.EntryId).Should().BeEquivalentTo(new[] { "e1", "e2", "sib" });
             preflight.Items.Should().HaveCount(3); // no duplicates despite the cross-reported sibling
+        }
+
+        [Fact]
+        public void Preflight_reports_skipped_encrypted_siblings_without_filing_them()
+        {
+            var store = Substitute.For<IMailStore>();
+            var e1 = Item("e1");
+            var plainSibling = new MailItemRef("s1", "sib", "reply");
+            store.GetConversationSiblings(e1).Returns(
+                new ConversationSiblings(new[] { plainSibling }, new[] { "Secret thread" }));
+            var sut = new ClassifierService(store);
+
+            var preflight = sut.Preflight(new[] { e1 }, widenConversation: true);
+
+            // The encrypted sibling is not in the set to file...
+            preflight.Items.Select(i => i.EntryId).Should().BeEquivalentTo(new[] { "e1", "sib" });
+            // ...but it is reported so the caller can warn.
+            preflight.SkippedEncrypted.Should().ContainSingle().Which.Should().Be("Secret thread");
+        }
+
+        [Fact]
+        public void Preflight_dedupes_skipped_encrypted_reports_across_source_items()
+        {
+            var store = Substitute.For<IMailStore>();
+            var e1 = Item("e1");
+            var e2 = Item("e2");
+            // Both source items report the same encrypted sibling subject.
+            store.GetConversationSiblings(e1).Returns(new ConversationSiblings(new MailItemRef[0], new[] { "Secret" }));
+            store.GetConversationSiblings(e2).Returns(new ConversationSiblings(new MailItemRef[0], new[] { "Secret" }));
+            var sut = new ClassifierService(store);
+
+            var preflight = sut.Preflight(new[] { e1, e2 }, widenConversation: true);
+
+            preflight.SkippedEncrypted.Should().ContainSingle().Which.Should().Be("Secret");
         }
 
         [Fact]
@@ -201,6 +235,47 @@ namespace RBLclass.Core.Tests
 
             store.DidNotReceive().CopyItemToFolder(Arg.Any<MailItemRef>(), Arg.Any<FolderNode>());
             store.DidNotReceive().DeleteItem(Arg.Any<MailItemRef>());
+        }
+
+        [Fact]
+        public void A_failing_destination_does_not_prevent_filing_into_the_others()
+        {
+            var store = Substitute.For<IMailStore>();
+            var item = Item("e1");
+            // D1 (e.g. a store root that refuses items) fails; D2 must still get it.
+            store.When(s => s.CopyItemToFolder(item, D1))
+                 .Do(_ => throw new InvalidOperationException("root refuses items"));
+            store.CopyItemToFolder(item, D2).Returns(new MailItemRef("s1", "copy", "e1"));
+            var sut = new ClassifierService(store);
+
+            var result = sut.Classify(new ClassifyRequest(
+                new[] { item }, new[] { D1, D2 },
+                keepCopy: false, removeAttachments: false));
+
+            store.Received(1).CopyItemToFolder(item, D2); // the good destination still got it
+            result.CopiesMade.Should().Be(1);             // only D2
+            result.Errors.Should().Be(1);                 // the failing D1
+            result.ItemsProcessed.Should().Be(1);
+            store.Received(1).DeleteItem(item);            // filed somewhere -> original removed
+        }
+
+        [Fact]
+        public void Original_is_kept_when_every_destination_fails()
+        {
+            var store = Substitute.For<IMailStore>();
+            var item = Item("e1");
+            store.When(s => s.CopyItemToFolder(item, Arg.Any<FolderNode>()))
+                 .Do(_ => throw new InvalidOperationException("boom"));
+            var sut = new ClassifierService(store);
+
+            var result = sut.Classify(new ClassifyRequest(
+                new[] { item }, new[] { D1, D2 },
+                keepCopy: false, removeAttachments: false));
+
+            store.DidNotReceive().DeleteItem(item); // never delete a mail we couldn't file anywhere
+            result.Errors.Should().Be(2);
+            result.ItemsProcessed.Should().Be(0);
+            result.OriginalsDeleted.Should().Be(0);
         }
 
         [Fact]

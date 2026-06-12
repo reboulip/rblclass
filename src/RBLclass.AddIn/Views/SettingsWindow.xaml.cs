@@ -1,4 +1,5 @@
 using System.Windows;
+using RBLclass.AddIn.Theming;
 
 namespace RBLclass.AddIn.Views
 {
@@ -12,6 +13,8 @@ namespace RBLclass.AddIn.Views
         public SettingsWindow()
         {
             InitializeComponent();
+            DialogPlacement.OwnByOutlook(this);
+            ThemeService.Apply(this);
         }
 
         private void Close_Click(object sender, RoutedEventArgs e) => Close();

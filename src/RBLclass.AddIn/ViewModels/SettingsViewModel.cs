@@ -40,12 +40,16 @@ namespace RBLclass.AddIn.ViewModels
             set => Apply(_settings.AllResults, value, v => _settings.AllResults = v);
         }
 
-        /// <summary>Bound to a single checkbox - the legacy default (word-prefix) is the unchecked state.</summary>
-        public bool UseSubstringMatch
+        /// <summary>
+        /// Word-prefix is the opt-in stricter mode; the default is the broader
+        /// "contains" (substring) search. Bound to a single checkbox that is
+        /// unchecked by default.
+        /// </summary>
+        public bool UseWordPrefixMatch
         {
-            get => _settings.FolderMatchMode == FolderMatchMode.Substring;
-            set => Apply(UseSubstringMatch, value,
-                         v => _settings.FolderMatchMode = v ? FolderMatchMode.Substring : FolderMatchMode.WordPrefix);
+            get => _settings.FolderMatchMode == FolderMatchMode.WordPrefix;
+            set => Apply(UseWordPrefixMatch, value,
+                         v => _settings.FolderMatchMode = v ? FolderMatchMode.WordPrefix : FolderMatchMode.Substring);
         }
 
         /// <summary>
@@ -109,10 +113,19 @@ namespace RBLclass.AddIn.ViewModels
                          v => _settings.ForgottenAttachmentKeywords = v);
         }
 
-        public bool SentItemTriagePrompt
+        /// <summary>Options for the sent-item triage dropdown (value + friendly label).</summary>
+        public IReadOnlyList<TriageModeOption> TriageModes { get; } = new[]
         {
-            get => _settings.SentItemTriagePrompt;
-            set => Apply(_settings.SentItemTriagePrompt, value, v => _settings.SentItemTriagePrompt = v);
+            new TriageModeOption(SentItemTriageMode.AskEveryTime, "Ask me each time"),
+            new TriageModeOption(SentItemTriageMode.MoveToInbox, "Move to Inbox"),
+            new TriageModeOption(SentItemTriageMode.Delete, "Delete"),
+            new TriageModeOption(SentItemTriageMode.Leave, "Leave in Sent Items"),
+        };
+
+        public SentItemTriageMode SentItemTriageMode
+        {
+            get => _settings.SentItemTriageMode;
+            set => Apply(_settings.SentItemTriageMode, value, v => _settings.SentItemTriageMode = v);
         }
 
         /// <summary>

@@ -55,10 +55,8 @@ is reconciled with the real `RBLclass.AddIn` `[Guid]`/`[ProgId]`.
 
 ## Preconditions
 
-- Targets the **real product** only. If `RBLclass.sln` does not exist yet
-  (Phase 1 not built), the loop fails clearly and changes nothing — it
-  does not fall back to the POC. To iterate on the POC, use its own
-  [poc/scripts/Install-HelloPstAddIn.ps1](../../../poc/scripts/Install-HelloPstAddIn.ps1).
+- Targets the product. If `RBLclass.sln` does not exist (e.g. wrong repo
+  root), the loop fails clearly and changes nothing.
 - Signing is skipped (`-SkipSigning`) — not required to load (Phase 0).
 - Visual Studio 2022 (MSBuild via vswhere) + the standalone .NET SDK on
   PATH.

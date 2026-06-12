@@ -108,8 +108,6 @@ current status.
 /installer                    WiX MSI project
 /tests
   /RBLclass.Core.Tests        xUnit
-/poc                          Phase 0 throwaway POC — not part of the
-                              shipped product
 /docs                         architecture notes, install guide, roadmap detail
 ```
 

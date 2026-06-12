@@ -24,11 +24,12 @@ namespace RBLclass.Core
         {
             if (items == null) throw new ArgumentNullException(nameof(items));
 
-            var widened = widenConversation ? Widen(items) : Dedupe(items);
+            var skippedEncrypted = new List<string>();
+            var widened = widenConversation ? Widen(items, skippedEncrypted) : Dedupe(items);
 
             var flagged = widened.Where(i => SafeIsFlaggedIncomplete(i)).ToArray();
 
-            return new ClassifyPreflight(widened, flagged);
+            return new ClassifyPreflight(widened, flagged, skippedEncrypted);
         }
 
         public ClassifyResult Classify(ClassifyRequest request)
@@ -46,36 +47,54 @@ namespace RBLclass.Core
                 try
                 {
                     bool markComplete = request.MarkTasksComplete && SafeIsFlaggedIncomplete(item);
+                    int filed = 0;
 
                     foreach (var destination in request.Destinations)
                     {
-                        var copy = _store.CopyItemToFolder(item, destination);
-                        copies++;
-
-                        // Strip attachments / mark the task complete on the
-                        // FILED COPY only, never the original - so "keep a
-                        // copy" leaves the original (and its flag/attachments)
-                        // untouched.
-                        if (copy != null)
+                        // Isolate each destination: one that refuses the item
+                        // (e.g. a store root that can't hold mail) must not abort
+                        // filing into the others.
+                        try
                         {
-                            if (request.RemoveAttachments)
-                                _store.RemoveAttachments(copy);
-                            if (markComplete)
-                                _store.MarkTaskComplete(copy);
+                            var copy = _store.CopyItemToFolder(item, destination);
+                            copies++;
+                            filed++;
+
+                            // Strip attachments / mark the task complete on the
+                            // FILED COPY only, never the original - so "keep a
+                            // copy" leaves the original (and its flag/attachments)
+                            // untouched.
+                            if (copy != null)
+                            {
+                                if (request.RemoveAttachments)
+                                    _store.RemoveAttachments(copy);
+                                if (markComplete)
+                                    _store.MarkTaskComplete(copy);
+                            }
+                        }
+                        catch
+                        {
+                            // This destination failed; the adapter logs the cause.
+                            errors++;
                         }
                     }
 
-                    if (!request.KeepCopy)
+                    // Only delete the original once it has actually been filed
+                    // somewhere; never delete a mail we could not copy to any
+                    // destination (no data loss on a total failure).
+                    if (filed > 0)
                     {
-                        _store.DeleteItem(item);
-                        deleted++;
+                        if (!request.KeepCopy)
+                        {
+                            _store.DeleteItem(item);
+                            deleted++;
+                        }
+                        processed++;
                     }
-
-                    processed++;
                 }
                 catch
                 {
-                    // Skip this item, keep going; the adapter/caller logs details.
+                    // Unexpected per-item failure (e.g. the flag check); keep going.
                     errors++;
                 }
             }
@@ -89,7 +108,8 @@ namespace RBLclass.Core
         /// originals win the slot when a sibling lookup also returns one of
         /// them back.
         /// </summary>
-        private IReadOnlyList<MailItemRef> Widen(IReadOnlyList<MailItemRef> items)
+        private IReadOnlyList<MailItemRef> Widen(IReadOnlyList<MailItemRef> items,
+                                                 List<string> skippedEncrypted)
         {
             var seen = new HashSet<(string StoreId, string EntryId)>();
             var result = new List<MailItemRef>();
@@ -100,10 +120,18 @@ namespace RBLclass.Core
                     result.Add(candidate);
             }
 
+            // Dedupe skipped-encrypted reports too: the same encrypted sibling can
+            // be reported by more than one source item in the selection.
+            var skippedSeen = new HashSet<string>();
+
             foreach (var item in items) AddIfNew(item);
             foreach (var item in items)
-                foreach (var sibling in _store.GetConversationSiblings(item) ?? Array.Empty<MailItemRef>())
-                    AddIfNew(sibling);
+            {
+                var siblings = _store.GetConversationSiblings(item) ?? ConversationSiblings.Empty;
+                foreach (var sibling in siblings.Processable) AddIfNew(sibling);
+                foreach (var subject in siblings.SkippedEncryptedSubjects)
+                    if (skippedSeen.Add(subject)) skippedEncrypted.Add(subject);
+            }
 
             return result;
         }

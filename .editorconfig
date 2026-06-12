@@ -1,5 +1,4 @@
-# RBLclass coding conventions. Applies to the Phase 1 product under src/ and
-# tests/. The throwaway POC under poc/ is not held to these.
+# RBLclass coding conventions. Applies to the product under src/ and tests/.
 root = true
 
 [*]
@@ -33,7 +32,7 @@ csharp_style_var_elsewhere = false:suggestion
 csharp_style_expression_bodied_methods = false:silent
 csharp_style_expression_bodied_properties = true:suggestion
 
-# Braces on new lines (Allman) - matches the POC / existing code
+# Braces on new lines (Allman) - matches existing code
 csharp_new_line_before_open_brace = all
 csharp_prefer_braces = true:suggestion
 

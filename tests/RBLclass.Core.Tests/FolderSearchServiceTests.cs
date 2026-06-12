@@ -110,15 +110,35 @@ namespace RBLclass.Core.Tests
         }
 
         [Fact]
-        public void WordPrefix_does_not_match_mid_word_but_substring_does()
+        public void Default_substring_matches_mid_word_while_word_prefix_opt_in_does_not()
         {
             // "juri" is in the middle of the single word "ProjetJuridique".
-            DefaultSearch().Search("juri").Results.Should().BeEmpty();
+            // The default (substring) matches it...
+            DefaultSearch().Search("juri").Results.Should().ContainSingle()
+                           .Which.Folder.EntryId.Should().Be("e2");
 
-            var sub = DefaultSearch().Search("juri",
-                new FolderSearchOptions(matchMode: FolderMatchMode.Substring));
-            sub.Results.Should().ContainSingle()
-               .Which.Folder.EntryId.Should().Be("e2");
+            // ...while the opt-in word-prefix mode does not.
+            DefaultSearch().Search("juri",
+                new FolderSearchOptions(matchMode: FolderMatchMode.WordPrefix))
+                .Results.Should().BeEmpty();
+        }
+
+        [Fact]
+        public void Default_match_mode_is_substring()
+        {
+            FolderSearchOptions.Default.MatchMode.Should().Be(FolderMatchMode.Substring);
+            new FolderSearchOptions().MatchMode.Should().Be(FolderMatchMode.Substring);
+        }
+
+        [Fact]
+        public void Default_search_matches_a_keyword_inside_a_word()
+        {
+            // Pilot example: "security" should find "Cybersecurity" out of the box.
+            var search = SearchOver(
+                new FolderNode("s1", "c1", null, "Cybersecurity", "Archive / Cybersecurity", isLeaf: true));
+
+            search.Search("security").Results.Should().ContainSingle()
+                  .Which.Folder.EntryId.Should().Be("c1");
         }
 
         [Fact]
