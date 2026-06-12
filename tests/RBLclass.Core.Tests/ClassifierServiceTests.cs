@@ -18,55 +18,126 @@ namespace RBLclass.Core.Tests
         private static readonly FolderNode D1 = Dest("d1", "Archive / A");
         private static readonly FolderNode D2 = Dest("d2", "Archive / B");
 
-        [Fact]
-        public void Copies_each_item_to_each_destination_and_deletes_originals()
+        /// <summary>A store whose MoveItemToFolder returns a ref at the destination (the adapter contract).</summary>
+        private static IMailStore StoreWithWorkingMove()
         {
             var store = Substitute.For<IMailStore>();
+            store.MoveItemToFolder(Arg.Any<MailItemRef>(), Arg.Any<FolderNode>())
+                 .Returns(ci => new MailItemRef(
+                     ((FolderNode)ci[1]).StoreId,
+                     "moved-" + ((MailItemRef)ci[0]).EntryId,
+                     ((MailItemRef)ci[0]).Subject));
+            return store;
+        }
+
+        [Fact]
+        public void Without_keep_copy_the_original_moves_to_the_last_destination_and_extras_get_copies()
+        {
+            var store = StoreWithWorkingMove();
             var sut = new ClassifierService(store);
 
-            var request = new ClassifyRequest(
+            var result = sut.Classify(new ClassifyRequest(
                 new[] { Item("e1"), Item("e2") },
                 new[] { D1, D2 },
                 keepCopy: false,
-                removeAttachments: false);
+                removeAttachments: false));
 
-            var result = sut.Classify(request);
-
-            // 2 items x 2 destinations = 4 copies.
-            store.Received(4).CopyItemToFolder(Arg.Any<MailItemRef>(), Arg.Any<FolderNode>());
-            store.Received(1).CopyItemToFolder(Arg.Is<MailItemRef>(m => m.EntryId == "e1"), D1);
-            store.Received(1).CopyItemToFolder(Arg.Is<MailItemRef>(m => m.EntryId == "e2"), D2);
-            store.Received(2).DeleteItem(Arg.Any<MailItemRef>());
+            // Per item: one copy to D1, then the original MOVES to D2 -
+            // nothing is deleted (v2.2 move-based classify).
+            store.Received(2).CopyItemToFolder(Arg.Any<MailItemRef>(), D1);
+            store.Received(2).MoveItemToFolder(Arg.Any<MailItemRef>(), D2);
+            store.DidNotReceive().CopyItemToFolder(Arg.Any<MailItemRef>(), D2);
+            store.DidNotReceive().DeleteItem(Arg.Any<MailItemRef>());
             store.DidNotReceive().RemoveAttachments(Arg.Any<MailItemRef>());
 
             result.ItemsProcessed.Should().Be(2);
-            result.CopiesMade.Should().Be(4);
-            result.OriginalsDeleted.Should().Be(2);
+            result.CopiesMade.Should().Be(2);
+            result.OriginalsMoved.Should().Be(2);
             result.Errors.Should().Be(0);
         }
 
         [Fact]
-        public void Keep_copy_does_not_delete_originals()
+        public void Single_destination_without_keep_copy_is_a_pure_move()
+        {
+            var store = StoreWithWorkingMove();
+            var sut = new ClassifierService(store);
+
+            var item = Item("e1");
+            var result = sut.Classify(new ClassifyRequest(
+                new[] { item }, new[] { D1 },
+                keepCopy: false, removeAttachments: false));
+
+            // No transient copy, no delete - the Stormshield fix.
+            store.Received(1).MoveItemToFolder(item, D1);
+            store.DidNotReceive().CopyItemToFolder(Arg.Any<MailItemRef>(), Arg.Any<FolderNode>());
+            store.DidNotReceive().DeleteItem(Arg.Any<MailItemRef>());
+
+            result.ItemsProcessed.Should().Be(1);
+            result.CopiesMade.Should().Be(0);
+            result.OriginalsMoved.Should().Be(1);
+        }
+
+        [Fact]
+        public void Copies_are_made_before_the_original_moves()
+        {
+            var store = StoreWithWorkingMove();
+            var sut = new ClassifierService(store);
+            var item = Item("e1");
+
+            sut.Classify(new ClassifyRequest(
+                new[] { item }, new[] { D1, D2 },
+                keepCopy: false, removeAttachments: false));
+
+            // The original is the copy source - it must still exist (i.e. not
+            // yet have moved) when the copy is taken.
+            Received.InOrder(() =>
+            {
+                store.CopyItemToFolder(item, D1);
+                store.MoveItemToFolder(item, D2);
+            });
+        }
+
+        [Fact]
+        public void Keep_copy_copies_everywhere_and_never_moves_or_deletes_the_original()
         {
             var store = Substitute.For<IMailStore>();
             var sut = new ClassifierService(store);
 
             var result = sut.Classify(new ClassifyRequest(
-                new[] { Item("e1") }, new[] { D1 },
+                new[] { Item("e1") }, new[] { D1, D2 },
                 keepCopy: true, removeAttachments: false));
 
             store.Received(1).CopyItemToFolder(Arg.Any<MailItemRef>(), D1);
+            store.Received(1).CopyItemToFolder(Arg.Any<MailItemRef>(), D2);
+            store.DidNotReceive().MoveItemToFolder(Arg.Any<MailItemRef>(), Arg.Any<FolderNode>());
             store.DidNotReceive().DeleteItem(Arg.Any<MailItemRef>());
-            result.OriginalsDeleted.Should().Be(0);
+            result.OriginalsMoved.Should().Be(0);
+            result.CopiesMade.Should().Be(2);
         }
 
         [Fact]
-        public void Remove_attachments_strips_the_filed_copy_not_the_original()
+        public void A_move_that_resolves_nothing_counts_as_an_error_and_processes_nothing()
+        {
+            var store = Substitute.For<IMailStore>(); // MoveItemToFolder returns null
+            var sut = new ClassifierService(store);
+
+            var result = sut.Classify(new ClassifyRequest(
+                new[] { Item("e1") }, new[] { D1 },
+                keepCopy: false, removeAttachments: false));
+
+            result.ItemsProcessed.Should().Be(0);
+            result.OriginalsMoved.Should().Be(0);
+            result.Errors.Should().Be(1);
+        }
+
+        [Fact]
+        public void Remove_attachments_strips_the_filed_copy_not_the_kept_original()
         {
             var store = Substitute.For<IMailStore>();
             var item = Item("e1");
             var filedCopy = new MailItemRef("s1", "copy-in-dest", "e1");
             store.CopyItemToFolder(item, D1).Returns(filedCopy);
+            store.RemoveAttachments(filedCopy).Returns(true);
             var sut = new ClassifierService(store);
 
             // keep a copy + remove attachments: original must keep its attachments.
@@ -86,11 +157,44 @@ namespace RBLclass.Core.Tests
         }
 
         [Fact]
+        public void Remove_attachments_strips_the_moved_item_when_not_keeping_a_copy()
+        {
+            var store = StoreWithWorkingMove();
+            var item = Item("e1");
+            store.RemoveAttachments(Arg.Any<MailItemRef>()).Returns(true);
+            var sut = new ClassifierService(store);
+
+            sut.Classify(new ClassifyRequest(
+                new[] { item }, new[] { D1 },
+                keepCopy: false, removeAttachments: true));
+
+            // The filed item IS the moved original - stripped at its new home,
+            // by its post-move reference.
+            store.Received(1).RemoveAttachments(
+                Arg.Is<MailItemRef>(m => m.EntryId == "moved-e1"));
+        }
+
+        [Fact]
+        public void An_encrypted_filed_item_keeps_its_attachments_and_is_reported()
+        {
+            var store = StoreWithWorkingMove();
+            // The store refuses to strip (encrypted) - returns false.
+            store.RemoveAttachments(Arg.Any<MailItemRef>()).Returns(false);
+            var sut = new ClassifierService(store);
+
+            var result = sut.Classify(new ClassifyRequest(
+                new[] { Item("e1") }, new[] { D1 },
+                keepCopy: false, removeAttachments: true));
+
+            result.EncryptedStripSkips.Should().Be(1);
+            result.ItemsProcessed.Should().Be(1); // still filed, just not stripped
+            result.Errors.Should().Be(0);
+        }
+
+        [Fact]
         public void Remove_attachments_off_strips_nothing()
         {
-            var store = Substitute.For<IMailStore>();
-            store.CopyItemToFolder(Arg.Any<MailItemRef>(), Arg.Any<FolderNode>())
-                 .Returns(new MailItemRef("s1", "copy", "x"));
+            var store = StoreWithWorkingMove();
             var sut = new ClassifierService(store);
 
             sut.Classify(new ClassifyRequest(
@@ -183,36 +287,31 @@ namespace RBLclass.Core.Tests
         }
 
         [Fact]
-        public void Classify_marks_the_filed_copy_complete_for_flagged_items_only()
+        public void Classify_marks_the_filed_item_complete_for_flagged_items_only()
         {
-            var store = Substitute.For<IMailStore>();
+            var store = StoreWithWorkingMove();
             var flagged = Item("e1");
             var plain = Item("e2");
-            var flaggedCopy = new MailItemRef("s1", "copy-flagged", "e1");
-            var plainCopy = new MailItemRef("s1", "copy-plain", "e2");
             store.IsFlaggedIncomplete(flagged).Returns(true);
             store.IsFlaggedIncomplete(plain).Returns(false);
-            store.CopyItemToFolder(flagged, D1).Returns(flaggedCopy);
-            store.CopyItemToFolder(plain, D1).Returns(plainCopy);
             var sut = new ClassifierService(store);
 
             sut.Classify(new ClassifyRequest(
                 new[] { flagged, plain }, new[] { D1 },
                 keepCopy: false, removeAttachments: false, markTasksComplete: true));
 
-            store.Received(1).MarkTaskComplete(flaggedCopy);
-            store.DidNotReceive().MarkTaskComplete(plainCopy);
-            store.DidNotReceive().MarkTaskComplete(flagged); // never the original
+            // Acts on the filed (moved) reference, never the pre-move original.
+            store.Received(1).MarkTaskComplete(Arg.Is<MailItemRef>(m => m.EntryId == "moved-e1"));
+            store.DidNotReceive().MarkTaskComplete(Arg.Is<MailItemRef>(m => m.EntryId == "moved-e2"));
+            store.DidNotReceive().MarkTaskComplete(flagged);
         }
 
         [Fact]
         public void Classify_marks_nothing_complete_when_not_requested()
         {
-            var store = Substitute.For<IMailStore>();
+            var store = StoreWithWorkingMove();
             var flagged = Item("e1");
-            var copy = new MailItemRef("s1", "copy", "e1");
             store.IsFlaggedIncomplete(flagged).Returns(true);
-            store.CopyItemToFolder(flagged, D1).Returns(copy);
             var sut = new ClassifierService(store);
 
             sut.Classify(new ClassifyRequest(
@@ -234,37 +333,40 @@ namespace RBLclass.Core.Tests
                .CopiesMade.Should().Be(0);
 
             store.DidNotReceive().CopyItemToFolder(Arg.Any<MailItemRef>(), Arg.Any<FolderNode>());
+            store.DidNotReceive().MoveItemToFolder(Arg.Any<MailItemRef>(), Arg.Any<FolderNode>());
             store.DidNotReceive().DeleteItem(Arg.Any<MailItemRef>());
         }
 
         [Fact]
         public void A_failing_destination_does_not_prevent_filing_into_the_others()
         {
-            var store = Substitute.For<IMailStore>();
+            var store = StoreWithWorkingMove();
             var item = Item("e1");
-            // D1 (e.g. a store root that refuses items) fails; D2 must still get it.
+            // D1 (e.g. a store root that refuses items) fails the copy; the
+            // original must still move on to D2.
             store.When(s => s.CopyItemToFolder(item, D1))
                  .Do(_ => throw new InvalidOperationException("root refuses items"));
-            store.CopyItemToFolder(item, D2).Returns(new MailItemRef("s1", "copy", "e1"));
             var sut = new ClassifierService(store);
 
             var result = sut.Classify(new ClassifyRequest(
                 new[] { item }, new[] { D1, D2 },
                 keepCopy: false, removeAttachments: false));
 
-            store.Received(1).CopyItemToFolder(item, D2); // the good destination still got it
-            result.CopiesMade.Should().Be(1);             // only D2
+            store.Received(1).MoveItemToFolder(item, D2); // the good destination still got it
+            result.CopiesMade.Should().Be(0);
+            result.OriginalsMoved.Should().Be(1);
             result.Errors.Should().Be(1);                 // the failing D1
             result.ItemsProcessed.Should().Be(1);
-            store.Received(1).DeleteItem(item);            // filed somewhere -> original removed
         }
 
         [Fact]
-        public void Original_is_kept_when_every_destination_fails()
+        public void Original_stays_in_place_when_every_destination_fails()
         {
             var store = Substitute.For<IMailStore>();
             var item = Item("e1");
             store.When(s => s.CopyItemToFolder(item, Arg.Any<FolderNode>()))
+                 .Do(_ => throw new InvalidOperationException("boom"));
+            store.When(s => s.MoveItemToFolder(item, Arg.Any<FolderNode>()))
                  .Do(_ => throw new InvalidOperationException("boom"));
             var sut = new ClassifierService(store);
 
@@ -272,18 +374,18 @@ namespace RBLclass.Core.Tests
                 new[] { item }, new[] { D1, D2 },
                 keepCopy: false, removeAttachments: false));
 
-            store.DidNotReceive().DeleteItem(item); // never delete a mail we couldn't file anywhere
+            store.DidNotReceive().DeleteItem(item); // no data loss on a total failure
             result.Errors.Should().Be(2);
             result.ItemsProcessed.Should().Be(0);
-            result.OriginalsDeleted.Should().Be(0);
+            result.OriginalsMoved.Should().Be(0);
         }
 
         [Fact]
         public void One_failing_item_is_counted_and_the_rest_still_process()
         {
-            var store = Substitute.For<IMailStore>();
-            // Fail the copy for e1 only.
-            store.When(s => s.CopyItemToFolder(Arg.Is<MailItemRef>(m => m.EntryId == "e1"), Arg.Any<FolderNode>()))
+            var store = StoreWithWorkingMove();
+            // Fail the move for e1 only.
+            store.When(s => s.MoveItemToFolder(Arg.Is<MailItemRef>(m => m.EntryId == "e1"), Arg.Any<FolderNode>()))
                  .Do(_ => throw new InvalidOperationException("boom"));
             var sut = new ClassifierService(store);
 
@@ -293,9 +395,7 @@ namespace RBLclass.Core.Tests
 
             result.Errors.Should().Be(1);
             result.ItemsProcessed.Should().Be(1); // e2
-            result.OriginalsDeleted.Should().Be(1); // only e2's original
-            store.Received(1).DeleteItem(Arg.Is<MailItemRef>(m => m.EntryId == "e2"));
-            store.DidNotReceive().DeleteItem(Arg.Is<MailItemRef>(m => m.EntryId == "e1"));
+            result.OriginalsMoved.Should().Be(1); // only e2 moved
         }
     }
 }

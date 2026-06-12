@@ -383,15 +383,24 @@ namespace RBLclass.AddIn
                     MessageBoxButtons.YesNo, MessageBoxIcon.Warning);
                 if (confirm != DialogResult.Yes) return;
 
-                int done = 0;
+                int done = 0, skippedEncrypted = 0;
                 foreach (var item in items)
                 {
-                    try { _mailStore.RemoveAttachments(item); done++; }
+                    try
+                    {
+                        if (_mailStore.RemoveAttachments(item)) done++;
+                        else skippedEncrypted++; // encrypted/signed - never stripped
+                    }
                     catch (Exception ex) { Log.Error(ex, "RemoveAttachments failed for an item."); }
                 }
 
-                Log.Information("Removed attachments from {Count} mail(s).", done);
-                MessageBox.Show("Removed attachments from " + done + " mail(s).", "RBLclass",
+                Log.Information("Removed attachments from {Count} mail(s) ({Skipped} encrypted skipped).",
+                                done, skippedEncrypted);
+                string summary = "Removed attachments from " + done + " mail(s).";
+                if (skippedEncrypted > 0)
+                    summary += "\n\n" + skippedEncrypted + " encrypted mail(s) were skipped - " +
+                               "their attachments are the message itself.";
+                MessageBox.Show(summary, "RBLclass",
                                 MessageBoxButtons.OK, MessageBoxIcon.Information);
             }
             catch (Exception ex)

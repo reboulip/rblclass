@@ -5,11 +5,15 @@ using System.Linq;
 namespace RBLclass.Core
 {
     /// <summary>
-    /// Classify orchestration, decoupled from Outlook. For each item: optionally
-    /// strip attachments, copy it into every destination (legacy
-    /// copy-per-destination), then delete the original unless "keep a copy" is
-    /// on. Each item is handled independently so one failure does not abort the
-    /// batch.
+    /// Classify orchestration, decoupled from Outlook. For each item: with
+    /// "keep a copy" on, a copy is placed in every destination and the original
+    /// stays put; with it off, copies go to every destination but the last and
+    /// the original is <b>moved</b> there (v2.2 - the old copy-then-delete made
+    /// other add-ins, notably Stormshield, chase transient items and throw
+    /// MAPI_E_NOT_FOUND; a single destination is now a pure move). Attachment
+    /// stripping / task completion act on each filed item, never on a kept
+    /// original. Each item is handled independently so one failure does not
+    /// abort the batch.
     /// </summary>
     public sealed class ClassifierService : IClassifier
     {
@@ -40,7 +44,7 @@ namespace RBLclass.Core
             if (request.Items.Count == 0 || request.Destinations.Count == 0)
                 return new ClassifyResult(0, 0, 0, 0);
 
-            int processed = 0, copies = 0, deleted = 0, errors = 0;
+            int processed = 0, copies = 0, moved = 0, errors = 0, encryptedSkips = 0;
 
             foreach (var item in request.Items)
             {
@@ -49,48 +53,67 @@ namespace RBLclass.Core
                     bool markComplete = request.MarkTasksComplete && SafeIsFlaggedIncomplete(item);
                     int filed = 0;
 
-                    foreach (var destination in request.Destinations)
+                    // Copies first (the original must stay put while it is the
+                    // copy source); the original itself is then moved into the
+                    // LAST destination unless "keep a copy" is on. After the
+                    // move the original reference is invalid, so the move slot
+                    // must come last.
+                    int count = request.Destinations.Count;
+                    for (int d = 0; d < count; d++)
                     {
+                        var destination = request.Destinations[d];
+                        bool moveSlot = !request.KeepCopy && d == count - 1;
+
                         // Isolate each destination: one that refuses the item
                         // (e.g. a store root that can't hold mail) must not abort
                         // filing into the others.
                         try
                         {
-                            var copy = _store.CopyItemToFolder(item, destination);
-                            copies++;
+                            MailItemRef filedRef;
+                            if (moveSlot)
+                            {
+                                filedRef = _store.MoveItemToFolder(item, destination);
+                                if (filedRef == null)
+                                {
+                                    // The item no longer resolves - the original
+                                    // was not moved anywhere.
+                                    errors++;
+                                    continue;
+                                }
+                                moved++;
+                            }
+                            else
+                            {
+                                filedRef = _store.CopyItemToFolder(item, destination);
+                                copies++;
+                            }
                             filed++;
 
                             // Strip attachments / mark the task complete on the
-                            // FILED COPY only, never the original - so "keep a
-                            // copy" leaves the original (and its flag/attachments)
-                            // untouched.
-                            if (copy != null)
+                            // FILED item only - with "keep a copy" on, the kept
+                            // original (and its flag/attachments) stays untouched.
+                            // Encrypted items are never stripped (their
+                            // attachments ARE the message); the store reports
+                            // the skip so the UI can say so.
+                            if (filedRef != null)
                             {
-                                if (request.RemoveAttachments)
-                                    _store.RemoveAttachments(copy);
+                                if (request.RemoveAttachments && !_store.RemoveAttachments(filedRef))
+                                    encryptedSkips++;
                                 if (markComplete)
-                                    _store.MarkTaskComplete(copy);
+                                    _store.MarkTaskComplete(filedRef);
                             }
                         }
                         catch
                         {
                             // This destination failed; the adapter logs the cause.
+                            // A failed move leaves the original in place - never
+                            // any data loss on failure.
                             errors++;
                         }
                     }
 
-                    // Only delete the original once it has actually been filed
-                    // somewhere; never delete a mail we could not copy to any
-                    // destination (no data loss on a total failure).
                     if (filed > 0)
-                    {
-                        if (!request.KeepCopy)
-                        {
-                            _store.DeleteItem(item);
-                            deleted++;
-                        }
                         processed++;
-                    }
                 }
                 catch
                 {
@@ -99,7 +122,7 @@ namespace RBLclass.Core
                 }
             }
 
-            return new ClassifyResult(processed, copies, deleted, errors);
+            return new ClassifyResult(processed, copies, moved, errors, encryptedSkips);
         }
 
         /// <summary>

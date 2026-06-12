@@ -49,7 +49,19 @@ namespace RBLclass.Core
         /// </summary>
         MailItemRef CopyItemToFolder(MailItemRef item, FolderNode destination);
 
-        /// <summary>Delete a mail item (used to remove originals when not keeping a copy).</summary>
+        /// <summary>
+        /// Move <paramref name="item"/> into <paramref name="destination"/> and
+        /// return a reference to it at its new location, or null when the item
+        /// no longer resolves. Unlike <see cref="CopyItemToFolder"/> this
+        /// creates no transient copy and leaves nothing behind - since v2.2 it
+        /// is how classify files the original when "keep a copy" is off (the
+        /// old copy-then-delete dance made the Stormshield add-in chase
+        /// vanishing items and throw MAPI_E_NOT_FOUND). Honour the rule that
+        /// Move invalidates the moved reference.
+        /// </summary>
+        MailItemRef MoveItemToFolder(MailItemRef item, FolderNode destination);
+
+        /// <summary>Delete a mail item (sent-item triage "Delete"; classify no longer deletes).</summary>
         void DeleteItem(MailItemRef item);
 
         /// <summary>
@@ -75,8 +87,14 @@ namespace RBLclass.Core
         /// <summary>Mark an item's follow-up flag complete (<c>OlFlagStatus.olFlagComplete</c>) and save it.</summary>
         void MarkTaskComplete(MailItemRef item);
 
-        /// <summary>Strip all attachments from a mail item and save it.</summary>
-        void RemoveAttachments(MailItemRef item);
+        /// <summary>
+        /// Strip all attachments from a mail item and save it - unless the item
+        /// is S/MIME-encrypted/signed (<c>IPM.Note.SMIME*</c>), whose
+        /// "attachments" are the message payload itself: those are never
+        /// stripped (maintainer rule, 2026-06-12) and the method returns false
+        /// so the caller can tell the user. Returns true otherwise.
+        /// </summary>
+        bool RemoveAttachments(MailItemRef item);
 
         /// <summary>
         /// Create a sub-folder under <paramref name="parent"/> and return the new

@@ -310,6 +310,60 @@ namespace RBLclass.Outlook.Adapter
             }
         }
 
+        public MailItemRef MoveItemToFolder(MailItemRef item, FolderNode destination)
+        {
+            if (item == null || destination == null) return null;
+
+            using (var session = new ComRef<OutlookOM.NameSpace>(_app.Session))
+            {
+                object rawItem;
+                try { rawItem = session.Value.GetItemFromID(item.EntryId, item.StoreId); }
+                catch { return null; } // item no longer resolves - tolerate the miss
+
+                using (var comItem = new ComRef<object>(rawItem))
+                {
+                    var mail = comItem.Value as OutlookOM.MailItem;
+                    if (mail == null) return null;
+
+                    OutlookOM.Folder rawDest;
+                    try { rawDest = (OutlookOM.Folder)session.Value.GetFolderFromID(
+                        destination.EntryId, destination.StoreId); }
+                    catch { return null; }
+
+                    using (var destFolder = new ComRef<OutlookOM.Folder>(rawDest))
+                    {
+                        try
+                        {
+                            // Move returns the moved item; the original reference
+                            // is now invalid (CLAUDE.md). No transient copy is
+                            // created and nothing lands in Deleted Items - the
+                            // point of the v2.2 move-based classify (Stormshield
+                            // chased the old transient copies into
+                            // MAPI_E_NOT_FOUND).
+                            using (var comMoved = new ComRef<object>(mail.Move(destFolder.Value)))
+                            {
+                                var movedItem = comMoved.Value as OutlookOM.MailItem;
+                                if (movedItem == null) return null;
+                                string movedEntryId = Safe(() => movedItem.EntryID, null);
+                                if (movedEntryId == null) return null;
+                                return new MailItemRef(destination.StoreId, movedEntryId, item.Subject);
+                            }
+                        }
+                        catch (Exception ex)
+                        {
+                            // Some folders (notably a store root) can reject items.
+                            // Log and rethrow so the classifier counts the failure;
+                            // the original stays where it was.
+                            Log.Warning(ex,
+                                "Moving into folder {Path} ({EntryId}) failed; it may not accept items.",
+                                destination.FullPath, destination.EntryId);
+                            throw;
+                        }
+                    }
+                }
+            }
+        }
+
         public void DeleteItem(MailItemRef item)
         {
             if (item == null) return;
@@ -518,20 +572,32 @@ namespace RBLclass.Outlook.Adapter
             }
         }
 
-        public void RemoveAttachments(MailItemRef item)
+        public bool RemoveAttachments(MailItemRef item)
         {
-            if (item == null) return;
+            if (item == null) return true;
 
             using (var session = new ComRef<OutlookOM.NameSpace>(_app.Session))
             {
                 object rawItem;
                 try { rawItem = session.Value.GetItemFromID(item.EntryId, item.StoreId); }
-                catch { return; }
+                catch { return true; } // item no longer resolves - nothing to report
 
                 using (var comItem = new ComRef<object>(rawItem))
                 {
                     var mail = comItem.Value as OutlookOM.MailItem;
-                    if (mail == null) return;
+                    if (mail == null) return true;
+
+                    // Never strip S/MIME-encrypted/signed mail (maintainer rule,
+                    // 2026-06-12): its "attachments" are the encrypted/signed
+                    // payload itself - removing them destroys the message.
+                    string messageClass = Safe(() => mail.MessageClass, string.Empty);
+                    if (messageClass.StartsWith("IPM.Note.SMIME", StringComparison.OrdinalIgnoreCase))
+                    {
+                        Log.Information(
+                            "RemoveAttachments skipped an encrypted/signed item ({MessageClass}).",
+                            messageClass);
+                        return false;
+                    }
 
                     using (var attachments = new ComRef<OutlookOM.Attachments>(mail.Attachments))
                     {
@@ -550,6 +616,8 @@ namespace RBLclass.Outlook.Adapter
                     }
                 }
             }
+
+            return true;
         }
 
         public SendGuardInfo InspectForSend(object item)
