@@ -87,8 +87,16 @@
          at the validated POC versions. Same constraint as the Serilog pin. -->
   </ItemGroup>
 
+  <!-- WithCulture=false on the .fr/.de ribbon files stops MSBuild's
+       AssignCulture task from treating ".fr."/".de." as a culture suffix and
+       relocating them into the fr/de satellite resource assemblies (where
+       GetCustomUI's manifest-resource lookup by name would never find them).
+       They must stay embedded in the main assembly as
+       RBLclass.AddIn.Ribbon.fr.xml / .de.xml, exactly like Ribbon.xml. -->
   <ItemGroup>
     <EmbeddedResource Include="Ribbon.xml" />
+    <EmbeddedResource Include="Ribbon.fr.xml" WithCulture="false" />
+    <EmbeddedResource Include="Ribbon.de.xml" WithCulture="false" />
   </ItemGroup>
 
 </Project>

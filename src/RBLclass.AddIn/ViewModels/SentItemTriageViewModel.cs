@@ -16,7 +16,9 @@ namespace RBLclass.AddIn.ViewModels
     {
         public SentItemTriageViewModel(string subject)
         {
-            Subject = string.IsNullOrEmpty(subject) ? "(no subject)" : subject;
+            Subject = string.IsNullOrEmpty(subject)
+                ? TaskPaneServices.Localization.GetString("SentTriage_NoSubject")
+                : subject;
 
             MoveToInboxCommand = new RelayCommand(_ => Choose(SentItemTriageAction.MoveToInbox));
             DeleteCommand = new RelayCommand(_ => Choose(SentItemTriageAction.Delete));

@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Runtime.CompilerServices;
+using RBLclass.AddIn.Localization;
 using RBLclass.AddIn.Mvvm;
 using RBLclass.Core;
 
@@ -20,6 +21,7 @@ namespace RBLclass.AddIn.ViewModels
         private readonly ISettingsStore _store;
         private readonly Settings _settings;
         private readonly Func<string> _captureSelectedHtml;
+        private readonly ILocalizationService _loc;
         private string _maxResultsText;
         private string _minSearchLengthText;
         private string _searchDebounceMsText;
@@ -33,11 +35,28 @@ namespace RBLclass.AddIn.ViewModels
         {
             _store = store ?? throw new ArgumentNullException(nameof(store));
             _captureSelectedHtml = captureSelectedHtml;
+            _loc = TaskPaneServices.Localization;
             _settings = Settings.Load(_store);
             _maxResultsText = _settings.MaxResults.ToString(CultureInfo.InvariantCulture);
             _minSearchLengthText = _settings.MinSearchLength.ToString(CultureInfo.InvariantCulture);
             _searchDebounceMsText = _settings.SearchDebounceMs.ToString(CultureInfo.InvariantCulture);
             _bannerStatus = DescribeBanner(_settings.ExternalBannerSignature);
+
+            TriageModes = new[]
+            {
+                new TriageModeOption(SentItemTriageMode.AskEveryTime, _loc.GetString("Settings_TriageMode_AskEveryTime")),
+                new TriageModeOption(SentItemTriageMode.MoveToInbox, _loc.GetString("Settings_TriageMode_MoveToInbox")),
+                new TriageModeOption(SentItemTriageMode.Delete, _loc.GetString("Settings_TriageMode_Delete")),
+                new TriageModeOption(SentItemTriageMode.Leave, _loc.GetString("Settings_TriageMode_Leave")),
+            };
+
+            UiLanguages = new[]
+            {
+                new UiLanguageOption("Auto", _loc.GetString("Settings_Language_Auto")),
+                new UiLanguageOption("en", _loc.GetString("Settings_Language_English")),
+                new UiLanguageOption("fr", _loc.GetString("Settings_Language_French")),
+                new UiLanguageOption("de", _loc.GetString("Settings_Language_German")),
+            };
         }
 
         public bool OpenInNewWindow
@@ -202,14 +221,14 @@ namespace RBLclass.AddIn.ViewModels
             string html = _captureSelectedHtml();
             if (string.IsNullOrEmpty(html))
             {
-                BannerStatus = "Select a mail that shows the banner, then click Learn.";
+                BannerStatus = _loc.GetString("Settings_Banner_SelectMailFirst");
                 return;
             }
 
             string block = ExternalBannerStripper.ExtractBannerBlock(html);
             if (string.IsNullOrWhiteSpace(block))
             {
-                BannerStatus = "Couldn't find a banner block in the selected mail.";
+                BannerStatus = _loc.GetString("Settings_Banner_NotFound");
                 return;
             }
 
@@ -232,10 +251,10 @@ namespace RBLclass.AddIn.ViewModels
             OnPropertyChanged(nameof(StripBannerOnClassify));
         }
 
-        private static string DescribeBanner(string signature) =>
+        private string DescribeBanner(string signature) =>
             string.IsNullOrWhiteSpace(signature)
-                ? "No banner learned yet."
-                : "A banner is configured (" + signature.Trim().Length + " characters).";
+                ? _loc.GetString("Settings_Banner_NoneLearned")
+                : _loc.GetString("Settings_Banner_Configured", signature.Trim().Length);
 
         /// <summary>Semicolon-separated domains treated as internal, edited as free text.</summary>
         public string InternalDomainsText
@@ -254,18 +273,25 @@ namespace RBLclass.AddIn.ViewModels
         }
 
         /// <summary>Options for the sent-item triage dropdown (value + friendly label).</summary>
-        public IReadOnlyList<TriageModeOption> TriageModes { get; } = new[]
-        {
-            new TriageModeOption(SentItemTriageMode.AskEveryTime, "Ask me each time"),
-            new TriageModeOption(SentItemTriageMode.MoveToInbox, "Move to Inbox"),
-            new TriageModeOption(SentItemTriageMode.Delete, "Delete"),
-            new TriageModeOption(SentItemTriageMode.Leave, "Leave in Sent Items"),
-        };
+        public IReadOnlyList<TriageModeOption> TriageModes { get; }
 
         public SentItemTriageMode SentItemTriageMode
         {
             get => _settings.SentItemTriageMode;
             set => Apply(_settings.SentItemTriageMode, value, v => _settings.SentItemTriageMode = v);
+        }
+
+        /// <summary>Options for the language dropdown (Auto/English/Français/Deutsch), Phase E.</summary>
+        public IReadOnlyList<UiLanguageOption> UiLanguages { get; }
+
+        /// <summary>
+        /// "Auto" | "en" | "fr" | "de". Takes effect after restarting Outlook -
+        /// the resolved language is read once at startup.
+        /// </summary>
+        public string PreferredUiLanguage
+        {
+            get => _settings.PreferredUiLanguage;
+            set => Apply(_settings.PreferredUiLanguage, value, v => _settings.PreferredUiLanguage = v);
         }
 
         /// <summary>

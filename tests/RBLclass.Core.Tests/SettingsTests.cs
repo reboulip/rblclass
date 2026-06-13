@@ -51,6 +51,7 @@ namespace RBLclass.Core.Tests
             settings.SentItemTriageMode.Should().Be(SentItemTriageMode.AskEveryTime);
             settings.MinSearchLength.Should().Be(FolderSearchOptions.DefaultMinQueryLength);
             settings.SearchDebounceMs.Should().Be(Settings.DefaultSearchDebounceMs);
+            settings.PreferredUiLanguage.Should().Be("Auto");
         }
 
         [Fact]
@@ -74,7 +75,8 @@ namespace RBLclass.Core.Tests
                 ForgottenAttachmentKeywords = new[] { "pièce jointe", "ci-joint" },
                 SentItemTriageMode = SentItemTriageMode.Delete,
                 MinSearchLength = 3,
-                SearchDebounceMs = 450
+                SearchDebounceMs = 450,
+                PreferredUiLanguage = "fr"
             };
 
             settings.Save(_store);
@@ -97,6 +99,26 @@ namespace RBLclass.Core.Tests
             reloaded.SentItemTriageMode.Should().Be(SentItemTriageMode.Delete);
             reloaded.MinSearchLength.Should().Be(3);
             reloaded.SearchDebounceMs.Should().Be(450);
+            reloaded.PreferredUiLanguage.Should().Be("fr");
+        }
+
+        [Theory]
+        [InlineData("fr", "fr")]
+        [InlineData("de", "de")]
+        [InlineData("en", "en")]
+        [InlineData("Auto", "Auto")]
+        [InlineData("es", "Auto")]          // unsupported -> Auto
+        [InlineData("garbage", "Auto")]     // unrecognised -> Auto
+        public void Load_normalises_the_preferred_ui_language(string stored, string expected)
+        {
+            _store.Set(SettingsKeys.PreferredUiLanguage, stored);
+            Settings.Load(_store).PreferredUiLanguage.Should().Be(expected);
+        }
+
+        [Fact]
+        public void Load_defaults_the_preferred_ui_language_to_auto_when_unset()
+        {
+            Settings.Load(_store).PreferredUiLanguage.Should().Be("Auto");
         }
 
         [Theory]

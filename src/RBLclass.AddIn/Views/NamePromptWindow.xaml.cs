@@ -19,7 +19,8 @@ namespace RBLclass.AddIn.Views
             ThemeService.Apply(this);
 
             if (!string.IsNullOrEmpty(parentFolderName))
-                PromptLabel.Text = "Name of the new sub-folder under \"" + parentFolderName + "\":";
+                PromptLabel.Text = TaskPaneServices.Localization.GetString(
+                    "NamePrompt_Label_WithParent", parentFolderName);
 
             Loaded += (s, e) => NameBox.Focus();
         }

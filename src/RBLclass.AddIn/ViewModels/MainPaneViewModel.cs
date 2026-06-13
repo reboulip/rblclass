@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
 using System.Windows.Threading;
+using RBLclass.AddIn.Localization;
 using RBLclass.AddIn.Mvvm;
 using RBLclass.Core;
 
@@ -29,12 +30,13 @@ namespace RBLclass.AddIn.ViewModels
         private readonly Func<int, bool?> _confirmMarkTasksComplete;
         private readonly Func<string, string> _promptForName;
         private readonly Func<IReadOnlyList<FolderNode>> _getAllFolders;
+        private readonly ILocalizationService _loc;
 
         private string _query = string.Empty;
         private bool _allResults, _keepCopy, _removeAttachments, _widenConversation, _stripBanner;
         private bool _canStripBanner;
         private SelectableFolder _selectedResult;
-        private string _selectionSummary = "No mail selected.";
+        private string _selectionSummary;
         private string _status = string.Empty;
         private bool _isBusy;
 
@@ -66,6 +68,8 @@ namespace RBLclass.AddIn.ViewModels
             _confirmMarkTasksComplete = confirmMarkTasksComplete;
             _promptForName = promptForName;
             _getAllFolders = getAllFolders;
+            _loc = TaskPaneServices.Localization;
+            _selectionSummary = _loc.GetString("Status_NoMailSelectedSummary");
 
             if (_settings != null)
             {
@@ -99,12 +103,12 @@ namespace RBLclass.AddIn.ViewModels
         public bool HasSelectedDestinations => SelectedDestinations.Count > 0;
 
         public string SelectionHeader =>
-            "Selected: " + SelectedDestinations.Count + " folder(s)";
+            _loc.Plural(SelectedDestinations.Count, "Status_SelectedFolders_One", "Status_SelectedFolders_Other");
 
         public string ClassifyButtonText =>
             SelectedDestinations.Count == 0
-                ? "Classify"
-                : "Classify to " + SelectedDestinations.Count + " folder(s)";
+                ? _loc.GetString("Status_ClassifyDefault")
+                : _loc.Plural(SelectedDestinations.Count, "Status_ClassifyToFolders_One", "Status_ClassifyToFolders_Other");
 
         public string Query
         {
@@ -201,10 +205,10 @@ namespace RBLclass.AddIn.ViewModels
             _searchTimer?.Stop(); // don't let a pending search overwrite our results
 
             var items = _getSelection != null ? _getSelection() : new MailItemRef[0];
-            if (items.Count == 0) { Status = "Select one or more mails in Outlook first."; return; }
+            if (items.Count == 0) { Status = _loc.GetString("Status_NoMailSelectedAction"); return; }
 
             IsBusy = true;
-            Status = "Auto-classing…";
+            Status = _loc.GetString("Status_AutoClassing");
             Dispatcher.CurrentDispatcher.Invoke(new Action(() => { }), DispatcherPriority.Render);
 
             try
@@ -236,7 +240,7 @@ namespace RBLclass.AddIn.ViewModels
                 foreach (var dest in result.FiledDestinations)
                     AddResultRow(new FolderSearchResult(dest, isCollapsed: false));
 
-                Status = DescribeAutoClass(result);
+                Status = DescribeAutoClass(result, _loc);
 
                 if (result.Undo != null)
                 {
@@ -253,22 +257,22 @@ namespace RBLclass.AddIn.ViewModels
             }
         }
 
-        private static string DescribeAutoClass(AutoClassifyResult r)
+        private static string DescribeAutoClass(AutoClassifyResult r, ILocalizationService loc)
         {
             // Nothing filed and the only reason is "never classified before".
             if (r.Filed == 0 && r.NoHistory > 0 && r.StaleFolders == 0 && r.Errors == 0)
-                return "No earlier filing found for the selected conversation(s) - nothing to auto-class.";
+                return loc.GetString("Status_AutoClass_NoHistoryOnly");
 
             var parts = new List<string>();
             if (r.Filed > 0)
-                parts.Add("Auto-classed " + r.Filed + " mail(s) to the folder(s) below");
+                parts.Add(loc.Plural(r.Filed, "Status_AutoClass_Filed_One", "Status_AutoClass_Filed_Other"));
             if (r.NoHistory > 0)
-                parts.Add(r.NoHistory + " with no earlier filing");
+                parts.Add(loc.Plural(r.NoHistory, "Status_AutoClass_NoHistory_One", "Status_AutoClass_NoHistory_Other"));
             if (r.StaleFolders > 0)
-                parts.Add(r.StaleFolders + " whose remembered folder is gone");
+                parts.Add(loc.Plural(r.StaleFolders, "Status_AutoClass_StaleFolders_One", "Status_AutoClass_StaleFolders_Other"));
             if (r.Errors > 0)
-                parts.Add(r.Errors + " failed");
-            return parts.Count == 0 ? "Nothing to auto-class." : string.Join("; ", parts) + ".";
+                parts.Add(loc.Plural(r.Errors, "Status_AutoClass_Errors_One", "Status_AutoClass_Errors_Other"));
+            return parts.Count == 0 ? loc.GetString("Status_AutoClass_Nothing") : string.Join("; ", parts) + ".";
         }
 
         /// <summary>Reverse the last filing action completely (the Undo button).</summary>
@@ -281,18 +285,21 @@ namespace RBLclass.AddIn.ViewModels
             OnPropertyChanged(nameof(CanUndo));
 
             IsBusy = true;
-            Status = "Undoing…";
+            Status = _loc.GetString("Status_Undoing");
             Dispatcher.CurrentDispatcher.Invoke(new Action(() => { }), DispatcherPriority.Render);
 
             try
             {
                 var undone = _classifier.Undo(plan);
 
-                Status = "Undid the last filing: " + undone.MovesRestored + " mail(s) put back, " +
-                         undone.CopiesDeleted + " filed cop(ies) removed" +
-                         (undone.Errors > 0 ? " (" + undone.Errors + " step(s) failed)" : "") + ".";
+                string movesRestored = _loc.Plural(undone.MovesRestored, "Status_Undo_MovesRestored_One", "Status_Undo_MovesRestored_Other");
+                string copiesDeleted = _loc.Plural(undone.CopiesDeleted, "Status_Undo_CopiesDeleted_One", "Status_Undo_CopiesDeleted_Other");
+                string stepsFailed = undone.Errors > 0
+                    ? _loc.Plural(undone.Errors, "Status_Undo_StepsFailed_One", "Status_Undo_StepsFailed_Other")
+                    : string.Empty;
+                Status = _loc.GetString("Status_Undo_Result", movesRestored, copiesDeleted, stepsFailed);
                 if (plan.AttachmentStrips > 0)
-                    Status += " Removed attachments could not be restored.";
+                    Status += _loc.GetString("Status_Undo_AttachmentsNotRestored");
 
                 RefreshSelection();
             }
@@ -304,7 +311,7 @@ namespace RBLclass.AddIn.ViewModels
         }
 
         public void SetSelectionCount(int count) =>
-            SelectionSummary = count == 1 ? "1 mail selected." : count + " mails selected.";
+            SelectionSummary = _loc.Plural(count, "Status_MailSelected_One", "Status_MailSelected_Other");
 
         public void RefreshSelection()
         {
@@ -334,7 +341,7 @@ namespace RBLclass.AddIn.ViewModels
         {
             FlushPendingSearch(); // never file based on stale, pre-debounce results
             var folder = (SelectedResult ?? (Results.Count > 0 ? Results[0] : null))?.Folder;
-            if (folder == null) { Status = "No matching folder to file into."; return; }
+            if (folder == null) { Status = _loc.GetString("Status_NoMatchingFolderToFile"); return; }
             DoClassify(new[] { folder });
         }
 
@@ -348,7 +355,7 @@ namespace RBLclass.AddIn.ViewModels
         public void ClassifyChecked()
         {
             var destinations = SelectedDestinations.ToList();
-            if (destinations.Count == 0) { Status = "Check at least one destination folder."; return; }
+            if (destinations.Count == 0) { Status = _loc.GetString("Status_CheckAtLeastOneDestination"); return; }
             if (DoClassify(destinations))
                 ClearDestinations(); // the batch is filed - start the next one clean
         }
@@ -414,9 +421,9 @@ namespace RBLclass.AddIn.ViewModels
             if (string.IsNullOrWhiteSpace(name)) return;
 
             var created = _createSubfolder(parent, name.Trim());
-            if (created == null) { Status = "Could not create the folder."; return; }
+            if (created == null) { Status = _loc.GetString("Status_CouldNotCreateFolder"); return; }
 
-            Status = "Created \"" + created.Name + "\" under " + parent.Name + ".";
+            Status = _loc.GetString("Status_FolderCreated", created.Name, parent.Name);
             Refresh();
         }
 
@@ -426,10 +433,10 @@ namespace RBLclass.AddIn.ViewModels
             if (_isBusy) return false; // ignore a repeat trigger while a classify is in flight
 
             var items = _getSelection != null ? _getSelection() : new MailItemRef[0];
-            if (items.Count == 0) { Status = "Select one or more mails in Outlook first."; return false; }
+            if (items.Count == 0) { Status = _loc.GetString("Status_NoMailSelectedAction"); return false; }
 
             IsBusy = true;
-            Status = "Filing…";
+            Status = _loc.GetString("MainPane_Busy_Filing");
             Dispatcher.CurrentDispatcher.Invoke(new Action(() => { }), DispatcherPriority.Render);
 
             try
@@ -440,7 +447,7 @@ namespace RBLclass.AddIn.ViewModels
                 if (preflight.FlaggedIncomplete.Count > 0 && _confirmMarkTasksComplete != null)
                 {
                     var answer = _confirmMarkTasksComplete(preflight.FlaggedIncomplete.Count);
-                    if (answer == null) { Status = "Classify cancelled."; return false; }
+                    if (answer == null) { Status = _loc.GetString("Status_ClassifyCancelled"); return false; }
                     markTasksComplete = answer.Value;
                 }
 
@@ -454,18 +461,18 @@ namespace RBLclass.AddIn.ViewModels
                                         _removeAttachments, markTasksComplete, safetyCopy,
                                         bannerSignature));
 
-                string verb = _keepCopy ? "Copied" : "Filed";
-                Status = verb + " " + result.ItemsProcessed + " mail(s) to " +
-                         destinations.Count + " folder(s)" +
-                         (result.Errors > 0 ? " (" + result.Errors + " failed)" : "") + ".";
+                string verb = _loc.GetString(_keepCopy ? "Status_Classify_Copied" : "Status_Classify_Filed");
+                string failed = result.Errors > 0
+                    ? _loc.GetString("Status_Classify_Failed", result.Errors)
+                    : string.Empty;
+                Status = _loc.Plural(result.ItemsProcessed, "Status_Classify_Result_One", "Status_Classify_Result_Other",
+                                      verb, destinations.Count, failed);
 
                 if (result.EncryptedStripSkips > 0)
-                    Status += " " + result.EncryptedStripSkips +
-                              " encrypted mail(s) kept their attachments.";
+                    Status += _loc.Plural(result.EncryptedStripSkips, "Status_Classify_EncryptedKept_One", "Status_Classify_EncryptedKept_Other");
 
                 if (preflight.SkippedEncrypted.Count > 0)
-                    Status += " " + preflight.SkippedEncrypted.Count +
-                              " encrypted message(s) in the conversation were left in place.";
+                    Status += _loc.Plural(preflight.SkippedEncrypted.Count, "Status_Classify_EncryptedInConversation_One", "Status_Classify_EncryptedInConversation_Other");
 
                 _lastUndo = result.Undo; // a non-undoable run clears the slot (null)
                 OnPropertyChanged(nameof(CanUndo));
@@ -552,14 +559,14 @@ namespace RBLclass.AddIn.ViewModels
                 if (trimmed.Length == 0)
                     Status = string.Empty;
                 else if (trimmed.Length < minLength)
-                    Status = "Type at least " + minLength + " characters to search.";
+                    Status = _loc.GetString("Status_TypeAtLeastChars", minLength);
                 else
-                    Status = "No matching folders.";
+                    Status = _loc.GetString("Status_NoMatchingFolders");
             }
             else if (outcome.LimitExceeded)
-                Status = "Showing " + Results.Count + " of " + outcome.TotalMatchCount + " - refine your search.";
+                Status = _loc.GetString("Status_ShowingResults", Results.Count, outcome.TotalMatchCount);
             else
-                Status = outcome.TotalMatchCount + " folder(s).";
+                Status = _loc.Plural(outcome.TotalMatchCount, "Status_FoldersFound_One", "Status_FoldersFound_Other");
         }
     }
 }

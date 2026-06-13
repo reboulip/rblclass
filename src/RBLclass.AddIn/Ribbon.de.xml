@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<customUI xmlns="http://schemas.microsoft.com/office/2009/07/customui">
+  <ribbon>
+    <tabs>
+      <tab id="RBLclassTab" label="RBLclass">
+        <group id="RBLclassGroup" label="RBLclass">
+          <button id="TogglePaneButton"
+                  label="RBLclass-Bereich"
+                  size="large"
+                  imageMso="MoveToFolder"
+                  onAction="OnTogglePaneClick"
+                  screentip="RBLclass-Bereich anzeigen oder ausblenden"
+                  supertip="Den RBLclass-Bereich öffnen: in der Ordnerstruktur suchen, zu einem Ordner wechseln (Öffnen-Schaltfläche) und die ausgewählte E-Mail ablegen - ein Klick auf einen Ordner fügt ihn als Ziel hinzu, ein Doppelklick legt die E-Mail direkt darin ab." />
+          <button id="RemoveAttachmentsButton"
+                  label="Anhänge entfernen"
+                  size="large"
+                  imageMso="AttachmentRemove"
+                  onAction="OnRemoveAttachmentsClick"
+                  screentip="Anhänge entfernen"
+                  supertip="Entfernt nach Bestätigung alle Anhänge aus der/den ausgewählten E-Mail(s)." />
+          <button id="RefreshFoldersButton"
+                  label="Ordner aktualisieren"
+                  size="large"
+                  imageMso="Refresh"
+                  onAction="OnRefreshFoldersClick"
+                  screentip="Ordnerindex aktualisieren"
+                  supertip="Durchsucht Ihre PST-Speicher erneut, damit Ordner, die direkt in Outlook erstellt oder umbenannt wurden, in der Suche erscheinen. Nach dem manuellen Anlegen von Ordnern ausführen." />
+          <button id="IndexStatusButton"
+                  label="Indexstatus"
+                  size="large"
+                  imageMso="Info"
+                  onAction="OnIndexStatusClick"
+                  screentip="Status des Ordnerindex"
+                  supertip="Zeigt, ob der Ordnerindex aus dem Cache geladen oder neu erstellt wurde, mit Anzahl der Speicher/Ordner. Diagnose aus Schritt 1 - die Suchoberfläche kommt in Schritt 3." />
+          <button id="SettingsButton"
+                  label="Einstellungen"
+                  size="large"
+                  imageMso="ToolsOptions"
+                  onAction="OnSettingsClick"
+                  screentip="RBLclass-Einstellungen"
+                  supertip="Konfigurieren Sie Ordnersuche, Klassieren, Sende-Sicherungen und die Triage gesendeter Objekte. Jede Änderung wird sofort angewendet und gespeichert." />
+        </group>
+      </tab>
+    </tabs>
+  </ribbon>
+</customUI>

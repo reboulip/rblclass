@@ -191,6 +191,33 @@ cause Outlook crashes and memory leaks.
 - Top-level handlers in every ribbon callback, every event handler, every
   fire-and-forget Task.
 
+### Localization (English / French / German)
+
+The UI follows Outlook's UI language, defaulting to English for any other
+language, with a per-user override in Settings resolved once at startup
+(`RblClassAddIn.OnStartupComplete`, before any pane/window/ribbon is
+created). Changing the "Preferred UI language" setting takes effect after
+restarting Outlook.
+
+- Every new user-visible string MUST be added as a resource key to
+  `src/RBLclass.AddIn/Resources/Strings.resx` **and** translated in
+  `Strings.fr.resx` and `Strings.de.resx` in the same change.
+  `ResourceParityTests` (in `RBLclass.Core.Tests`) fails `dotnet test` if a
+  key is missing, empty, or has mismatched `{n}` placeholders in any
+  language.
+- XAML strings go through `{loc:Loc Key=...}`
+  (`RBLclass.AddIn.Localization.LocExtension`). Code-behind/ViewModel
+  strings go through `ILocalizationService.GetString`/`GetString(key, args)`
+  (`TaskPaneServices.Localization`).
+- Count-dependent strings always get a `_One` / `_Other` resource key pair,
+  resolved via `ILocalizationService.Plural(count, oneKey, otherKey, args)`.
+  Never derive plurals by string concatenation — French and German plural
+  forms differ from English.
+- New ribbon buttons/tooltips need matching `label`/`screentip`/`supertip`
+  entries in `Ribbon.xml`, `Ribbon.fr.xml`, and `Ribbon.de.xml` — checked by
+  `ResourceParityTests` as well. `RblClassAddIn.GetCustomUI` picks the
+  variant based on `TaskPaneServices.Localization.CurrentLanguage`.
+
 ## Folder layout
 
 ```

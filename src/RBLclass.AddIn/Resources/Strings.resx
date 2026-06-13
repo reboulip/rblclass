@@ -1,0 +1,531 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+
+  <!-- MainPaneView -->
+  <data name="MainPane_AutoClass_Button" xml:space="preserve">
+    <value>Auto-class</value>
+  </data>
+  <data name="MainPane_AutoClass_ToolTip" xml:space="preserve">
+    <value>File the selected mail(s) to the folder(s) their conversation was last classified into</value>
+  </data>
+  <data name="MainPane_QueryBox_ToolTip" xml:space="preserve">
+    <value>Press Ctrl alone to toggle 'List every matching folder'</value>
+  </data>
+  <data name="MainPane_ListEveryFolder_CheckBox" xml:space="preserve">
+    <value>List every matching folder</value>
+  </data>
+  <data name="MainPane_KeepCopy_CheckBox" xml:space="preserve">
+    <value>Keep a copy (don't delete originals)</value>
+  </data>
+  <data name="MainPane_RemoveAttachments_CheckBox" xml:space="preserve">
+    <value>Remove attachments from the filed copy</value>
+  </data>
+  <data name="MainPane_WidenConversation_CheckBox" xml:space="preserve">
+    <value>Include the whole conversation</value>
+  </data>
+  <data name="MainPane_StripBanner_CheckBox" xml:space="preserve">
+    <value>Strip the external-sender banner</value>
+  </data>
+  <data name="MainPane_OpenFolder_ToolTip" xml:space="preserve">
+    <value>Open this folder in Outlook</value>
+  </data>
+  <data name="MainPane_NewSubfolder_ToolTip" xml:space="preserve">
+    <value>Create a sub-folder here</value>
+  </data>
+  <data name="MainPane_ClearSelection_Button" xml:space="preserve">
+    <value>clear</value>
+  </data>
+  <data name="MainPane_ClearSelection_ToolTip" xml:space="preserve">
+    <value>Drop all selected destinations</value>
+  </data>
+  <data name="MainPane_RemoveDestination_ToolTip" xml:space="preserve">
+    <value>Remove this destination</value>
+  </data>
+  <data name="MainPane_Undo_Button" xml:space="preserve">
+    <value>Undo</value>
+  </data>
+  <data name="MainPane_Undo_ToolTip" xml:space="preserve">
+    <value>Undo the last filing: put moved mails back and remove the filed copies</value>
+  </data>
+  <data name="MainPane_Busy_Filing" xml:space="preserve">
+    <value>Filing…</value>
+  </data>
+
+  <!-- SettingsWindow -->
+  <data name="Settings_Title" xml:space="preserve">
+    <value>RBLclass - Settings</value>
+  </data>
+  <data name="Settings_Close_Button" xml:space="preserve">
+    <value>Close</value>
+  </data>
+  <data name="Settings_FolderSearch_Header" xml:space="preserve">
+    <value>Folder search</value>
+  </data>
+  <data name="Settings_ListEveryFolder_CheckBox" xml:space="preserve">
+    <value>List every matching folder individually</value>
+  </data>
+  <data name="Settings_WordPrefixMatch_CheckBox" xml:space="preserve">
+    <value>Match only the start of words (stricter than the default 'contains' search)</value>
+  </data>
+  <data name="Settings_OpenInNewWindow_CheckBox" xml:space="preserve">
+    <value>Open folders in a new explorer window</value>
+  </data>
+  <data name="Settings_MaxResults_Label" xml:space="preserve">
+    <value>Maximum results to display:</value>
+  </data>
+  <data name="Settings_MinSearchLength_Label" xml:space="preserve">
+    <value>Search after typing at least (characters):</value>
+  </data>
+  <data name="Settings_SearchDebounce_Label" xml:space="preserve">
+    <value>Pause before searching (milliseconds):</value>
+  </data>
+  <data name="Settings_Classify_Header" xml:space="preserve">
+    <value>Classify</value>
+  </data>
+  <data name="Settings_KeepCopy_CheckBox" xml:space="preserve">
+    <value>Keep the original after classifying</value>
+  </data>
+  <data name="Settings_RemoveAttachments_CheckBox" xml:space="preserve">
+    <value>Remove attachments from the filed copy</value>
+  </data>
+  <data name="Settings_ClassifySafetyCopy_CheckBox" xml:space="preserve">
+    <value>Keep a safety copy in Deleted Items when filing (only applies when the original is not kept)</value>
+  </data>
+  <data name="Settings_WidenConversation_CheckBox" xml:space="preserve">
+    <value>Apply to the whole conversation by default</value>
+  </data>
+  <data name="Settings_Banner_Header" xml:space="preserve">
+    <value>External-sender banner</value>
+  </data>
+  <data name="Settings_Banner_Description" xml:space="preserve">
+    <value>Teach RBLclass your company's 'external email' banner once, then it can strip it from replies and filed mail.</value>
+  </data>
+  <data name="Settings_LearnBanner_Button" xml:space="preserve">
+    <value>Learn from selected mail</value>
+  </data>
+  <data name="Settings_ForgetBanner_Button" xml:space="preserve">
+    <value>Forget</value>
+  </data>
+  <data name="Settings_StripBannerOnReply_CheckBox" xml:space="preserve">
+    <value>Strip the banner from replies and forwards</value>
+  </data>
+  <data name="Settings_StripBannerOnClassify_CheckBox" xml:space="preserve">
+    <value>Strip the banner from the filed copy by default when classifying</value>
+  </data>
+  <data name="Settings_SendingGuards_Header" xml:space="preserve">
+    <value>Sending guards</value>
+  </data>
+  <data name="Settings_SendExternalWarning_CheckBox" xml:space="preserve">
+    <value>Warn before sending to recipients outside the organisation</value>
+  </data>
+  <data name="Settings_InternalDomains_Label" xml:space="preserve">
+    <value>Domains treated as internal (semicolon-separated):</value>
+  </data>
+  <data name="Settings_ForgottenAttachmentKeywords_Label" xml:space="preserve">
+    <value>Forgotten-attachment keywords (semicolon-separated):</value>
+  </data>
+  <data name="Settings_SentItems_Header" xml:space="preserve">
+    <value>Sent items</value>
+  </data>
+  <data name="Settings_SentItemsTriage_Label" xml:space="preserve">
+    <value>When a mail lands in Sent Items:</value>
+  </data>
+  <data name="Settings_TriageMode_AskEveryTime" xml:space="preserve">
+    <value>Ask me each time</value>
+  </data>
+  <data name="Settings_TriageMode_MoveToInbox" xml:space="preserve">
+    <value>Move to Inbox</value>
+  </data>
+  <data name="Settings_TriageMode_Delete" xml:space="preserve">
+    <value>Delete</value>
+  </data>
+  <data name="Settings_TriageMode_Leave" xml:space="preserve">
+    <value>Leave in Sent Items</value>
+  </data>
+  <data name="Settings_Banner_NoneLearned" xml:space="preserve">
+    <value>No banner learned yet.</value>
+  </data>
+  <data name="Settings_Banner_Configured" xml:space="preserve">
+    <value>A banner is configured ({0} characters).</value>
+  </data>
+  <data name="Settings_Banner_SelectMailFirst" xml:space="preserve">
+    <value>Select a mail that shows the banner, then click Learn.</value>
+  </data>
+  <data name="Settings_Banner_NotFound" xml:space="preserve">
+    <value>Couldn't find a banner block in the selected mail.</value>
+  </data>
+
+  <!-- SettingsWindow: language picker (Phase E) -->
+  <data name="Settings_Language_Header" xml:space="preserve">
+    <value>Language</value>
+  </data>
+  <data name="Settings_Language_Label" xml:space="preserve">
+    <value>RBLclass language:</value>
+  </data>
+  <data name="Settings_Language_Auto" xml:space="preserve">
+    <value>Auto (follow Outlook)</value>
+  </data>
+  <data name="Settings_Language_English" xml:space="preserve">
+    <value>English</value>
+  </data>
+  <data name="Settings_Language_French" xml:space="preserve">
+    <value>Français</value>
+  </data>
+  <data name="Settings_Language_German" xml:space="preserve">
+    <value>Deutsch</value>
+  </data>
+  <data name="Settings_Language_RestartNote" xml:space="preserve">
+    <value>Changing this requires restarting Outlook.</value>
+  </data>
+
+  <!-- NamePromptWindow -->
+  <data name="NamePrompt_Title" xml:space="preserve">
+    <value>RBLclass - New sub-folder</value>
+  </data>
+  <data name="NamePrompt_Label" xml:space="preserve">
+    <value>Name of the new sub-folder:</value>
+  </data>
+  <data name="NamePrompt_Label_WithParent" xml:space="preserve">
+    <value>Name of the new sub-folder under "{0}":</value>
+  </data>
+  <data name="NamePrompt_Create_Button" xml:space="preserve">
+    <value>Create</value>
+  </data>
+  <data name="NamePrompt_Cancel_Button" xml:space="preserve">
+    <value>Cancel</value>
+  </data>
+
+  <!-- SentItemTriageWindow -->
+  <data name="SentTriage_Title" xml:space="preserve">
+    <value>RBLclass - Sent mail</value>
+  </data>
+  <data name="SentTriage_Question" xml:space="preserve">
+    <value>What should RBLclass do with this mail?</value>
+  </data>
+  <data name="SentTriage_MoveToInbox_Button" xml:space="preserve">
+    <value>Move to Inbox</value>
+  </data>
+  <data name="SentTriage_Delete_Button" xml:space="preserve">
+    <value>Delete</value>
+  </data>
+  <data name="SentTriage_Leave_Button" xml:space="preserve">
+    <value>Leave</value>
+  </data>
+  <data name="SentTriage_NoSubject" xml:space="preserve">
+    <value>(no subject)</value>
+  </data>
+
+  <!-- MainPaneViewModel: status messages -->
+  <data name="Status_NoMailSelectedAction" xml:space="preserve">
+    <value>Select one or more mails in Outlook first.</value>
+  </data>
+  <data name="Status_NoMatchingFolderToFile" xml:space="preserve">
+    <value>No matching folder to file into.</value>
+  </data>
+  <data name="Status_CheckAtLeastOneDestination" xml:space="preserve">
+    <value>Check at least one destination folder.</value>
+  </data>
+  <data name="Status_CouldNotCreateFolder" xml:space="preserve">
+    <value>Could not create the folder.</value>
+  </data>
+  <data name="Status_FolderCreated" xml:space="preserve">
+    <value>Created "{0}" under {1}.</value>
+  </data>
+  <data name="Status_ClassifyCancelled" xml:space="preserve">
+    <value>Classify cancelled.</value>
+  </data>
+  <data name="Status_AutoClassing" xml:space="preserve">
+    <value>Auto-classing…</value>
+  </data>
+  <data name="Status_Undoing" xml:space="preserve">
+    <value>Undoing…</value>
+  </data>
+  <data name="Status_TypeAtLeastChars" xml:space="preserve">
+    <value>Type at least {0} characters to search.</value>
+  </data>
+  <data name="Status_NoMatchingFolders" xml:space="preserve">
+    <value>No matching folders.</value>
+  </data>
+  <data name="Status_ShowingResults" xml:space="preserve">
+    <value>Showing {0} of {1} - refine your search.</value>
+  </data>
+  <data name="Status_FoldersFound_One" xml:space="preserve">
+    <value>{0} folder.</value>
+  </data>
+  <data name="Status_FoldersFound_Other" xml:space="preserve">
+    <value>{0} folders.</value>
+  </data>
+
+  <!-- MainPaneViewModel: selection summary / headers -->
+  <data name="Status_NoMailSelectedSummary" xml:space="preserve">
+    <value>No mail selected.</value>
+  </data>
+  <data name="Status_MailSelected_One" xml:space="preserve">
+    <value>{0} mail selected.</value>
+  </data>
+  <data name="Status_MailSelected_Other" xml:space="preserve">
+    <value>{0} mails selected.</value>
+  </data>
+  <data name="Status_SelectedFolders_One" xml:space="preserve">
+    <value>Selected: {0} folder</value>
+  </data>
+  <data name="Status_SelectedFolders_Other" xml:space="preserve">
+    <value>Selected: {0} folders</value>
+  </data>
+  <data name="Status_ClassifyDefault" xml:space="preserve">
+    <value>Classify</value>
+  </data>
+  <data name="Status_ClassifyToFolders_One" xml:space="preserve">
+    <value>Classify to {0} folder</value>
+  </data>
+  <data name="Status_ClassifyToFolders_Other" xml:space="preserve">
+    <value>Classify to {0} folders</value>
+  </data>
+
+  <!-- MainPaneViewModel: Auto-class result -->
+  <data name="Status_AutoClass_NoHistoryOnly" xml:space="preserve">
+    <value>No earlier filing found for the selected conversation(s) - nothing to auto-class.</value>
+  </data>
+  <data name="Status_AutoClass_Nothing" xml:space="preserve">
+    <value>Nothing to auto-class.</value>
+  </data>
+  <data name="Status_AutoClass_Filed_One" xml:space="preserve">
+    <value>Auto-classed {0} mail to the folder(s) below</value>
+  </data>
+  <data name="Status_AutoClass_Filed_Other" xml:space="preserve">
+    <value>Auto-classed {0} mails to the folder(s) below</value>
+  </data>
+  <data name="Status_AutoClass_NoHistory_One" xml:space="preserve">
+    <value>{0} with no earlier filing</value>
+  </data>
+  <data name="Status_AutoClass_NoHistory_Other" xml:space="preserve">
+    <value>{0} with no earlier filing</value>
+  </data>
+  <data name="Status_AutoClass_StaleFolders_One" xml:space="preserve">
+    <value>{0} whose remembered folder is gone</value>
+  </data>
+  <data name="Status_AutoClass_StaleFolders_Other" xml:space="preserve">
+    <value>{0} whose remembered folder is gone</value>
+  </data>
+  <data name="Status_AutoClass_Errors_One" xml:space="preserve">
+    <value>{0} failed</value>
+  </data>
+  <data name="Status_AutoClass_Errors_Other" xml:space="preserve">
+    <value>{0} failed</value>
+  </data>
+
+  <!-- MainPaneViewModel: Undo result -->
+  <data name="Status_Undo_Result" xml:space="preserve">
+    <value>Undid the last filing: {0}, {1}{2}.</value>
+  </data>
+  <data name="Status_Undo_MovesRestored_One" xml:space="preserve">
+    <value>{0} mail put back</value>
+  </data>
+  <data name="Status_Undo_MovesRestored_Other" xml:space="preserve">
+    <value>{0} mails put back</value>
+  </data>
+  <data name="Status_Undo_CopiesDeleted_One" xml:space="preserve">
+    <value>{0} filed copy removed</value>
+  </data>
+  <data name="Status_Undo_CopiesDeleted_Other" xml:space="preserve">
+    <value>{0} filed copies removed</value>
+  </data>
+  <data name="Status_Undo_StepsFailed_One" xml:space="preserve">
+    <value> ({0} step failed)</value>
+  </data>
+  <data name="Status_Undo_StepsFailed_Other" xml:space="preserve">
+    <value> ({0} steps failed)</value>
+  </data>
+  <data name="Status_Undo_AttachmentsNotRestored" xml:space="preserve">
+    <value> Removed attachments could not be restored.</value>
+  </data>
+
+  <!-- MainPaneViewModel: Classify result -->
+  <data name="Status_Classify_Copied" xml:space="preserve">
+    <value>Copied</value>
+  </data>
+  <data name="Status_Classify_Filed" xml:space="preserve">
+    <value>Filed</value>
+  </data>
+  <data name="Status_Classify_Result_One" xml:space="preserve">
+    <value>{0} {1} mail to {2} folder(s){3}.</value>
+  </data>
+  <data name="Status_Classify_Result_Other" xml:space="preserve">
+    <value>{0} {1} mails to {2} folder(s){3}.</value>
+  </data>
+  <data name="Status_Classify_Failed" xml:space="preserve">
+    <value> ({0} failed)</value>
+  </data>
+  <data name="Status_Classify_EncryptedKept_One" xml:space="preserve">
+    <value> {0} encrypted mail kept its attachments.</value>
+  </data>
+  <data name="Status_Classify_EncryptedKept_Other" xml:space="preserve">
+    <value> {0} encrypted mails kept their attachments.</value>
+  </data>
+  <data name="Status_Classify_EncryptedInConversation_One" xml:space="preserve">
+    <value> {0} encrypted message in the conversation was left in place.</value>
+  </data>
+  <data name="Status_Classify_EncryptedInConversation_Other" xml:space="preserve">
+    <value> {0} encrypted messages in the conversation were left in place.</value>
+  </data>
+
+  <!-- RblClassAddIn: MessageBox dialogs -->
+  <data name="MsgBox_ConfirmMarkTasksComplete_Title" xml:space="preserve">
+    <value>RBLclass - Classify</value>
+  </data>
+  <data name="MsgBox_ConfirmMarkTasksComplete_Body_One" xml:space="preserve">
+    <value>{0} selected item is flagged as an incomplete task.
+
+Mark them complete in the destination folder?</value>
+  </data>
+  <data name="MsgBox_ConfirmMarkTasksComplete_Body_Other" xml:space="preserve">
+    <value>{0} selected items are flagged as incomplete tasks.
+
+Mark them complete in the destination folder?</value>
+  </data>
+  <data name="MsgBox_ConfirmSendWithoutAttachment_Title" xml:space="preserve">
+    <value>RBLclass - Send</value>
+  </data>
+  <data name="MsgBox_ConfirmSendWithoutAttachment_Body" xml:space="preserve">
+    <value>This message mentions an attachment, but none is attached.
+
+Send anyway?</value>
+  </data>
+  <data name="MsgBox_ConfirmSendToExternal_Title" xml:space="preserve">
+    <value>RBLclass - Send</value>
+  </data>
+  <data name="MsgBox_ConfirmSendToExternal_Body_One" xml:space="preserve">
+    <value>{0} recipient is outside the organisation:
+
+{1}
+
+Send anyway?</value>
+  </data>
+  <data name="MsgBox_ConfirmSendToExternal_Body_Other" xml:space="preserve">
+    <value>{0} recipients are outside the organisation:
+
+{1}
+
+Send anyway?</value>
+  </data>
+  <data name="MsgBox_Info_Title" xml:space="preserve">
+    <value>RBLclass</value>
+  </data>
+  <data name="MsgBox_RemoveAttachments_Title" xml:space="preserve">
+    <value>RBLclass - Remove attachments</value>
+  </data>
+  <data name="MsgBox_RemoveAttachments_SelectFirst" xml:space="preserve">
+    <value>Select one or more mails first.</value>
+  </data>
+  <data name="MsgBox_RemoveAttachments_Confirm" xml:space="preserve">
+    <value>Remove all attachments from {0} mail(s)? This cannot be undone.</value>
+  </data>
+  <data name="MsgBox_RemoveAttachments_Summary" xml:space="preserve">
+    <value>Removed attachments from {0} mail(s).</value>
+  </data>
+  <data name="MsgBox_RemoveAttachments_SkippedEncrypted_One" xml:space="preserve">
+    <value>
+
+{0} encrypted mail was skipped - its attachments are the message itself.</value>
+  </data>
+  <data name="MsgBox_RemoveAttachments_SkippedEncrypted_Other" xml:space="preserve">
+    <value>
+
+{0} encrypted mails were skipped - their attachments are the message itself.</value>
+  </data>
+  <data name="MsgBox_IndexStatus_Title" xml:space="preserve">
+    <value>RBLclass - Folder index</value>
+  </data>
+  <data name="MsgBox_IndexStatus_NotStarted" xml:space="preserve">
+    <value>Indexing has not started yet.</value>
+  </data>
+  <data name="MsgBox_IndexStatus_WalkScheduled" xml:space="preserve">
+    <value>First-run folder walk is scheduled / in progress.
+Reopen this dialog in a moment to see the counts.</value>
+  </data>
+  <data name="MsgBox_IndexStatus_Summary" xml:space="preserve">
+    <value>Index source : {0}
+Stores       : {1}
+Folders      : {2}
+Cached now   : {3}</value>
+  </data>
+  <data name="MsgBox_IndexStatus_Footer" xml:space="preserve">
+    <value>Database : {0}
+Logs     : {1}</value>
+  </data>
+  <data name="MsgBox_RefreshFolders_Title" xml:space="preserve">
+    <value>RBLclass - Refresh folders</value>
+  </data>
+  <data name="MsgBox_RefreshFolders_NotReady" xml:space="preserve">
+    <value>The folder index is not ready yet.</value>
+  </data>
+  <data name="MsgBox_RefreshFolders_Result" xml:space="preserve">
+    <value>Folder index refreshed.
+
+Stores  : {0}
+Folders : {1}
+
+Re-run your search to see newly created or renamed folders.</value>
+  </data>
+  <data name="MsgBox_ErrorTitle" xml:space="preserve">
+    <value>RBLclass - {0}</value>
+  </data>
+</root>

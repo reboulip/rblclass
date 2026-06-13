@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using RBLclass.AddIn.Localization;
 using RBLclass.Core;
 
 namespace RBLclass.AddIn
@@ -13,6 +14,14 @@ namespace RBLclass.AddIn
     /// </summary>
     internal static class TaskPaneServices
     {
+        /// <summary>
+        /// UI string lookup for the language resolved once at startup. Set
+        /// before any view or window is constructed, so XAML's
+        /// <see cref="LocExtension"/> and ViewModel constructors can rely on
+        /// it being non-null.
+        /// </summary>
+        public static ILocalizationService Localization;
+
         /// <summary>Folder search service (over the cached index).</summary>
         public static IFolderSearch Search;
 
