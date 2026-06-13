@@ -281,6 +281,10 @@ namespace RBLclass.Core
             int strips = 0;
             var allBatchIds = new List<string>();
 
+            // Distinct live folders we actually filed into, to show the user.
+            var filedDestinations = new List<FolderNode>();
+            var filedDestKeys = new HashSet<string>();
+
             foreach (var item in Dedupe(items))
             {
                 string key;
@@ -314,6 +318,9 @@ namespace RBLclass.Core
                 if (result.ItemsProcessed > 0)
                 {
                     filed++;
+                    foreach (var dest in live)
+                        if (filedDestKeys.Add(dest.StoreId + " " + dest.EntryId))
+                            filedDestinations.Add(dest);
                     if (result.Undo != null)
                     {
                         allMoves.AddRange(result.Undo.Moves);
@@ -331,7 +338,7 @@ namespace RBLclass.Core
 
             var plan = new ClassifyUndoPlan(allMoves, allCopies, allFlags, strips, allBatchIds);
             return new AutoClassifyResult(filed, noHistory, staleFolders, errors,
-                                          plan.IsEmpty ? null : plan);
+                                          plan.IsEmpty ? null : plan, filedDestinations);
         }
 
         /// <summary>

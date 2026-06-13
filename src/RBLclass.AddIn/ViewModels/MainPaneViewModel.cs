@@ -28,6 +28,7 @@ namespace RBLclass.AddIn.ViewModels
         private readonly ISettingsStore _settings;
         private readonly Func<int, bool?> _confirmMarkTasksComplete;
         private readonly Func<string, string> _promptForName;
+        private readonly Func<IReadOnlyList<FolderNode>> _getAllFolders;
 
         private string _query = string.Empty;
         private bool _allResults, _keepCopy, _removeAttachments, _widenConversation;
@@ -52,7 +53,8 @@ namespace RBLclass.AddIn.ViewModels
             Action<FolderNode, bool> navigate = null,
             ISettingsStore settings = null,
             Func<int, bool?> confirmMarkTasksComplete = null,
-            Func<string, string> promptForName = null)
+            Func<string, string> promptForName = null,
+            Func<IReadOnlyList<FolderNode>> getAllFolders = null)
         {
             _search = search ?? throw new ArgumentNullException(nameof(search));
             _classifier = classifier ?? throw new ArgumentNullException(nameof(classifier));
@@ -62,6 +64,7 @@ namespace RBLclass.AddIn.ViewModels
             _settings = settings;
             _confirmMarkTasksComplete = confirmMarkTasksComplete;
             _promptForName = promptForName;
+            _getAllFolders = getAllFolders;
 
             if (_settings != null)
             {
@@ -158,6 +161,92 @@ namespace RBLclass.AddIn.ViewModels
 
         /// <summary>True when the last classify can be undone (enables the Undo button).</summary>
         public bool CanUndo => _lastUndo != null;
+
+        /// <summary>True when Auto-class is wired (the folder-index snapshot is available).</summary>
+        public bool CanAutoClass => _getAllFolders != null;
+
+        /// <summary>
+        /// Auto-class the current selection (the pane's small Auto-class button):
+        /// file each selected mail to its conversation's last recorded
+        /// destination(s), show those folders in the results, and report what
+        /// happened in the status line. No modal - everything lands in the pane.
+        /// </summary>
+        public void AutoClassSelected()
+        {
+            if (_isBusy || _getAllFolders == null) return;
+
+            _searchTimer?.Stop(); // don't let a pending search overwrite our results
+
+            var items = _getSelection != null ? _getSelection() : new MailItemRef[0];
+            if (items.Count == 0) { Status = "Select one or more mails in Outlook first."; return; }
+
+            IsBusy = true;
+            Status = "Auto-classing…";
+            Dispatcher.CurrentDispatcher.Invoke(new Action(() => { }), DispatcherPriority.Render);
+
+            try
+            {
+                // One live-index snapshot, indexed for the staleness check.
+                var byKey = new Dictionary<string, FolderNode>();
+                foreach (var f in _getAllFolders())
+                    byKey[KeyOf(f)] = f;
+                Func<string, string, FolderNode> resolve = (storeId, entryId) =>
+                {
+                    FolderNode node;
+                    return byKey.TryGetValue(storeId + " " + entryId, out node) ? node : null;
+                };
+
+                bool keepCopy = false, removeAttachments = false, safetyCopy = false;
+                if (_settings != null)
+                {
+                    var s = Settings.Load(_settings);
+                    keepCopy = s.KeepCopy;
+                    removeAttachments = s.RemoveAttachments;
+                    safetyCopy = s.ClassifySafetyCopy;
+                }
+
+                var result = _classifier.AutoClassify(items, resolve, keepCopy, removeAttachments, safetyCopy);
+
+                // Show where the mail went (the destination folders), so the
+                // user can see and open them; empty when nothing was filed.
+                Results.Clear();
+                foreach (var dest in result.FiledDestinations)
+                    AddResultRow(new FolderSearchResult(dest, isCollapsed: false));
+
+                Status = DescribeAutoClass(result);
+
+                if (result.Undo != null)
+                {
+                    _lastUndo = result.Undo;
+                    OnPropertyChanged(nameof(CanUndo));
+                }
+
+                RefreshSelection();
+            }
+            finally
+            {
+                Dispatcher.CurrentDispatcher.BeginInvoke(
+                    new Action(() => IsBusy = false), DispatcherPriority.Background);
+            }
+        }
+
+        private static string DescribeAutoClass(AutoClassifyResult r)
+        {
+            // Nothing filed and the only reason is "never classified before".
+            if (r.Filed == 0 && r.NoHistory > 0 && r.StaleFolders == 0 && r.Errors == 0)
+                return "No earlier filing found for the selected conversation(s) - nothing to auto-class.";
+
+            var parts = new List<string>();
+            if (r.Filed > 0)
+                parts.Add("Auto-classed " + r.Filed + " mail(s) to the folder(s) below");
+            if (r.NoHistory > 0)
+                parts.Add(r.NoHistory + " with no earlier filing");
+            if (r.StaleFolders > 0)
+                parts.Add(r.StaleFolders + " whose remembered folder is gone");
+            if (r.Errors > 0)
+                parts.Add(r.Errors + " failed");
+            return parts.Count == 0 ? "Nothing to auto-class." : string.Join("; ", parts) + ".";
+        }
 
         /// <summary>Reverse the last filing action completely (the Undo button).</summary>
         public void UndoLast()
@@ -389,6 +478,19 @@ namespace RBLclass.AddIn.ViewModels
             }
         }
 
+        /// <summary>Add one result row, re-checking it if it is in the accumulated selection and tracking its checkbox.</summary>
+        private void AddResultRow(FolderSearchResult r)
+        {
+            var row = new SelectableFolder(r);
+            row.IsSelected = _selectedKeys.Contains(KeyOf(row.Folder));
+            row.PropertyChanged += (s, e) =>
+            {
+                if (e.PropertyName == nameof(SelectableFolder.IsSelected))
+                    OnRowSelectionChanged((SelectableFolder)s);
+            };
+            Results.Add(row);
+        }
+
         private void Refresh()
         {
             var matchMode = FolderMatchMode.Substring;
@@ -407,18 +509,7 @@ namespace RBLclass.AddIn.ViewModels
 
             Results.Clear();
             foreach (var r in outcome.Results)
-            {
-                var row = new SelectableFolder(r);
-                // Re-check rows already in the accumulated selection (the Add
-                // below is idempotent), then track checkbox changes.
-                row.IsSelected = _selectedKeys.Contains(KeyOf(row.Folder));
-                row.PropertyChanged += (s, e) =>
-                {
-                    if (e.PropertyName == nameof(SelectableFolder.IsSelected))
-                        OnRowSelectionChanged((SelectableFolder)s);
-                };
-                Results.Add(row);
-            }
+                AddResultRow(r);
 
             string trimmed = (_query ?? string.Empty).Trim();
             if (outcome.TotalMatchCount == 0)

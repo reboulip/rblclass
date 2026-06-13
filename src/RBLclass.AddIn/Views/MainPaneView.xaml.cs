@@ -99,6 +99,8 @@ namespace RBLclass.AddIn.Views
 
         private void Undo_Click(object sender, RoutedEventArgs e) => Vm?.UndoLast();
 
+        private void AutoClass_Click(object sender, RoutedEventArgs e) => Vm?.AutoClassSelected();
+
         private void OpenFolder_Click(object sender, RoutedEventArgs e)
         {
             var folder = (sender as FrameworkElement)?.DataContext as SelectableFolder;

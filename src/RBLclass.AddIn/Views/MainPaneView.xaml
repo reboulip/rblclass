@@ -23,8 +23,13 @@
                 <RowDefinition Height="Auto" />
             </Grid.RowDefinitions>
 
-            <TextBlock Grid.Row="0" Margin="0,0,0,6" FontWeight="Bold"
-                       Text="{Binding SelectionSummary}" />
+            <DockPanel Grid.Row="0" Margin="0,0,0,6" LastChildFill="False">
+                <TextBlock DockPanel.Dock="Left" FontWeight="Bold" VerticalAlignment="Center"
+                           Text="{Binding SelectionSummary}" />
+                <Button DockPanel.Dock="Right" Content="Auto-class" Padding="6,1" FontSize="11"
+                        IsEnabled="{Binding CanAutoClass}" Click="AutoClass_Click"
+                        ToolTip="File the selected mail(s) to the folder(s) their conversation was last classified into" />
+            </DockPanel>
 
             <TextBox Grid.Row="1" x:Name="QueryBox" Margin="0,0,0,6"
                      Text="{Binding Query, UpdateSourceTrigger=PropertyChanged}"

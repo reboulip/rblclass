@@ -164,6 +164,7 @@ namespace RBLclass.AddIn
                 TaskPaneServices.Settings = _settingsStore;
                 TaskPaneServices.Classifier = _classifier;
                 TaskPaneServices.GetSelection = () => _mailStore.GetSelectedItems();
+                TaskPaneServices.GetAllFolders = () => _folderTree.GetAll();
                 TaskPaneServices.CreateSubfolder = (parent, name) =>
                 {
                     try
@@ -410,76 +411,6 @@ namespace RBLclass.AddIn
             catch (Exception ex)
             {
                 ShowError("Remove attachments failed", ex);
-            }
-        }
-
-        /// <summary>
-        /// Ribbon "Auto-class": file each selected mail to its conversation's
-        /// most recently recorded destination(s) (v2.2), validated against the
-        /// live folder index, then report a summary. Honours the same
-        /// keep-a-copy / remove-attachments / safety-copy settings as a manual
-        /// classify. Pin this to the Quick Access Toolbar (right-click - Add to
-        /// Quick Access Toolbar) for one-click filing - Office gives add-ins no
-        /// API to pin it for you.
-        /// </summary>
-        public void OnAutoClassClick(Office.IRibbonControl control)
-        {
-            try
-            {
-                var items = _mailStore.GetSelectedItems();
-                if (items.Count == 0)
-                {
-                    MessageBox.Show("Select one or more mails first.", "RBLclass - Auto-class",
-                                    MessageBoxButtons.OK, MessageBoxIcon.Information);
-                    return;
-                }
-
-                // Resolve a remembered (storeId, entryId) destination against the
-                // live folder index; null when that folder is gone (stale).
-                var index = _folderTree.GetAll();
-                var byKey = new Dictionary<string, FolderNode>(index.Count);
-                foreach (var f in index)
-                    byKey[f.StoreId + " " + f.EntryId] = f;
-                Func<string, string, FolderNode> resolve = (storeId, entryId) =>
-                {
-                    FolderNode node;
-                    return byKey.TryGetValue(storeId + " " + entryId, out node) ? node : null;
-                };
-
-                var settings = Settings.Load(_settingsStore);
-
-                Cursor.Current = Cursors.WaitCursor;
-                AutoClassifyResult result;
-                try
-                {
-                    result = _classifier.AutoClassify(
-                        items, resolve,
-                        settings.KeepCopy, settings.RemoveAttachments, settings.ClassifySafetyCopy);
-                }
-                finally
-                {
-                    Cursor.Current = Cursors.Default;
-                }
-
-                Log.Information(
-                    "Auto-class: filed {Filed}, no-history {NoHistory}, stale {Stale}, errors {Errors}.",
-                    result.Filed, result.NoHistory, result.StaleFolders, result.Errors);
-
-                var sb = new System.Text.StringBuilder();
-                sb.AppendLine("Filed automatically : " + result.Filed);
-                if (result.NoHistory > 0)
-                    sb.AppendLine("No previous filing  : " + result.NoHistory);
-                if (result.StaleFolders > 0)
-                    sb.AppendLine("Remembered folder gone : " + result.StaleFolders);
-                if (result.Errors > 0)
-                    sb.AppendLine("Failed              : " + result.Errors);
-
-                MessageBox.Show(sb.ToString(), "RBLclass - Auto-class",
-                                MessageBoxButtons.OK, MessageBoxIcon.Information);
-            }
-            catch (Exception ex)
-            {
-                ShowError("Auto-class failed", ex);
             }
         }
 

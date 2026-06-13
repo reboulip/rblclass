@@ -689,17 +689,24 @@ ribbon, and the encrypted-attachment rule).
       folders, deletes the created copies, restores flags, rolls back
       history rows. Stripped attachments cannot be restored; Undo says
       so when that applies. xUnit over a fake store.
-- [ ] **Auto-class.** Schema **v2** adds
+- [x] *(implemented 2026-06-13; first cut verified live, then reworked
+      per feedback — see below)* **Auto-class.** Schema **v2** adds
       `ClassificationHistory(ConversationKey, DestStoreId, DestEntryId,
       WhenUtc)`, appended on every successful classify (conversation key
-      read from the Outlook item at selection time). A ribbon
-      **Auto-class** button files each selected mail to its
+      = the Outlook `ConversationID`, read before the move invalidates
+      the item). Auto-class files each selected mail to its
       conversation's most recent recorded destination(s) — validated
-      against the current folder index — and reports a summary
-      (filed / no-history / stale-folder counts). Office offers add-ins
-      no API to pin to the Quick Access Toolbar; the user pins the
-      ribbon button manually (right-click → "Add to Quick Access
-      Toolbar"). Undo covers auto-class filings like any other.
+      against the current folder index — honouring the same
+      keep-a-copy / remove-attachments / safety-copy settings, and Undo
+      covers it like any other classify.
+      - **Reworked after the first live test (2026-06-13):** moved off
+        the ribbon into a **small "Auto-class" button in the task pane**
+        (top-right, by the selection count) and **dropped the modal
+        summary** — instead the filed **destination folders are shown in
+        the pane's results list** (so the user sees where mail went and
+        can open them), and the no-history / stale-folder / error
+        outcome is reported in the **pane status line**. The ribbon
+        button and its message box were removed.
 
 ### Carried over from v2.1.0.0
 

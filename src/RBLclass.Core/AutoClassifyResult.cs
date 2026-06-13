@@ -1,3 +1,6 @@
+using System.Collections.Generic;
+using System.Linq;
+
 namespace RBLclass.Core
 {
     /// <summary>
@@ -8,13 +11,15 @@ namespace RBLclass.Core
     public sealed class AutoClassifyResult
     {
         public AutoClassifyResult(int filed, int noHistory, int staleFolders,
-                                  int errors, ClassifyUndoPlan undo)
+                                  int errors, ClassifyUndoPlan undo,
+                                  IReadOnlyList<FolderNode> filedDestinations = null)
         {
             Filed = filed;
             NoHistory = noHistory;
             StaleFolders = staleFolders;
             Errors = errors;
             Undo = undo;
+            FiledDestinations = (filedDestinations ?? new FolderNode[0]).ToArray();
         }
 
         /// <summary>Mails filed to a remembered destination.</summary>
@@ -37,6 +42,12 @@ namespace RBLclass.Core
         /// when nothing was filed. Undo treats it like any other classify.
         /// </summary>
         public ClassifyUndoPlan Undo { get; }
+
+        /// <summary>
+        /// The distinct live folders this run filed mail into, so the pane can
+        /// show the user where things went. Empty when nothing was filed.
+        /// </summary>
+        public IReadOnlyList<FolderNode> FiledDestinations { get; }
 
         /// <summary>True when at least one mail was filed.</summary>
         public bool AnyFiled => Filed > 0;
