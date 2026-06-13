@@ -57,6 +57,28 @@ namespace RBLclass.Core.Tests
         }
 
         [Fact]
+        public void Query_shorter_than_the_minimum_length_returns_empty()
+        {
+            // Default minimum is 2: a single keystroke must not search yet.
+            DefaultSearch().Search("a").Results.Should().BeEmpty();
+            DefaultSearch().Search(" a ").Results.Should().BeEmpty(); // trimmed length counts
+
+            // A custom minimum applies too.
+            DefaultSearch().Search("proj",
+                new FolderSearchOptions(minQueryLength: 5)).Results.Should().BeEmpty();
+        }
+
+        [Fact]
+        public void Query_at_the_minimum_length_searches()
+        {
+            var search = SearchOver(
+                new FolderNode("s1", "x1", null, "IT", "Archive / IT", isLeaf: true));
+
+            search.Search("it").Results.Should().ContainSingle()
+                  .Which.Folder.EntryId.Should().Be("x1");
+        }
+
+        [Fact]
         public void WordPrefix_matched_non_leaf_collapses_to_topmost()
         {
             // "proj" matches Projects and (via the "Projects" path word) both of
@@ -139,6 +161,48 @@ namespace RBLclass.Core.Tests
 
             search.Search("security").Results.Should().ContainSingle()
                   .Which.Folder.EntryId.Should().Be("c1");
+        }
+
+        [Theory]
+        [InlineData(FolderMatchMode.Substring)]
+        [InlineData(FolderMatchMode.WordPrefix)]
+        public void Keyword_with_special_character_matches_in_both_modes(FolderMatchMode mode)
+        {
+            // Pilot bug: searching "R&D" did not find the folder named "R&D"
+            // (word-prefix split paths into letter/digit words, so "r&d" could
+            // never prefix one).
+            var search = SearchOver(
+                new FolderNode("s1", "rd1", null, "R&D", "Archive / R&D", isLeaf: true),
+                new FolderNode("s1", "rd2", null, "Research", "Archive / Research", isLeaf: true));
+
+            search.Search("R&D", new FolderSearchOptions(matchMode: mode))
+                  .Results.Should().ContainSingle()
+                  .Which.Folder.EntryId.Should().Be("rd1");
+        }
+
+        [Fact]
+        public void Special_character_keyword_combines_with_plain_word_prefix_keywords()
+        {
+            var search = SearchOver(
+                new FolderNode("s1", "rd1", null, "R&D", "Archive / Projects / R&D", isLeaf: true),
+                new FolderNode("s1", "rd2", null, "R&D", "Personal / R&D", isLeaf: true));
+
+            // "proj" stays a word prefix (AND semantics across keywords).
+            var outcome = search.Search("proj r&d",
+                new FolderSearchOptions(matchMode: FolderMatchMode.WordPrefix));
+
+            outcome.Results.Should().ContainSingle()
+                   .Which.Folder.EntryId.Should().Be("rd1");
+        }
+
+        [Fact]
+        public void Plain_keywords_keep_word_prefix_strictness()
+        {
+            // The special-character fallback must not loosen ordinary keywords:
+            // "juri" (mid-word) still misses in word-prefix mode.
+            DefaultSearch().Search("juri",
+                new FolderSearchOptions(matchMode: FolderMatchMode.WordPrefix))
+                .Results.Should().BeEmpty();
         }
 
         [Fact]

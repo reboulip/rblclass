@@ -21,11 +21,37 @@ namespace RBLclass.Core
         /// <summary>Cap on displayed folder-search results (legacy settingsMaxResults).</summary>
         public const string MaxResults = "MaxResults";
 
+        /// <summary>Minimum (trimmed) query length before folder search runs (v2.2).</summary>
+        public const string MinSearchLength = "MinSearchLength";
+
+        /// <summary>
+        /// The learned external-sender banner block (verbatim HTML), captured
+        /// once from a sample mail; empty when the user hasn't taught one (v2.2).
+        /// </summary>
+        public const string ExternalBannerSignature = "ExternalBannerSignature";
+
+        /// <summary>Auto-strip the learned banner from reply/forward drafts (v2.2, default off).</summary>
+        public const string StripBannerOnReply = "StripBannerOnReply";
+
+        /// <summary>Default state of the classify-time "strip banner from the filed copy" tickbox (v2.2).</summary>
+        public const string StripBannerOnClassify = "StripBannerOnClassify";
+
+        /// <summary>Pause after the last keystroke before folder search fires, in ms (v2.2).</summary>
+        public const string SearchDebounceMs = "SearchDebounceMs";
+
         /// <summary>Keep originals after classify, i.e. don't delete (inverse of legacy settingsdeleteProcessedElts).</summary>
         public const string KeepCopy = "KeepCopy";
 
         /// <summary>Strip attachments when classifying (legacy settingsRemoveAttachments).</summary>
         public const string RemoveAttachments = "RemoveAttachments";
+
+        /// <summary>
+        /// Also place a copy of each classified mail in Deleted Items when not
+        /// keeping the original (v2.2). Off by default: a move never loses data
+        /// and Undo is the designed guardrail; this restores the old
+        /// delete-after-copy side effect for users who relied on it.
+        /// </summary>
+        public const string ClassifySafetyCopy = "ClassifySafetyCopy";
 
         /// <summary>Widen the classify set to conversation siblings in Inbox/Sent (legacy settingsWholeConversation).</summary>
         public const string WidenConversation = "WidenConversation";

@@ -64,7 +64,8 @@ namespace RBLclass.AddIn
                         TaskPaneServices.Navigate,
                         TaskPaneServices.Settings,
                         TaskPaneServices.ConfirmMarkTasksComplete,
-                        TaskPaneServices.PromptForName);
+                        TaskPaneServices.PromptForName,
+                        TaskPaneServices.GetAllFolders);
 
                 _elementHost.Child = _view;
             }

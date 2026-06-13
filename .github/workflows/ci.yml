@@ -1,0 +1,29 @@
+name: CI
+
+# Runs the RBLclass.Core test suite — the project's automated gate (CLAUDE.md
+# "Tests"). Only Core (netstandard2.0) and its net8.0 test project are built
+# here: the Outlook adapter and add-in shell reference Office PIAs from the
+# GAC, which a hosted runner does not have, so they are intentionally excluded
+# (they are validated interactively on the dev machine, per CLAUDE.md).
+
+on:
+  pull_request:
+    branches: [develop, main]
+  push:
+    branches: [develop, main]
+
+jobs:
+  core-tests:
+    name: RBLclass.Core tests
+    runs-on: windows-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET SDK
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+
+      - name: Test (Release)
+        run: dotnet test tests/RBLclass.Core.Tests/RBLclass.Core.Tests.csproj -c Release --nologo

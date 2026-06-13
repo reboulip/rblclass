@@ -310,6 +310,60 @@ namespace RBLclass.Outlook.Adapter
             }
         }
 
+        public MailItemRef MoveItemToFolder(MailItemRef item, FolderNode destination)
+        {
+            if (item == null || destination == null) return null;
+
+            using (var session = new ComRef<OutlookOM.NameSpace>(_app.Session))
+            {
+                object rawItem;
+                try { rawItem = session.Value.GetItemFromID(item.EntryId, item.StoreId); }
+                catch { return null; } // item no longer resolves - tolerate the miss
+
+                using (var comItem = new ComRef<object>(rawItem))
+                {
+                    var mail = comItem.Value as OutlookOM.MailItem;
+                    if (mail == null) return null;
+
+                    OutlookOM.Folder rawDest;
+                    try { rawDest = (OutlookOM.Folder)session.Value.GetFolderFromID(
+                        destination.EntryId, destination.StoreId); }
+                    catch { return null; }
+
+                    using (var destFolder = new ComRef<OutlookOM.Folder>(rawDest))
+                    {
+                        try
+                        {
+                            // Move returns the moved item; the original reference
+                            // is now invalid (CLAUDE.md). No transient copy is
+                            // created and nothing lands in Deleted Items - the
+                            // point of the v2.2 move-based classify (Stormshield
+                            // chased the old transient copies into
+                            // MAPI_E_NOT_FOUND).
+                            using (var comMoved = new ComRef<object>(mail.Move(destFolder.Value)))
+                            {
+                                var movedItem = comMoved.Value as OutlookOM.MailItem;
+                                if (movedItem == null) return null;
+                                string movedEntryId = Safe(() => movedItem.EntryID, null);
+                                if (movedEntryId == null) return null;
+                                return new MailItemRef(destination.StoreId, movedEntryId, item.Subject);
+                            }
+                        }
+                        catch (Exception ex)
+                        {
+                            // Some folders (notably a store root) can reject items.
+                            // Log and rethrow so the classifier counts the failure;
+                            // the original stays where it was.
+                            Log.Warning(ex,
+                                "Moving into folder {Path} ({EntryId}) failed; it may not accept items.",
+                                destination.FullPath, destination.EntryId);
+                            throw;
+                        }
+                    }
+                }
+            }
+        }
+
         public void DeleteItem(MailItemRef item)
         {
             if (item == null) return;
@@ -327,6 +381,158 @@ namespace RBLclass.Outlook.Adapter
                     {
                         try { mail.Delete(); } catch { }
                     }
+                }
+            }
+        }
+
+        public FolderNode GetParentFolder(MailItemRef item)
+        {
+            if (item == null) return null;
+
+            using (var session = new ComRef<OutlookOM.NameSpace>(_app.Session))
+            {
+                object rawItem;
+                try { rawItem = session.Value.GetItemFromID(item.EntryId, item.StoreId); }
+                catch { return null; } // item no longer resolves - tolerate the miss
+
+                using (var comItem = new ComRef<object>(rawItem))
+                {
+                    var mail = comItem.Value as OutlookOM.MailItem;
+                    if (mail == null) return null;
+
+                    ComRef<OutlookOM.Folder> parent = null;
+                    try
+                    {
+                        parent = new ComRef<OutlookOM.Folder>((OutlookOM.Folder)mail.Parent);
+                        string storeId = Safe(() => parent.Value.StoreID, null);
+                        string entryId = Safe(() => parent.Value.EntryID, null);
+                        if (storeId == null || entryId == null) return null;
+
+                        string name = Safe(() => parent.Value.Name, string.Empty);
+                        // FolderPath is "\\Store\A\B"; good enough for Undo's
+                        // purposes (a destination ref + logging) without a walk.
+                        string fullPath = Safe(() => parent.Value.FolderPath, name);
+                        return new FolderNode(storeId, entryId, parentEntryId: null,
+                                              name: name, fullPath: fullPath, isLeaf: false);
+                    }
+                    catch { return null; }
+                    finally { parent?.Dispose(); }
+                }
+            }
+        }
+
+        public string GetConversationKey(MailItemRef item)
+        {
+            if (item == null) return null;
+
+            using (var session = new ComRef<OutlookOM.NameSpace>(_app.Session))
+            {
+                object rawItem;
+                try { rawItem = session.Value.GetItemFromID(item.EntryId, item.StoreId); }
+                catch { return null; } // item no longer resolves - tolerate the miss
+
+                using (var comItem = new ComRef<object>(rawItem))
+                {
+                    var mail = comItem.Value as OutlookOM.MailItem;
+                    if (mail == null) return null;
+
+                    // ConversationID is stable across the thread and survives
+                    // moves between folders/stores - the right key for the
+                    // Auto-class history. Null/empty when conversation tracking
+                    // is off for the item's store.
+                    return Safe(() => mail.ConversationID, null);
+                }
+            }
+        }
+
+        public void DeleteItemPermanently(MailItemRef item)
+        {
+            if (item == null) return;
+
+            // The OM has no direct hard delete: Delete() only moves to Deleted
+            // Items, under a NEW EntryID we never learn. So: move it to Deleted
+            // Items ourselves (keeping the reference), then Delete() there -
+            // deleting an item already in Deleted Items removes it for good.
+            var deletedItems = GetDeletedItemsFolder(item.StoreId);
+            MailItemRef inTrash = deletedItems != null
+                ? MoveItemToFolder(item, deletedItems)
+                : null;
+            if (inTrash == null)
+            {
+                // No Deleted Items / move failed - fall back to a soft delete.
+                DeleteItem(item);
+                return;
+            }
+
+            using (var session = new ComRef<OutlookOM.NameSpace>(_app.Session))
+            {
+                object rawItem;
+                try { rawItem = session.Value.GetItemFromID(inTrash.EntryId, inTrash.StoreId); }
+                catch { return; } // already gone - close enough
+
+                using (var comItem = new ComRef<object>(rawItem))
+                {
+                    var mail = comItem.Value as OutlookOM.MailItem;
+                    if (mail != null)
+                    {
+                        try { mail.Delete(); } catch { }
+                    }
+                }
+            }
+        }
+
+        public void MarkTaskIncomplete(MailItemRef item)
+        {
+            if (item == null) return;
+
+            using (var session = new ComRef<OutlookOM.NameSpace>(_app.Session))
+            {
+                object rawItem;
+                try { rawItem = session.Value.GetItemFromID(item.EntryId, item.StoreId); }
+                catch { return; }
+
+                using (var comItem = new ComRef<object>(rawItem))
+                {
+                    var mail = comItem.Value as OutlookOM.MailItem;
+                    if (mail == null) return;
+
+                    try
+                    {
+                        mail.FlagStatus = OutlookOM.OlFlagStatus.olFlagMarked;
+                        mail.Save();
+                    }
+                    catch { }
+                }
+            }
+        }
+
+        public FolderNode GetDeletedItemsFolder(string storeId)
+        {
+            if (storeId == null) return null;
+
+            using (var session = new ComRef<OutlookOM.NameSpace>(_app.Session))
+            {
+                OutlookOM.Store rawStore;
+                try { rawStore = session.Value.GetStoreFromID(storeId); }
+                catch { return null; } // store no longer open - tolerate the miss
+
+                using (var store = new ComRef<OutlookOM.Store>(rawStore))
+                {
+                    ComRef<OutlookOM.Folder> deleted = null;
+                    try
+                    {
+                        deleted = new ComRef<OutlookOM.Folder>(
+                            (OutlookOM.Folder)store.Value.GetDefaultFolder(
+                                OutlookOM.OlDefaultFolders.olFolderDeletedItems));
+
+                        string entryId = Safe(() => deleted.Value.EntryID, null);
+                        if (entryId == null) return null;
+                        string name = Safe(() => deleted.Value.Name, "Deleted Items");
+                        return new FolderNode(storeId, entryId, parentEntryId: null,
+                                              name: name, fullPath: name, isLeaf: false);
+                    }
+                    catch { return null; } // store has no Deleted Items default - fine
+                    finally { deleted?.Dispose(); }
                 }
             }
         }
@@ -518,20 +724,32 @@ namespace RBLclass.Outlook.Adapter
             }
         }
 
-        public void RemoveAttachments(MailItemRef item)
+        public bool RemoveAttachments(MailItemRef item)
         {
-            if (item == null) return;
+            if (item == null) return true;
 
             using (var session = new ComRef<OutlookOM.NameSpace>(_app.Session))
             {
                 object rawItem;
                 try { rawItem = session.Value.GetItemFromID(item.EntryId, item.StoreId); }
-                catch { return; }
+                catch { return true; } // item no longer resolves - nothing to report
 
                 using (var comItem = new ComRef<object>(rawItem))
                 {
                     var mail = comItem.Value as OutlookOM.MailItem;
-                    if (mail == null) return;
+                    if (mail == null) return true;
+
+                    // Never strip S/MIME-encrypted/signed mail (maintainer rule,
+                    // 2026-06-12): its "attachments" are the encrypted/signed
+                    // payload itself - removing them destroys the message.
+                    string messageClass = Safe(() => mail.MessageClass, string.Empty);
+                    if (messageClass.StartsWith("IPM.Note.SMIME", StringComparison.OrdinalIgnoreCase))
+                    {
+                        Log.Information(
+                            "RemoveAttachments skipped an encrypted/signed item ({MessageClass}).",
+                            messageClass);
+                        return false;
+                    }
 
                     using (var attachments = new ComRef<OutlookOM.Attachments>(mail.Attachments))
                     {
@@ -550,6 +768,101 @@ namespace RBLclass.Outlook.Adapter
                     }
                 }
             }
+
+            return true;
+        }
+
+        public bool StripExternalBanner(MailItemRef item, string bannerSignature)
+        {
+            if (item == null || string.IsNullOrWhiteSpace(bannerSignature)) return false;
+
+            using (var session = new ComRef<OutlookOM.NameSpace>(_app.Session))
+            {
+                object rawItem;
+                try { rawItem = session.Value.GetItemFromID(item.EntryId, item.StoreId); }
+                catch { return false; }
+
+                using (var comItem = new ComRef<object>(rawItem))
+                    return StripBannerOnLiveMail(comItem.Value as OutlookOM.MailItem, bannerSignature);
+            }
+        }
+
+        public bool StripBannerFromDraft(object draft, string bannerSignature)
+        {
+            if (string.IsNullOrWhiteSpace(bannerSignature)) return false;
+            return StripBannerOnLiveMail(draft as OutlookOM.MailItem, bannerSignature);
+        }
+
+        /// <summary>
+        /// Shared body-strip for a live <c>MailItem</c>: skip encrypted mail,
+        /// run the Core stripper over the HTML body, write back and save only
+        /// when it changed. Best-effort - logs and returns false on any fault.
+        /// </summary>
+        private static bool StripBannerOnLiveMail(OutlookOM.MailItem mail, string bannerSignature)
+        {
+            if (mail == null) return false;
+
+            // Never rewrite an encrypted/signed body - it would corrupt it.
+            string messageClass = Safe(() => mail.MessageClass, string.Empty);
+            if (messageClass.StartsWith("IPM.Note.SMIME", StringComparison.OrdinalIgnoreCase))
+                return false;
+
+            string html = Safe(() => mail.HTMLBody, null);
+            if (string.IsNullOrEmpty(html)) return false;
+
+            bool stripped;
+            string updated = ExternalBannerStripper.Strip(html, bannerSignature, out stripped);
+            if (!stripped) return false;
+
+            try
+            {
+                mail.HTMLBody = updated;
+                mail.Save();
+                Log.Information("Stripped the external-sender banner from a mail body.");
+                return true;
+            }
+            catch (Exception ex)
+            {
+                Log.Warning(ex, "Writing the banner-stripped body failed.");
+                return false;
+            }
+        }
+
+        public string GetSelectedItemHtmlBody()
+        {
+            OutlookOM.Explorer rawExplorer;
+            try { rawExplorer = _app.ActiveExplorer(); }
+            catch { rawExplorer = null; }
+            if (rawExplorer == null) return null;
+
+            using (var explorer = new ComRef<OutlookOM.Explorer>(rawExplorer))
+            {
+                OutlookOM.Selection rawSelection;
+                try { rawSelection = explorer.Value.Selection; }
+                catch { return null; }
+
+                using (var selection = new ComRef<OutlookOM.Selection>(rawSelection))
+                {
+                    int count = 0;
+                    try { count = selection.Value.Count; } catch { }
+
+                    for (int i = 1; i <= count; i++)
+                    {
+                        object raw;
+                        try { raw = selection.Value[i]; }
+                        catch { continue; }
+
+                        using (var comItem = new ComRef<object>(raw))
+                        {
+                            var mail = comItem.Value as OutlookOM.MailItem;
+                            if (mail == null) continue; // skip non-mail
+                            return Safe(() => mail.HTMLBody, null);
+                        }
+                    }
+                }
+            }
+
+            return null;
         }
 
         public SendGuardInfo InspectForSend(object item)

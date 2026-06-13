@@ -48,6 +48,7 @@ namespace RBLclass.AddIn
         private IFolderTree _folderTree;
         private IFolderSearch _folderSearch;
         private IClassifier _classifier;
+        private IClassificationHistory _classificationHistory;
         private ISettingsStore _settingsStore;
         private readonly ForgottenAttachmentGuard _attachmentGuard = new ForgottenAttachmentGuard();
         private readonly ExternalRecipientGuard _externalGuard = new ExternalRecipientGuard();
@@ -78,6 +79,10 @@ namespace RBLclass.AddIn
         // transit Sent Items, which would otherwise re-trigger the prompt on
         // that transient copy.
         private bool _suppressSentItemTriage;
+
+        // New-inspector subscription for the v2.2 reply/forward banner strip.
+        // Held in a field for the add-in's lifetime (GC rule - CLAUDE.md).
+        private OutlookOM.Inspectors _inspectors;
 
         private string _dbPath;
         private string _logDirectory;
@@ -152,7 +157,10 @@ namespace RBLclass.AddIn
                 _settingsStore = new SqliteSettingsStore(connectionString);
                 _settingsStore.EnsureSchema();
 
-                _classifier = new ClassifierService(_mailStore);
+                _classificationHistory = new SqliteClassificationHistory(connectionString);
+                _classificationHistory.EnsureSchema();
+
+                _classifier = new ClassifierService(_mailStore, _classificationHistory);
 
                 // Publish services for the Custom Task Pane host control (which
                 // Office instantiates via COM and so can't be constructor-injected).
@@ -160,6 +168,7 @@ namespace RBLclass.AddIn
                 TaskPaneServices.Settings = _settingsStore;
                 TaskPaneServices.Classifier = _classifier;
                 TaskPaneServices.GetSelection = () => _mailStore.GetSelectedItems();
+                TaskPaneServices.GetAllFolders = () => _folderTree.GetAll();
                 TaskPaneServices.CreateSubfolder = (parent, name) =>
                 {
                     try
@@ -260,6 +269,15 @@ namespace RBLclass.AddIn
                 }
                 catch (Exception ex) { TryLog("Sent Items ItemAdd subscribe failed", ex); }
 
+                // Reply/forward banner strip (v2.2). Inspectors held in a field
+                // for the add-in's lifetime, like the other event sources.
+                try
+                {
+                    _inspectors = _outlookApp.Inspectors;
+                    _inspectors.NewInspector += OnNewInspector;
+                }
+                catch (Exception ex) { TryLog("NewInspector subscribe failed", ex); }
+
                 // Fast path: load the persisted index (SQLite only, no COM walk).
                 _lastIndexResult = _folderTree.Load();
                 Log.Information(
@@ -300,6 +318,13 @@ namespace RBLclass.AddIn
                 if (_outlookApp != null)
                 {
                     try { _outlookApp.ItemSend -= Application_ItemSend; } catch { }
+                }
+
+                if (_inspectors != null)
+                {
+                    try { _inspectors.NewInspector -= OnNewInspector; } catch { }
+                    try { Marshal.ReleaseComObject(_inspectors); } catch { }
+                    _inspectors = null;
                 }
 
                 if (_sentItems != null)
@@ -383,20 +408,64 @@ namespace RBLclass.AddIn
                     MessageBoxButtons.YesNo, MessageBoxIcon.Warning);
                 if (confirm != DialogResult.Yes) return;
 
-                int done = 0;
+                int done = 0, skippedEncrypted = 0;
                 foreach (var item in items)
                 {
-                    try { _mailStore.RemoveAttachments(item); done++; }
+                    try
+                    {
+                        if (_mailStore.RemoveAttachments(item)) done++;
+                        else skippedEncrypted++; // encrypted/signed - never stripped
+                    }
                     catch (Exception ex) { Log.Error(ex, "RemoveAttachments failed for an item."); }
                 }
 
-                Log.Information("Removed attachments from {Count} mail(s).", done);
-                MessageBox.Show("Removed attachments from " + done + " mail(s).", "RBLclass",
+                Log.Information("Removed attachments from {Count} mail(s) ({Skipped} encrypted skipped).",
+                                done, skippedEncrypted);
+                string summary = "Removed attachments from " + done + " mail(s).";
+                if (skippedEncrypted > 0)
+                    summary += "\n\n" + skippedEncrypted + " encrypted mail(s) were skipped - " +
+                               "their attachments are the message itself.";
+                MessageBox.Show(summary, "RBLclass",
                                 MessageBoxButtons.OK, MessageBoxIcon.Information);
             }
             catch (Exception ex)
             {
                 ShowError("Remove attachments failed", ex);
+            }
+        }
+
+        /// <summary>
+        /// Reply/forward banner strip (v2.2): when the toggle is on and a banner
+        /// has been learned, strip it from the new draft so it isn't quoted back.
+        /// The draft (reply/reply-all/forward) quotes the original including its
+        /// banner; stripping is a no-op for a plain new mail. Best-effort and
+        /// never throws into Outlook.
+        /// </summary>
+        private void OnNewInspector(OutlookOM.Inspector inspector)
+        {
+            object item = null;
+            try
+            {
+                var settings = Settings.Load(_settingsStore);
+                if (!settings.StripBannerOnReply ||
+                    string.IsNullOrWhiteSpace(settings.ExternalBannerSignature))
+                    return;
+
+                try { item = inspector.CurrentItem; } catch { item = null; }
+                if (item == null) return;
+
+                _mailStore.StripBannerFromDraft(item, settings.ExternalBannerSignature);
+            }
+            catch (Exception ex)
+            {
+                TryLog("NewInspector banner strip failed", ex);
+            }
+            finally
+            {
+                if (item != null)
+                {
+                    try { Marshal.ReleaseComObject(item); } catch { }
+                }
             }
         }
 
@@ -527,7 +596,10 @@ namespace RBLclass.AddIn
                     }
                     var result = _classifier.Classify(
                         new ClassifyRequest(new[] { item }, new[] { inbox },
-                                            keepCopy: false, removeAttachments: false));
+                                            keepCopy: false, removeAttachments: false,
+                                            markTasksComplete: false,
+                                            safetyCopy: _settingsStore.GetBool(
+                                                SettingsKeys.ClassifySafetyCopy, false)));
                     Log.Information(
                         "Sent-item triage moved {Processed} mail(s) to the Inbox ({Errors} failed).",
                         result.ItemsProcessed, result.Errors);
@@ -673,7 +745,12 @@ namespace RBLclass.AddIn
         {
             try
             {
-                new SettingsWindow { DataContext = new SettingsViewModel(_settingsStore) }.ShowDialog();
+                new SettingsWindow
+                {
+                    DataContext = new SettingsViewModel(
+                        _settingsStore,
+                        () => _mailStore.GetSelectedItemHtmlBody())
+                }.ShowDialog();
             }
             catch (Exception ex)
             {

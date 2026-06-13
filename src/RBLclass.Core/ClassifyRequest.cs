@@ -20,13 +20,17 @@ namespace RBLclass.Core
                                IReadOnlyList<FolderNode> destinations,
                                bool keepCopy,
                                bool removeAttachments,
-                               bool markTasksComplete = false)
+                               bool markTasksComplete = false,
+                               bool safetyCopy = false,
+                               string bannerSignature = null)
         {
             Items = (items ?? throw new ArgumentNullException(nameof(items))).ToArray();
             Destinations = (destinations ?? throw new ArgumentNullException(nameof(destinations))).ToArray();
             KeepCopy = keepCopy;
             RemoveAttachments = removeAttachments;
             MarkTasksComplete = markTasksComplete;
+            SafetyCopy = safetyCopy;
+            BannerSignature = bannerSignature;
         }
 
         /// <summary>The mail items to file (already widened, if requested).</summary>
@@ -52,5 +56,29 @@ namespace RBLclass.Core
         /// attachment removal - the original is left untouched.
         /// </summary>
         public bool MarkTasksComplete { get; }
+
+        /// <summary>
+        /// When true (and <see cref="KeepCopy"/> is off), each successfully
+        /// moved original also leaves a copy in its source store's Deleted
+        /// Items - the old delete-after-copy side effect, restored as an
+        /// opt-in guardrail (v2.2 setting). The copy is taken from the moved
+        /// item at its destination (out of the displayed folder, so it never
+        /// re-creates the transient-item race other add-ins choked on) and
+        /// BEFORE attachment stripping, so the guardrail copy keeps its
+        /// attachments. A safety-copy failure never fails the classify.
+        /// </summary>
+        public bool SafetyCopy { get; }
+
+        /// <summary>
+        /// When non-empty, the learned external-sender banner is stripped from
+        /// each filed item's HTML body (v2.2). Filed-copy-only, like attachment
+        /// removal: with "keep a copy" on the kept original is untouched; with
+        /// it off the moved item is edited at its destination. Encrypted items
+        /// are never edited. The body change is not reversible by Undo.
+        /// </summary>
+        public string BannerSignature { get; }
+
+        /// <summary>True when a banner strip is requested (a signature is present).</summary>
+        public bool StripBanner => !string.IsNullOrWhiteSpace(BannerSignature);
     }
 }

@@ -28,13 +28,23 @@ namespace RBLclass.AddIn.ViewModels
         private readonly ISettingsStore _settings;
         private readonly Func<int, bool?> _confirmMarkTasksComplete;
         private readonly Func<string, string> _promptForName;
+        private readonly Func<IReadOnlyList<FolderNode>> _getAllFolders;
 
         private string _query = string.Empty;
-        private bool _allResults, _keepCopy, _removeAttachments, _widenConversation, _openInNewWindow;
+        private bool _allResults, _keepCopy, _removeAttachments, _widenConversation, _stripBanner;
+        private bool _canStripBanner;
         private SelectableFolder _selectedResult;
         private string _selectionSummary = "No mail selected.";
         private string _status = string.Empty;
         private bool _isBusy;
+
+        // Debounces typing in the search box: re-search fires only once the
+        // user has paused for Settings.SearchDebounceMs (v2.2).
+        private DispatcherTimer _searchTimer;
+
+        // Single-slot undo: the latest classify's reversal plan (v2.2). A new
+        // classify overwrites it; executing it clears it.
+        private ClassifyUndoPlan _lastUndo;
 
         public MainPaneViewModel(
             IFolderSearch search,
@@ -44,7 +54,8 @@ namespace RBLclass.AddIn.ViewModels
             Action<FolderNode, bool> navigate = null,
             ISettingsStore settings = null,
             Func<int, bool?> confirmMarkTasksComplete = null,
-            Func<string, string> promptForName = null)
+            Func<string, string> promptForName = null,
+            Func<IReadOnlyList<FolderNode>> getAllFolders = null)
         {
             _search = search ?? throw new ArgumentNullException(nameof(search));
             _classifier = classifier ?? throw new ArgumentNullException(nameof(classifier));
@@ -54,6 +65,7 @@ namespace RBLclass.AddIn.ViewModels
             _settings = settings;
             _confirmMarkTasksComplete = confirmMarkTasksComplete;
             _promptForName = promptForName;
+            _getAllFolders = getAllFolders;
 
             if (_settings != null)
             {
@@ -61,17 +73,43 @@ namespace RBLclass.AddIn.ViewModels
                 _keepCopy = _settings.GetBool(SettingsKeys.KeepCopy, false);
                 _removeAttachments = _settings.GetBool(SettingsKeys.RemoveAttachments, false);
                 _widenConversation = _settings.GetBool(SettingsKeys.WidenConversation, false);
-                _openInNewWindow = _settings.GetBool(SettingsKeys.OpenInNewWindow, false);
+                _stripBanner = _settings.GetBool(SettingsKeys.StripBannerOnClassify, false);
+                _canStripBanner = !string.IsNullOrWhiteSpace(
+                    _settings.Get(SettingsKeys.ExternalBannerSignature, string.Empty));
             }
         }
 
         public ObservableCollection<SelectableFolder> Results { get; } =
             new ObservableCollection<SelectableFolder>();
 
+        /// <summary>
+        /// Destinations accumulated across searches (v2.2): checking a row adds
+        /// its folder here, and the set survives re-searches so multi-keyword
+        /// destinations can be built up (search kw1, check, search kw2, check,
+        /// classify once). Rendered as a removable chip strip; cleared after a
+        /// successful "Classify to N folders".
+        /// </summary>
+        public ObservableCollection<FolderNode> SelectedDestinations { get; } =
+            new ObservableCollection<FolderNode>();
+
+        private readonly HashSet<string> _selectedKeys = new HashSet<string>();
+
+        private static string KeyOf(FolderNode f) => f.StoreId + " " + f.EntryId;
+
+        public bool HasSelectedDestinations => SelectedDestinations.Count > 0;
+
+        public string SelectionHeader =>
+            "Selected: " + SelectedDestinations.Count + " folder(s)";
+
+        public string ClassifyButtonText =>
+            SelectedDestinations.Count == 0
+                ? "Classify"
+                : "Classify to " + SelectedDestinations.Count + " folder(s)";
+
         public string Query
         {
             get => _query;
-            set { if (SetProperty(ref _query, value)) Refresh(); }
+            set { if (SetProperty(ref _query, value)) ScheduleRefresh(); }
         }
 
         public bool AllResults
@@ -98,10 +136,23 @@ namespace RBLclass.AddIn.ViewModels
             set { if (SetProperty(ref _widenConversation, value)) _settings?.SetBool(SettingsKeys.WidenConversation, value); }
         }
 
-        public bool OpenInNewWindow
+        /// <summary>
+        /// Strip the learned external banner from the filed copy (v2.2). Default
+        /// comes from the StripBannerOnClassify setting; toggling it here updates
+        /// that setting. Only meaningful when a banner has been learned
+        /// (<see cref="CanStripBanner"/>).
+        /// </summary>
+        public bool StripBanner
         {
-            get => _openInNewWindow;
-            set { if (SetProperty(ref _openInNewWindow, value)) _settings?.SetBool(SettingsKeys.OpenInNewWindow, value); }
+            get => _stripBanner;
+            set { if (SetProperty(ref _stripBanner, value)) _settings?.SetBool(SettingsKeys.StripBannerOnClassify, value); }
+        }
+
+        /// <summary>True when a banner has been learned, so the strip tickbox is worth showing.</summary>
+        public bool CanStripBanner
+        {
+            get => _canStripBanner;
+            private set => SetProperty(ref _canStripBanner, value);
         }
 
         public SelectableFolder SelectedResult
@@ -131,21 +182,157 @@ namespace RBLclass.AddIn.ViewModels
 
         public bool IsNotBusy => !_isBusy;
 
+        /// <summary>True when the last classify can be undone (enables the Undo button).</summary>
+        public bool CanUndo => _lastUndo != null;
+
+        /// <summary>True when Auto-class is wired (the folder-index snapshot is available).</summary>
+        public bool CanAutoClass => _getAllFolders != null;
+
+        /// <summary>
+        /// Auto-class the current selection (the pane's small Auto-class button):
+        /// file each selected mail to its conversation's last recorded
+        /// destination(s), show those folders in the results, and report what
+        /// happened in the status line. No modal - everything lands in the pane.
+        /// </summary>
+        public void AutoClassSelected()
+        {
+            if (_isBusy || _getAllFolders == null) return;
+
+            _searchTimer?.Stop(); // don't let a pending search overwrite our results
+
+            var items = _getSelection != null ? _getSelection() : new MailItemRef[0];
+            if (items.Count == 0) { Status = "Select one or more mails in Outlook first."; return; }
+
+            IsBusy = true;
+            Status = "Auto-classing…";
+            Dispatcher.CurrentDispatcher.Invoke(new Action(() => { }), DispatcherPriority.Render);
+
+            try
+            {
+                // One live-index snapshot, indexed for the staleness check.
+                var byKey = new Dictionary<string, FolderNode>();
+                foreach (var f in _getAllFolders())
+                    byKey[KeyOf(f)] = f;
+                Func<string, string, FolderNode> resolve = (storeId, entryId) =>
+                {
+                    FolderNode node;
+                    return byKey.TryGetValue(storeId + " " + entryId, out node) ? node : null;
+                };
+
+                bool keepCopy = false, removeAttachments = false, safetyCopy = false;
+                if (_settings != null)
+                {
+                    var s = Settings.Load(_settings);
+                    keepCopy = s.KeepCopy;
+                    removeAttachments = s.RemoveAttachments;
+                    safetyCopy = s.ClassifySafetyCopy;
+                }
+
+                var result = _classifier.AutoClassify(items, resolve, keepCopy, removeAttachments, safetyCopy);
+
+                // Show where the mail went (the destination folders), so the
+                // user can see and open them; empty when nothing was filed.
+                Results.Clear();
+                foreach (var dest in result.FiledDestinations)
+                    AddResultRow(new FolderSearchResult(dest, isCollapsed: false));
+
+                Status = DescribeAutoClass(result);
+
+                if (result.Undo != null)
+                {
+                    _lastUndo = result.Undo;
+                    OnPropertyChanged(nameof(CanUndo));
+                }
+
+                RefreshSelection();
+            }
+            finally
+            {
+                Dispatcher.CurrentDispatcher.BeginInvoke(
+                    new Action(() => IsBusy = false), DispatcherPriority.Background);
+            }
+        }
+
+        private static string DescribeAutoClass(AutoClassifyResult r)
+        {
+            // Nothing filed and the only reason is "never classified before".
+            if (r.Filed == 0 && r.NoHistory > 0 && r.StaleFolders == 0 && r.Errors == 0)
+                return "No earlier filing found for the selected conversation(s) - nothing to auto-class.";
+
+            var parts = new List<string>();
+            if (r.Filed > 0)
+                parts.Add("Auto-classed " + r.Filed + " mail(s) to the folder(s) below");
+            if (r.NoHistory > 0)
+                parts.Add(r.NoHistory + " with no earlier filing");
+            if (r.StaleFolders > 0)
+                parts.Add(r.StaleFolders + " whose remembered folder is gone");
+            if (r.Errors > 0)
+                parts.Add(r.Errors + " failed");
+            return parts.Count == 0 ? "Nothing to auto-class." : string.Join("; ", parts) + ".";
+        }
+
+        /// <summary>Reverse the last filing action completely (the Undo button).</summary>
+        public void UndoLast()
+        {
+            if (_isBusy || _lastUndo == null) return;
+
+            var plan = _lastUndo;
+            _lastUndo = null;
+            OnPropertyChanged(nameof(CanUndo));
+
+            IsBusy = true;
+            Status = "Undoing…";
+            Dispatcher.CurrentDispatcher.Invoke(new Action(() => { }), DispatcherPriority.Render);
+
+            try
+            {
+                var undone = _classifier.Undo(plan);
+
+                Status = "Undid the last filing: " + undone.MovesRestored + " mail(s) put back, " +
+                         undone.CopiesDeleted + " filed cop(ies) removed" +
+                         (undone.Errors > 0 ? " (" + undone.Errors + " step(s) failed)" : "") + ".";
+                if (plan.AttachmentStrips > 0)
+                    Status += " Removed attachments could not be restored.";
+
+                RefreshSelection();
+            }
+            finally
+            {
+                Dispatcher.CurrentDispatcher.BeginInvoke(
+                    new Action(() => IsBusy = false), DispatcherPriority.Background);
+            }
+        }
+
         public void SetSelectionCount(int count) =>
             SelectionSummary = count == 1 ? "1 mail selected." : count + " mails selected.";
 
-        public void RefreshSelection() =>
+        public void RefreshSelection()
+        {
             SetSelectionCount(_getSelection != null ? _getSelection().Count : 0);
 
-        /// <summary>Navigate Outlook to a folder (the per-row open button).</summary>
+            // A banner may have been learned (or forgotten) in Settings while the
+            // pane was open - keep the strip tickbox's availability current.
+            if (_settings != null)
+                CanStripBanner = !string.IsNullOrWhiteSpace(
+                    _settings.Get(SettingsKeys.ExternalBannerSignature, string.Empty));
+        }
+
+        /// <summary>
+        /// Navigate Outlook to a folder (the per-row open button). New-window
+        /// behaviour is read live from settings - since v2.2 it is configured
+        /// only in the Settings dialog, no longer toggled in the pane.
+        /// </summary>
         public void OpenFolder(FolderNode folder)
         {
-            if (folder != null) _navigate?.Invoke(folder, _openInNewWindow);
+            if (folder == null) return;
+            bool newWindow = _settings != null && _settings.GetBool(SettingsKeys.OpenInNewWindow, false);
+            _navigate?.Invoke(folder, newWindow);
         }
 
         /// <summary>File into the highlighted (or first) folder - Enter in the search box.</summary>
         public void FileToHighlighted()
         {
+            FlushPendingSearch(); // never file based on stale, pre-debounce results
             var folder = (SelectedResult ?? (Results.Count > 0 ? Results[0] : null))?.Folder;
             if (folder == null) { Status = "No matching folder to file into."; return; }
             DoClassify(new[] { folder });
@@ -157,12 +344,65 @@ namespace RBLclass.AddIn.ViewModels
             if (folder != null) DoClassify(new[] { folder });
         }
 
-        /// <summary>File into every checked folder (the Classify button).</summary>
+        /// <summary>File into every accumulated destination (the Classify button).</summary>
         public void ClassifyChecked()
         {
-            var destinations = Results.Where(r => r.IsSelected).Select(r => r.Folder).ToList();
+            var destinations = SelectedDestinations.ToList();
             if (destinations.Count == 0) { Status = "Check at least one destination folder."; return; }
-            DoClassify(destinations);
+            if (DoClassify(destinations))
+                ClearDestinations(); // the batch is filed - start the next one clean
+        }
+
+        /// <summary>Remove one accumulated destination (a chip's ✕, or unchecking its row).</summary>
+        public void RemoveDestination(FolderNode folder)
+        {
+            if (folder == null || !_selectedKeys.Remove(KeyOf(folder))) return;
+
+            for (int i = SelectedDestinations.Count - 1; i >= 0; i--)
+            {
+                if (KeyOf(SelectedDestinations[i]) == KeyOf(folder))
+                    SelectedDestinations.RemoveAt(i);
+            }
+
+            // Uncheck the matching visible row, if any (its change handler
+            // re-enters here and no-ops - the key is already gone).
+            foreach (var row in Results)
+            {
+                if (KeyOf(row.Folder) == KeyOf(folder))
+                    row.IsSelected = false;
+            }
+
+            NotifySelectionMeta();
+        }
+
+        /// <summary>Drop the whole accumulated selection (the clear-all link, or after classify).</summary>
+        public void ClearDestinations()
+        {
+            _selectedKeys.Clear();
+            SelectedDestinations.Clear();
+            foreach (var row in Results)
+                row.IsSelected = false; // re-entrant removes no-op on the empty set
+            NotifySelectionMeta();
+        }
+
+        private void AddDestination(FolderNode folder)
+        {
+            if (folder == null || !_selectedKeys.Add(KeyOf(folder))) return;
+            SelectedDestinations.Add(folder);
+            NotifySelectionMeta();
+        }
+
+        private void OnRowSelectionChanged(SelectableFolder row)
+        {
+            if (row.IsSelected) AddDestination(row.Folder);
+            else RemoveDestination(row.Folder);
+        }
+
+        private void NotifySelectionMeta()
+        {
+            OnPropertyChanged(nameof(HasSelectedDestinations));
+            OnPropertyChanged(nameof(SelectionHeader));
+            OnPropertyChanged(nameof(ClassifyButtonText));
         }
 
         /// <summary>Create a sub-folder under a specific folder (the per-row "+").</summary>
@@ -180,12 +420,13 @@ namespace RBLclass.AddIn.ViewModels
             Refresh();
         }
 
-        private void DoClassify(IReadOnlyList<FolderNode> destinations)
+        /// <summary>Runs the classify; true when it actually executed (not busy/empty/cancelled).</summary>
+        private bool DoClassify(IReadOnlyList<FolderNode> destinations)
         {
-            if (_isBusy) return; // ignore a repeat trigger while a classify is in flight
+            if (_isBusy) return false; // ignore a repeat trigger while a classify is in flight
 
             var items = _getSelection != null ? _getSelection() : new MailItemRef[0];
-            if (items.Count == 0) { Status = "Select one or more mails in Outlook first."; return; }
+            if (items.Count == 0) { Status = "Select one or more mails in Outlook first."; return false; }
 
             IsBusy = true;
             Status = "Filing…";
@@ -199,23 +440,38 @@ namespace RBLclass.AddIn.ViewModels
                 if (preflight.FlaggedIncomplete.Count > 0 && _confirmMarkTasksComplete != null)
                 {
                     var answer = _confirmMarkTasksComplete(preflight.FlaggedIncomplete.Count);
-                    if (answer == null) { Status = "Classify cancelled."; return; }
+                    if (answer == null) { Status = "Classify cancelled."; return false; }
                     markTasksComplete = answer.Value;
                 }
 
+                bool safetyCopy = _settings != null
+                    && _settings.GetBool(SettingsKeys.ClassifySafetyCopy, false);
+                string bannerSignature = (_stripBanner && _settings != null)
+                    ? _settings.Get(SettingsKeys.ExternalBannerSignature, null)
+                    : null;
                 var result = _classifier.Classify(
-                    new ClassifyRequest(preflight.Items, destinations, _keepCopy, _removeAttachments, markTasksComplete));
+                    new ClassifyRequest(preflight.Items, destinations, _keepCopy,
+                                        _removeAttachments, markTasksComplete, safetyCopy,
+                                        bannerSignature));
 
                 string verb = _keepCopy ? "Copied" : "Filed";
                 Status = verb + " " + result.ItemsProcessed + " mail(s) to " +
                          destinations.Count + " folder(s)" +
                          (result.Errors > 0 ? " (" + result.Errors + " failed)" : "") + ".";
 
+                if (result.EncryptedStripSkips > 0)
+                    Status += " " + result.EncryptedStripSkips +
+                              " encrypted mail(s) kept their attachments.";
+
                 if (preflight.SkippedEncrypted.Count > 0)
                     Status += " " + preflight.SkippedEncrypted.Count +
                               " encrypted message(s) in the conversation were left in place.";
 
+                _lastUndo = result.Undo; // a non-undoable run clears the slot (null)
+                OnPropertyChanged(nameof(CanUndo));
+
                 RefreshSelection();
+                return true;
             }
             finally
             {
@@ -224,25 +480,82 @@ namespace RBLclass.AddIn.ViewModels
             }
         }
 
+        /// <summary>
+        /// Re-search after the typing pause configured in settings (immediate
+        /// when the debounce is 0). Toggles and folder creation bypass this and
+        /// call <see cref="Refresh"/> directly.
+        /// </summary>
+        private void ScheduleRefresh()
+        {
+            int debounceMs = _settings != null
+                ? Settings.Load(_settings).SearchDebounceMs
+                : Settings.DefaultSearchDebounceMs;
+            if (debounceMs <= 0) { Refresh(); return; }
+
+            if (_searchTimer == null)
+            {
+                _searchTimer = new DispatcherTimer(DispatcherPriority.Input);
+                _searchTimer.Tick += (s, e) => { _searchTimer.Stop(); Refresh(); };
+            }
+
+            _searchTimer.Stop();
+            _searchTimer.Interval = TimeSpan.FromMilliseconds(debounceMs);
+            _searchTimer.Start();
+        }
+
+        /// <summary>Run a pending debounced search now (before acting on the results).</summary>
+        private void FlushPendingSearch()
+        {
+            if (_searchTimer != null && _searchTimer.IsEnabled)
+            {
+                _searchTimer.Stop();
+                Refresh();
+            }
+        }
+
+        /// <summary>Add one result row, re-checking it if it is in the accumulated selection and tracking its checkbox.</summary>
+        private void AddResultRow(FolderSearchResult r)
+        {
+            var row = new SelectableFolder(r);
+            row.IsSelected = _selectedKeys.Contains(KeyOf(row.Folder));
+            row.PropertyChanged += (s, e) =>
+            {
+                if (e.PropertyName == nameof(SelectableFolder.IsSelected))
+                    OnRowSelectionChanged((SelectableFolder)s);
+            };
+            Results.Add(row);
+        }
+
         private void Refresh()
         {
             var matchMode = FolderMatchMode.Substring;
             var maxResults = FolderSearchOptions.DefaultMaxResults;
+            var minLength = FolderSearchOptions.DefaultMinQueryLength;
             if (_settings != null)
             {
                 var settings = Settings.Load(_settings);
                 matchMode = settings.FolderMatchMode;
                 maxResults = settings.MaxResults;
+                minLength = settings.MinSearchLength;
             }
 
-            var outcome = _search.Search(_query, new FolderSearchOptions(matchMode, _allResults, maxResults));
+            var outcome = _search.Search(_query,
+                new FolderSearchOptions(matchMode, _allResults, maxResults, minLength));
 
             Results.Clear();
             foreach (var r in outcome.Results)
-                Results.Add(new SelectableFolder(r));
+                AddResultRow(r);
 
+            string trimmed = (_query ?? string.Empty).Trim();
             if (outcome.TotalMatchCount == 0)
-                Status = string.IsNullOrWhiteSpace(_query) ? string.Empty : "No matching folders.";
+            {
+                if (trimmed.Length == 0)
+                    Status = string.Empty;
+                else if (trimmed.Length < minLength)
+                    Status = "Type at least " + minLength + " characters to search.";
+                else
+                    Status = "No matching folders.";
+            }
             else if (outcome.LimitExceeded)
                 Status = "Showing " + Results.Count + " of " + outcome.TotalMatchCount + " - refine your search.";
             else

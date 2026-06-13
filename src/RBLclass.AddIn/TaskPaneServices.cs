@@ -22,6 +22,13 @@ namespace RBLclass.AddIn
         /// <summary>Classify (file) selected mail into folders.</summary>
         public static IClassifier Classifier;
 
+        /// <summary>
+        /// Snapshot of the live folder index, so the pane can resolve Auto-class
+        /// remembered destinations against current folders (and detect stale
+        /// ones). Read on the Outlook UI thread.
+        /// </summary>
+        public static Func<IReadOnlyList<FolderNode>> GetAllFolders;
+
         /// <summary>Read the current Outlook explorer mail selection (UI thread).</summary>
         public static Func<IReadOnlyList<MailItemRef>> GetSelection;
 
