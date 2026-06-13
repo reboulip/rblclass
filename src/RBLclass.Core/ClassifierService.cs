@@ -18,10 +18,17 @@ namespace RBLclass.Core
     public sealed class ClassifierService : IClassifier
     {
         private readonly IMailStore _store;
+        private readonly IClassificationHistory _history;
 
-        public ClassifierService(IMailStore store)
+        /// <param name="history">
+        /// Optional: when provided, every successful filing is recorded against
+        /// the item's conversation (feeding Auto-class) and Undo rolls those
+        /// records back. Recording is best-effort - it never fails a classify.
+        /// </param>
+        public ClassifierService(IMailStore store, IClassificationHistory history = null)
         {
             _store = store ?? throw new ArgumentNullException(nameof(store));
+            _history = history;
         }
 
         public ClassifyPreflight Preflight(IReadOnlyList<MailItemRef> items, bool widenConversation)
@@ -56,6 +63,10 @@ namespace RBLclass.Core
             var undoFlags = new List<MailItemRef>();
             int strips = 0;
 
+            // Conversation keys of items actually filed, for the Auto-class
+            // history (deduped - several selected items can share a thread).
+            var filedConversationKeys = new HashSet<string>();
+
             foreach (var item in request.Items)
             {
                 try
@@ -70,6 +81,15 @@ namespace RBLclass.Core
                     {
                         try { sourceFolder = _store.GetParentFolder(item); }
                         catch { /* tolerated: the move just won't be undoable */ }
+                    }
+
+                    // Conversation key for the history - read before the move
+                    // invalidates the reference (only when history is enabled).
+                    string conversationKey = null;
+                    if (_history != null)
+                    {
+                        try { conversationKey = _store.GetConversationKey(item); }
+                        catch { /* tolerated: this item just won't feed Auto-class */ }
                     }
 
                     // Copies first (the original must stay put while it is the
@@ -162,7 +182,11 @@ namespace RBLclass.Core
                     }
 
                     if (filed > 0)
+                    {
                         processed++;
+                        if (conversationKey != null && conversationKey.Length > 0)
+                            filedConversationKeys.Add(conversationKey);
+                    }
                 }
                 catch
                 {
@@ -171,7 +195,24 @@ namespace RBLclass.Core
                 }
             }
 
-            var plan = new ClassifyUndoPlan(undoMoves, undoCopies, undoFlags, strips);
+            // Record the history for Auto-class: one batch for the whole
+            // classify action, one row per (filed conversation, destination).
+            // Best-effort - a history write never fails the classify.
+            var historyBatchIds = new List<string>();
+            if (_history != null && filedConversationKeys.Count > 0)
+            {
+                string batchId = Guid.NewGuid().ToString("N");
+                try
+                {
+                    var whenUtc = DateTime.UtcNow;
+                    foreach (var key in filedConversationKeys)
+                        _history.Record(batchId, key, request.Destinations, whenUtc);
+                    historyBatchIds.Add(batchId);
+                }
+                catch { /* Auto-class just won't learn this one */ }
+            }
+
+            var plan = new ClassifyUndoPlan(undoMoves, undoCopies, undoFlags, strips, historyBatchIds);
             return new ClassifyResult(processed, copies, moved, errors, encryptedSkips,
                                       plan.IsEmpty ? null : plan);
         }
@@ -211,7 +252,86 @@ namespace RBLclass.Core
                 catch { errors++; }
             }
 
+            // Roll back what Auto-class learned from this classify (best-effort:
+            // stale history would only mis-suggest, never lose data).
+            if (_history != null && plan.HistoryBatchIds.Count > 0)
+            {
+                try { _history.DeleteBatches(plan.HistoryBatchIds); }
+                catch { /* leave the history rows; they can be re-classified over */ }
+            }
+
             return new UndoResult(movesRestored, copiesDeleted, flagsRestored, errors);
+        }
+
+        public AutoClassifyResult AutoClassify(IReadOnlyList<MailItemRef> items,
+                                               Func<string, string, FolderNode> resolveLiveFolder,
+                                               bool keepCopy, bool removeAttachments, bool safetyCopy)
+        {
+            if (items == null) throw new ArgumentNullException(nameof(items));
+            if (resolveLiveFolder == null) throw new ArgumentNullException(nameof(resolveLiveFolder));
+            if (_history == null)
+                throw new InvalidOperationException("Auto-class requires a classification history store.");
+
+            int filed = 0, noHistory = 0, staleFolders = 0, errors = 0;
+
+            // One combined undo plan over every per-item filing this run does.
+            var allMoves = new List<UndoableMove>();
+            var allCopies = new List<MailItemRef>();
+            var allFlags = new List<MailItemRef>();
+            int strips = 0;
+            var allBatchIds = new List<string>();
+
+            foreach (var item in Dedupe(items))
+            {
+                string key;
+                try { key = _store.GetConversationKey(item); }
+                catch { key = null; }
+
+                if (string.IsNullOrEmpty(key)) { noHistory++; continue; }
+
+                var recorded = _history.GetLatestDestinations(key);
+                if (recorded.Count == 0) { noHistory++; continue; }
+
+                // Validate each remembered destination against the live index;
+                // a folder deleted or renamed away no longer resolves.
+                var live = new List<FolderNode>();
+                foreach (var dest in recorded)
+                {
+                    FolderNode node;
+                    try { node = resolveLiveFolder(dest.StoreId, dest.EntryId); }
+                    catch { node = null; }
+                    if (node != null) live.Add(node);
+                }
+
+                if (live.Count == 0) { staleFolders++; continue; }
+
+                // Reuse the full classify path - same move/copy/strip/history
+                // semantics, and it records a fresh batch that Undo rolls back.
+                var result = Classify(new ClassifyRequest(
+                    new[] { item }, live, keepCopy, removeAttachments,
+                    markTasksComplete: false, safetyCopy: safetyCopy));
+
+                if (result.ItemsProcessed > 0)
+                {
+                    filed++;
+                    if (result.Undo != null)
+                    {
+                        allMoves.AddRange(result.Undo.Moves);
+                        allCopies.AddRange(result.Undo.CreatedCopies);
+                        allFlags.AddRange(result.Undo.CompletedFlags);
+                        strips += result.Undo.AttachmentStrips;
+                        allBatchIds.AddRange(result.Undo.HistoryBatchIds);
+                    }
+                }
+                else
+                {
+                    errors++;
+                }
+            }
+
+            var plan = new ClassifyUndoPlan(allMoves, allCopies, allFlags, strips, allBatchIds);
+            return new AutoClassifyResult(filed, noHistory, staleFolders, errors,
+                                          plan.IsEmpty ? null : plan);
         }
 
         /// <summary>

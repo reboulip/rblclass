@@ -79,6 +79,15 @@ namespace RBLclass.Core
         FolderNode GetParentFolder(MailItemRef item);
 
         /// <summary>
+        /// A stable identifier of the item's Outlook conversation
+        /// (<c>MailItem.ConversationID</c>), or null/empty when the item no
+        /// longer resolves or the store doesn't track conversations. Keys the
+        /// classification history behind Auto-class (v2.2). Touches COM - call
+        /// on the Outlook UI thread.
+        /// </summary>
+        string GetConversationKey(MailItemRef item);
+
+        /// <summary>
         /// Permanently delete a mail item (v2.2 Undo removing the copies a
         /// classify created - "completely", not into Deleted Items).
         /// </summary>

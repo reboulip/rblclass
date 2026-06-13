@@ -678,7 +678,9 @@ ribbon, and the encrypted-attachment rule).
       Classify button lists the selection (per-chip ✕, plus clear-all);
       re-searching re-checks rows already selected; the set clears
       automatically after a successful classify.
-- [ ] **Undo the last filing action.** `ClassifierService.Classify`
+- [x] *(verified live 2026-06-13: move-back, copy removal, keep-a-copy
+      and safety-copy cleanup all confirmed)* **Undo the last filing
+      action.** `ClassifierService.Classify`
       returns an undo plan alongside the result: every move performed
       (with the item's source folder), every copy created, every flag
       set, and (once Auto-class lands) the history rows written. A

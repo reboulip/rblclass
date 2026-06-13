@@ -35,12 +35,14 @@ namespace RBLclass.Core
         public ClassifyUndoPlan(IReadOnlyList<UndoableMove> moves,
                                 IReadOnlyList<MailItemRef> createdCopies,
                                 IReadOnlyList<MailItemRef> completedFlags,
-                                int attachmentStrips)
+                                int attachmentStrips,
+                                IReadOnlyList<string> historyBatchIds = null)
         {
             Moves = (moves ?? new UndoableMove[0]).ToArray();
             CreatedCopies = (createdCopies ?? new MailItemRef[0]).ToArray();
             CompletedFlags = (completedFlags ?? new MailItemRef[0]).ToArray();
             AttachmentStrips = attachmentStrips;
+            HistoryBatchIds = (historyBatchIds ?? new string[0]).ToArray();
         }
 
         /// <summary>Items the classify moved, with where to put them back.</summary>
@@ -55,8 +57,12 @@ namespace RBLclass.Core
         /// <summary>Filed items whose attachments were stripped - NOT recoverable by Undo.</summary>
         public int AttachmentStrips { get; }
 
+        /// <summary>Classification-history batches this classify recorded - undone by deleting them.</summary>
+        public IReadOnlyList<string> HistoryBatchIds { get; }
+
         public bool IsEmpty =>
-            Moves.Count == 0 && CreatedCopies.Count == 0 && CompletedFlags.Count == 0;
+            Moves.Count == 0 && CreatedCopies.Count == 0 && CompletedFlags.Count == 0
+            && HistoryBatchIds.Count == 0;
     }
 
     /// <summary>Outcome of executing a <see cref="ClassifyUndoPlan"/>.</summary>

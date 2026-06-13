@@ -11,6 +11,13 @@
                   onAction="OnTogglePaneClick"
                   screentip="Show or hide the RBLclass pane"
                   supertip="Open the RBLclass pane: search the folder tree, jump to a folder (open button), and file the selected mail - single-click a folder to add it as a destination, double-click to file into it." />
+          <button id="AutoClassButton"
+                  label="Auto-class"
+                  size="large"
+                  imageMso="CategorizeMenu"
+                  onAction="OnAutoClassClick"
+                  screentip="Auto-classify the selected mail(s)"
+                  supertip="File each selected mail to the folder(s) its conversation was last classified into. Mails whose conversation was never classified are left alone. Tip: right-click this button and choose 'Add to Quick Access Toolbar' for one-click filing." />
           <button id="RemoveAttachmentsButton"
                   label="Remove attachments"
                   size="large"

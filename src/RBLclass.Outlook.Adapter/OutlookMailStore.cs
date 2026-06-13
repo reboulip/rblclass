@@ -421,6 +421,30 @@ namespace RBLclass.Outlook.Adapter
             }
         }
 
+        public string GetConversationKey(MailItemRef item)
+        {
+            if (item == null) return null;
+
+            using (var session = new ComRef<OutlookOM.NameSpace>(_app.Session))
+            {
+                object rawItem;
+                try { rawItem = session.Value.GetItemFromID(item.EntryId, item.StoreId); }
+                catch { return null; } // item no longer resolves - tolerate the miss
+
+                using (var comItem = new ComRef<object>(rawItem))
+                {
+                    var mail = comItem.Value as OutlookOM.MailItem;
+                    if (mail == null) return null;
+
+                    // ConversationID is stable across the thread and survives
+                    // moves between folders/stores - the right key for the
+                    // Auto-class history. Null/empty when conversation tracking
+                    // is off for the item's store.
+                    return Safe(() => mail.ConversationID, null);
+                }
+            }
+        }
+
         public void DeleteItemPermanently(MailItemRef item)
         {
             if (item == null) return;

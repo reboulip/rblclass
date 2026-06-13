@@ -13,7 +13,7 @@ namespace RBLclass.Core.Persistence
     public sealed class SqliteFolderRepository : IFolderRepository
     {
         /// <summary>Schema version this build expects. Bump with each migration.</summary>
-        public const int CurrentSchemaVersion = 1;
+        public const int CurrentSchemaVersion = 2;
 
         private readonly string _connectionString;
 
@@ -39,6 +39,8 @@ namespace RBLclass.Core.Persistence
                 {
                     if (version < 1)
                         ApplyV1(conn, tx);
+                    if (version < 2)
+                        ApplyV2(conn, tx);
 
                     WriteSchemaVersion(conn, tx, CurrentSchemaVersion);
                     tx.Commit();
@@ -230,6 +232,17 @@ namespace RBLclass.Core.Persistence
                     "  Key   TEXT PRIMARY KEY," +
                     "  Value TEXT" +
                     ");";
+                cmd.ExecuteNonQuery();
+            }
+        }
+
+        /// <summary>Schema v2: the classification history behind Auto-class/Undo (v2.2).</summary>
+        private static void ApplyV2(SqliteConnection conn, SqliteTransaction tx)
+        {
+            using (var cmd = conn.CreateCommand())
+            {
+                cmd.Transaction = tx;
+                cmd.CommandText = SqliteClassificationHistory.CreateTableSql;
                 cmd.ExecuteNonQuery();
             }
         }

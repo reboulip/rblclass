@@ -299,6 +299,136 @@ namespace RBLclass.Core.Tests
             result.Undo.AttachmentStrips.Should().Be(1);
         }
 
+        // --- Auto-class history (v2.2) ------------------------------------
+
+        [Fact]
+        public void Classify_records_history_per_conversation_and_carries_the_batch_in_the_undo_plan()
+        {
+            var store = StoreWithWorkingMove();
+            var history = Substitute.For<IClassificationHistory>();
+            store.GetConversationKey(Arg.Any<MailItemRef>())
+                 .Returns(ci => "conv-" + ((MailItemRef)ci[0]).EntryId);
+            store.GetParentFolder(Arg.Any<MailItemRef>()).Returns(Dest("src", "Inbox"));
+            var sut = new ClassifierService(store, history);
+
+            var result = sut.Classify(new ClassifyRequest(
+                new[] { Item("e1"), Item("e2") }, new[] { D1 },
+                keepCopy: false, removeAttachments: false));
+
+            // One Record per distinct filed conversation, all under one batch id.
+            history.Received(1).Record(Arg.Any<string>(), "conv-e1",
+                Arg.Any<IEnumerable<FolderNode>>(), Arg.Any<DateTime>());
+            history.Received(1).Record(Arg.Any<string>(), "conv-e2",
+                Arg.Any<IEnumerable<FolderNode>>(), Arg.Any<DateTime>());
+            result.Undo.HistoryBatchIds.Should().ContainSingle();
+        }
+
+        [Fact]
+        public void Classify_dedupes_history_records_for_items_sharing_a_conversation()
+        {
+            var store = StoreWithWorkingMove();
+            var history = Substitute.For<IClassificationHistory>();
+            store.GetConversationKey(Arg.Any<MailItemRef>()).Returns("same-thread");
+            store.GetParentFolder(Arg.Any<MailItemRef>()).Returns(Dest("src", "Inbox"));
+            var sut = new ClassifierService(store, history);
+
+            sut.Classify(new ClassifyRequest(
+                new[] { Item("e1"), Item("e2") }, new[] { D1 },
+                keepCopy: false, removeAttachments: false));
+
+            history.Received(1).Record(Arg.Any<string>(), "same-thread",
+                Arg.Any<IEnumerable<FolderNode>>(), Arg.Any<DateTime>());
+        }
+
+        [Fact]
+        public void Undo_deletes_the_history_batches_the_classify_recorded()
+        {
+            var store = StoreWithWorkingMove();
+            var history = Substitute.For<IClassificationHistory>();
+            store.GetConversationKey(Arg.Any<MailItemRef>()).Returns("conv-1");
+            store.GetParentFolder(Arg.Any<MailItemRef>()).Returns(Dest("src", "Inbox"));
+            var sut = new ClassifierService(store, history);
+
+            var result = sut.Classify(new ClassifyRequest(
+                new[] { Item("e1") }, new[] { D1 },
+                keepCopy: false, removeAttachments: false));
+            sut.Undo(result.Undo);
+
+            history.Received(1).DeleteBatches(Arg.Is<IEnumerable<string>>(
+                ids => ids.SequenceEqual(result.Undo.HistoryBatchIds)));
+        }
+
+        [Fact]
+        public void AutoClassify_files_each_mail_to_its_remembered_validated_destination()
+        {
+            var store = StoreWithWorkingMove();
+            var history = Substitute.For<IClassificationHistory>();
+            var item = Item("e1");
+            store.GetConversationKey(item).Returns("conv-1");
+            store.GetParentFolder(Arg.Any<MailItemRef>()).Returns(Dest("src", "Inbox"));
+            history.GetLatestDestinations("conv-1")
+                   .Returns(new[] { new HistoryDestination("s1", "d1") });
+            var sut = new ClassifierService(store, history);
+
+            // The remembered (s1, d1) resolves to a live folder.
+            Func<string, string, FolderNode> resolve = (s, e) =>
+                (s == "s1" && e == "d1") ? D1 : null;
+
+            var result = sut.AutoClassify(new[] { item }, resolve,
+                keepCopy: false, removeAttachments: false, safetyCopy: false);
+
+            result.Filed.Should().Be(1);
+            result.NoHistory.Should().Be(0);
+            result.StaleFolders.Should().Be(0);
+            store.Received(1).MoveItemToFolder(item, D1);
+            result.Undo.Should().NotBeNull();
+        }
+
+        [Fact]
+        public void AutoClassify_counts_mails_with_no_history()
+        {
+            var store = StoreWithWorkingMove();
+            var history = Substitute.For<IClassificationHistory>();
+            store.GetConversationKey(Arg.Any<MailItemRef>()).Returns("conv-x");
+            history.GetLatestDestinations("conv-x").Returns(new HistoryDestination[0]);
+            var sut = new ClassifierService(store, history);
+
+            var result = sut.AutoClassify(new[] { Item("e1") }, (s, e) => D1,
+                keepCopy: false, removeAttachments: false, safetyCopy: false);
+
+            result.Filed.Should().Be(0);
+            result.NoHistory.Should().Be(1);
+            store.DidNotReceive().MoveItemToFolder(Arg.Any<MailItemRef>(), Arg.Any<FolderNode>());
+        }
+
+        [Fact]
+        public void AutoClassify_counts_mails_whose_remembered_folder_is_gone()
+        {
+            var store = StoreWithWorkingMove();
+            var history = Substitute.For<IClassificationHistory>();
+            store.GetConversationKey(Arg.Any<MailItemRef>()).Returns("conv-1");
+            history.GetLatestDestinations("conv-1")
+                   .Returns(new[] { new HistoryDestination("s1", "deleted-folder") });
+            var sut = new ClassifierService(store, history);
+
+            // Nothing resolves - the remembered folder no longer exists.
+            var result = sut.AutoClassify(new[] { Item("e1") }, (s, e) => null,
+                keepCopy: false, removeAttachments: false, safetyCopy: false);
+
+            result.Filed.Should().Be(0);
+            result.StaleFolders.Should().Be(1);
+            result.Undo.Should().BeNull();
+        }
+
+        [Fact]
+        public void AutoClassify_requires_a_history_store()
+        {
+            var sut = new ClassifierService(Substitute.For<IMailStore>()); // no history
+            Action act = () => sut.AutoClassify(new[] { Item("e1") }, (s, e) => D1,
+                false, false, false);
+            act.Should().Throw<InvalidOperationException>();
+        }
+
         [Fact]
         public void A_move_that_resolves_nothing_counts_as_an_error_and_processes_nothing()
         {
