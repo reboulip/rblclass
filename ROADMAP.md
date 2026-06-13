@@ -689,8 +689,8 @@ ribbon, and the encrypted-attachment rule).
       folders, deletes the created copies, restores flags, rolls back
       history rows. Stripped attachments cannot be restored; Undo says
       so when that applies. xUnit over a fake store.
-- [x] *(implemented 2026-06-13; first cut verified live, then reworked
-      per feedback — see below)* **Auto-class.** Schema **v2** adds
+- [x] *(verified live 2026-06-13: filed / no-history / undo cases all
+      confirmed in the pane)* **Auto-class.** Schema **v2** adds
       `ClassificationHistory(ConversationKey, DestStoreId, DestEntryId,
       WhenUtc)`, appended on every successful classify (conversation key
       = the Outlook `ConversationID`, read before the move invalidates
