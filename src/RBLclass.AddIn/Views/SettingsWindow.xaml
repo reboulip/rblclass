@@ -57,6 +57,29 @@
                     </StackPanel>
                 </GroupBox>
 
+                <GroupBox Header="External-sender banner" Margin="0,0,0,8">
+                    <StackPanel Margin="6">
+                        <TextBlock TextWrapping="Wrap" Style="{DynamicResource MutedText}"
+                                   Text="Teach RBLclass your company's 'external email' banner once, then it can strip it from replies and filed mail." />
+                        <DockPanel Margin="0,6,0,2" LastChildFill="False">
+                            <Button DockPanel.Dock="Left" Content="Learn from selected mail" Padding="8,2"
+                                    IsEnabled="{Binding CanLearnBanner}" Click="LearnBanner_Click" />
+                            <Button DockPanel.Dock="Left" Content="Forget" Padding="8,2" Margin="6,0,0,0"
+                                    IsEnabled="{Binding HasBanner}" Click="ClearBanner_Click" />
+                        </DockPanel>
+                        <TextBlock Margin="0,2,0,4" TextWrapping="Wrap"
+                                   Style="{DynamicResource MutedText}" Text="{Binding BannerStatus}" />
+                        <CheckBox Margin="0,3" IsChecked="{Binding StripBannerOnReply}"
+                                  IsEnabled="{Binding HasBanner}"
+                                  Content="Strip the banner from replies and forwards" />
+                        <CheckBox Margin="0,3" IsChecked="{Binding StripBannerOnClassify}"
+                                  IsEnabled="{Binding HasBanner}">
+                            <TextBlock TextWrapping="Wrap" MaxWidth="400"
+                                       Text="Strip the banner from the filed copy by default when classifying" />
+                        </CheckBox>
+                    </StackPanel>
+                </GroupBox>
+
                 <GroupBox Header="Sending guards" Margin="0,0,0,8">
                     <StackPanel Margin="6">
                         <CheckBox Margin="0,3" IsChecked="{Binding SendExternalWarning}">

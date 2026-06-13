@@ -41,6 +41,9 @@ namespace RBLclass.Core.Tests
             settings.KeepCopy.Should().BeFalse();
             settings.RemoveAttachments.Should().BeFalse();
             settings.ClassifySafetyCopy.Should().BeFalse();
+            settings.ExternalBannerSignature.Should().BeEmpty();
+            settings.StripBannerOnReply.Should().BeFalse();
+            settings.StripBannerOnClassify.Should().BeFalse();
             settings.WidenConversation.Should().BeFalse();
             settings.SendExternalWarning.Should().BeTrue();
             settings.InternalDomains.Should().BeEmpty();
@@ -62,6 +65,9 @@ namespace RBLclass.Core.Tests
                 KeepCopy = true,
                 RemoveAttachments = true,
                 ClassifySafetyCopy = true,
+                ExternalBannerSignature = "<table><tr><td>CAUTION external</td></tr></table>",
+                StripBannerOnReply = true,
+                StripBannerOnClassify = true,
                 WidenConversation = true,
                 SendExternalWarning = false,
                 InternalDomains = new[] { "example.com", "example.org" },
@@ -81,6 +87,9 @@ namespace RBLclass.Core.Tests
             reloaded.KeepCopy.Should().BeTrue();
             reloaded.RemoveAttachments.Should().BeTrue();
             reloaded.ClassifySafetyCopy.Should().BeTrue();
+            reloaded.ExternalBannerSignature.Should().Be("<table><tr><td>CAUTION external</td></tr></table>");
+            reloaded.StripBannerOnReply.Should().BeTrue();
+            reloaded.StripBannerOnClassify.Should().BeTrue();
             reloaded.WidenConversation.Should().BeTrue();
             reloaded.SendExternalWarning.Should().BeFalse();
             reloaded.InternalDomains.Should().Equal("example.com", "example.org");

@@ -46,6 +46,9 @@
                 <CheckBox Content="Keep a copy (don't delete originals)" Margin="0,3,0,0" IsChecked="{Binding KeepCopy}" />
                 <CheckBox Content="Remove attachments from the filed copy" Margin="0,3,0,0" IsChecked="{Binding RemoveAttachments}" />
                 <CheckBox Content="Include the whole conversation" Margin="0,3,0,0" IsChecked="{Binding WidenConversation}" />
+                <CheckBox Content="Strip the external-sender banner" Margin="0,3,0,0"
+                          IsChecked="{Binding StripBanner}"
+                          Visibility="{Binding CanStripBanner, Converter={StaticResource BoolToVis}}" />
             </StackPanel>
 
             <!-- The shared list. Single-click toggles a folder as a destination;

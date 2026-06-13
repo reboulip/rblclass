@@ -519,6 +519,39 @@ namespace RBLclass.Core.Tests
         }
 
         [Fact]
+        public void Banner_signature_strips_the_filed_item_only()
+        {
+            var store = StoreWithWorkingMove();
+            var item = Item("e1");
+            var sut = new ClassifierService(store);
+
+            sut.Classify(new ClassifyRequest(
+                new[] { item }, new[] { D1 },
+                keepCopy: false, removeAttachments: false,
+                markTasksComplete: false, safetyCopy: false,
+                bannerSignature: "<table><tr><td>CAUTION external</td></tr></table>"));
+
+            // Stripped on the moved (filed) reference, never the pre-move original.
+            store.Received(1).StripExternalBanner(
+                Arg.Is<MailItemRef>(m => m.EntryId == "moved-e1"),
+                "<table><tr><td>CAUTION external</td></tr></table>");
+            store.DidNotReceive().StripExternalBanner(item, Arg.Any<string>());
+        }
+
+        [Fact]
+        public void No_banner_signature_means_no_strip()
+        {
+            var store = StoreWithWorkingMove();
+            var sut = new ClassifierService(store);
+
+            sut.Classify(new ClassifyRequest(
+                new[] { Item("e1") }, new[] { D1 },
+                keepCopy: false, removeAttachments: false)); // bannerSignature null
+
+            store.DidNotReceive().StripExternalBanner(Arg.Any<MailItemRef>(), Arg.Any<string>());
+        }
+
+        [Fact]
         public void Preflight_without_widening_just_dedupes_the_selection()
         {
             var store = Substitute.For<IMailStore>();

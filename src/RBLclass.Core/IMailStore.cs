@@ -133,6 +133,33 @@ namespace RBLclass.Core
         bool RemoveAttachments(MailItemRef item);
 
         /// <summary>
+        /// Remove the learned external-sender banner (<paramref name="bannerSignature"/>,
+        /// verbatim block HTML) from a mail item's HTML body and save it, via
+        /// <see cref="ExternalBannerStripper"/> (v2.2). No-op (returns false) when
+        /// the banner isn't present, the signature is empty, or the item is
+        /// S/MIME-encrypted (its body must not be rewritten). Returns true when
+        /// the body was changed. Touches COM - call on the Outlook UI thread.
+        /// </summary>
+        bool StripExternalBanner(MailItemRef item, string bannerSignature);
+
+        /// <summary>
+        /// The HTML body of the first selected mail (v2.2 "learn banner" capture),
+        /// or null when nothing suitable is selected. The add-in derives the
+        /// banner signature from it via <see cref="ExternalBannerStripper.ExtractBannerBlock"/>.
+        /// Touches COM - call on the Outlook UI thread.
+        /// </summary>
+        string GetSelectedItemHtmlBody();
+
+        /// <summary>
+        /// Strip the learned banner from a live, possibly-unsaved mail object
+        /// (the reply/forward draft Outlook hands us via a new inspector, v2.2),
+        /// boxed as <c>object</c> to keep this interface Outlook-free like
+        /// <see cref="InspectForSend"/>. Skips encrypted items; returns true when
+        /// the body changed. Touches COM - call on the Outlook UI thread.
+        /// </summary>
+        bool StripBannerFromDraft(object draft, string bannerSignature);
+
+        /// <summary>
         /// Create a sub-folder under <paramref name="parent"/> and return the new
         /// node, or null on failure. Touches COM - call on the Outlook UI thread.
         /// </summary>

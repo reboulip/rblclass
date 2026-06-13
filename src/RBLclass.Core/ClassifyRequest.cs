@@ -21,7 +21,8 @@ namespace RBLclass.Core
                                bool keepCopy,
                                bool removeAttachments,
                                bool markTasksComplete = false,
-                               bool safetyCopy = false)
+                               bool safetyCopy = false,
+                               string bannerSignature = null)
         {
             Items = (items ?? throw new ArgumentNullException(nameof(items))).ToArray();
             Destinations = (destinations ?? throw new ArgumentNullException(nameof(destinations))).ToArray();
@@ -29,6 +30,7 @@ namespace RBLclass.Core
             RemoveAttachments = removeAttachments;
             MarkTasksComplete = markTasksComplete;
             SafetyCopy = safetyCopy;
+            BannerSignature = bannerSignature;
         }
 
         /// <summary>The mail items to file (already widened, if requested).</summary>
@@ -66,5 +68,17 @@ namespace RBLclass.Core
         /// attachments. A safety-copy failure never fails the classify.
         /// </summary>
         public bool SafetyCopy { get; }
+
+        /// <summary>
+        /// When non-empty, the learned external-sender banner is stripped from
+        /// each filed item's HTML body (v2.2). Filed-copy-only, like attachment
+        /// removal: with "keep a copy" on the kept original is untouched; with
+        /// it off the moved item is edited at its destination. Encrypted items
+        /// are never edited. The body change is not reversible by Undo.
+        /// </summary>
+        public string BannerSignature { get; }
+
+        /// <summary>True when a banner strip is requested (a signature is present).</summary>
+        public bool StripBanner => !string.IsNullOrWhiteSpace(BannerSignature);
     }
 }

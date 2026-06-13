@@ -24,6 +24,18 @@ namespace RBLclass.Core
         /// <summary>Minimum (trimmed) query length before folder search runs (v2.2).</summary>
         public const string MinSearchLength = "MinSearchLength";
 
+        /// <summary>
+        /// The learned external-sender banner block (verbatim HTML), captured
+        /// once from a sample mail; empty when the user hasn't taught one (v2.2).
+        /// </summary>
+        public const string ExternalBannerSignature = "ExternalBannerSignature";
+
+        /// <summary>Auto-strip the learned banner from reply/forward drafts (v2.2, default off).</summary>
+        public const string StripBannerOnReply = "StripBannerOnReply";
+
+        /// <summary>Default state of the classify-time "strip banner from the filed copy" tickbox (v2.2).</summary>
+        public const string StripBannerOnClassify = "StripBannerOnClassify";
+
         /// <summary>Pause after the last keystroke before folder search fires, in ms (v2.2).</summary>
         public const string SearchDebounceMs = "SearchDebounceMs";
 

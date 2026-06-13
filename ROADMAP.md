@@ -551,15 +551,19 @@ the remaining **open questions** are called out inline.
       checkbox** from triage (they no longer fit this model). Includes a
       settings migration from the old boolean key
       (`SentItemTriageViewModel` / `SentItemTriageWindow` / `SettingsKeys`).
-- [ ] *(carried into the v2.2.0.0 sprint backlog — still open)*
+- [x] *(implemented 2026-06-13 in the v2.2.0.0 sprint; Core matcher
+      unit-tested, but the Outlook wiring — learn-from-selection, the
+      reply/forward NewInspector strip, and the classify-time strip — is
+      NOT verifiable on this machine, which has no external-banner mail.
+      Re-verify live on a workstation that receives the company banner.)*
       **Strip the external-sender banner on reply and on classify.** The ugly
       "external email" reminder banner varies per company, so RBLclass learns
       it from a **sample the user teaches it once** (capture a real banner —
       text/HTML — derive a signature, strip matching blocks). Two triggers:
       1. **On reply / reply-all / forward** — auto-strip the banner from the
          draft when a settings toggle is on.
-      2. **At classify time** — a tickbox (default value from settings) that
-         strips the banner from the **filed copy**.
+      2. **At classify time** — a tickbox in settings (default: checked) determines
+         whether the banner should be stripped from the **filed copy**.
       - Open Qs (detailed design needed): the capture UX (paste vs "pick from
         an open mail"); how robust the signature is (HTML structure vs plain
         text, localised/variant banners, more than one banner per company);

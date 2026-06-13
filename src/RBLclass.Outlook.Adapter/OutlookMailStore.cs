@@ -772,6 +772,99 @@ namespace RBLclass.Outlook.Adapter
             return true;
         }
 
+        public bool StripExternalBanner(MailItemRef item, string bannerSignature)
+        {
+            if (item == null || string.IsNullOrWhiteSpace(bannerSignature)) return false;
+
+            using (var session = new ComRef<OutlookOM.NameSpace>(_app.Session))
+            {
+                object rawItem;
+                try { rawItem = session.Value.GetItemFromID(item.EntryId, item.StoreId); }
+                catch { return false; }
+
+                using (var comItem = new ComRef<object>(rawItem))
+                    return StripBannerOnLiveMail(comItem.Value as OutlookOM.MailItem, bannerSignature);
+            }
+        }
+
+        public bool StripBannerFromDraft(object draft, string bannerSignature)
+        {
+            if (string.IsNullOrWhiteSpace(bannerSignature)) return false;
+            return StripBannerOnLiveMail(draft as OutlookOM.MailItem, bannerSignature);
+        }
+
+        /// <summary>
+        /// Shared body-strip for a live <c>MailItem</c>: skip encrypted mail,
+        /// run the Core stripper over the HTML body, write back and save only
+        /// when it changed. Best-effort - logs and returns false on any fault.
+        /// </summary>
+        private static bool StripBannerOnLiveMail(OutlookOM.MailItem mail, string bannerSignature)
+        {
+            if (mail == null) return false;
+
+            // Never rewrite an encrypted/signed body - it would corrupt it.
+            string messageClass = Safe(() => mail.MessageClass, string.Empty);
+            if (messageClass.StartsWith("IPM.Note.SMIME", StringComparison.OrdinalIgnoreCase))
+                return false;
+
+            string html = Safe(() => mail.HTMLBody, null);
+            if (string.IsNullOrEmpty(html)) return false;
+
+            bool stripped;
+            string updated = ExternalBannerStripper.Strip(html, bannerSignature, out stripped);
+            if (!stripped) return false;
+
+            try
+            {
+                mail.HTMLBody = updated;
+                mail.Save();
+                Log.Information("Stripped the external-sender banner from a mail body.");
+                return true;
+            }
+            catch (Exception ex)
+            {
+                Log.Warning(ex, "Writing the banner-stripped body failed.");
+                return false;
+            }
+        }
+
+        public string GetSelectedItemHtmlBody()
+        {
+            OutlookOM.Explorer rawExplorer;
+            try { rawExplorer = _app.ActiveExplorer(); }
+            catch { rawExplorer = null; }
+            if (rawExplorer == null) return null;
+
+            using (var explorer = new ComRef<OutlookOM.Explorer>(rawExplorer))
+            {
+                OutlookOM.Selection rawSelection;
+                try { rawSelection = explorer.Value.Selection; }
+                catch { return null; }
+
+                using (var selection = new ComRef<OutlookOM.Selection>(rawSelection))
+                {
+                    int count = 0;
+                    try { count = selection.Value.Count; } catch { }
+
+                    for (int i = 1; i <= count; i++)
+                    {
+                        object raw;
+                        try { raw = selection.Value[i]; }
+                        catch { continue; }
+
+                        using (var comItem = new ComRef<object>(raw))
+                        {
+                            var mail = comItem.Value as OutlookOM.MailItem;
+                            if (mail == null) continue; // skip non-mail
+                            return Safe(() => mail.HTMLBody, null);
+                        }
+                    }
+                }
+            }
+
+            return null;
+        }
+
         public SendGuardInfo InspectForSend(object item)
         {
             var mail = item as OutlookOM.MailItem;

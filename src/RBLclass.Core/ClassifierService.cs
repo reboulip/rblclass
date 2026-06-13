@@ -165,6 +165,13 @@ namespace RBLclass.Core
                                     if (_store.RemoveAttachments(filedRef)) strips++;
                                     else encryptedSkips++;
                                 }
+                                // Strip the learned external banner from the filed
+                                // body (best-effort, not undoable - a body edit).
+                                if (request.StripBanner)
+                                {
+                                    try { _store.StripExternalBanner(filedRef, request.BannerSignature); }
+                                    catch { /* adapter logs; never fail the filing over a banner */ }
+                                }
                                 if (markComplete)
                                 {
                                     _store.MarkTaskComplete(filedRef);

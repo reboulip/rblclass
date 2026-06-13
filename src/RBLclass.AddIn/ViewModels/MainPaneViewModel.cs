@@ -31,7 +31,8 @@ namespace RBLclass.AddIn.ViewModels
         private readonly Func<IReadOnlyList<FolderNode>> _getAllFolders;
 
         private string _query = string.Empty;
-        private bool _allResults, _keepCopy, _removeAttachments, _widenConversation;
+        private bool _allResults, _keepCopy, _removeAttachments, _widenConversation, _stripBanner;
+        private bool _canStripBanner;
         private SelectableFolder _selectedResult;
         private string _selectionSummary = "No mail selected.";
         private string _status = string.Empty;
@@ -72,6 +73,9 @@ namespace RBLclass.AddIn.ViewModels
                 _keepCopy = _settings.GetBool(SettingsKeys.KeepCopy, false);
                 _removeAttachments = _settings.GetBool(SettingsKeys.RemoveAttachments, false);
                 _widenConversation = _settings.GetBool(SettingsKeys.WidenConversation, false);
+                _stripBanner = _settings.GetBool(SettingsKeys.StripBannerOnClassify, false);
+                _canStripBanner = !string.IsNullOrWhiteSpace(
+                    _settings.Get(SettingsKeys.ExternalBannerSignature, string.Empty));
             }
         }
 
@@ -130,6 +134,25 @@ namespace RBLclass.AddIn.ViewModels
         {
             get => _widenConversation;
             set { if (SetProperty(ref _widenConversation, value)) _settings?.SetBool(SettingsKeys.WidenConversation, value); }
+        }
+
+        /// <summary>
+        /// Strip the learned external banner from the filed copy (v2.2). Default
+        /// comes from the StripBannerOnClassify setting; toggling it here updates
+        /// that setting. Only meaningful when a banner has been learned
+        /// (<see cref="CanStripBanner"/>).
+        /// </summary>
+        public bool StripBanner
+        {
+            get => _stripBanner;
+            set { if (SetProperty(ref _stripBanner, value)) _settings?.SetBool(SettingsKeys.StripBannerOnClassify, value); }
+        }
+
+        /// <summary>True when a banner has been learned, so the strip tickbox is worth showing.</summary>
+        public bool CanStripBanner
+        {
+            get => _canStripBanner;
+            private set => SetProperty(ref _canStripBanner, value);
         }
 
         public SelectableFolder SelectedResult
@@ -283,8 +306,16 @@ namespace RBLclass.AddIn.ViewModels
         public void SetSelectionCount(int count) =>
             SelectionSummary = count == 1 ? "1 mail selected." : count + " mails selected.";
 
-        public void RefreshSelection() =>
+        public void RefreshSelection()
+        {
             SetSelectionCount(_getSelection != null ? _getSelection().Count : 0);
+
+            // A banner may have been learned (or forgotten) in Settings while the
+            // pane was open - keep the strip tickbox's availability current.
+            if (_settings != null)
+                CanStripBanner = !string.IsNullOrWhiteSpace(
+                    _settings.Get(SettingsKeys.ExternalBannerSignature, string.Empty));
+        }
 
         /// <summary>
         /// Navigate Outlook to a folder (the per-row open button). New-window
@@ -415,9 +446,13 @@ namespace RBLclass.AddIn.ViewModels
 
                 bool safetyCopy = _settings != null
                     && _settings.GetBool(SettingsKeys.ClassifySafetyCopy, false);
+                string bannerSignature = (_stripBanner && _settings != null)
+                    ? _settings.Get(SettingsKeys.ExternalBannerSignature, null)
+                    : null;
                 var result = _classifier.Classify(
                     new ClassifyRequest(preflight.Items, destinations, _keepCopy,
-                                        _removeAttachments, markTasksComplete, safetyCopy));
+                                        _removeAttachments, markTasksComplete, safetyCopy,
+                                        bannerSignature));
 
                 string verb = _keepCopy ? "Copied" : "Filed";
                 Status = verb + " " + result.ItemsProcessed + " mail(s) to " +

@@ -1,5 +1,6 @@
 using System.Windows;
 using RBLclass.AddIn.Theming;
+using RBLclass.AddIn.ViewModels;
 
 namespace RBLclass.AddIn.Views
 {
@@ -18,5 +19,11 @@ namespace RBLclass.AddIn.Views
         }
 
         private void Close_Click(object sender, RoutedEventArgs e) => Close();
+
+        private void LearnBanner_Click(object sender, RoutedEventArgs e) =>
+            (DataContext as SettingsViewModel)?.LearnBannerFromSelection();
+
+        private void ClearBanner_Click(object sender, RoutedEventArgs e) =>
+            (DataContext as SettingsViewModel)?.ClearBanner();
     }
 }

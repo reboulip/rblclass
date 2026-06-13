@@ -19,17 +19,25 @@ namespace RBLclass.AddIn.ViewModels
     {
         private readonly ISettingsStore _store;
         private readonly Settings _settings;
+        private readonly Func<string> _captureSelectedHtml;
         private string _maxResultsText;
         private string _minSearchLengthText;
         private string _searchDebounceMsText;
+        private string _bannerStatus;
 
-        public SettingsViewModel(ISettingsStore store)
+        /// <param name="captureSelectedHtml">
+        /// Returns the HTML body of the currently selected mail, for the "learn
+        /// banner" capture (v2.2). Null/unset disables the Learn button.
+        /// </param>
+        public SettingsViewModel(ISettingsStore store, Func<string> captureSelectedHtml = null)
         {
             _store = store ?? throw new ArgumentNullException(nameof(store));
+            _captureSelectedHtml = captureSelectedHtml;
             _settings = Settings.Load(_store);
             _maxResultsText = _settings.MaxResults.ToString(CultureInfo.InvariantCulture);
             _minSearchLengthText = _settings.MinSearchLength.ToString(CultureInfo.InvariantCulture);
             _searchDebounceMsText = _settings.SearchDebounceMs.ToString(CultureInfo.InvariantCulture);
+            _bannerStatus = DescribeBanner(_settings.ExternalBannerSignature);
         }
 
         public bool OpenInNewWindow
@@ -154,6 +162,80 @@ namespace RBLclass.AddIn.ViewModels
             get => _settings.SendExternalWarning;
             set => Apply(_settings.SendExternalWarning, value, v => _settings.SendExternalWarning = v);
         }
+
+        /// <summary>Auto-strip the learned banner from reply/forward drafts (default off).</summary>
+        public bool StripBannerOnReply
+        {
+            get => _settings.StripBannerOnReply;
+            set => Apply(_settings.StripBannerOnReply, value, v => _settings.StripBannerOnReply = v);
+        }
+
+        /// <summary>Default state of the classify-time "strip banner from the filed copy" tickbox.</summary>
+        public bool StripBannerOnClassify
+        {
+            get => _settings.StripBannerOnClassify;
+            set => Apply(_settings.StripBannerOnClassify, value, v => _settings.StripBannerOnClassify = v);
+        }
+
+        /// <summary>True when a banner has been learned (gates the strip toggles in the view).</summary>
+        public bool HasBanner => !string.IsNullOrWhiteSpace(_settings.ExternalBannerSignature);
+
+        /// <summary>True when capture is wired (the Settings dialog was opened with a selection source).</summary>
+        public bool CanLearnBanner => _captureSelectedHtml != null;
+
+        /// <summary>Human-readable banner state, shown next to the Learn button.</summary>
+        public string BannerStatus
+        {
+            get => _bannerStatus;
+            private set => SetProperty(ref _bannerStatus, value);
+        }
+
+        /// <summary>
+        /// Capture the external-sender banner from the currently selected mail:
+        /// read its HTML body, extract the leading banner block, store it as the
+        /// signature. Updates <see cref="BannerStatus"/> with the outcome.
+        /// </summary>
+        public void LearnBannerFromSelection()
+        {
+            if (_captureSelectedHtml == null) return;
+
+            string html = _captureSelectedHtml();
+            if (string.IsNullOrEmpty(html))
+            {
+                BannerStatus = "Select a mail that shows the banner, then click Learn.";
+                return;
+            }
+
+            string block = ExternalBannerStripper.ExtractBannerBlock(html);
+            if (string.IsNullOrWhiteSpace(block))
+            {
+                BannerStatus = "Couldn't find a banner block in the selected mail.";
+                return;
+            }
+
+            _settings.ExternalBannerSignature = block;
+            _settings.Save(_store);
+            BannerStatus = DescribeBanner(block);
+            OnPropertyChanged(nameof(HasBanner));
+        }
+
+        /// <summary>Forget the learned banner (and turn the strip options off, since they'd be inert).</summary>
+        public void ClearBanner()
+        {
+            _settings.ExternalBannerSignature = string.Empty;
+            _settings.StripBannerOnReply = false;
+            _settings.StripBannerOnClassify = false;
+            _settings.Save(_store);
+            BannerStatus = DescribeBanner(string.Empty);
+            OnPropertyChanged(nameof(HasBanner));
+            OnPropertyChanged(nameof(StripBannerOnReply));
+            OnPropertyChanged(nameof(StripBannerOnClassify));
+        }
+
+        private static string DescribeBanner(string signature) =>
+            string.IsNullOrWhiteSpace(signature)
+                ? "No banner learned yet."
+                : "A banner is configured (" + signature.Trim().Length + " characters).";
 
         /// <summary>Semicolon-separated domains treated as internal, edited as free text.</summary>
         public string InternalDomainsText

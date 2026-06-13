@@ -39,6 +39,9 @@ namespace RBLclass.Core
         public bool KeepCopy { get; set; }
         public bool RemoveAttachments { get; set; }
         public bool ClassifySafetyCopy { get; set; }
+        public string ExternalBannerSignature { get; set; }
+        public bool StripBannerOnReply { get; set; }
+        public bool StripBannerOnClassify { get; set; }
         public bool WidenConversation { get; set; }
         public bool SendExternalWarning { get; set; }
         public IReadOnlyList<string> InternalDomains { get; set; }
@@ -61,6 +64,9 @@ namespace RBLclass.Core
                 KeepCopy = store.GetBool(SettingsKeys.KeepCopy, false),
                 RemoveAttachments = store.GetBool(SettingsKeys.RemoveAttachments, false),
                 ClassifySafetyCopy = store.GetBool(SettingsKeys.ClassifySafetyCopy, false),
+                ExternalBannerSignature = store.Get(SettingsKeys.ExternalBannerSignature, string.Empty),
+                StripBannerOnReply = store.GetBool(SettingsKeys.StripBannerOnReply, false),
+                StripBannerOnClassify = store.GetBool(SettingsKeys.StripBannerOnClassify, false),
                 WidenConversation = store.GetBool(SettingsKeys.WidenConversation, false),
                 SendExternalWarning = store.GetBool(SettingsKeys.SendExternalWarning, true),
                 InternalDomains = ParseList(store.Get(SettingsKeys.InternalDomains, string.Empty)),
@@ -84,6 +90,9 @@ namespace RBLclass.Core
             store.SetBool(SettingsKeys.KeepCopy, KeepCopy);
             store.SetBool(SettingsKeys.RemoveAttachments, RemoveAttachments);
             store.SetBool(SettingsKeys.ClassifySafetyCopy, ClassifySafetyCopy);
+            store.Set(SettingsKeys.ExternalBannerSignature, ExternalBannerSignature ?? string.Empty);
+            store.SetBool(SettingsKeys.StripBannerOnReply, StripBannerOnReply);
+            store.SetBool(SettingsKeys.StripBannerOnClassify, StripBannerOnClassify);
             store.SetBool(SettingsKeys.WidenConversation, WidenConversation);
             store.SetBool(SettingsKeys.SendExternalWarning, SendExternalWarning);
             store.Set(SettingsKeys.InternalDomains, FormatList(InternalDomains));

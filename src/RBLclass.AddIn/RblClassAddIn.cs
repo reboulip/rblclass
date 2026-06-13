@@ -80,6 +80,10 @@ namespace RBLclass.AddIn
         // that transient copy.
         private bool _suppressSentItemTriage;
 
+        // New-inspector subscription for the v2.2 reply/forward banner strip.
+        // Held in a field for the add-in's lifetime (GC rule - CLAUDE.md).
+        private OutlookOM.Inspectors _inspectors;
+
         private string _dbPath;
         private string _logDirectory;
 
@@ -265,6 +269,15 @@ namespace RBLclass.AddIn
                 }
                 catch (Exception ex) { TryLog("Sent Items ItemAdd subscribe failed", ex); }
 
+                // Reply/forward banner strip (v2.2). Inspectors held in a field
+                // for the add-in's lifetime, like the other event sources.
+                try
+                {
+                    _inspectors = _outlookApp.Inspectors;
+                    _inspectors.NewInspector += OnNewInspector;
+                }
+                catch (Exception ex) { TryLog("NewInspector subscribe failed", ex); }
+
                 // Fast path: load the persisted index (SQLite only, no COM walk).
                 _lastIndexResult = _folderTree.Load();
                 Log.Information(
@@ -305,6 +318,13 @@ namespace RBLclass.AddIn
                 if (_outlookApp != null)
                 {
                     try { _outlookApp.ItemSend -= Application_ItemSend; } catch { }
+                }
+
+                if (_inspectors != null)
+                {
+                    try { _inspectors.NewInspector -= OnNewInspector; } catch { }
+                    try { Marshal.ReleaseComObject(_inspectors); } catch { }
+                    _inspectors = null;
                 }
 
                 if (_sentItems != null)
@@ -411,6 +431,41 @@ namespace RBLclass.AddIn
             catch (Exception ex)
             {
                 ShowError("Remove attachments failed", ex);
+            }
+        }
+
+        /// <summary>
+        /// Reply/forward banner strip (v2.2): when the toggle is on and a banner
+        /// has been learned, strip it from the new draft so it isn't quoted back.
+        /// The draft (reply/reply-all/forward) quotes the original including its
+        /// banner; stripping is a no-op for a plain new mail. Best-effort and
+        /// never throws into Outlook.
+        /// </summary>
+        private void OnNewInspector(OutlookOM.Inspector inspector)
+        {
+            object item = null;
+            try
+            {
+                var settings = Settings.Load(_settingsStore);
+                if (!settings.StripBannerOnReply ||
+                    string.IsNullOrWhiteSpace(settings.ExternalBannerSignature))
+                    return;
+
+                try { item = inspector.CurrentItem; } catch { item = null; }
+                if (item == null) return;
+
+                _mailStore.StripBannerFromDraft(item, settings.ExternalBannerSignature);
+            }
+            catch (Exception ex)
+            {
+                TryLog("NewInspector banner strip failed", ex);
+            }
+            finally
+            {
+                if (item != null)
+                {
+                    try { Marshal.ReleaseComObject(item); } catch { }
+                }
             }
         }
 
@@ -690,7 +745,12 @@ namespace RBLclass.AddIn
         {
             try
             {
-                new SettingsWindow { DataContext = new SettingsViewModel(_settingsStore) }.ShowDialog();
+                new SettingsWindow
+                {
+                    DataContext = new SettingsViewModel(
+                        _settingsStore,
+                        () => _mailStore.GetSelectedItemHtmlBody())
+                }.ShowDialog();
             }
             catch (Exception ex)
             {
