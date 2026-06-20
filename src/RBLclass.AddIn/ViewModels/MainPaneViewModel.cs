@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
+using System.Threading.Tasks;
 using System.Windows.Threading;
 using RBLclass.AddIn.Localization;
 using RBLclass.AddIn.Mvvm;
@@ -400,26 +401,26 @@ namespace RBLclass.AddIn.ViewModels
         }
 
         /// <summary>File into the highlighted (or first) folder - Enter in the search box.</summary>
-        public void FileToHighlighted()
+        public async Task FileToHighlighted()
         {
             FlushPendingSearch(); // never file based on stale, pre-debounce results
             var folder = (SelectedResult ?? (Results.Count > 0 ? Results[0] : null))?.Folder;
             if (folder == null) { Status = _loc.GetString("Status_NoMatchingFolderToFile"); return; }
-            DoClassify(new[] { folder });
+            await DoClassifyAsync(new[] { folder });
         }
 
         /// <summary>File into one specific folder - the double-clicked row.</summary>
-        public void FileToFolder(FolderNode folder)
+        public async Task FileToFolder(FolderNode folder)
         {
-            if (folder != null) DoClassify(new[] { folder });
+            if (folder != null) await DoClassifyAsync(new[] { folder });
         }
 
         /// <summary>File into every accumulated destination (the Classify button).</summary>
-        public void ClassifyChecked()
+        public async Task ClassifyChecked()
         {
             var destinations = SelectedDestinations.ToList();
             if (destinations.Count == 0) { Status = _loc.GetString("Status_CheckAtLeastOneDestination"); return; }
-            if (DoClassify(destinations))
+            if (await DoClassifyAsync(destinations))
                 ClearDestinations(); // the batch is filed - start the next one clean
         }
 
@@ -490,8 +491,14 @@ namespace RBLclass.AddIn.ViewModels
             Refresh();
         }
 
-        /// <summary>Runs the classify; true when it actually executed (not busy/empty/cancelled).</summary>
-        private bool DoClassify(IReadOnlyList<FolderNode> destinations)
+        /// <summary>
+        /// Runs the classify; true when it actually executed (not busy/empty/
+        /// cancelled). Responsive (v2.4 D2): the moves stay on this STA thread
+        /// but the pump is yielded between items, so Outlook repaints and stays
+        /// interactive while a multi-item batch files, with per-item progress in
+        /// the status line.
+        /// </summary>
+        private async Task<bool> DoClassifyAsync(IReadOnlyList<FolderNode> destinations)
         {
             if (_isBusy) return false; // ignore a repeat trigger while a classify is in flight
 
@@ -500,7 +507,6 @@ namespace RBLclass.AddIn.ViewModels
 
             IsBusy = true;
             Status = _loc.GetString("MainPane_Busy_Filing");
-            Dispatcher.CurrentDispatcher.Invoke(new Action(() => { }), DispatcherPriority.Render);
 
             try
             {
@@ -519,10 +525,22 @@ namespace RBLclass.AddIn.ViewModels
                 string bannerSignature = (_stripBanner && _settings != null)
                     ? _settings.Get(SettingsKeys.ExternalBannerSignature, null)
                     : null;
-                var result = _classifier.Classify(
+
+                // Core invokes Report synchronously on this (STA/UI) thread
+                // between items, so set Status inline - the Background yield that
+                // follows each item repaints it. (Progress<T> would Post the
+                // callback to the ambient SynchronizationContext, which this host
+                // does not set up, so the updates would not reach the binding.)
+                var progress = new SynchronousProgress<ClassifyProgress>(p =>
+                    Status = _loc.Plural(p.Completed, "Status_Classify_Progress_One",
+                                         "Status_Classify_Progress_Other", p.Total));
+
+                var result = await _classifier.ClassifyAsync(
                     new ClassifyRequest(preflight.Items, destinations, _keepCopy,
                                         _removeAttachments, markTasksComplete, safetyCopy,
-                                        bannerSignature));
+                                        bannerSignature),
+                    progress,
+                    YieldToPump);
 
                 string verb = _loc.GetString(_keepCopy ? "Status_Classify_Copied" : "Status_Classify_Filed");
                 string failed = result.Errors > 0
@@ -547,9 +565,30 @@ namespace RBLclass.AddIn.ViewModels
             }
             finally
             {
-                Dispatcher.CurrentDispatcher.BeginInvoke(
-                    new Action(() => IsBusy = false), DispatcherPriority.Background);
+                IsBusy = false;
             }
+        }
+
+        /// <summary>
+        /// Release the STA message pump for one cycle at Background priority so
+        /// Outlook repaints and processes input between classified items (v2.4
+        /// D2). Resumes on this dispatcher, keeping the COM moves on the STA.
+        /// </summary>
+        private static async Task YieldToPump() =>
+            await Dispatcher.Yield(DispatcherPriority.Background);
+
+        /// <summary>
+        /// An <see cref="IProgress{T}"/> that invokes the handler synchronously
+        /// on the reporting thread, unlike <see cref="Progress{T}"/> which posts
+        /// to a captured <see cref="System.Threading.SynchronizationContext"/>.
+        /// The responsive classify reports on the UI thread, so this keeps the
+        /// status update inline and ordered with the message-pump yields.
+        /// </summary>
+        private sealed class SynchronousProgress<T> : IProgress<T>
+        {
+            private readonly Action<T> _handler;
+            public SynchronousProgress(Action<T> handler) => _handler = handler;
+            public void Report(T value) => _handler(value);
         }
 
         /// <summary>

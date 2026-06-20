@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 
 namespace RBLclass.Core
 {
@@ -51,177 +52,231 @@ namespace RBLclass.Core
             if (request.Items.Count == 0 || request.Destinations.Count == 0)
                 return new ClassifyResult(0, 0, 0, 0);
 
-            int processed = 0, copies = 0, moved = 0, errors = 0, encryptedSkips = 0;
-
-            // Deleted Items per source store, resolved at most once per call
-            // (only needed for the opt-in safety copy). Misses are cached too.
-            Dictionary<string, FolderNode> deletedItemsByStore = null;
-
-            // Everything reversible, recorded as it happens (v2.2 Undo).
-            var undoMoves = new List<UndoableMove>();
-            var undoCopies = new List<MailItemRef>();
-            var undoFlags = new List<MailItemRef>();
-            int strips = 0;
-
-            // Conversation keys of items actually filed, for the Auto-class
-            // history (deduped - several selected items can share a thread).
-            var filedConversationKeys = new HashSet<string>();
-
+            var acc = new ClassifyAccumulator();
             foreach (var item in request.Items)
+                ProcessItem(item, request, acc);
+
+            return BuildResult(acc, WriteHistory(request, acc));
+        }
+
+        public async Task<ClassifyResult> ClassifyAsync(ClassifyRequest request,
+            IProgress<ClassifyProgress> progress, Func<Task> yieldBetweenItems)
+        {
+            if (request == null) throw new ArgumentNullException(nameof(request));
+
+            if (request.Items.Count == 0 || request.Destinations.Count == 0)
+                return new ClassifyResult(0, 0, 0, 0);
+
+            var acc = new ClassifyAccumulator();
+            int total = request.Items.Count;
+            for (int i = 0; i < total; i++)
             {
-                try
-                {
-                    bool markComplete = request.MarkTasksComplete && SafeIsFlaggedIncomplete(item);
-                    int filed = 0;
+                ProcessItem(request.Items[i], request, acc);
+                progress?.Report(new ClassifyProgress(i + 1, total));
 
-                    // Where the item lives now - so Undo can put a moved
-                    // original back. Resolved before anything moves it.
-                    FolderNode sourceFolder = null;
-                    if (!request.KeepCopy)
-                    {
-                        try { sourceFolder = _store.GetParentFolder(item); }
-                        catch { /* tolerated: the move just won't be undoable */ }
-                    }
-
-                    // Conversation key for the history - read before the move
-                    // invalidates the reference (only when history is enabled).
-                    string conversationKey = null;
-                    if (_history != null)
-                    {
-                        try { conversationKey = _store.GetConversationKey(item); }
-                        catch { /* tolerated: this item just won't feed Auto-class */ }
-                    }
-
-                    // Copies first (the original must stay put while it is the
-                    // copy source); the original itself is then moved into the
-                    // LAST destination unless "keep a copy" is on. After the
-                    // move the original reference is invalid, so the move slot
-                    // must come last.
-                    int count = request.Destinations.Count;
-                    for (int d = 0; d < count; d++)
-                    {
-                        var destination = request.Destinations[d];
-                        bool moveSlot = !request.KeepCopy && d == count - 1;
-
-                        // Isolate each destination: one that refuses the item
-                        // (e.g. a store root that can't hold mail) must not abort
-                        // filing into the others.
-                        try
-                        {
-                            MailItemRef filedRef;
-                            if (moveSlot)
-                            {
-                                filedRef = _store.MoveItemToFolder(item, destination);
-                                if (filedRef == null)
-                                {
-                                    // The item no longer resolves - the original
-                                    // was not moved anywhere.
-                                    errors++;
-                                    continue;
-                                }
-                                moved++;
-                                if (sourceFolder != null)
-                                    undoMoves.Add(new UndoableMove(filedRef, sourceFolder));
-
-                                // Opt-in guardrail: leave a copy in the source
-                                // store's Deleted Items, taken from the moved
-                                // item at its destination (never a transient in
-                                // the displayed folder) and BEFORE stripping so
-                                // the guardrail copy keeps its attachments. Its
-                                // failure never fails the filing itself.
-                                if (request.SafetyCopy)
-                                {
-                                    try
-                                    {
-                                        var deletedItems = ResolveDeletedItems(
-                                            item.StoreId, ref deletedItemsByStore);
-                                        if (deletedItems != null)
-                                        {
-                                            var safety = _store.CopyItemToFolder(filedRef, deletedItems);
-                                            if (safety != null) undoCopies.Add(safety);
-                                        }
-                                    }
-                                    catch { /* guardrail only; the adapter logs the cause */ }
-                                }
-                            }
-                            else
-                            {
-                                filedRef = _store.CopyItemToFolder(item, destination);
-                                copies++;
-                                if (filedRef != null) undoCopies.Add(filedRef);
-                            }
-                            filed++;
-
-                            // Strip attachments / mark the task complete on the
-                            // FILED item only - with "keep a copy" on, the kept
-                            // original (and its flag/attachments) stays untouched.
-                            // Encrypted items are never stripped (their
-                            // attachments ARE the message); the store reports
-                            // the skip so the UI can say so.
-                            if (filedRef != null)
-                            {
-                                if (request.RemoveAttachments)
-                                {
-                                    if (_store.RemoveAttachments(filedRef)) strips++;
-                                    else encryptedSkips++;
-                                }
-                                // Strip the learned external banner from the filed
-                                // body (best-effort, not undoable - a body edit).
-                                if (request.StripBanner)
-                                {
-                                    try { _store.StripExternalBanner(filedRef, request.BannerSignature); }
-                                    catch { /* adapter logs; never fail the filing over a banner */ }
-                                }
-                                if (markComplete)
-                                {
-                                    _store.MarkTaskComplete(filedRef);
-                                    undoFlags.Add(filedRef);
-                                }
-                            }
-                        }
-                        catch
-                        {
-                            // This destination failed; the adapter logs the cause.
-                            // A failed move leaves the original in place - never
-                            // any data loss on failure.
-                            errors++;
-                        }
-                    }
-
-                    if (filed > 0)
-                    {
-                        processed++;
-                        if (conversationKey != null && conversationKey.Length > 0)
-                            filedConversationKeys.Add(conversationKey);
-                    }
-                }
-                catch
-                {
-                    // Unexpected per-item failure (e.g. the flag check); keep going.
-                    errors++;
-                }
+                // Yield the caller's message pump between items (not after the
+                // last - the history await below already releases it). Repaints
+                // Outlook, keeps it interactive, and gives a mail scanner a
+                // stable window before the next move (D1).
+                if (yieldBetweenItems != null && i < total - 1)
+                    await yieldBetweenItems();
             }
 
-            // Record the history for Auto-class: one batch for the whole
-            // classify action, one row per (filed conversation, destination).
-            // Best-effort - a history write never fails the classify.
+            // The history write touches SQLite, not COM - run it off the
+            // caller's (UI) thread.
+            var historyBatchIds = await Task.Run(() => WriteHistory(request, acc));
+            return BuildResult(acc, historyBatchIds);
+        }
+
+        /// <summary>
+        /// File one item per <paramref name="request"/>, accumulating reversible
+        /// actions and counts into <paramref name="acc"/>. Shared by the
+        /// synchronous <see cref="Classify"/> and the responsive
+        /// <see cref="ClassifyAsync"/> so both produce an identical item order
+        /// and undo plan.
+        /// </summary>
+        private void ProcessItem(MailItemRef item, ClassifyRequest request, ClassifyAccumulator acc)
+        {
+            try
+            {
+                bool markComplete = request.MarkTasksComplete && SafeIsFlaggedIncomplete(item);
+                int filed = 0;
+
+                // Where the item lives now - so Undo can put a moved
+                // original back. Resolved before anything moves it.
+                FolderNode sourceFolder = null;
+                if (!request.KeepCopy)
+                {
+                    try { sourceFolder = _store.GetParentFolder(item); }
+                    catch { /* tolerated: the move just won't be undoable */ }
+                }
+
+                // Conversation key for the history - read before the move
+                // invalidates the reference (only when history is enabled).
+                string conversationKey = null;
+                if (_history != null)
+                {
+                    try { conversationKey = _store.GetConversationKey(item); }
+                    catch { /* tolerated: this item just won't feed Auto-class */ }
+                }
+
+                // Copies first (the original must stay put while it is the
+                // copy source); the original itself is then moved into the
+                // LAST destination unless "keep a copy" is on. After the
+                // move the original reference is invalid, so the move slot
+                // must come last.
+                int count = request.Destinations.Count;
+                for (int d = 0; d < count; d++)
+                {
+                    var destination = request.Destinations[d];
+                    bool moveSlot = !request.KeepCopy && d == count - 1;
+
+                    // Isolate each destination: one that refuses the item
+                    // (e.g. a store root that can't hold mail) must not abort
+                    // filing into the others.
+                    try
+                    {
+                        MailItemRef filedRef;
+                        if (moveSlot)
+                        {
+                            filedRef = _store.MoveItemToFolder(item, destination);
+                            if (filedRef == null)
+                            {
+                                // The item no longer resolves - the original
+                                // was not moved anywhere.
+                                acc.Errors++;
+                                continue;
+                            }
+                            acc.Moved++;
+                            if (sourceFolder != null)
+                                acc.Moves.Add(new UndoableMove(filedRef, sourceFolder));
+
+                            // Opt-in guardrail: leave a copy in the source
+                            // store's Deleted Items, taken from the moved
+                            // item at its destination (never a transient in
+                            // the displayed folder) and BEFORE stripping so
+                            // the guardrail copy keeps its attachments. Its
+                            // failure never fails the filing itself.
+                            if (request.SafetyCopy)
+                            {
+                                try
+                                {
+                                    var deletedItems = ResolveDeletedItems(
+                                        item.StoreId, ref acc.DeletedItemsByStore);
+                                    if (deletedItems != null)
+                                    {
+                                        var safety = _store.CopyItemToFolder(filedRef, deletedItems);
+                                        if (safety != null) acc.CreatedCopies.Add(safety);
+                                    }
+                                }
+                                catch { /* guardrail only; the adapter logs the cause */ }
+                            }
+                        }
+                        else
+                        {
+                            filedRef = _store.CopyItemToFolder(item, destination);
+                            acc.Copies++;
+                            if (filedRef != null) acc.CreatedCopies.Add(filedRef);
+                        }
+                        filed++;
+
+                        // Strip attachments / mark the task complete on the
+                        // FILED item only - with "keep a copy" on, the kept
+                        // original (and its flag/attachments) stays untouched.
+                        // Encrypted items are never stripped (their
+                        // attachments ARE the message); the store reports
+                        // the skip so the UI can say so.
+                        if (filedRef != null)
+                        {
+                            if (request.RemoveAttachments)
+                            {
+                                if (_store.RemoveAttachments(filedRef)) acc.Strips++;
+                                else acc.EncryptedSkips++;
+                            }
+                            // Strip the learned external banner from the filed
+                            // body (best-effort, not undoable - a body edit).
+                            if (request.StripBanner)
+                            {
+                                try { _store.StripExternalBanner(filedRef, request.BannerSignature); }
+                                catch { /* adapter logs; never fail the filing over a banner */ }
+                            }
+                            if (markComplete)
+                            {
+                                _store.MarkTaskComplete(filedRef);
+                                acc.Flags.Add(filedRef);
+                            }
+                        }
+                    }
+                    catch
+                    {
+                        // This destination failed; the adapter logs the cause.
+                        // A failed move leaves the original in place - never
+                        // any data loss on failure.
+                        acc.Errors++;
+                    }
+                }
+
+                if (filed > 0)
+                {
+                    acc.Processed++;
+                    if (conversationKey != null && conversationKey.Length > 0)
+                        acc.FiledConversationKeys.Add(conversationKey);
+                }
+            }
+            catch
+            {
+                // Unexpected per-item failure (e.g. the flag check); keep going.
+                acc.Errors++;
+            }
+        }
+
+        /// <summary>
+        /// Record the history for Auto-class: one batch for the whole classify
+        /// action, one row per (filed conversation, destination). Best-effort -
+        /// a history write never fails the classify. Returns the batch id(s).
+        /// </summary>
+        private List<string> WriteHistory(ClassifyRequest request, ClassifyAccumulator acc)
+        {
             var historyBatchIds = new List<string>();
-            if (_history != null && filedConversationKeys.Count > 0)
+            if (_history != null && acc.FiledConversationKeys.Count > 0)
             {
                 string batchId = Guid.NewGuid().ToString("N");
                 try
                 {
                     var whenUtc = DateTime.UtcNow;
-                    foreach (var key in filedConversationKeys)
+                    foreach (var key in acc.FiledConversationKeys)
                         _history.Record(batchId, key, request.Destinations, whenUtc);
                     historyBatchIds.Add(batchId);
                 }
                 catch { /* Auto-class just won't learn this one */ }
             }
+            return historyBatchIds;
+        }
 
-            var plan = new ClassifyUndoPlan(undoMoves, undoCopies, undoFlags, strips, historyBatchIds);
-            return new ClassifyResult(processed, copies, moved, errors, encryptedSkips,
+        private static ClassifyResult BuildResult(ClassifyAccumulator acc, List<string> historyBatchIds)
+        {
+            var plan = new ClassifyUndoPlan(acc.Moves, acc.CreatedCopies, acc.Flags, acc.Strips, historyBatchIds);
+            return new ClassifyResult(acc.Processed, acc.Copies, acc.Moved, acc.Errors, acc.EncryptedSkips,
                                       plan.IsEmpty ? null : plan);
+        }
+
+        /// <summary>Mutable per-call scratch shared by the sync and async classify paths.</summary>
+        private sealed class ClassifyAccumulator
+        {
+            public int Processed, Copies, Moved, Errors, EncryptedSkips, Strips;
+
+            // Everything reversible, recorded as it happens (v2.2 Undo).
+            public readonly List<UndoableMove> Moves = new List<UndoableMove>();
+            public readonly List<MailItemRef> CreatedCopies = new List<MailItemRef>();
+            public readonly List<MailItemRef> Flags = new List<MailItemRef>();
+
+            // Conversation keys of items actually filed, for the Auto-class
+            // history (deduped - several selected items can share a thread).
+            public readonly HashSet<string> FiledConversationKeys = new HashSet<string>();
+
+            // Deleted Items per source store, resolved at most once per call
+            // (only needed for the opt-in safety copy). Misses are cached too.
+            public Dictionary<string, FolderNode> DeletedItemsByStore;
         }
 
         public UndoResult Undo(ClassifyUndoPlan plan)

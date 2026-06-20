@@ -1,9 +1,11 @@
 using System;
+using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
 using RBLclass.AddIn.ViewModels;
+using Serilog;
 
 namespace RBLclass.AddIn.Views
 {
@@ -24,12 +26,13 @@ namespace RBLclass.AddIn.Views
         // pressed - releasing it must then NOT toggle "List every matching folder".
         private bool _ctrlComboUsed;
 
-        private void QueryBox_KeyDown(object sender, KeyEventArgs e)
+        private async void QueryBox_KeyDown(object sender, KeyEventArgs e)
         {
             if (e.Key == Key.Enter)
             {
-                Vm?.FileToHighlighted();
                 e.Handled = true;
+                try { await (Vm?.FileToHighlighted() ?? Task.CompletedTask); }
+                catch (Exception ex) { Log.Error(ex, "FileToHighlighted failed."); }
             }
         }
 
@@ -75,7 +78,7 @@ namespace RBLclass.AddIn.Views
             }
         }
 
-        private void ResultsList_MouseDoubleClick(object sender, MouseButtonEventArgs e)
+        private async void ResultsList_MouseDoubleClick(object sender, MouseButtonEventArgs e)
         {
             // Ignore double-clicks that land on the per-row buttons.
             if (IsWithinButton(e.OriginalSource as DependencyObject)) return;
@@ -84,10 +87,16 @@ namespace RBLclass.AddIn.Views
             // current selection (clicking a row toggles its checkbox without
             // changing the ListBox selection).
             var folder = ResolveFolder(e.OriginalSource as DependencyObject);
-            if (folder != null) Vm?.FileToFolder(folder.Folder);
+            if (folder == null) return;
+            try { await (Vm?.FileToFolder(folder.Folder) ?? Task.CompletedTask); }
+            catch (Exception ex) { Log.Error(ex, "FileToFolder failed."); }
         }
 
-        private void Classify_Click(object sender, RoutedEventArgs e) => Vm?.ClassifyChecked();
+        private async void Classify_Click(object sender, RoutedEventArgs e)
+        {
+            try { await (Vm?.ClassifyChecked() ?? Task.CompletedTask); }
+            catch (Exception ex) { Log.Error(ex, "ClassifyChecked failed."); }
+        }
 
         private void RemoveDestination_Click(object sender, RoutedEventArgs e)
         {

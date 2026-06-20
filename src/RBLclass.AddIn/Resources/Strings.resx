@@ -111,6 +111,12 @@
   <data name="MainPane_Busy_Filing" xml:space="preserve">
     <value>Filing…</value>
   </data>
+  <data name="Status_Classify_Progress_One" xml:space="preserve">
+    <value>Filing {0} of {1}…</value>
+  </data>
+  <data name="Status_Classify_Progress_Other" xml:space="preserve">
+    <value>Filing {0} of {1}…</value>
+  </data>
 
   <!-- SettingsWindow -->
   <data name="Settings_Title" xml:space="preserve">

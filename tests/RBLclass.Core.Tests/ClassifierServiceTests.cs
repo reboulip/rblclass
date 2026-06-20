@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 using FluentAssertions;
 using NSubstitute;
 using RBLclass.Core;
@@ -743,6 +744,107 @@ namespace RBLclass.Core.Tests
             result.Errors.Should().Be(1);
             result.ItemsProcessed.Should().Be(1); // e2
             result.OriginalsMoved.Should().Be(1); // only e2 moved
+        }
+
+        // --- Responsive classify (v2.4 D2) --------------------------------
+
+        private static readonly Func<Task> NoYield = () => Task.CompletedTask;
+
+        private sealed class CollectingProgress : IProgress<ClassifyProgress>
+        {
+            public readonly List<ClassifyProgress> Reports = new List<ClassifyProgress>();
+            public void Report(ClassifyProgress value) => Reports.Add(value);
+        }
+
+        [Fact]
+        public async Task ClassifyAsync_reports_progress_once_per_item_with_running_totals()
+        {
+            var store = StoreWithWorkingMove();
+            var sut = new ClassifierService(store);
+            var progress = new CollectingProgress();
+
+            await sut.ClassifyAsync(new ClassifyRequest(
+                    new[] { Item("e1"), Item("e2"), Item("e3") }, new[] { D1 },
+                    keepCopy: false, removeAttachments: false),
+                progress, NoYield);
+
+            progress.Reports.Select(p => p.Completed).Should().Equal(1, 2, 3);
+            progress.Reports.Should().OnlyContain(p => p.Total == 3);
+        }
+
+        [Fact]
+        public async Task ClassifyAsync_yields_between_items_but_not_after_the_last()
+        {
+            var store = StoreWithWorkingMove();
+            var sut = new ClassifierService(store);
+            int yields = 0;
+
+            await sut.ClassifyAsync(new ClassifyRequest(
+                    new[] { Item("e1"), Item("e2"), Item("e3") }, new[] { D1 },
+                    keepCopy: false, removeAttachments: false),
+                null, () => { yields++; return Task.CompletedTask; });
+
+            yields.Should().Be(2); // N-1: between items, never after the final one
+        }
+
+        [Fact]
+        public async Task ClassifyAsync_files_and_builds_the_same_undo_plan_as_the_sync_path()
+        {
+            var store = StoreWithWorkingMove();
+            store.GetParentFolder(Arg.Any<MailItemRef>()).Returns(Dest("src", "Inbox"));
+            var sut = new ClassifierService(store);
+
+            var result = await sut.ClassifyAsync(new ClassifyRequest(
+                    new[] { Item("e1"), Item("e2") }, new[] { D1, D2 },
+                    keepCopy: false, removeAttachments: false),
+                null, NoYield);
+
+            // Identical mechanics to Without_keep_copy_..., driven async.
+            store.Received(2).CopyItemToFolder(Arg.Any<MailItemRef>(), D1);
+            store.Received(2).MoveItemToFolder(Arg.Any<MailItemRef>(), D2);
+            result.ItemsProcessed.Should().Be(2);
+            result.CopiesMade.Should().Be(2);
+            result.OriginalsMoved.Should().Be(2);
+            result.Undo.Moves.Should().HaveCount(2);
+        }
+
+        [Fact]
+        public async Task ClassifyAsync_writes_history_once_per_conversation_off_the_caller_thread()
+        {
+            var store = StoreWithWorkingMove();
+            var history = Substitute.For<IClassificationHistory>();
+            store.GetConversationKey(Arg.Any<MailItemRef>())
+                 .Returns(ci => "conv-" + ((MailItemRef)ci[0]).EntryId);
+            store.GetParentFolder(Arg.Any<MailItemRef>()).Returns(Dest("src", "Inbox"));
+            var sut = new ClassifierService(store, history);
+
+            var result = await sut.ClassifyAsync(new ClassifyRequest(
+                    new[] { Item("e1"), Item("e2") }, new[] { D1 },
+                    keepCopy: false, removeAttachments: false),
+                null, NoYield);
+
+            history.Received(1).Record(Arg.Any<string>(), "conv-e1",
+                Arg.Any<IEnumerable<FolderNode>>(), Arg.Any<DateTime>());
+            history.Received(1).Record(Arg.Any<string>(), "conv-e2",
+                Arg.Any<IEnumerable<FolderNode>>(), Arg.Any<DateTime>());
+            result.Undo.HistoryBatchIds.Should().ContainSingle();
+        }
+
+        [Fact]
+        public async Task ClassifyAsync_keeps_the_encrypted_skip_behaviour()
+        {
+            var store = StoreWithWorkingMove();
+            store.RemoveAttachments(Arg.Any<MailItemRef>()).Returns(false); // encrypted: refused
+            var sut = new ClassifierService(store);
+
+            var result = await sut.ClassifyAsync(new ClassifyRequest(
+                    new[] { Item("e1") }, new[] { D1 },
+                    keepCopy: false, removeAttachments: true),
+                null, NoYield);
+
+            result.EncryptedStripSkips.Should().Be(1);
+            result.ItemsProcessed.Should().Be(1); // still filed, just not stripped
+            result.Errors.Should().Be(0);
         }
     }
 }

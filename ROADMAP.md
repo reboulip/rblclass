@@ -57,7 +57,7 @@ taken with the maintainer on 2026-06-20 are baked into each item.
 
 ### D. Classify reliability & performance
 
-- [ ] **D1. MAPI_E_NOT_FOUND on multi-item classify (Stormshield) — cosmetic.**
+- [x] **D1. MAPI_E_NOT_FOUND on multi-item classify (Stormshield) — cosmetic.**
       The pure-move classify of v2.2 did not eliminate the
       `IMessage.GetAttachmentTable: MAPI_E_NOT_FOUND` emitted by Stormshield's
       `Arkoon.SecurityBox…OnBeforeReadAsync`. The error is **cosmetic** —
@@ -76,7 +76,7 @@ taken with the maintainer on 2026-06-20 are baked into each item.
         residual remains, add the optional hidden `InterItemDelayMs` fallback.
         Close D1 against the same target pass that validates D2.
 
-- [ ] **D2. Classify is slow and freezes the whole Outlook UI — investigate,
+- [x] **D2. Classify is slow and freezes the whole Outlook UI — investigate,
       then make classify responsive.** In production, classify sometimes takes
       several seconds and Outlook is **fully frozen** for the duration, despite
       the "optimistic / async" intent in CLAUDE.md.
