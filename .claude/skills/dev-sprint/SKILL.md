@@ -20,6 +20,13 @@ implemented, so the brief is ready as soon as the next item begins.
 
 ---
 
+## Rules
+
+Always perform the dev sprint in develop branch, and make sure develop is up
+to date with main before starting.
+
+---
+
 ## Step 0 — Locate the active sprint
 
 Read `ROADMAP.md`. The active sprint is the **highest-versioned** `## vX.X.X`
