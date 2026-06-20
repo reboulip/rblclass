@@ -11,6 +11,7 @@
     <Grid>
         <Grid.Resources>
             <BooleanToVisibilityConverter x:Key="BoolToVis" />
+            <v:InverseBoolToVisibilityConverter x:Key="InverseBoolToVis" />
         </Grid.Resources>
 
         <!-- Disabled while a classify runs (re-entrancy guard). -->
@@ -58,8 +59,9 @@
                      ToolTip="{loc:Loc Key=MainPane_QueryBox_ToolTip}" />
 
             <!-- The shared list. Single-click toggles a folder as a destination;
-                 double-click files into that one folder; the per-row buttons open
-                 the folder in Outlook or create a sub-folder under it. -->
+                 double-click files into that one folder; the ↗ button opens the
+                 folder in Outlook, the ⤢ button expands that one row to a
+                 multi-line full path, and right-click adds a sub-folder. -->
             <ListBox Grid.Row="2" x:Name="ResultsList"
                      ItemsSource="{Binding Results}"
                      SelectedItem="{Binding SelectedResult}"
@@ -69,14 +71,34 @@
                 <ListBox.ItemTemplate>
                     <DataTemplate>
                         <DockPanel LastChildFill="True">
-                            <Button DockPanel.Dock="Right" Content="↗" Width="22" Padding="0"
+                            <DockPanel.ContextMenu>
+                                <ContextMenu>
+                                    <MenuItem Header="{loc:Loc Key=MainPane_NewSubfolder_MenuItem}"
+                                              Click="NewSubfolder_Click" />
+                                </ContextMenu>
+                            </DockPanel.ContextMenu>
+                            <Button DockPanel.Dock="Right" Content="↗" Width="22" Padding="0" VerticalAlignment="Top"
                                     Click="OpenFolder_Click" ToolTip="{loc:Loc Key=MainPane_OpenFolder_ToolTip}" />
-                            <Button DockPanel.Dock="Right" Content="+" Width="22" Padding="0" Margin="0,0,3,0"
-                                    Click="NewSubfolder_Click" ToolTip="{loc:Loc Key=MainPane_NewSubfolder_ToolTip}" />
+                            <Button DockPanel.Dock="Right" Content="⤢" Width="22" Padding="0" Margin="0,0,3,0" VerticalAlignment="Top"
+                                    Click="ExpandPath_Click"
+                                    ToolTip="{loc:Loc Key=MainPane_ExpandPath_ToolTip}" />
                             <CheckBox IsChecked="{Binding IsSelected}"
                                       HorizontalContentAlignment="Stretch" VerticalContentAlignment="Center">
-                                <TextBlock v:PathTrim.FullPath="{Binding DisplayPath}"
-                                           v:PathTrim.RightReserve="52" />
+                                <Grid>
+                                    <!-- Collapsed: single left-trimmed line. -->
+                                    <TextBlock v:PathTrim.FullPath="{Binding DisplayPath}"
+                                               v:PathTrim.RightReserve="52"
+                                               Visibility="{Binding IsExpanded, Converter={StaticResource InverseBoolToVis}}" />
+                                    <!-- Expanded: full path, one segment per line, no indentation. -->
+                                    <ItemsControl ItemsSource="{Binding PathSegments}"
+                                                  Visibility="{Binding IsExpanded, Converter={StaticResource BoolToVis}}">
+                                        <ItemsControl.ItemTemplate>
+                                            <DataTemplate>
+                                                <TextBlock Text="{Binding}" TextWrapping="Wrap" />
+                                            </DataTemplate>
+                                        </ItemsControl.ItemTemplate>
+                                    </ItemsControl>
+                                </Grid>
                             </CheckBox>
                         </DockPanel>
                     </DataTemplate>

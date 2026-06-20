@@ -113,6 +113,12 @@ namespace RBLclass.AddIn.Views
             if (folder != null) Vm?.CreateSubfolderUnder(folder.Folder);
         }
 
+        private void ExpandPath_Click(object sender, RoutedEventArgs e)
+        {
+            var folder = (sender as FrameworkElement)?.DataContext as SelectableFolder;
+            if (folder != null) folder.IsExpanded = !folder.IsExpanded;
+        }
+
         private static bool IsWithinButton(DependencyObject node)
         {
             while (node != null)

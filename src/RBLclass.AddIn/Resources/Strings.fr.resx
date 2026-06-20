@@ -87,8 +87,11 @@
   <data name="MainPane_OpenFolder_ToolTip" xml:space="preserve">
     <value>Ouvrir ce dossier dans Outlook</value>
   </data>
-  <data name="MainPane_NewSubfolder_ToolTip" xml:space="preserve">
-    <value>Créer un sous-dossier ici</value>
+  <data name="MainPane_NewSubfolder_MenuItem" xml:space="preserve">
+    <value>Ajouter un sous-dossier…</value>
+  </data>
+  <data name="MainPane_ExpandPath_ToolTip" xml:space="preserve">
+    <value>Afficher le chemin complet sur plusieurs lignes</value>
   </data>
   <data name="MainPane_ClearSelection_Button" xml:space="preserve">
     <value>effacer</value>

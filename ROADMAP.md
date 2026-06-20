@@ -824,7 +824,7 @@ CLAUDE.md.
 
 ### C. Search results display
 
-- [ ] **C1. Hierarchical folder path display (user setting).**
+- [x] **C1. Per-row expandable folder path (replaced the hierarchical-display setting).**
       Results currently show the full path as a single left-trimmed
       string (`Personal Archive\Projects\2024\RBLclass`). For deeply
       nested folders the leaf is often cut. Add a second display mode

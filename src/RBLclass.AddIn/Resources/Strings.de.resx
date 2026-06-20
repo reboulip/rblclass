@@ -87,8 +87,11 @@
   <data name="MainPane_OpenFolder_ToolTip" xml:space="preserve">
     <value>Diesen Ordner in Outlook öffnen</value>
   </data>
-  <data name="MainPane_NewSubfolder_ToolTip" xml:space="preserve">
-    <value>Hier einen Unterordner erstellen</value>
+  <data name="MainPane_NewSubfolder_MenuItem" xml:space="preserve">
+    <value>Unterordner hinzufügen…</value>
+  </data>
+  <data name="MainPane_ExpandPath_ToolTip" xml:space="preserve">
+    <value>Den vollständigen Pfad mehrzeilig anzeigen</value>
   </data>
   <data name="MainPane_ClearSelection_Button" xml:space="preserve">
     <value>leeren</value>
