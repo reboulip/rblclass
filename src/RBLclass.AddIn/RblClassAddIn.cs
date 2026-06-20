@@ -7,6 +7,7 @@ using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Windows.Forms;
 using Extensibility;
+using RBLclass.AddIn.Localization;
 using RBLclass.AddIn.ViewModels;
 using RBLclass.AddIn.Views;
 using RBLclass.Core;
@@ -157,6 +158,14 @@ namespace RBLclass.AddIn
                 _settingsStore = new SqliteSettingsStore(connectionString);
                 _settingsStore.EnsureSchema();
 
+                // Resolve the UI language once, before any pane/window is
+                // created - LocExtension and ViewModel constructors read
+                // TaskPaneServices.Localization (CLAUDE.md / i18n plan).
+                var preferredLanguage = Settings.Load(_settingsStore).PreferredUiLanguage;
+                var outlookLanguage = new OutlookUiLanguageProvider(_outlookApp).GetOutlookUiLanguageCode();
+                var resolvedLanguage = UiLanguageResolver.Resolve(preferredLanguage, outlookLanguage);
+                TaskPaneServices.Localization = new LocalizationService(resolvedLanguage);
+
                 _classificationHistory = new SqliteClassificationHistory(connectionString);
                 _classificationHistory.EnsureSchema();
 
@@ -202,11 +211,13 @@ namespace RBLclass.AddIn
                 };
                 TaskPaneServices.ConfirmMarkTasksComplete = count =>
                 {
-                    string noun = count == 1 ? "item is" : "items are";
+                    var loc = TaskPaneServices.Localization;
+                    string body = loc.Plural(count,
+                        "MsgBox_ConfirmMarkTasksComplete_Body_One",
+                        "MsgBox_ConfirmMarkTasksComplete_Body_Other");
                     var answer = MessageBox.Show(
-                        count + " selected " + noun + " flagged as an incomplete task.\n\n" +
-                        "Mark them complete in the destination folder?",
-                        "RBLclass - Classify",
+                        body,
+                        loc.GetString("MsgBox_ConfirmMarkTasksComplete_Title"),
                         MessageBoxButtons.YesNoCancel, MessageBoxIcon.Question);
                     switch (answer)
                     {
@@ -217,22 +228,25 @@ namespace RBLclass.AddIn
                 };
                 TaskPaneServices.ConfirmSendWithoutAttachment = () =>
                 {
+                    var loc = TaskPaneServices.Localization;
                     var answer = MessageBox.Show(
-                        "This message mentions an attachment, but none is attached.\n\n" +
-                        "Send anyway?",
-                        "RBLclass - Send",
+                        loc.GetString("MsgBox_ConfirmSendWithoutAttachment_Body"),
+                        loc.GetString("MsgBox_ConfirmSendWithoutAttachment_Title"),
                         MessageBoxButtons.YesNo, MessageBoxIcon.Warning);
                     return answer == DialogResult.Yes;
                 };
                 TaskPaneServices.ConfirmSendToExternal = external =>
                 {
+                    var loc = TaskPaneServices.Localization;
                     string list = string.Join("\n", external.Select(r =>
                         string.IsNullOrEmpty(r.DisplayName) ? r.Address : r.DisplayName + " <" + r.Address + ">"));
-                    string noun = external.Count == 1 ? "recipient is" : "recipients are";
+                    string body = loc.Plural(external.Count,
+                        "MsgBox_ConfirmSendToExternal_Body_One",
+                        "MsgBox_ConfirmSendToExternal_Body_Other",
+                        list);
                     var answer = MessageBox.Show(
-                        external.Count + " " + noun + " outside the organisation:\n\n" + list +
-                        "\n\nSend anyway?",
-                        "RBLclass - Send",
+                        body,
+                        loc.GetString("MsgBox_ConfirmSendToExternal_Title"),
                         MessageBoxButtons.YesNo, MessageBoxIcon.Warning);
                     return answer == DialogResult.Yes;
                 };
@@ -364,7 +378,15 @@ namespace RBLclass.AddIn
             try
             {
                 var asm = Assembly.GetExecutingAssembly();
-                using (var stream = asm.GetManifestResourceStream("RBLclass.AddIn.Ribbon.xml"))
+                string resourceName;
+                switch (TaskPaneServices.Localization?.CurrentLanguage)
+                {
+                    case "fr": resourceName = "RBLclass.AddIn.Ribbon.fr.xml"; break;
+                    case "de": resourceName = "RBLclass.AddIn.Ribbon.de.xml"; break;
+                    default: resourceName = "RBLclass.AddIn.Ribbon.xml"; break;
+                }
+
+                using (var stream = asm.GetManifestResourceStream(resourceName))
                 {
                     if (stream == null)
                         return string.Empty;
@@ -394,17 +416,19 @@ namespace RBLclass.AddIn
         {
             try
             {
+                var loc = TaskPaneServices.Localization;
                 var items = _mailStore.GetSelectedItems();
                 if (items.Count == 0)
                 {
-                    MessageBox.Show("Select one or more mails first.", "RBLclass",
+                    MessageBox.Show(loc.GetString("MsgBox_RemoveAttachments_SelectFirst"),
+                                    loc.GetString("MsgBox_Info_Title"),
                                     MessageBoxButtons.OK, MessageBoxIcon.Information);
                     return;
                 }
 
                 var confirm = MessageBox.Show(
-                    "Remove all attachments from " + items.Count + " mail(s)? This cannot be undone.",
-                    "RBLclass - Remove attachments",
+                    loc.GetString("MsgBox_RemoveAttachments_Confirm", items.Count),
+                    loc.GetString("MsgBox_RemoveAttachments_Title"),
                     MessageBoxButtons.YesNo, MessageBoxIcon.Warning);
                 if (confirm != DialogResult.Yes) return;
 
@@ -421,11 +445,12 @@ namespace RBLclass.AddIn
 
                 Log.Information("Removed attachments from {Count} mail(s) ({Skipped} encrypted skipped).",
                                 done, skippedEncrypted);
-                string summary = "Removed attachments from " + done + " mail(s).";
+                string summary = loc.GetString("MsgBox_RemoveAttachments_Summary", done);
                 if (skippedEncrypted > 0)
-                    summary += "\n\n" + skippedEncrypted + " encrypted mail(s) were skipped - " +
-                               "their attachments are the message itself.";
-                MessageBox.Show(summary, "RBLclass",
+                    summary += loc.Plural(skippedEncrypted,
+                        "MsgBox_RemoveAttachments_SkippedEncrypted_One",
+                        "MsgBox_RemoveAttachments_SkippedEncrypted_Other");
+                MessageBox.Show(summary, loc.GetString("MsgBox_Info_Title"),
                                 MessageBoxButtons.OK, MessageBoxIcon.Information);
             }
             catch (Exception ex)
@@ -655,35 +680,29 @@ namespace RBLclass.AddIn
         {
             try
             {
+                var loc = TaskPaneServices.Localization;
                 var r = _lastIndexResult;
                 int cached = _folderTree != null ? _folderTree.GetAll().Count : 0;
 
                 string status;
                 if (r == null)
                 {
-                    status = "Indexing has not started yet.";
+                    status = loc.GetString("MsgBox_IndexStatus_NotStarted");
                 }
                 else if (r.Source == IndexSource.NeedsWalk)
                 {
-                    status = "First-run folder walk is scheduled / in progress." +
-                             Environment.NewLine +
-                             "Reopen this dialog in a moment to see the counts.";
+                    status = loc.GetString("MsgBox_IndexStatus_WalkScheduled");
                 }
                 else
                 {
-                    status =
-                        "Index source : " + r.Source + Environment.NewLine +
-                        "Stores       : " + r.StoreCount + Environment.NewLine +
-                        "Folders      : " + r.FolderCount + Environment.NewLine +
-                        "Cached now   : " + cached;
+                    status = loc.GetString("MsgBox_IndexStatus_Summary",
+                        r.Source, r.StoreCount, r.FolderCount, cached);
                 }
 
-                string message =
-                    status + Environment.NewLine + Environment.NewLine +
-                    "Database : " + _dbPath + Environment.NewLine +
-                    "Logs     : " + _logDirectory;
+                string message = status + Environment.NewLine + Environment.NewLine +
+                    loc.GetString("MsgBox_IndexStatus_Footer", _dbPath, _logDirectory);
 
-                MessageBox.Show(message, "RBLclass - Folder index",
+                MessageBox.Show(message, loc.GetString("MsgBox_IndexStatus_Title"),
                                 MessageBoxButtons.OK, MessageBoxIcon.Information);
             }
             catch (Exception ex)
@@ -703,10 +722,11 @@ namespace RBLclass.AddIn
         {
             try
             {
+                var loc = TaskPaneServices.Localization;
                 if (_folderTree == null)
                 {
-                    MessageBox.Show("The folder index is not ready yet.",
-                                    "RBLclass - Refresh folders",
+                    MessageBox.Show(loc.GetString("MsgBox_RefreshFolders_NotReady"),
+                                    loc.GetString("MsgBox_RefreshFolders_Title"),
                                     MessageBoxButtons.OK, MessageBoxIcon.Information);
                     return;
                 }
@@ -727,11 +747,9 @@ namespace RBLclass.AddIn
                 }
 
                 MessageBox.Show(
-                    "Folder index refreshed." + Environment.NewLine + Environment.NewLine +
-                    "Stores  : " + _lastIndexResult.StoreCount + Environment.NewLine +
-                    "Folders : " + _lastIndexResult.FolderCount + Environment.NewLine + Environment.NewLine +
-                    "Re-run your search to see newly created or renamed folders.",
-                    "RBLclass - Refresh folders",
+                    loc.GetString("MsgBox_RefreshFolders_Result",
+                        _lastIndexResult.StoreCount, _lastIndexResult.FolderCount),
+                    loc.GetString("MsgBox_RefreshFolders_Title"),
                     MessageBoxButtons.OK, MessageBoxIcon.Information);
             }
             catch (Exception ex)
@@ -854,7 +872,9 @@ namespace RBLclass.AddIn
         {
             try
             {
-                MessageBox.Show(ex.ToString(), "RBLclass - " + title,
+                var loc = TaskPaneServices.Localization;
+                string caption = loc != null ? loc.GetString("MsgBox_ErrorTitle", title) : "RBLclass - " + title;
+                MessageBox.Show(ex.ToString(), caption,
                                 MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
             catch

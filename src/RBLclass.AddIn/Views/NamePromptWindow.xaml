@@ -4,7 +4,8 @@
         mc:Ignorable="d"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
-        Title="RBLclass - New sub-folder" Height="160" Width="360"
+        xmlns:loc="clr-namespace:RBLclass.AddIn.Localization"
+        Title="{loc:Loc Key=NamePrompt_Title}" Height="160" Width="360"
         WindowStartupLocation="CenterOwner" ResizeMode="NoResize"
         ShowInTaskbar="False"
         d:DesignHeight="160" d:DesignWidth="360">
@@ -17,14 +18,14 @@
         </Grid.RowDefinitions>
 
         <TextBlock Grid.Row="0" x:Name="PromptLabel" TextWrapping="Wrap"
-                   Text="Name of the new sub-folder:" />
+                   Text="{loc:Loc Key=NamePrompt_Label}" />
 
         <TextBox Grid.Row="1" x:Name="NameBox" Margin="0,8,0,0"
                  KeyDown="NameBox_KeyDown" />
 
         <StackPanel Grid.Row="3" Orientation="Horizontal" HorizontalAlignment="Right">
-            <Button Content="Create" Click="Ok_Click" Margin="0,0,8,0" Padding="14,3" IsDefault="True" />
-            <Button Content="Cancel" Click="Cancel_Click" Padding="14,3" IsCancel="True" />
+            <Button Content="{loc:Loc Key=NamePrompt_Create_Button}" Click="Ok_Click" Margin="0,0,8,0" Padding="14,3" IsDefault="True" />
+            <Button Content="{loc:Loc Key=NamePrompt_Cancel_Button}" Click="Cancel_Click" Padding="14,3" IsCancel="True" />
         </StackPanel>
     </Grid>
 </Window>

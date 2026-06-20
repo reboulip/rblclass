@@ -47,6 +47,7 @@ namespace RBLclass.Core
         public IReadOnlyList<string> InternalDomains { get; set; }
         public IReadOnlyList<string> ForgottenAttachmentKeywords { get; set; }
         public SentItemTriageMode SentItemTriageMode { get; set; }
+        public string PreferredUiLanguage { get; set; }
 
         /// <summary>Read every key, falling back to the same defaults the individual call sites use today.</summary>
         public static Settings Load(ISettingsStore store)
@@ -74,7 +75,8 @@ namespace RBLclass.Core
                     SettingsKeys.ForgottenAttachmentKeywords, DefaultForgottenAttachmentKeywords)),
                 SentItemTriageMode = ParseTriageMode(
                     store.Get(SettingsKeys.SentItemTriageMode, null),
-                    store.GetBool(SettingsKeys.SentItemTriagePrompt, true))
+                    store.GetBool(SettingsKeys.SentItemTriagePrompt, true)),
+                PreferredUiLanguage = ParseUiLanguage(store.Get(SettingsKeys.PreferredUiLanguage, null))
             };
         }
 
@@ -98,6 +100,7 @@ namespace RBLclass.Core
             store.Set(SettingsKeys.InternalDomains, FormatList(InternalDomains));
             store.Set(SettingsKeys.ForgottenAttachmentKeywords, FormatList(ForgottenAttachmentKeywords));
             store.Set(SettingsKeys.SentItemTriageMode, SentItemTriageMode.ToString());
+            store.Set(SettingsKeys.PreferredUiLanguage, PreferredUiLanguage);
         }
 
         private static SentItemTriageMode ParseTriageMode(string raw, bool legacyPromptOn)
@@ -109,6 +112,12 @@ namespace RBLclass.Core
             // No stored mode: migrate the legacy on/off prompt (on -> ask, off ->
             // leave). Fresh installs default to asking each time.
             return legacyPromptOn ? SentItemTriageMode.AskEveryTime : SentItemTriageMode.Leave;
+        }
+
+        /// <summary>Unrecognised or missing values fall back to "Auto" (follow Outlook's UI language).</summary>
+        private static string ParseUiLanguage(string raw)
+        {
+            return UiLanguageResolver.IsSupportedLanguage(raw) || raw == "Auto" ? raw : "Auto";
         }
 
         private static FolderMatchMode ParseMatchMode(string raw)

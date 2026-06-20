@@ -5,6 +5,7 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:v="clr-namespace:RBLclass.AddIn.Views"
+             xmlns:loc="clr-namespace:RBLclass.AddIn.Localization"
              d:DesignHeight="520" d:DesignWidth="320">
     <Grid>
         <Grid.Resources>
@@ -26,9 +27,9 @@
             <DockPanel Grid.Row="0" Margin="0,0,0,6" LastChildFill="False">
                 <TextBlock DockPanel.Dock="Left" FontWeight="Bold" VerticalAlignment="Center"
                            Text="{Binding SelectionSummary}" />
-                <Button DockPanel.Dock="Right" Content="Auto-class" Padding="6,1" FontSize="11"
+                <Button DockPanel.Dock="Right" Content="{loc:Loc Key=MainPane_AutoClass_Button}" Padding="6,1" FontSize="11"
                         IsEnabled="{Binding CanAutoClass}" Click="AutoClass_Click"
-                        ToolTip="File the selected mail(s) to the folder(s) their conversation was last classified into" />
+                        ToolTip="{loc:Loc Key=MainPane_AutoClass_ToolTip}" />
             </DockPanel>
 
             <TextBox Grid.Row="1" x:Name="QueryBox" Margin="0,0,0,6"
@@ -36,15 +37,15 @@
                      KeyDown="QueryBox_KeyDown"
                      PreviewKeyDown="QueryBox_PreviewKeyDown"
                      KeyUp="QueryBox_KeyUp"
-                     ToolTip="Press Ctrl alone to toggle 'List every matching folder'" />
+                     ToolTip="{loc:Loc Key=MainPane_QueryBox_ToolTip}" />
 
             <!-- Options. "Open folders in a new window" moved to Settings (v2.2). -->
             <StackPanel Grid.Row="2" Margin="0,0,0,6">
-                <CheckBox Content="List every matching folder" IsChecked="{Binding AllResults}" />
-                <CheckBox Content="Keep a copy (don't delete originals)" Margin="0,3,0,0" IsChecked="{Binding KeepCopy}" />
-                <CheckBox Content="Remove attachments from the filed copy" Margin="0,3,0,0" IsChecked="{Binding RemoveAttachments}" />
-                <CheckBox Content="Include the whole conversation" Margin="0,3,0,0" IsChecked="{Binding WidenConversation}" />
-                <CheckBox Content="Strip the external-sender banner" Margin="0,3,0,0"
+                <CheckBox Content="{loc:Loc Key=MainPane_ListEveryFolder_CheckBox}" IsChecked="{Binding AllResults}" />
+                <CheckBox Content="{loc:Loc Key=MainPane_KeepCopy_CheckBox}" Margin="0,3,0,0" IsChecked="{Binding KeepCopy}" />
+                <CheckBox Content="{loc:Loc Key=MainPane_RemoveAttachments_CheckBox}" Margin="0,3,0,0" IsChecked="{Binding RemoveAttachments}" />
+                <CheckBox Content="{loc:Loc Key=MainPane_WidenConversation_CheckBox}" Margin="0,3,0,0" IsChecked="{Binding WidenConversation}" />
+                <CheckBox Content="{loc:Loc Key=MainPane_StripBanner_CheckBox}" Margin="0,3,0,0"
                           IsChecked="{Binding StripBanner}"
                           Visibility="{Binding CanStripBanner, Converter={StaticResource BoolToVis}}" />
             </StackPanel>
@@ -62,9 +63,9 @@
                     <DataTemplate>
                         <DockPanel LastChildFill="True">
                             <Button DockPanel.Dock="Right" Content="↗" Width="22" Padding="0"
-                                    Click="OpenFolder_Click" ToolTip="Open this folder in Outlook" />
+                                    Click="OpenFolder_Click" ToolTip="{loc:Loc Key=MainPane_OpenFolder_ToolTip}" />
                             <Button DockPanel.Dock="Right" Content="+" Width="22" Padding="0" Margin="0,0,3,0"
-                                    Click="NewSubfolder_Click" ToolTip="Create a sub-folder here" />
+                                    Click="NewSubfolder_Click" ToolTip="{loc:Loc Key=MainPane_NewSubfolder_ToolTip}" />
                             <CheckBox IsChecked="{Binding IsSelected}"
                                       HorizontalContentAlignment="Stretch" VerticalContentAlignment="Center">
                                 <TextBlock v:PathTrim.FullPath="{Binding DisplayPath}"
@@ -82,9 +83,9 @@
                 <DockPanel LastChildFill="False">
                     <TextBlock Text="{Binding SelectionHeader}" FontWeight="Bold"
                                VerticalAlignment="Center" />
-                    <Button DockPanel.Dock="Right" Content="clear" Padding="6,0"
+                    <Button DockPanel.Dock="Right" Content="{loc:Loc Key=MainPane_ClearSelection_Button}" Padding="6,0"
                             Click="ClearSelection_Click"
-                            ToolTip="Drop all selected destinations" />
+                            ToolTip="{loc:Loc Key=MainPane_ClearSelection_ToolTip}" />
                 </DockPanel>
                 <ItemsControl ItemsSource="{Binding SelectedDestinations}" Margin="0,3,0,0">
                     <ItemsControl.ItemsPanel>
@@ -104,7 +105,7 @@
                                     <Button Content="✕" Margin="4,0,0,0" Padding="2,0"
                                             BorderThickness="0" Background="Transparent"
                                             Click="RemoveDestination_Click"
-                                            ToolTip="Remove this destination" />
+                                            ToolTip="{loc:Loc Key=MainPane_RemoveDestination_ToolTip}" />
                                 </StackPanel>
                             </Border>
                         </DataTemplate>
@@ -114,9 +115,9 @@
 
             <StackPanel Grid.Row="5" Orientation="Horizontal" Margin="0,8,0,0">
                 <Button Padding="12,4" Content="{Binding ClassifyButtonText}" Click="Classify_Click" />
-                <Button Padding="12,4" Margin="6,0,0,0" Content="Undo"
+                <Button Padding="12,4" Margin="6,0,0,0" Content="{loc:Loc Key=MainPane_Undo_Button}"
                         IsEnabled="{Binding CanUndo}" Click="Undo_Click"
-                        ToolTip="Undo the last filing: put moved mails back and remove the filed copies" />
+                        ToolTip="{loc:Loc Key=MainPane_Undo_ToolTip}" />
             </StackPanel>
 
             <TextBlock Grid.Row="6" Margin="0,6,0,0" Style="{DynamicResource MutedText}"
@@ -126,7 +127,7 @@
         <!-- Busy overlay. -->
         <Border Background="{DynamicResource Theme.Background}" Opacity="0.85"
                 Visibility="{Binding IsBusy, Converter={StaticResource BoolToVis}}">
-            <TextBlock Text="Filing…" FontWeight="Bold"
+            <TextBlock Text="{loc:Loc Key=MainPane_Busy_Filing}" FontWeight="Bold"
                        HorizontalAlignment="Center" VerticalAlignment="Center" />
         </Border>
     </Grid>

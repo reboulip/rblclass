@@ -4,98 +4,99 @@
         mc:Ignorable="d"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
-        Title="RBLclass - Settings" Height="640" Width="480"
+        xmlns:loc="clr-namespace:RBLclass.AddIn.Localization"
+        Title="{loc:Loc Key=Settings_Title}" Height="640" Width="480"
         WindowStartupLocation="CenterOwner" ResizeMode="NoResize"
         d:DesignHeight="640" d:DesignWidth="480">
     <DockPanel Margin="12">
-        <Button DockPanel.Dock="Bottom" Content="Close" Click="Close_Click"
+        <Button DockPanel.Dock="Bottom" Content="{loc:Loc Key=Settings_Close_Button}" Click="Close_Click"
                 HorizontalAlignment="Right" Margin="0,12,0,0"
                 Padding="18,4" IsCancel="True" IsDefault="True" />
 
         <ScrollViewer VerticalScrollBarVisibility="Auto">
             <StackPanel>
-                <GroupBox Header="Folder search" Margin="0,0,0,8">
+                <GroupBox Header="{loc:Loc Key=Settings_FolderSearch_Header}" Margin="0,0,0,8">
                     <StackPanel Margin="6">
                         <CheckBox Margin="0,3" IsChecked="{Binding AllResults}"
-                                  Content="List every matching folder individually" />
+                                  Content="{loc:Loc Key=Settings_ListEveryFolder_CheckBox}" />
                         <CheckBox Margin="0,3" IsChecked="{Binding UseWordPrefixMatch}">
                             <TextBlock TextWrapping="Wrap" MaxWidth="400"
-                                       Text="Match only the start of words (stricter than the default 'contains' search)" />
+                                       Text="{loc:Loc Key=Settings_WordPrefixMatch_CheckBox}" />
                         </CheckBox>
                         <CheckBox Margin="0,3" IsChecked="{Binding OpenInNewWindow}"
-                                  Content="Open folders in a new explorer window" />
+                                  Content="{loc:Loc Key=Settings_OpenInNewWindow_CheckBox}" />
                         <DockPanel Margin="0,8,0,2" LastChildFill="False">
-                            <TextBlock Text="Maximum results to display:" VerticalAlignment="Center" />
+                            <TextBlock Text="{loc:Loc Key=Settings_MaxResults_Label}" VerticalAlignment="Center" />
                             <TextBox DockPanel.Dock="Right" Width="60" Margin="6,0,0,0"
                                      Text="{Binding MaxResultsText, UpdateSourceTrigger=LostFocus}" />
                         </DockPanel>
                         <DockPanel Margin="0,4,0,2" LastChildFill="False">
-                            <TextBlock Text="Search after typing at least (characters):" VerticalAlignment="Center" />
+                            <TextBlock Text="{loc:Loc Key=Settings_MinSearchLength_Label}" VerticalAlignment="Center" />
                             <TextBox DockPanel.Dock="Right" Width="60" Margin="6,0,0,0"
                                      Text="{Binding MinSearchLengthText, UpdateSourceTrigger=LostFocus}" />
                         </DockPanel>
                         <DockPanel Margin="0,4,0,2" LastChildFill="False">
-                            <TextBlock Text="Pause before searching (milliseconds):" VerticalAlignment="Center" />
+                            <TextBlock Text="{loc:Loc Key=Settings_SearchDebounce_Label}" VerticalAlignment="Center" />
                             <TextBox DockPanel.Dock="Right" Width="60" Margin="6,0,0,0"
                                      Text="{Binding SearchDebounceMsText, UpdateSourceTrigger=LostFocus}" />
                         </DockPanel>
                     </StackPanel>
                 </GroupBox>
 
-                <GroupBox Header="Classify" Margin="0,0,0,8">
+                <GroupBox Header="{loc:Loc Key=Settings_Classify_Header}" Margin="0,0,0,8">
                     <StackPanel Margin="6">
                         <CheckBox Margin="0,3" IsChecked="{Binding KeepCopy}"
-                                  Content="Keep the original after classifying" />
+                                  Content="{loc:Loc Key=Settings_KeepCopy_CheckBox}" />
                         <CheckBox Margin="0,3" IsChecked="{Binding RemoveAttachments}"
-                                  Content="Remove attachments from the filed copy" />
+                                  Content="{loc:Loc Key=Settings_RemoveAttachments_CheckBox}" />
                         <CheckBox Margin="0,3" IsChecked="{Binding ClassifySafetyCopy}">
                             <TextBlock TextWrapping="Wrap" MaxWidth="400"
-                                       Text="Keep a safety copy in Deleted Items when filing (only applies when the original is not kept)" />
+                                       Text="{loc:Loc Key=Settings_ClassifySafetyCopy_CheckBox}" />
                         </CheckBox>
                         <CheckBox Margin="0,3" IsChecked="{Binding WidenConversation}"
-                                  Content="Apply to the whole conversation by default" />
+                                  Content="{loc:Loc Key=Settings_WidenConversation_CheckBox}" />
                     </StackPanel>
                 </GroupBox>
 
-                <GroupBox Header="External-sender banner" Margin="0,0,0,8">
+                <GroupBox Header="{loc:Loc Key=Settings_Banner_Header}" Margin="0,0,0,8">
                     <StackPanel Margin="6">
                         <TextBlock TextWrapping="Wrap" Style="{DynamicResource MutedText}"
-                                   Text="Teach RBLclass your company's 'external email' banner once, then it can strip it from replies and filed mail." />
+                                   Text="{loc:Loc Key=Settings_Banner_Description}" />
                         <DockPanel Margin="0,6,0,2" LastChildFill="False">
-                            <Button DockPanel.Dock="Left" Content="Learn from selected mail" Padding="8,2"
+                            <Button DockPanel.Dock="Left" Content="{loc:Loc Key=Settings_LearnBanner_Button}" Padding="8,2"
                                     IsEnabled="{Binding CanLearnBanner}" Click="LearnBanner_Click" />
-                            <Button DockPanel.Dock="Left" Content="Forget" Padding="8,2" Margin="6,0,0,0"
+                            <Button DockPanel.Dock="Left" Content="{loc:Loc Key=Settings_ForgetBanner_Button}" Padding="8,2" Margin="6,0,0,0"
                                     IsEnabled="{Binding HasBanner}" Click="ClearBanner_Click" />
                         </DockPanel>
                         <TextBlock Margin="0,2,0,4" TextWrapping="Wrap"
                                    Style="{DynamicResource MutedText}" Text="{Binding BannerStatus}" />
                         <CheckBox Margin="0,3" IsChecked="{Binding StripBannerOnReply}"
                                   IsEnabled="{Binding HasBanner}"
-                                  Content="Strip the banner from replies and forwards" />
+                                  Content="{loc:Loc Key=Settings_StripBannerOnReply_CheckBox}" />
                         <CheckBox Margin="0,3" IsChecked="{Binding StripBannerOnClassify}"
                                   IsEnabled="{Binding HasBanner}">
                             <TextBlock TextWrapping="Wrap" MaxWidth="400"
-                                       Text="Strip the banner from the filed copy by default when classifying" />
+                                       Text="{loc:Loc Key=Settings_StripBannerOnClassify_CheckBox}" />
                         </CheckBox>
                     </StackPanel>
                 </GroupBox>
 
-                <GroupBox Header="Sending guards" Margin="0,0,0,8">
+                <GroupBox Header="{loc:Loc Key=Settings_SendingGuards_Header}" Margin="0,0,0,8">
                     <StackPanel Margin="6">
                         <CheckBox Margin="0,3" IsChecked="{Binding SendExternalWarning}">
                             <TextBlock TextWrapping="Wrap" MaxWidth="400"
-                                       Text="Warn before sending to recipients outside the organisation" />
+                                       Text="{loc:Loc Key=Settings_SendExternalWarning_CheckBox}" />
                         </CheckBox>
-                        <TextBlock Margin="0,8,0,2" Text="Domains treated as internal (semicolon-separated):" />
+                        <TextBlock Margin="0,8,0,2" Text="{loc:Loc Key=Settings_InternalDomains_Label}" />
                         <TextBox Text="{Binding InternalDomainsText, UpdateSourceTrigger=LostFocus}" />
-                        <TextBlock Margin="0,8,0,2" Text="Forgotten-attachment keywords (semicolon-separated):" />
+                        <TextBlock Margin="0,8,0,2" Text="{loc:Loc Key=Settings_ForgottenAttachmentKeywords_Label}" />
                         <TextBox Text="{Binding ForgottenAttachmentKeywordsText, UpdateSourceTrigger=LostFocus}" />
                     </StackPanel>
                 </GroupBox>
 
-                <GroupBox Header="Sent items">
+                <GroupBox Header="{loc:Loc Key=Settings_SentItems_Header}" Margin="0,0,0,8">
                     <StackPanel Margin="6">
-                        <TextBlock Text="When a mail lands in Sent Items:" />
+                        <TextBlock Text="{loc:Loc Key=Settings_SentItemsTriage_Label}" />
                         <ComboBox Margin="0,4,0,0" Width="220" HorizontalAlignment="Left"
                                   ItemsSource="{Binding TriageModes}"
                                   SelectedValuePath="Mode"
@@ -106,6 +107,27 @@
                                 </DataTemplate>
                             </ComboBox.ItemTemplate>
                         </ComboBox>
+                    </StackPanel>
+                </GroupBox>
+
+                <GroupBox Header="{loc:Loc Key=Settings_Language_Header}">
+                    <StackPanel Margin="6">
+                        <DockPanel LastChildFill="False">
+                            <TextBlock Text="{loc:Loc Key=Settings_Language_Label}" VerticalAlignment="Center" />
+                            <ComboBox DockPanel.Dock="Right" Width="180" HorizontalAlignment="Right"
+                                      ItemsSource="{Binding UiLanguages}"
+                                      SelectedValuePath="Code"
+                                      SelectedValue="{Binding PreferredUiLanguage}">
+                                <ComboBox.ItemTemplate>
+                                    <DataTemplate>
+                                        <TextBlock Text="{Binding Label}" />
+                                    </DataTemplate>
+                                </ComboBox.ItemTemplate>
+                            </ComboBox>
+                        </DockPanel>
+                        <TextBlock Margin="0,6,0,0" TextWrapping="Wrap"
+                                   Style="{DynamicResource MutedText}"
+                                   Text="{loc:Loc Key=Settings_Language_RestartNote}" />
                     </StackPanel>
                 </GroupBox>
             </StackPanel>

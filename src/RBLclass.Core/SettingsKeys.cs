@@ -87,5 +87,13 @@ namespace RBLclass.Core
         /// longer written.
         /// </summary>
         public const string SentItemTriagePrompt = "SentItemTriagePrompt";
+
+        /// <summary>
+        /// Preferred UI language: "Auto" (follow Outlook's UI language, falling
+        /// back to English), or one of the supported two-letter codes ("en",
+        /// "fr", "de"). Resolved once at add-in startup by
+        /// <see cref="UiLanguageResolver"/>.
+        /// </summary>
+        public const string PreferredUiLanguage = "PreferredUiLanguage";
     }
 }

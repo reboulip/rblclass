@@ -1,0 +1,531 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+
+  <!-- MainPaneView -->
+  <data name="MainPane_AutoClass_Button" xml:space="preserve">
+    <value>Auto-Klassierung</value>
+  </data>
+  <data name="MainPane_AutoClass_ToolTip" xml:space="preserve">
+    <value>Die ausgewählte(n) E-Mail(s) in den Ordner(n) ablegen, in dem ihre Unterhaltung zuletzt klassiert wurde</value>
+  </data>
+  <data name="MainPane_QueryBox_ToolTip" xml:space="preserve">
+    <value>Strg allein drücken, um „Alle passenden Ordner anzeigen“ umzuschalten</value>
+  </data>
+  <data name="MainPane_ListEveryFolder_CheckBox" xml:space="preserve">
+    <value>Alle passenden Ordner anzeigen</value>
+  </data>
+  <data name="MainPane_KeepCopy_CheckBox" xml:space="preserve">
+    <value>Kopie behalten (Originale nicht löschen)</value>
+  </data>
+  <data name="MainPane_RemoveAttachments_CheckBox" xml:space="preserve">
+    <value>Anhänge aus der abgelegten Kopie entfernen</value>
+  </data>
+  <data name="MainPane_WidenConversation_CheckBox" xml:space="preserve">
+    <value>Gesamte Unterhaltung einbeziehen</value>
+  </data>
+  <data name="MainPane_StripBanner_CheckBox" xml:space="preserve">
+    <value>Banner für externe Absender entfernen</value>
+  </data>
+  <data name="MainPane_OpenFolder_ToolTip" xml:space="preserve">
+    <value>Diesen Ordner in Outlook öffnen</value>
+  </data>
+  <data name="MainPane_NewSubfolder_ToolTip" xml:space="preserve">
+    <value>Hier einen Unterordner erstellen</value>
+  </data>
+  <data name="MainPane_ClearSelection_Button" xml:space="preserve">
+    <value>leeren</value>
+  </data>
+  <data name="MainPane_ClearSelection_ToolTip" xml:space="preserve">
+    <value>Alle ausgewählten Ziele entfernen</value>
+  </data>
+  <data name="MainPane_RemoveDestination_ToolTip" xml:space="preserve">
+    <value>Dieses Ziel entfernen</value>
+  </data>
+  <data name="MainPane_Undo_Button" xml:space="preserve">
+    <value>Rückgängig</value>
+  </data>
+  <data name="MainPane_Undo_ToolTip" xml:space="preserve">
+    <value>Letzte Ablage rückgängig machen: verschobene E-Mails zurücklegen und abgelegte Kopien entfernen</value>
+  </data>
+  <data name="MainPane_Busy_Filing" xml:space="preserve">
+    <value>Wird abgelegt…</value>
+  </data>
+
+  <!-- SettingsWindow -->
+  <data name="Settings_Title" xml:space="preserve">
+    <value>RBLclass - Einstellungen</value>
+  </data>
+  <data name="Settings_Close_Button" xml:space="preserve">
+    <value>Schließen</value>
+  </data>
+  <data name="Settings_FolderSearch_Header" xml:space="preserve">
+    <value>Ordnersuche</value>
+  </data>
+  <data name="Settings_ListEveryFolder_CheckBox" xml:space="preserve">
+    <value>Jeden passenden Ordner einzeln aufführen</value>
+  </data>
+  <data name="Settings_WordPrefixMatch_CheckBox" xml:space="preserve">
+    <value>Nur den Wortanfang abgleichen (strenger als die Standardsuche „enthält“)</value>
+  </data>
+  <data name="Settings_OpenInNewWindow_CheckBox" xml:space="preserve">
+    <value>Ordner in einem neuen Explorer-Fenster öffnen</value>
+  </data>
+  <data name="Settings_MaxResults_Label" xml:space="preserve">
+    <value>Maximale Anzahl angezeigter Ergebnisse:</value>
+  </data>
+  <data name="Settings_MinSearchLength_Label" xml:space="preserve">
+    <value>Suche starten nach mindestens (Zeichen):</value>
+  </data>
+  <data name="Settings_SearchDebounce_Label" xml:space="preserve">
+    <value>Pause vor Suchstart (Millisekunden):</value>
+  </data>
+  <data name="Settings_Classify_Header" xml:space="preserve">
+    <value>Klassieren</value>
+  </data>
+  <data name="Settings_KeepCopy_CheckBox" xml:space="preserve">
+    <value>Original nach dem Klassieren behalten</value>
+  </data>
+  <data name="Settings_RemoveAttachments_CheckBox" xml:space="preserve">
+    <value>Anhänge aus der abgelegten Kopie entfernen</value>
+  </data>
+  <data name="Settings_ClassifySafetyCopy_CheckBox" xml:space="preserve">
+    <value>Beim Ablegen eine Sicherungskopie in „Gelöschte Objekte“ behalten (nur wenn das Original nicht behalten wird)</value>
+  </data>
+  <data name="Settings_WidenConversation_CheckBox" xml:space="preserve">
+    <value>Standardmäßig auf die gesamte Unterhaltung anwenden</value>
+  </data>
+  <data name="Settings_Banner_Header" xml:space="preserve">
+    <value>Banner für externe Absender</value>
+  </data>
+  <data name="Settings_Banner_Description" xml:space="preserve">
+    <value>Bringen Sie RBLclass einmalig den „externe E-Mail“-Banner Ihres Unternehmens bei - danach kann er ihn aus Antworten und abgelegten E-Mails entfernen.</value>
+  </data>
+  <data name="Settings_LearnBanner_Button" xml:space="preserve">
+    <value>Aus ausgewählter E-Mail lernen</value>
+  </data>
+  <data name="Settings_ForgetBanner_Button" xml:space="preserve">
+    <value>Vergessen</value>
+  </data>
+  <data name="Settings_StripBannerOnReply_CheckBox" xml:space="preserve">
+    <value>Banner aus Antworten und Weiterleitungen entfernen</value>
+  </data>
+  <data name="Settings_StripBannerOnClassify_CheckBox" xml:space="preserve">
+    <value>Banner standardmäßig beim Klassieren aus der abgelegten Kopie entfernen</value>
+  </data>
+  <data name="Settings_SendingGuards_Header" xml:space="preserve">
+    <value>Sende-Sicherungen</value>
+  </data>
+  <data name="Settings_SendExternalWarning_CheckBox" xml:space="preserve">
+    <value>Vor dem Senden an Empfänger außerhalb der Organisation warnen</value>
+  </data>
+  <data name="Settings_InternalDomains_Label" xml:space="preserve">
+    <value>Als intern behandelte Domänen (durch Semikolon getrennt):</value>
+  </data>
+  <data name="Settings_ForgottenAttachmentKeywords_Label" xml:space="preserve">
+    <value>Schlüsselwörter für vergessene Anhänge (durch Semikolon getrennt):</value>
+  </data>
+  <data name="Settings_SentItems_Header" xml:space="preserve">
+    <value>Gesendete Objekte</value>
+  </data>
+  <data name="Settings_SentItemsTriage_Label" xml:space="preserve">
+    <value>Wenn eine E-Mail in „Gesendete Objekte“ eingeht:</value>
+  </data>
+  <data name="Settings_TriageMode_AskEveryTime" xml:space="preserve">
+    <value>Jedes Mal nachfragen</value>
+  </data>
+  <data name="Settings_TriageMode_MoveToInbox" xml:space="preserve">
+    <value>In den Posteingang verschieben</value>
+  </data>
+  <data name="Settings_TriageMode_Delete" xml:space="preserve">
+    <value>Löschen</value>
+  </data>
+  <data name="Settings_TriageMode_Leave" xml:space="preserve">
+    <value>In Gesendeten Objekten lassen</value>
+  </data>
+  <data name="Settings_Banner_NoneLearned" xml:space="preserve">
+    <value>Noch kein Banner gelernt.</value>
+  </data>
+  <data name="Settings_Banner_Configured" xml:space="preserve">
+    <value>Ein Banner ist konfiguriert ({0} Zeichen).</value>
+  </data>
+  <data name="Settings_Banner_SelectMailFirst" xml:space="preserve">
+    <value>Wählen Sie eine E-Mail mit dem Banner aus und klicken Sie dann auf „Lernen“.</value>
+  </data>
+  <data name="Settings_Banner_NotFound" xml:space="preserve">
+    <value>In der ausgewählten E-Mail wurde kein Banner-Block gefunden.</value>
+  </data>
+
+  <!-- SettingsWindow: language picker (Phase E) -->
+  <data name="Settings_Language_Header" xml:space="preserve">
+    <value>Sprache</value>
+  </data>
+  <data name="Settings_Language_Label" xml:space="preserve">
+    <value>RBLclass-Sprache:</value>
+  </data>
+  <data name="Settings_Language_Auto" xml:space="preserve">
+    <value>Automatisch (Outlook folgen)</value>
+  </data>
+  <data name="Settings_Language_English" xml:space="preserve">
+    <value>English</value>
+  </data>
+  <data name="Settings_Language_French" xml:space="preserve">
+    <value>Français</value>
+  </data>
+  <data name="Settings_Language_German" xml:space="preserve">
+    <value>Deutsch</value>
+  </data>
+  <data name="Settings_Language_RestartNote" xml:space="preserve">
+    <value>Diese Änderung erfordert einen Neustart von Outlook.</value>
+  </data>
+
+  <!-- NamePromptWindow -->
+  <data name="NamePrompt_Title" xml:space="preserve">
+    <value>RBLclass - Neuer Unterordner</value>
+  </data>
+  <data name="NamePrompt_Label" xml:space="preserve">
+    <value>Name des neuen Unterordners:</value>
+  </data>
+  <data name="NamePrompt_Label_WithParent" xml:space="preserve">
+    <value>Name des neuen Unterordners unter „{0}“:</value>
+  </data>
+  <data name="NamePrompt_Create_Button" xml:space="preserve">
+    <value>Erstellen</value>
+  </data>
+  <data name="NamePrompt_Cancel_Button" xml:space="preserve">
+    <value>Abbrechen</value>
+  </data>
+
+  <!-- SentItemTriageWindow -->
+  <data name="SentTriage_Title" xml:space="preserve">
+    <value>RBLclass - Gesendete E-Mail</value>
+  </data>
+  <data name="SentTriage_Question" xml:space="preserve">
+    <value>Was soll RBLclass mit dieser E-Mail tun?</value>
+  </data>
+  <data name="SentTriage_MoveToInbox_Button" xml:space="preserve">
+    <value>In den Posteingang verschieben</value>
+  </data>
+  <data name="SentTriage_Delete_Button" xml:space="preserve">
+    <value>Löschen</value>
+  </data>
+  <data name="SentTriage_Leave_Button" xml:space="preserve">
+    <value>Belassen</value>
+  </data>
+  <data name="SentTriage_NoSubject" xml:space="preserve">
+    <value>(kein Betreff)</value>
+  </data>
+
+  <!-- MainPaneViewModel: status messages -->
+  <data name="Status_NoMailSelectedAction" xml:space="preserve">
+    <value>Wählen Sie zuerst eine oder mehrere E-Mails in Outlook aus.</value>
+  </data>
+  <data name="Status_NoMatchingFolderToFile" xml:space="preserve">
+    <value>Kein passender Ordner zum Ablegen.</value>
+  </data>
+  <data name="Status_CheckAtLeastOneDestination" xml:space="preserve">
+    <value>Wählen Sie mindestens einen Zielordner aus.</value>
+  </data>
+  <data name="Status_CouldNotCreateFolder" xml:space="preserve">
+    <value>Der Ordner konnte nicht erstellt werden.</value>
+  </data>
+  <data name="Status_FolderCreated" xml:space="preserve">
+    <value>„{0}“ unter {1} erstellt.</value>
+  </data>
+  <data name="Status_ClassifyCancelled" xml:space="preserve">
+    <value>Klassieren abgebrochen.</value>
+  </data>
+  <data name="Status_AutoClassing" xml:space="preserve">
+    <value>Auto-Klassierung läuft…</value>
+  </data>
+  <data name="Status_Undoing" xml:space="preserve">
+    <value>Rückgängig machen…</value>
+  </data>
+  <data name="Status_TypeAtLeastChars" xml:space="preserve">
+    <value>Geben Sie mindestens {0} Zeichen ein, um zu suchen.</value>
+  </data>
+  <data name="Status_NoMatchingFolders" xml:space="preserve">
+    <value>Keine passenden Ordner.</value>
+  </data>
+  <data name="Status_ShowingResults" xml:space="preserve">
+    <value>Zeige {0} von {1} - Suche eingrenzen.</value>
+  </data>
+  <data name="Status_FoldersFound_One" xml:space="preserve">
+    <value>{0} Ordner.</value>
+  </data>
+  <data name="Status_FoldersFound_Other" xml:space="preserve">
+    <value>{0} Ordner.</value>
+  </data>
+
+  <!-- MainPaneViewModel: selection summary / headers -->
+  <data name="Status_NoMailSelectedSummary" xml:space="preserve">
+    <value>Keine E-Mail ausgewählt.</value>
+  </data>
+  <data name="Status_MailSelected_One" xml:space="preserve">
+    <value>{0} E-Mail ausgewählt.</value>
+  </data>
+  <data name="Status_MailSelected_Other" xml:space="preserve">
+    <value>{0} E-Mails ausgewählt.</value>
+  </data>
+  <data name="Status_SelectedFolders_One" xml:space="preserve">
+    <value>Ausgewählt: {0} Ordner</value>
+  </data>
+  <data name="Status_SelectedFolders_Other" xml:space="preserve">
+    <value>Ausgewählt: {0} Ordner</value>
+  </data>
+  <data name="Status_ClassifyDefault" xml:space="preserve">
+    <value>Klassieren</value>
+  </data>
+  <data name="Status_ClassifyToFolders_One" xml:space="preserve">
+    <value>In {0} Ordner klassieren</value>
+  </data>
+  <data name="Status_ClassifyToFolders_Other" xml:space="preserve">
+    <value>In {0} Ordner klassieren</value>
+  </data>
+
+  <!-- MainPaneViewModel: Auto-class result -->
+  <data name="Status_AutoClass_NoHistoryOnly" xml:space="preserve">
+    <value>Für die ausgewählte(n) Unterhaltung(en) wurde keine frühere Ablage gefunden - nichts zum automatischen Klassieren.</value>
+  </data>
+  <data name="Status_AutoClass_Nothing" xml:space="preserve">
+    <value>Nichts zum automatischen Klassieren.</value>
+  </data>
+  <data name="Status_AutoClass_Filed_One" xml:space="preserve">
+    <value>{0} E-Mail automatisch in den/die unten gezeigten Ordner abgelegt</value>
+  </data>
+  <data name="Status_AutoClass_Filed_Other" xml:space="preserve">
+    <value>{0} E-Mails automatisch in den/die unten gezeigten Ordner abgelegt</value>
+  </data>
+  <data name="Status_AutoClass_NoHistory_One" xml:space="preserve">
+    <value>{0} ohne frühere Ablage</value>
+  </data>
+  <data name="Status_AutoClass_NoHistory_Other" xml:space="preserve">
+    <value>{0} ohne frühere Ablage</value>
+  </data>
+  <data name="Status_AutoClass_StaleFolders_One" xml:space="preserve">
+    <value>{0}, deren gespeicherter Ordner nicht mehr existiert</value>
+  </data>
+  <data name="Status_AutoClass_StaleFolders_Other" xml:space="preserve">
+    <value>{0}, deren gespeicherter Ordner nicht mehr existiert</value>
+  </data>
+  <data name="Status_AutoClass_Errors_One" xml:space="preserve">
+    <value>{0} fehlgeschlagen</value>
+  </data>
+  <data name="Status_AutoClass_Errors_Other" xml:space="preserve">
+    <value>{0} fehlgeschlagen</value>
+  </data>
+
+  <!-- MainPaneViewModel: Undo result -->
+  <data name="Status_Undo_Result" xml:space="preserve">
+    <value>Letzte Ablage rückgängig gemacht: {0}, {1}{2}.</value>
+  </data>
+  <data name="Status_Undo_MovesRestored_One" xml:space="preserve">
+    <value>{0} E-Mail zurückgelegt</value>
+  </data>
+  <data name="Status_Undo_MovesRestored_Other" xml:space="preserve">
+    <value>{0} E-Mails zurückgelegt</value>
+  </data>
+  <data name="Status_Undo_CopiesDeleted_One" xml:space="preserve">
+    <value>{0} abgelegte Kopie entfernt</value>
+  </data>
+  <data name="Status_Undo_CopiesDeleted_Other" xml:space="preserve">
+    <value>{0} abgelegte Kopien entfernt</value>
+  </data>
+  <data name="Status_Undo_StepsFailed_One" xml:space="preserve">
+    <value> ({0} Schritt fehlgeschlagen)</value>
+  </data>
+  <data name="Status_Undo_StepsFailed_Other" xml:space="preserve">
+    <value> ({0} Schritte fehlgeschlagen)</value>
+  </data>
+  <data name="Status_Undo_AttachmentsNotRestored" xml:space="preserve">
+    <value> Entfernte Anhänge konnten nicht wiederhergestellt werden.</value>
+  </data>
+
+  <!-- MainPaneViewModel: Classify result -->
+  <data name="Status_Classify_Copied" xml:space="preserve">
+    <value>Kopiert</value>
+  </data>
+  <data name="Status_Classify_Filed" xml:space="preserve">
+    <value>Abgelegt</value>
+  </data>
+  <data name="Status_Classify_Result_One" xml:space="preserve">
+    <value>{0}: {1} E-Mail in {2} Ordner{3}.</value>
+  </data>
+  <data name="Status_Classify_Result_Other" xml:space="preserve">
+    <value>{0}: {1} E-Mails in {2} Ordner{3}.</value>
+  </data>
+  <data name="Status_Classify_Failed" xml:space="preserve">
+    <value> ({0} fehlgeschlagen)</value>
+  </data>
+  <data name="Status_Classify_EncryptedKept_One" xml:space="preserve">
+    <value> {0} verschlüsselte E-Mail hat ihre Anhänge behalten.</value>
+  </data>
+  <data name="Status_Classify_EncryptedKept_Other" xml:space="preserve">
+    <value> {0} verschlüsselte E-Mails haben ihre Anhänge behalten.</value>
+  </data>
+  <data name="Status_Classify_EncryptedInConversation_One" xml:space="preserve">
+    <value> {0} verschlüsselte Nachricht der Unterhaltung wurde unverändert gelassen.</value>
+  </data>
+  <data name="Status_Classify_EncryptedInConversation_Other" xml:space="preserve">
+    <value> {0} verschlüsselte Nachrichten der Unterhaltung wurden unverändert gelassen.</value>
+  </data>
+
+  <!-- RblClassAddIn: MessageBox dialogs -->
+  <data name="MsgBox_ConfirmMarkTasksComplete_Title" xml:space="preserve">
+    <value>RBLclass - Klassieren</value>
+  </data>
+  <data name="MsgBox_ConfirmMarkTasksComplete_Body_One" xml:space="preserve">
+    <value>{0} ausgewähltes Element ist als unvollständige Aufgabe markiert.
+
+Im Zielordner als abgeschlossen markieren?</value>
+  </data>
+  <data name="MsgBox_ConfirmMarkTasksComplete_Body_Other" xml:space="preserve">
+    <value>{0} ausgewählte Elemente sind als unvollständige Aufgaben markiert.
+
+Im Zielordner als abgeschlossen markieren?</value>
+  </data>
+  <data name="MsgBox_ConfirmSendWithoutAttachment_Title" xml:space="preserve">
+    <value>RBLclass - Senden</value>
+  </data>
+  <data name="MsgBox_ConfirmSendWithoutAttachment_Body" xml:space="preserve">
+    <value>Diese Nachricht erwähnt einen Anhang, aber es ist keiner angefügt.
+
+Trotzdem senden?</value>
+  </data>
+  <data name="MsgBox_ConfirmSendToExternal_Title" xml:space="preserve">
+    <value>RBLclass - Senden</value>
+  </data>
+  <data name="MsgBox_ConfirmSendToExternal_Body_One" xml:space="preserve">
+    <value>{0} Empfänger befindet sich außerhalb der Organisation:
+
+{1}
+
+Trotzdem senden?</value>
+  </data>
+  <data name="MsgBox_ConfirmSendToExternal_Body_Other" xml:space="preserve">
+    <value>{0} Empfänger befinden sich außerhalb der Organisation:
+
+{1}
+
+Trotzdem senden?</value>
+  </data>
+  <data name="MsgBox_Info_Title" xml:space="preserve">
+    <value>RBLclass</value>
+  </data>
+  <data name="MsgBox_RemoveAttachments_Title" xml:space="preserve">
+    <value>RBLclass - Anhänge entfernen</value>
+  </data>
+  <data name="MsgBox_RemoveAttachments_SelectFirst" xml:space="preserve">
+    <value>Wählen Sie zuerst eine oder mehrere E-Mails aus.</value>
+  </data>
+  <data name="MsgBox_RemoveAttachments_Confirm" xml:space="preserve">
+    <value>Alle Anhänge aus {0} E-Mail(s) entfernen? Dies kann nicht rückgängig gemacht werden.</value>
+  </data>
+  <data name="MsgBox_RemoveAttachments_Summary" xml:space="preserve">
+    <value>Anhänge aus {0} E-Mail(s) entfernt.</value>
+  </data>
+  <data name="MsgBox_RemoveAttachments_SkippedEncrypted_One" xml:space="preserve">
+    <value>
+
+{0} verschlüsselte E-Mail wurde übersprungen - ihre Anhänge sind die Nachricht selbst.</value>
+  </data>
+  <data name="MsgBox_RemoveAttachments_SkippedEncrypted_Other" xml:space="preserve">
+    <value>
+
+{0} verschlüsselte E-Mails wurden übersprungen - ihre Anhänge sind die Nachricht selbst.</value>
+  </data>
+  <data name="MsgBox_IndexStatus_Title" xml:space="preserve">
+    <value>RBLclass - Ordnerindex</value>
+  </data>
+  <data name="MsgBox_IndexStatus_NotStarted" xml:space="preserve">
+    <value>Die Indizierung hat noch nicht begonnen.</value>
+  </data>
+  <data name="MsgBox_IndexStatus_WalkScheduled" xml:space="preserve">
+    <value>Der erste Ordnerdurchlauf ist geplant / läuft.
+Öffnen Sie dieses Fenster gleich erneut, um die Zahlen zu sehen.</value>
+  </data>
+  <data name="MsgBox_IndexStatus_Summary" xml:space="preserve">
+    <value>Indexquelle : {0}
+Speicher    : {1}
+Ordner      : {2}
+Im Cache    : {3}</value>
+  </data>
+  <data name="MsgBox_IndexStatus_Footer" xml:space="preserve">
+    <value>Datenbank : {0}
+Protokolle: {1}</value>
+  </data>
+  <data name="MsgBox_RefreshFolders_Title" xml:space="preserve">
+    <value>RBLclass - Ordner aktualisieren</value>
+  </data>
+  <data name="MsgBox_RefreshFolders_NotReady" xml:space="preserve">
+    <value>Der Ordnerindex ist noch nicht bereit.</value>
+  </data>
+  <data name="MsgBox_RefreshFolders_Result" xml:space="preserve">
+    <value>Ordnerindex aktualisiert.
+
+Speicher: {0}
+Ordner  : {1}
+
+Führen Sie Ihre Suche erneut aus, um neu erstellte oder umbenannte Ordner zu sehen.</value>
+  </data>
+  <data name="MsgBox_ErrorTitle" xml:space="preserve">
+    <value>RBLclass - {0}</value>
+  </data>
+</root>

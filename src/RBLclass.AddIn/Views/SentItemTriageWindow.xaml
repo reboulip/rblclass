@@ -4,7 +4,8 @@
         mc:Ignorable="d"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
-        Title="RBLclass - Sent mail" Height="180" Width="380"
+        xmlns:loc="clr-namespace:RBLclass.AddIn.Localization"
+        Title="{loc:Loc Key=SentTriage_Title}" Height="180" Width="380"
         WindowStartupLocation="CenterOwner" ResizeMode="NoResize"
         d:DesignHeight="180" d:DesignWidth="380">
     <Grid Margin="12">
@@ -15,14 +16,14 @@
         </Grid.RowDefinitions>
 
         <TextBlock Grid.Row="0" FontWeight="Bold" TextWrapping="Wrap"
-                   Text="What should RBLclass do with this mail?" />
+                   Text="{loc:Loc Key=SentTriage_Question}" />
         <TextBlock Grid.Row="1" Margin="0,4,0,8" Style="{DynamicResource MutedText}"
                    Text="{Binding Subject}" TextTrimming="CharacterEllipsis" />
 
         <UniformGrid Grid.Row="2" Columns="3" Rows="1" VerticalAlignment="Top">
-            <Button Margin="4" Padding="8,6" Content="Move to Inbox" Command="{Binding MoveToInboxCommand}" />
-            <Button Margin="4" Padding="8,6" Content="Delete" Command="{Binding DeleteCommand}" />
-            <Button Margin="4" Padding="8,6" Content="Leave" Command="{Binding LeaveCommand}" />
+            <Button Margin="4" Padding="8,6" Content="{loc:Loc Key=SentTriage_MoveToInbox_Button}" Command="{Binding MoveToInboxCommand}" />
+            <Button Margin="4" Padding="8,6" Content="{loc:Loc Key=SentTriage_Delete_Button}" Command="{Binding DeleteCommand}" />
+            <Button Margin="4" Padding="8,6" Content="{loc:Loc Key=SentTriage_Leave_Button}" Command="{Binding LeaveCommand}" />
         </UniformGrid>
     </Grid>
 </Window>
