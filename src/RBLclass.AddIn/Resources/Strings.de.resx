@@ -537,4 +537,7 @@ Führen Sie Ihre Suche erneut aus, um neu erstellte oder umbenannte Ordner zu se
   <data name="IndexStatus_Ready" xml:space="preserve">
     <value>Ordnerindex bereit</value>
   </data>
+  <data name="Pane_Options" xml:space="preserve">
+    <value>▶ Optionen</value>
+  </data>
 </root>

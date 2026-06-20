@@ -16,13 +16,14 @@
         <!-- Disabled while a classify runs (re-entrancy guard). -->
         <Grid Margin="8" IsEnabled="{Binding IsNotBusy}">
             <Grid.RowDefinitions>
-                <RowDefinition Height="Auto" />
-                <RowDefinition Height="Auto" />
-                <RowDefinition Height="Auto" />
-                <RowDefinition Height="*" />
-                <RowDefinition Height="Auto" />
-                <RowDefinition Height="Auto" />
-                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />  <!-- 0: header -->
+                <RowDefinition Height="Auto" />  <!-- 1: query box -->
+                <RowDefinition Height="*" />     <!-- 2: results list -->
+                <RowDefinition Height="Auto" />  <!-- 3: chip strip -->
+                <RowDefinition Height="Auto" />  <!-- 4: Options toggle -->
+                <RowDefinition Height="Auto" />  <!-- 5: Options panel -->
+                <RowDefinition Height="Auto" />  <!-- 6: classify + undo -->
+                <RowDefinition Height="Auto" />  <!-- 7: status -->
             </Grid.RowDefinitions>
 
             <DockPanel Grid.Row="0" Margin="0,0,0,6" LastChildFill="False">
@@ -56,21 +57,10 @@
                      KeyUp="QueryBox_KeyUp"
                      ToolTip="{loc:Loc Key=MainPane_QueryBox_ToolTip}" />
 
-            <!-- Options. "Open folders in a new window" moved to Settings (v2.2). -->
-            <StackPanel Grid.Row="2" Margin="0,0,0,6">
-                <CheckBox Content="{loc:Loc Key=MainPane_ListEveryFolder_CheckBox}" IsChecked="{Binding AllResults}" />
-                <CheckBox Content="{loc:Loc Key=MainPane_KeepCopy_CheckBox}" Margin="0,3,0,0" IsChecked="{Binding KeepCopy}" />
-                <CheckBox Content="{loc:Loc Key=MainPane_RemoveAttachments_CheckBox}" Margin="0,3,0,0" IsChecked="{Binding RemoveAttachments}" />
-                <CheckBox Content="{loc:Loc Key=MainPane_WidenConversation_CheckBox}" Margin="0,3,0,0" IsChecked="{Binding WidenConversation}" />
-                <CheckBox Content="{loc:Loc Key=MainPane_StripBanner_CheckBox}" Margin="0,3,0,0"
-                          IsChecked="{Binding StripBanner}"
-                          Visibility="{Binding CanStripBanner, Converter={StaticResource BoolToVis}}" />
-            </StackPanel>
-
             <!-- The shared list. Single-click toggles a folder as a destination;
                  double-click files into that one folder; the per-row buttons open
                  the folder in Outlook or create a sub-folder under it. -->
-            <ListBox Grid.Row="3" x:Name="ResultsList"
+            <ListBox Grid.Row="2" x:Name="ResultsList"
                      ItemsSource="{Binding Results}"
                      SelectedItem="{Binding SelectedResult}"
                      HorizontalContentAlignment="Stretch"
@@ -95,7 +85,7 @@
 
             <!-- Destinations accumulated across searches (v2.2): removable
                  chips; survives re-searches; clears after a classify. -->
-            <StackPanel Grid.Row="4" Margin="0,6,0,0"
+            <StackPanel Grid.Row="3" Margin="0,6,0,0"
                         Visibility="{Binding HasSelectedDestinations, Converter={StaticResource BoolToVis}}">
                 <DockPanel LastChildFill="False">
                     <TextBlock Text="{Binding SelectionHeader}" FontWeight="Bold"
@@ -130,14 +120,33 @@
                 </ItemsControl>
             </StackPanel>
 
-            <StackPanel Grid.Row="5" Orientation="Horizontal" Margin="0,8,0,0">
+            <!-- Options toggle: always visible, low-profile; shows/hides the panel (v2.4 B1). -->
+            <Button Grid.Row="4" x:Name="OptionsToggle"
+                    Content="{loc:Loc Key=Pane_Options}"
+                    HorizontalAlignment="Left" Padding="4,2" Margin="0,4,0,0" FontSize="11"
+                    Click="Options_Click" />
+
+            <!-- Options panel: collapsed by default; opened by the toggle or Tab from the query box. -->
+            <StackPanel Grid.Row="5" x:Name="OptionsPanel" Margin="0,4,0,0"
+                        Visibility="{Binding IsOptionsExpanded, Converter={StaticResource BoolToVis}}">
+                <CheckBox x:Name="FirstOptionCheckBox"
+                          Content="{loc:Loc Key=MainPane_ListEveryFolder_CheckBox}" IsChecked="{Binding AllResults}" />
+                <CheckBox Content="{loc:Loc Key=MainPane_KeepCopy_CheckBox}" Margin="0,3,0,0" IsChecked="{Binding KeepCopy}" />
+                <CheckBox Content="{loc:Loc Key=MainPane_RemoveAttachments_CheckBox}" Margin="0,3,0,0" IsChecked="{Binding RemoveAttachments}" />
+                <CheckBox Content="{loc:Loc Key=MainPane_WidenConversation_CheckBox}" Margin="0,3,0,0" IsChecked="{Binding WidenConversation}" />
+                <CheckBox Content="{loc:Loc Key=MainPane_StripBanner_CheckBox}" Margin="0,3,0,0"
+                          IsChecked="{Binding StripBanner}"
+                          Visibility="{Binding CanStripBanner, Converter={StaticResource BoolToVis}}" />
+            </StackPanel>
+
+            <StackPanel Grid.Row="6" Orientation="Horizontal" Margin="0,8,0,0">
                 <Button Padding="12,4" Content="{Binding ClassifyButtonText}" Click="Classify_Click" />
                 <Button Padding="12,4" Margin="6,0,0,0" Content="{loc:Loc Key=MainPane_Undo_Button}"
                         IsEnabled="{Binding CanUndo}" Click="Undo_Click"
                         ToolTip="{loc:Loc Key=MainPane_Undo_ToolTip}" />
             </StackPanel>
 
-            <TextBlock Grid.Row="6" Margin="0,6,0,0" Style="{DynamicResource MutedText}"
+            <TextBlock Grid.Row="7" Margin="0,6,0,0" Style="{DynamicResource MutedText}"
                        Text="{Binding Status}" TextWrapping="Wrap" />
         </Grid>
 

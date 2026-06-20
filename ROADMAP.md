@@ -794,7 +794,7 @@ CLAUDE.md.
 
 ### B. Pane interaction redesign
 
-- [ ] **B1. Collapse all checkboxes behind an "Options" toggle.**
+- [x] **B1. Collapse all checkboxes behind an "Options" toggle.**
       All five per-action checkboxes (AllResults, KeepCopy,
       RemoveAttachments, WidenConversation, StripBanner) are always
       visible but rarely changed per-action; they add visual noise

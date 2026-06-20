@@ -1,3 +1,4 @@
+using System;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
@@ -43,6 +44,23 @@ namespace RBLclass.AddIn.Views
             {
                 _ctrlComboUsed = true; // Ctrl is acting as a modifier
             }
+            else if (key == Key.Tab && (Keyboard.Modifiers & ModifierKeys.Shift) == 0)
+            {
+                // Tab from the query box opens the Options panel and moves
+                // focus to its first checkbox (v2.4 B1). The focus is deferred:
+                // the checkbox is in a just-made-visible panel and is not yet
+                // realized in this frame, so Focus() here would no-op.
+                if (Vm != null) Vm.IsOptionsExpanded = true;
+                Dispatcher.BeginInvoke(
+                    System.Windows.Threading.DispatcherPriority.Input,
+                    new Action(() => FirstOptionCheckBox?.Focus()));
+                e.Handled = true;
+            }
+        }
+
+        private void Options_Click(object sender, RoutedEventArgs e)
+        {
+            if (Vm != null) Vm.IsOptionsExpanded = !Vm.IsOptionsExpanded;
         }
 
         /// <summary>Ctrl pressed and released on its own toggles "List every matching folder" (v2.2).</summary>

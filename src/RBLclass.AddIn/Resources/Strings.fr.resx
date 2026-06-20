@@ -537,4 +537,7 @@ Relancez votre recherche pour voir les dossiers créés ou renommés.</value>
   <data name="IndexStatus_Ready" xml:space="preserve">
     <value>Index des dossiers prêt</value>
   </data>
+  <data name="Pane_Options" xml:space="preserve">
+    <value>▶ Options</value>
+  </data>
 </root>

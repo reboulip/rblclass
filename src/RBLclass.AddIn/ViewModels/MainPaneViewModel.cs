@@ -35,6 +35,7 @@ namespace RBLclass.AddIn.ViewModels
         private string _query = string.Empty;
         private bool _allResults, _keepCopy, _removeAttachments, _widenConversation, _stripBanner;
         private bool _canStripBanner;
+        private bool _isOptionsExpanded;
         private SelectableFolder _selectedResult;
         private string _selectionSummary;
         private string _status = string.Empty;
@@ -117,40 +118,47 @@ namespace RBLclass.AddIn.ViewModels
             set { if (SetProperty(ref _query, value)) ScheduleRefresh(); }
         }
 
+        // The five option toggles below are per-action overrides (v2.4 B1):
+        // they are seeded from the persisted Settings defaults in the
+        // constructor and reset back to them after each successful classify
+        // (ResetOptionsToDefaults). Toggling one here does NOT write to
+        // Settings - the Settings dialog is the only editor of the default.
+
         public bool AllResults
         {
             get => _allResults;
-            set { if (SetProperty(ref _allResults, value)) { _settings?.SetBool(SettingsKeys.AllResults, value); Refresh(); } }
+            set { if (SetProperty(ref _allResults, value)) Refresh(); }
         }
 
         public bool KeepCopy
         {
             get => _keepCopy;
-            set { if (SetProperty(ref _keepCopy, value)) _settings?.SetBool(SettingsKeys.KeepCopy, value); }
+            set => SetProperty(ref _keepCopy, value);
         }
 
         public bool RemoveAttachments
         {
             get => _removeAttachments;
-            set { if (SetProperty(ref _removeAttachments, value)) _settings?.SetBool(SettingsKeys.RemoveAttachments, value); }
+            set => SetProperty(ref _removeAttachments, value);
         }
 
         public bool WidenConversation
         {
             get => _widenConversation;
-            set { if (SetProperty(ref _widenConversation, value)) _settings?.SetBool(SettingsKeys.WidenConversation, value); }
+            set => SetProperty(ref _widenConversation, value);
         }
 
         /// <summary>
-        /// Strip the learned external banner from the filed copy (v2.2). Default
-        /// comes from the StripBannerOnClassify setting; toggling it here updates
-        /// that setting. Only meaningful when a banner has been learned
+        /// Strip the learned external banner from the filed copy (v2.2). The
+        /// default comes from the StripBannerOnClassify setting; toggling it
+        /// here is a per-action override (v2.4 B1) and does not change the
+        /// setting. Only meaningful when a banner has been learned
         /// (<see cref="CanStripBanner"/>).
         /// </summary>
         public bool StripBanner
         {
             get => _stripBanner;
-            set { if (SetProperty(ref _stripBanner, value)) _settings?.SetBool(SettingsKeys.StripBannerOnClassify, value); }
+            set => SetProperty(ref _stripBanner, value);
         }
 
         /// <summary>True when a banner has been learned, so the strip tickbox is worth showing.</summary>
@@ -158,6 +166,17 @@ namespace RBLclass.AddIn.ViewModels
         {
             get => _canStripBanner;
             private set => SetProperty(ref _canStripBanner, value);
+        }
+
+        /// <summary>
+        /// Whether the Options panel (the five per-action checkboxes) is expanded.
+        /// Toggled by the Options button and by Tab from the query box; collapsed
+        /// automatically after a successful classify (v2.4 B1).
+        /// </summary>
+        public bool IsOptionsExpanded
+        {
+            get => _isOptionsExpanded;
+            set => SetProperty(ref _isOptionsExpanded, value);
         }
 
         public SelectableFolder SelectedResult
@@ -523,6 +542,7 @@ namespace RBLclass.AddIn.ViewModels
 
                 RefreshSelection();
                 ClearQuerySilently();
+                ResetOptionsToDefaults();
                 return true;
             }
             finally
@@ -540,6 +560,33 @@ namespace RBLclass.AddIn.ViewModels
         {
             _query = string.Empty;
             OnPropertyChanged(nameof(Query));
+        }
+
+        /// <summary>
+        /// Reset the option checkboxes to their persisted settings defaults and
+        /// collapse the Options panel, so the pane is clean for the next classify
+        /// session (v2.4 B1).
+        /// </summary>
+        private void ResetOptionsToDefaults()
+        {
+            if (_settings != null)
+            {
+                // Set the backing fields (not the public setters): the AllResults
+                // setter would call Refresh(), which clears the just-classified
+                // results the user wants to keep seeing (v2.4 A1); the others
+                // would re-write the same persisted value. Just notify the view.
+                _allResults = _settings.GetBool(SettingsKeys.AllResults, false);
+                _keepCopy = _settings.GetBool(SettingsKeys.KeepCopy, false);
+                _removeAttachments = _settings.GetBool(SettingsKeys.RemoveAttachments, false);
+                _widenConversation = _settings.GetBool(SettingsKeys.WidenConversation, false);
+                _stripBanner = _settings.GetBool(SettingsKeys.StripBannerOnClassify, false);
+                OnPropertyChanged(nameof(AllResults));
+                OnPropertyChanged(nameof(KeepCopy));
+                OnPropertyChanged(nameof(RemoveAttachments));
+                OnPropertyChanged(nameof(WidenConversation));
+                OnPropertyChanged(nameof(StripBanner));
+            }
+            IsOptionsExpanded = false;
         }
 
         /// <summary>
