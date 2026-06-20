@@ -730,7 +730,7 @@ CLAUDE.md.
 
 ### A. Quick wins
 
-- [ ] **A1. Clear the search field after a successful classify.**
+- [x] **A1. Clear the search field after a successful classify.**
       The query persists in the box after each classify, so the user
       has to manually erase it before the next session. After a
       successful classify, set `Query = ""` *silently* — without

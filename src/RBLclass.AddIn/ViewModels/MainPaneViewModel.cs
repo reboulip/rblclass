@@ -471,6 +471,7 @@ namespace RBLclass.AddIn.ViewModels
                 OnPropertyChanged(nameof(CanUndo));
 
                 RefreshSelection();
+                ClearQuerySilently();
                 return true;
             }
             finally
@@ -478,6 +479,16 @@ namespace RBLclass.AddIn.ViewModels
                 Dispatcher.CurrentDispatcher.BeginInvoke(
                     new Action(() => IsBusy = false), DispatcherPriority.Background);
             }
+        }
+
+        /// <summary>
+        /// Set the query to empty without triggering a re-search. Results remain
+        /// visible until the user types the next query (v2.4).
+        /// </summary>
+        private void ClearQuerySilently()
+        {
+            _query = string.Empty;
+            OnPropertyChanged(nameof(Query));
         }
 
         /// <summary>

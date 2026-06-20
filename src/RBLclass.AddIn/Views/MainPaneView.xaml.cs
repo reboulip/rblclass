@@ -57,24 +57,6 @@ namespace RBLclass.AddIn.Views
             }
         }
 
-        /// <summary>
-        /// Clicking into the unfocused search box selects the whole query so
-        /// typing replaces it - sequential classifying nearly always starts a
-        /// fresh search (v2.2). Clicks while already focused keep normal caret
-        /// placement.
-        /// </summary>
-        private void QueryBox_PreviewMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
-        {
-            if (QueryBox.IsKeyboardFocusWithin) return;
-            QueryBox.Focus(); // triggers GotKeyboardFocus -> SelectAll
-            e.Handled = true; // don't let the click collapse the selection to a caret
-        }
-
-        private void QueryBox_GotKeyboardFocus(object sender, KeyboardFocusChangedEventArgs e)
-        {
-            QueryBox.SelectAll();
-        }
-
         private void ResultsList_MouseDoubleClick(object sender, MouseButtonEventArgs e)
         {
             // Ignore double-clicks that land on the per-row buttons.

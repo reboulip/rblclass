@@ -36,8 +36,6 @@
                      KeyDown="QueryBox_KeyDown"
                      PreviewKeyDown="QueryBox_PreviewKeyDown"
                      KeyUp="QueryBox_KeyUp"
-                     PreviewMouseLeftButtonDown="QueryBox_PreviewMouseLeftButtonDown"
-                     GotKeyboardFocus="QueryBox_GotKeyboardFocus"
                      ToolTip="Press Ctrl alone to toggle 'List every matching folder'" />
 
             <!-- Options. "Open folders in a new window" moved to Settings (v2.2). -->
