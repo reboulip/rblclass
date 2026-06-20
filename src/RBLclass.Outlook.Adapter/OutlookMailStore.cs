@@ -334,6 +334,17 @@ namespace RBLclass.Outlook.Adapter
                     {
                         try
                         {
+                            // D1 investigation (v2.4): BEGIN/END timing markers
+                            // around the COM move, so the multi-item-classify
+                            // MAPI_E_NOT_FOUND from Stormshield's OnBeforeReadAsync
+                            // can be correlated against when each item was moving.
+                            // Logged at Information so they appear in any build
+                            // installed on the (Stormshield) target.
+                            var sw = System.Diagnostics.Stopwatch.StartNew();
+                            Log.Information(
+                                "Classify move BEGIN (D1): item {EntryId} -> {Path}",
+                                item.EntryId, destination.FullPath);
+
                             // Move returns the moved item; the original reference
                             // is now invalid (CLAUDE.md). No transient copy is
                             // created and nothing lands in Deleted Items - the
@@ -346,6 +357,10 @@ namespace RBLclass.Outlook.Adapter
                                 if (movedItem == null) return null;
                                 string movedEntryId = Safe(() => movedItem.EntryID, null);
                                 if (movedEntryId == null) return null;
+                                sw.Stop();
+                                Log.Information(
+                                    "Classify move END (D1): item {EntryId} -> {Path} in {Ms} ms",
+                                    item.EntryId, destination.FullPath, sw.ElapsedMilliseconds);
                                 return new MailItemRef(destination.StoreId, movedEntryId, item.Subject);
                             }
                         }

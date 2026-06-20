@@ -857,6 +857,14 @@ CLAUDE.md.
 ### D. Bug investigation
 
 - [ ] **D1. MAPI_E_NOT_FOUND on multi-item classify (Stormshield).**
+      *(Investigation instrumentation landed v2.4.0.0: Information-level
+      "Classify move BEGIN/END (D1)" timing markers around each
+      `OutlookMailStore.MoveItemToFolder` COM move, verified emitting one
+      pair per moved item with ms timestamps. The candidate fix (per-item
+      async classify + STA yield between moves) is **deferred to an on-target
+      session** — the dev machine has no Stormshield/S-MIME mail, so neither
+      the root cause nor any fix can be confirmed here. Re-open with the
+      markers' on-target timings.)*
       Switching to a pure-move classify in v2.2.0.0 did not eliminate
       the `IMessage.GetAttachmentTable: MAPI_E_NOT_FOUND` error emitted
       by Stormshield's `Arkoon.SecurityBox…OnBeforeReadAsync`. The error
