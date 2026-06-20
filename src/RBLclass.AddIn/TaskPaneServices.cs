@@ -38,6 +38,13 @@ namespace RBLclass.AddIn
         /// </summary>
         public static Func<IReadOnlyList<FolderNode>> GetAllFolders;
 
+        /// <summary>
+        /// The folder index service, published at startup so the pane can
+        /// subscribe to <see cref="IFolderIndexService.IndexStatus"/> changes and
+        /// drive the header's colored status dot.
+        /// </summary>
+        public static IFolderIndexService FolderIndex;
+
         /// <summary>Read the current Outlook explorer mail selection (UI thread).</summary>
         public static Func<IReadOnlyList<MailItemRef>> GetSelection;
 

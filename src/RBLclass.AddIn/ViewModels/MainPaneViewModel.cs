@@ -39,6 +39,7 @@ namespace RBLclass.AddIn.ViewModels
         private string _selectionSummary;
         private string _status = string.Empty;
         private bool _isBusy;
+        private IndexStatus _indexStatus = IndexStatus.NotFound;
 
         // Debounces typing in the search box: re-search fires only once the
         // user has paused for Settings.SearchDebounceMs (v2.2).
@@ -185,6 +186,49 @@ namespace RBLclass.AddIn.ViewModels
         }
 
         public bool IsNotBusy => !_isBusy;
+
+        /// <summary>
+        /// Folder-index build status, bound to the pane header's colored dot:
+        /// Red = NotFound, Yellow = Indexing, Green = Ready. Driven by
+        /// <see cref="IFolderIndexService"/> via <see cref="SubscribeToIndexStatus"/>.
+        /// </summary>
+        public IndexStatus IndexStatus
+        {
+            get => _indexStatus;
+            private set { if (SetProperty(ref _indexStatus, value)) OnPropertyChanged(nameof(IndexStatusToolTip)); }
+        }
+
+        /// <summary>Localized tooltip for the index status dot.</summary>
+        public string IndexStatusToolTip
+        {
+            get
+            {
+                switch (_indexStatus)
+                {
+                    case IndexStatus.Indexing: return _loc.GetString("IndexStatus_Indexing");
+                    case IndexStatus.Ready: return _loc.GetString("IndexStatus_Ready");
+                    default: return _loc.GetString("IndexStatus_NotFound");
+                }
+            }
+        }
+
+        /// <summary>
+        /// Subscribe to the folder index service so <see cref="IndexStatus"/> and
+        /// its tooltip track the walk lifecycle. Called once by the pane host.
+        /// The service raises PropertyChanged on the Outlook STA thread, which is
+        /// also the pane's WPF dispatcher thread, so binding updates are safe
+        /// without marshalling.
+        /// </summary>
+        public void SubscribeToIndexStatus(IFolderIndexService service)
+        {
+            if (service == null) return;
+            IndexStatus = service.IndexStatus;
+            service.PropertyChanged += (s, e) =>
+            {
+                if (e.PropertyName == nameof(IFolderIndexService.IndexStatus))
+                    IndexStatus = service.IndexStatus;
+            };
+        }
 
         /// <summary>True when the last classify can be undone (enables the Undo button).</summary>
         public bool CanUndo => _lastUndo != null;

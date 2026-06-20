@@ -749,7 +749,7 @@ CLAUDE.md.
         focus is pointless and can confuse click-to-position use. No
         new settings. No xUnit needed (view-layer behavior only).
 
-- [ ] **A2. Async folder index refresh with pane color indicator.**
+- [x] **A2. Async folder index refresh with pane color indicator.**
       The "Refresh folders" ribbon button currently blocks the UI
       thread with a wait cursor and ends with a MessageBox showing
       store/folder counts. Replace with:

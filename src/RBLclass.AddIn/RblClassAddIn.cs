@@ -6,6 +6,7 @@ using System.Linq;
 using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Windows.Forms;
+using System.Windows.Threading;
 using Extensibility;
 using RBLclass.AddIn.Localization;
 using RBLclass.AddIn.ViewModels;
@@ -46,7 +47,7 @@ namespace RBLclass.AddIn
 
         private IFolderRepository _repository;
         private IMailStore _mailStore;
-        private IFolderTree _folderTree;
+        private IFolderIndexService _folderTree;
         private IFolderSearch _folderSearch;
         private IClassifier _classifier;
         private IClassificationHistory _classificationHistory;
@@ -178,6 +179,7 @@ namespace RBLclass.AddIn
                 TaskPaneServices.Classifier = _classifier;
                 TaskPaneServices.GetSelection = () => _mailStore.GetSelectedItems();
                 TaskPaneServices.GetAllFolders = () => _folderTree.GetAll();
+                TaskPaneServices.FolderIndex = _folderTree;
                 TaskPaneServices.CreateSubfolder = (parent, name) =>
                 {
                     try
@@ -731,26 +733,41 @@ namespace RBLclass.AddIn
                     return;
                 }
 
-                Cursor.Current = Cursors.WaitCursor;
-                try
-                {
-                    var sw = Stopwatch.StartNew();
-                    _lastIndexResult = _folderTree.WalkAndPersist();
-                    sw.Stop();
-                    Log.Information(
-                        "Manual folder refresh: {Stores} stores, {Folders} folders in {Ms} ms.",
-                        _lastIndexResult.StoreCount, _lastIndexResult.FolderCount, sw.ElapsedMilliseconds);
-                }
-                finally
-                {
-                    Cursor.Current = Cursors.Default;
-                }
+                // Ignore a repeat click while a walk is already running.
+                if (_folderTree.IndexStatus == IndexStatus.Indexing)
+                    return;
 
-                MessageBox.Show(
-                    loc.GetString("MsgBox_RefreshFolders_Result",
-                        _lastIndexResult.StoreCount, _lastIndexResult.FolderCount),
-                    loc.GetString("MsgBox_RefreshFolders_Title"),
-                    MessageBoxButtons.OK, MessageBoxIcon.Information);
+                // Let the indicator paint 'Indexing' (yellow) before the
+                // synchronous, STA-bound COM walk runs: WalkAndPersist sets the
+                // status itself (Indexing -> Ready), and the dot - not a modal -
+                // is the completion signal. The walk must stay on this (UI/STA)
+                // thread because Outlook OM is single-threaded apartment.
+                Dispatcher.CurrentDispatcher.BeginInvoke(
+                    DispatcherPriority.Background,
+                    new Action(RunFolderWalk));
+            }
+            catch (Exception ex)
+            {
+                ShowError("Refresh folders failed", ex);
+            }
+        }
+
+        /// <summary>
+        /// Runs a full folder walk on the Outlook UI (STA) thread and logs the
+        /// result. Status transitions (Indexing -> Ready) are driven by
+        /// <see cref="FolderIndexService.WalkAndPersist"/> and surfaced by the
+        /// pane's colored indicator.
+        /// </summary>
+        private void RunFolderWalk()
+        {
+            try
+            {
+                var sw = Stopwatch.StartNew();
+                _lastIndexResult = _folderTree.WalkAndPersist();
+                sw.Stop();
+                Log.Information(
+                    "Folder refresh: {Stores} stores, {Folders} folders in {Ms} ms.",
+                    _lastIndexResult.StoreCount, _lastIndexResult.FolderCount, sw.ElapsedMilliseconds);
             }
             catch (Exception ex)
             {

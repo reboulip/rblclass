@@ -528,4 +528,13 @@ Führen Sie Ihre Suche erneut aus, um neu erstellte oder umbenannte Ordner zu se
   <data name="MsgBox_ErrorTitle" xml:space="preserve">
     <value>RBLclass - {0}</value>
   </data>
+  <data name="IndexStatus_NotFound" xml:space="preserve">
+    <value>Ordnerindex noch nicht erstellt — klicken Sie auf Ordner aktualisieren, um ihn zu erstellen</value>
+  </data>
+  <data name="IndexStatus_Indexing" xml:space="preserve">
+    <value>Ordnerindex wird erstellt…</value>
+  </data>
+  <data name="IndexStatus_Ready" xml:space="preserve">
+    <value>Ordnerindex bereit</value>
+  </data>
 </root>

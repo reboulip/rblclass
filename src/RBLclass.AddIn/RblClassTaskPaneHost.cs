@@ -56,7 +56,8 @@ namespace RBLclass.AddIn
             {
                 _view = new MainPaneView();
                 if (TaskPaneServices.Search != null && TaskPaneServices.Classifier != null)
-                    _view.DataContext = new MainPaneViewModel(
+                {
+                    var vm = new MainPaneViewModel(
                         TaskPaneServices.Search,
                         TaskPaneServices.Classifier,
                         TaskPaneServices.GetSelection,
@@ -66,6 +67,9 @@ namespace RBLclass.AddIn
                         TaskPaneServices.ConfirmMarkTasksComplete,
                         TaskPaneServices.PromptForName,
                         TaskPaneServices.GetAllFolders);
+                    vm.SubscribeToIndexStatus(TaskPaneServices.FolderIndex);
+                    _view.DataContext = vm;
+                }
 
                 _elementHost.Child = _view;
             }

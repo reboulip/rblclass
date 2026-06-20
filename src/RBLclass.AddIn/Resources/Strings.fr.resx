@@ -528,4 +528,13 @@ Relancez votre recherche pour voir les dossiers créés ou renommés.</value>
   <data name="MsgBox_ErrorTitle" xml:space="preserve">
     <value>RBLclass - {0}</value>
   </data>
+  <data name="IndexStatus_NotFound" xml:space="preserve">
+    <value>Index des dossiers non encore construit — cliquez sur Actualiser les dossiers pour le créer</value>
+  </data>
+  <data name="IndexStatus_Indexing" xml:space="preserve">
+    <value>Construction de l'index des dossiers…</value>
+  </data>
+  <data name="IndexStatus_Ready" xml:space="preserve">
+    <value>Index des dossiers prêt</value>
+  </data>
 </root>

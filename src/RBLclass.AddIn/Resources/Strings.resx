@@ -528,4 +528,13 @@ Re-run your search to see newly created or renamed folders.</value>
   <data name="MsgBox_ErrorTitle" xml:space="preserve">
     <value>RBLclass - {0}</value>
   </data>
+  <data name="IndexStatus_NotFound" xml:space="preserve">
+    <value>Folder index not built yet — click Refresh folders to build it</value>
+  </data>
+  <data name="IndexStatus_Indexing" xml:space="preserve">
+    <value>Building folder index…</value>
+  </data>
+  <data name="IndexStatus_Ready" xml:space="preserve">
+    <value>Folder index ready</value>
+  </data>
 </root>
