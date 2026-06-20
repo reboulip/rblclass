@@ -717,3 +717,187 @@ ribbon, and the encrypted-attachment rule).
 - [ ] **Strip the external-sender banner on reply and on classify** —
       unchanged scope, still parked behind the items above (open design
       questions recorded in the v2.1.0.0 section).
+
+## v2.3.0.0 — Third feedback wave (sprint started 2026-06-20)
+
+Six items from continued operational use: three quick independent fixes
+(A), one pane-interaction redesign (B), one visual redesign (C), and one
+bug investigation (D). Sequenced so lower-risk items land first and build
+confidence before touching the pane layout. Every task ends with a build,
+`/reload-addin`, and a manual verification pass before the next one
+starts. Non-trivial `RBLclass.Core` logic ships with xUnit coverage per
+CLAUDE.md.
+
+### A. Quick wins
+
+- [ ] **A1. Clear the search field after a successful classify.**
+      The query persists in the box after each classify, so the user
+      has to manually erase it before the next session. After a
+      successful classify, set `Query = ""` *silently* — without
+      triggering `ScheduleRefresh()` — by writing to the backing field
+      and raising `PropertyChanged` directly. The displayed results
+      remain visible (the user can still see where the mail landed);
+      they clear naturally on the next keystroke once the user types a
+      new query. Implementation: add a private `ClearQuerySilently()`
+      helper in `MainPaneViewModel`, call it from `DoClassify()` on
+      success.
+      - **Also drop the select-all-on-focus behavior** from v2.2.0.0
+        A5: remove `QueryBox_PreviewMouseLeftButtonDown()` and
+        `QueryBox_GotKeyboardFocus()` from `MainPaneView.xaml.cs` (and
+        any associated `ClickHandled` tracking state). Because classify
+        now clears the query, auto-selecting an already-empty field on
+        focus is pointless and can confuse click-to-position use. No
+        new settings. No xUnit needed (view-layer behavior only).
+
+- [ ] **A2. Async folder index refresh with pane color indicator.**
+      The "Refresh folders" ribbon button currently blocks the UI
+      thread with a wait cursor and ends with a MessageBox showing
+      store/folder counts. Replace with:
+      - **Remove the end-of-refresh MessageBox** (`RblClassAddIn.cs`,
+        `OnRefreshFoldersClick`). The indicator (below) serves as
+        completion feedback.
+      - **Non-blocking walk**: `WalkAndPersist` is called on the
+        Outlook STA thread (COM objects require it), but `await`-based
+        yielding between stores keeps the pane responsive. SQLite
+        writes are dispatched to the thread pool.
+      - **Color indicator** — a small colored dot added to the pane
+        header row (next to the "RBLclass" title or the search box):
+        - **Red** — index absent or empty (0 folders; never built,
+          or DB cleared). Set at startup before the first-run walk.
+        - **Yellow** — walk in progress.
+        - **Green** — index populated and ready. Set after
+          `WalkAndPersist` completes (both the manual-refresh path
+          and the startup first-run walk).
+      - `IFolderIndexService` gains an observable `IndexStatus`
+        property (`NotFound` / `Indexing` / `Ready`). `FolderIndexService`
+        updates it before and after each walk. `MainPaneViewModel`
+        subscribes via a property-changed handler and exposes a
+        bindable `IndexStatus` property for the indicator.
+      - Localization: indicator tooltips (`IndexStatus_NotFound`,
+        `IndexStatus_Indexing`, `IndexStatus_Ready`) in
+        `Strings.resx` / `.fr.resx` / `.de.resx`.
+
+- [ ] **A3. Pane dock position persistence.**
+      The task pane always opens docked to the right (`EnsureTaskPane`,
+      `msoCTPDockPositionRight` hardcoded). If the user moves it to the
+      left, the preference is lost on restart. Fix:
+      - Subscribe to `_ctp.DockPositionStateChange` in `RblClassAddIn`;
+        on each change, persist the new `DockPosition` integer to a new
+        Settings key `PaneDockPosition` (default: `msoCTPDockPositionRight`
+        = 2).
+      - In `EnsureTaskPane()`, read `PaneDockPosition` from settings and
+        set `_ctp.DockPosition` before making the pane visible.
+      - Shell wiring only; no xUnit. No localization (no new UI strings).
+      - **Pane width is not persisted**: no `WidthChanged` CTP event
+        exists, so width detection would require sampling at shutdown —
+        more complexity than the benefit warrants for now.
+
+### B. Pane interaction redesign
+
+- [ ] **B1. Collapse all checkboxes behind an "Options" toggle.**
+      All five per-action checkboxes (AllResults, KeepCopy,
+      RemoveAttachments, WidenConversation, StripBanner) are always
+      visible but rarely changed per-action; they add visual noise
+      below the results list. Replace with a collapsible options panel:
+      - **Default state**: the checkboxes StackPanel is hidden
+        (`Visibility.Collapsed`); a small, low-profile "Options" button
+        (or disclosure triangle `▶ Options`) sits below the results list,
+        above the classify button row.
+      - **Expand triggers**: (1) user clicks the Options button, or
+        (2) user presses Tab while the search box is focused —
+        intercept Tab via `PreviewKeyDown` on the search box,
+        set `e.Handled = true`, set `IsOptionsExpanded = true`,
+        and move keyboard focus to the first checkbox.
+      - **Collapse triggers**: clicking Options again (toggle); or a
+        successful classify.
+      - **On successful classify**: the panel collapses and all checkboxes
+        reset to their persisted settings defaults (`KeepCopy`,
+        `RemoveAttachments`, `WidenConversation`, `AllResults`, and
+        `StripBanner` from their respective `Settings` values). The
+        pane is then ready for the next classify session with a clean
+        default state.
+      - `MainPaneViewModel` gains `IsOptionsExpanded` bool property;
+        the XAML panel wraps the checkboxes StackPanel with
+        `Visibility="{Binding IsOptionsExpanded, Converter=…}"`.
+      - Localization: the Options button label (`Pane_Options`) in
+        `Strings.resx` / `.fr.resx` / `.de.resx`.
+
+### C. Search results display
+
+- [ ] **C1. Hierarchical folder path display (user setting).**
+      Results currently show the full path as a single left-trimmed
+      string (`Personal Archive\Projects\2024\RBLclass`). For deeply
+      nested folders the leaf is often cut. Add a second display mode
+      where each path segment appears on its own line with increasing
+      indentation:
+      ```
+      Personal Archive
+        Projects
+          2024
+            RBLclass    [↗] [+]
+      ```
+      - New setting `FolderPathDisplay` (Inline / Hierarchical),
+        default: Inline — no change to existing behavior.
+      - **Inline mode**: `PathTrim` attached behavior unchanged.
+      - **Hierarchical mode**: split `FullPath` on `\` into
+        `PathSegments` (string array exposed on `FolderSearchResult`
+        or `SelectableFolder`). Render as a `StackPanel` inside the
+        `DataTemplate`, with each segment in a `TextBlock` at
+        `Margin.Left` increasing by 12 px per depth. The `↗` and `+`
+        buttons appear only on the leaf row. The `CheckBox` wraps the
+        entire segment stack so any click selects the folder.
+        `PathTrim` is bypassed (each individual segment is short).
+      - A `DataTemplateSelector` on the results `ListBox` switches
+        templates based on `MainPaneViewModel.IsHierarchicalDisplay`.
+      - Settings window: new `FolderPathDisplay` toggle/radio in the
+        results group, in EN/FR/DE.
+      - xUnit: `PathSegments` splitting — root-level folder (no `\`),
+        single-level, multi-level, path ending with `\`.
+
+### D. Bug investigation
+
+- [ ] **D1. MAPI_E_NOT_FOUND on multi-item classify (Stormshield).**
+      Switching to a pure-move classify in v2.2.0.0 did not eliminate
+      the `IMessage.GetAttachmentTable: MAPI_E_NOT_FOUND` error emitted
+      by Stormshield's `Arkoon.SecurityBox…OnBeforeReadAsync`. The error
+      is **cosmetic** — classify succeeds and mails land correctly — but
+      it produces a confusing/worrying notification from Stormshield.
+      It only manifests when **more than one email is selected**.
+
+      **Working hypothesis:** Stormshield hooks Outlook item events and
+      runs an async scan (`OnBeforeReadAsync`) for each item touched.
+      With a single item, our `Move()` call returns and the STA is idle
+      before Stormshield's scan runs; the moved item is fully committed
+      to the destination store and `GetAttachmentTable` succeeds. With
+      multiple items, COM message pumping during the second `Move()`
+      call allows Stormshield's scan of item[0] to interleave before
+      item[0] is fully committed in the destination store — hence
+      `MAPI_E_NOT_FOUND`.
+
+      **Investigation steps (before a code fix):**
+      1. Add `Debug`-level Serilog markers in `ClassifierService.Classify`
+         before and after each `_store.MoveItemToFolder(item, …)` call,
+         logging item index and elapsed time. Correlate timestamps against
+         Stormshield's error timestamp to confirm the interleaving.
+      2. Reproduce with exactly 2 emails to find the minimum count.
+      3. Verify the Stormshield notification is its own dialog/toast and
+         not an exception propagating into our `errors` counter.
+
+      **Candidate fix (implement after investigation confirms hypothesis):**
+      After each item's move, release the STA for one COM event cycle
+      before processing the next item. In the classify loop in
+      `ClassifierService` (or in `RblClassAddIn` if classify is driven
+      from the shell), insert an `await Dispatcher.Yield()` (or
+      equivalent STA-thread yield). This gives Stormshield's async scan
+      time to complete against item[0] while item[0] is still stable in
+      the destination store, before we call `GetItemFromID()` for item[1].
+      If classify currently runs synchronously, making it `async Task`
+      is the prerequisite. No settings change unless a fallback
+      `InterItemDelayMs` hidden setting is needed.
+
+### Carried over from v2.2.0.0
+
+- [ ] **Strip the external-sender banner on reply and on classify** —
+      implemented in v2.1.0.0 scope; not verified live (no
+      external-banner mail on the dev machine). Re-verify on a
+      workstation that receives the company banner before closing.
