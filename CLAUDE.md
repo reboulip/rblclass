@@ -293,6 +293,31 @@ steps are in the skill.
 - Distribution: internal HTTPS share documented in
   `docs/deployment.md`.
 
+## Sprint development workflow
+
+Feature work is driven by three skills/subagents that form a pipeline:
+
+- **`feature-prep` subagent** (`.claude/agents/feature-prep.md`,
+  Sonnet 4.6, read-only) — given a roadmap item, searches the codebase
+  and produces a structured Implementation Brief: affected files with
+  line references, required changes, localization keys, xUnit test cases,
+  and verification questions. Never writes anything.
+- **`/feature-impl` skill** (`.claude/skills/feature-impl/`) — consumes
+  an Implementation Brief from context and implements it end-to-end:
+  code changes → localization → xUnit → build check → `/reload-addin` →
+  `AskUserQuestion` for user verification → commit (with the ROADMAP.md
+  checkbox update). Loops on failure; stops and asks for guidance after
+  3 failed fix attempts.
+- **`/dev-sprint` skill** (`.claude/skills/dev-sprint/`) — runs the full
+  active sprint (highest `vX.X.X` section with unchecked items in
+  `ROADMAP.md`) by orchestrating the two above: preparation for item N+1
+  starts in the background while item N is being implemented.
+
+Invoke `/dev-sprint` to work through a sprint automatically. Invoke
+`/feature-impl` directly (with a brief in context, or it will call
+`feature-prep` first) for a single item. Never commit a feature without
+a passing user verification — this is enforced by `/feature-impl`.
+
 ## Repository management
 
 This is a solo project, developed interactively (with Claude) on a single

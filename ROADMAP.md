@@ -718,7 +718,7 @@ ribbon, and the encrypted-attachment rule).
       unchanged scope, still parked behind the items above (open design
       questions recorded in the v2.1.0.0 section).
 
-## v2.3.0.0 — Third feedback wave (sprint started 2026-06-20)
+## v2.4.0.0 — Third feedback wave (sprint started 2026-06-20)
 
 Six items from continued operational use: three quick independent fixes
 (A), one pane-interaction redesign (B), one visual redesign (C), and one
