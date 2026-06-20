@@ -357,6 +357,7 @@ namespace RBLclass.AddIn
 
                 if (_taskPane != null)
                 {
+                    try { _taskPane.DockPositionStateChange -= OnTaskPaneDockPositionStateChange; } catch { }
                     try { Marshal.ReleaseComObject(_taskPane); } catch { }
                     _taskPane = null;
                 }
@@ -666,11 +667,36 @@ namespace RBLclass.AddIn
                 return;
             }
 
+            // Read the persisted dock position; fall back to Right (= 2) if absent/invalid.
+            int dockInt;
+            if (!int.TryParse(_settingsStore?.Get(SettingsKeys.PaneDockPosition, null),
+                              out dockInt))
+                dockInt = (int)Office.MsoCTPDockPosition.msoCTPDockPositionRight;
+
             // CreateCTP instantiates the COM-registered host control by ProgId.
             _taskPane = _ctpFactory.CreateCTP(
                 RblClassTaskPaneHost.ProgIdString, "RBLclass", Type.Missing);
-            _taskPane.DockPosition = Office.MsoCTPDockPosition.msoCTPDockPositionRight;
+            _taskPane.DockPosition = (Office.MsoCTPDockPosition)dockInt;
             _taskPane.Width = 360;
+            _taskPane.DockPositionStateChange += OnTaskPaneDockPositionStateChange;
+        }
+
+        /// <summary>
+        /// Persists the new dock position whenever the user moves the task pane.
+        /// Fires on the Outlook UI (STA) thread.
+        /// </summary>
+        private void OnTaskPaneDockPositionStateChange(Office.CustomTaskPane customTaskPaneInst)
+        {
+            try
+            {
+                int pos = (int)customTaskPaneInst.DockPosition;
+                _settingsStore?.Set(SettingsKeys.PaneDockPosition,
+                    pos.ToString(System.Globalization.CultureInfo.InvariantCulture));
+            }
+            catch (Exception ex)
+            {
+                TryLog("DockPositionStateChange handler failed", ex);
+            }
         }
 
         /// <summary>

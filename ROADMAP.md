@@ -777,7 +777,7 @@ CLAUDE.md.
         `IndexStatus_Indexing`, `IndexStatus_Ready`) in
         `Strings.resx` / `.fr.resx` / `.de.resx`.
 
-- [ ] **A3. Pane dock position persistence.**
+- [x] **A3. Pane dock position persistence.**
       The task pane always opens docked to the right (`EnsureTaskPane`,
       `msoCTPDockPositionRight` hardcoded). If the user moves it to the
       left, the preference is lost on restart. Fix:

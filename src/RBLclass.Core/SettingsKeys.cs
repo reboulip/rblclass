@@ -95,5 +95,12 @@ namespace RBLclass.Core
         /// <see cref="UiLanguageResolver"/>.
         /// </summary>
         public const string PreferredUiLanguage = "PreferredUiLanguage";
+
+        /// <summary>
+        /// Last dock position of the task pane, stored as the integer value of
+        /// <c>Microsoft.Office.Core.MsoCTPDockPosition</c>
+        /// (msoCTPDockPositionRight = 2 is the default).
+        /// </summary>
+        public const string PaneDockPosition = "PaneDockPosition";
     }
 }
