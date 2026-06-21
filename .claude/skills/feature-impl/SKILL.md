@@ -79,6 +79,8 @@ section to the user via AskUserQuestion (all at once, max 4). For each
 question offer at minimum: `Yes — works as expected` and
 `No — something is wrong`.
 
+Always end with a last question: `Any other feedback?` with a free text response, to catch anything the user notices that the specific verification questions missed.
+
 Wait for the answers before doing anything else.
 
 ## Step 8a — All pass → commit
