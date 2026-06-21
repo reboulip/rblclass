@@ -211,7 +211,7 @@ the disposition modal + save/delete, F3 the label), built in that order.
         `FolderSearchService` test patterns), path-segment splitting, depth/count
         cap, empty/duplicate path handling.
 
-- [ ] **F2. Per-attachment disposition modal.** **Decision (2026-06-20): a new
+- [x] **F2. Per-attachment disposition modal.** **Decision (2026-06-20): a new
       setting picks the behaviour of the remove-attachments checkbox** —
       `AttachmentRemovalMode` = **Modal** (default) or **DeleteSilently** (the
       current no-prompt strip,
@@ -250,6 +250,15 @@ the disposition modal + save/delete, F3 the label), built in that order.
         orchestration over a fake `IMailStore` (save vs delete counts, encrypted
         items excluded and reported, label target follows keep-copy); setting
         default/round-trip.
+      - **Open point (target re-verify):** Windows **Controlled Folder Access**
+        (ransomware protection) blocks Outlook from writing attachments into
+        protected directories (Documents, Desktop, OneDrive known folders),
+        surfacing as a Windows "unauthorised changes blocked" toast and a
+        `SaveAsFile` `FileNotFoundException`. The save-then-strip path now
+        **fails safe** — a blocked save leaves every attachment on the mail
+        (nothing lost) and the run reports a failure — but saving into a
+        protected folder needs CFA to allow `outlook.exe`. Confirm the policy /
+        allow-listing on the 32-bit target before pilot.
 
 - [ ] **F3. "Former attachments" label on the filed mail.** After disposition,
       record on each affected mail what its attachments were and where each

@@ -787,6 +787,124 @@ namespace RBLclass.Outlook.Adapter
             return true;
         }
 
+        public bool IsEncryptedMail(MailItemRef item)
+        {
+            if (item == null) return false;
+
+            using (var session = new ComRef<OutlookOM.NameSpace>(_app.Session))
+            {
+                object rawItem;
+                try { rawItem = session.Value.GetItemFromID(item.EntryId, item.StoreId); }
+                catch { return false; }
+
+                using (var comItem = new ComRef<object>(rawItem))
+                {
+                    var mail = comItem.Value as OutlookOM.MailItem;
+                    if (mail == null) return false;
+                    string messageClass = Safe(() => mail.MessageClass, string.Empty);
+                    return messageClass.StartsWith("IPM.Note.SMIME", StringComparison.OrdinalIgnoreCase);
+                }
+            }
+        }
+
+        public IReadOnlyList<AttachmentInfo> GetAttachments(MailItemRef item)
+        {
+            if (item == null) return new AttachmentInfo[0];
+
+            using (var session = new ComRef<OutlookOM.NameSpace>(_app.Session))
+            {
+                object rawItem;
+                try { rawItem = session.Value.GetItemFromID(item.EntryId, item.StoreId); }
+                catch { return new AttachmentInfo[0]; }
+
+                using (var comItem = new ComRef<object>(rawItem))
+                {
+                    var mail = comItem.Value as OutlookOM.MailItem;
+                    if (mail == null) return new AttachmentInfo[0];
+
+                    var result = new List<AttachmentInfo>();
+                    using (var attachments = new ComRef<OutlookOM.Attachments>(mail.Attachments))
+                    {
+                        int count = attachments.Value.Count;
+                        for (int i = 1; i <= count; i++)
+                        {
+                            OutlookOM.Attachment raw;
+                            try { raw = attachments.Value[i]; } catch { continue; }
+                            using (var att = new ComRef<OutlookOM.Attachment>(raw))
+                            {
+                                string name = Safe(() => att.Value.FileName, string.Empty);
+                                long size = Safe(() => (long)att.Value.Size, 0L);
+                                int id = Safe(() => att.Value.Index, i);
+                                result.Add(new AttachmentInfo(id, name, size));
+                            }
+                        }
+                    }
+                    return result;
+                }
+            }
+        }
+
+        public bool SaveAttachmentToFile(MailItemRef item, int attachmentId, string destinationDirectory)
+        {
+            if (item == null || string.IsNullOrWhiteSpace(destinationDirectory)) return false;
+
+            // Outlook's SaveAsFile throws an opaque "file not found" when the
+            // directory is absent; create it (covers a OneDrive folder not yet
+            // materialised locally) and bail clearly if that is not possible.
+            try { System.IO.Directory.CreateDirectory(destinationDirectory); }
+            catch (Exception ex)
+            {
+                Log.Error(ex, "SaveAttachmentToFile: destination directory unusable: {Dir}", destinationDirectory);
+                return false;
+            }
+
+            using (var session = new ComRef<OutlookOM.NameSpace>(_app.Session))
+            {
+                object rawItem;
+                try { rawItem = session.Value.GetItemFromID(item.EntryId, item.StoreId); }
+                catch { return false; }
+
+                using (var comItem = new ComRef<object>(rawItem))
+                {
+                    var mail = comItem.Value as OutlookOM.MailItem;
+                    if (mail == null) return false;
+
+                    using (var attachments = new ComRef<OutlookOM.Attachments>(mail.Attachments))
+                    {
+                        int count = attachments.Value.Count;
+                        for (int i = 1; i <= count; i++)
+                        {
+                            OutlookOM.Attachment raw;
+                            try { raw = attachments.Value[i]; } catch { continue; }
+                            using (var att = new ComRef<OutlookOM.Attachment>(raw))
+                            {
+                                if (Safe(() => att.Value.Index, -1) != attachmentId) continue;
+                                string fileName = Safe(() => att.Value.FileName, null);
+                                if (string.IsNullOrWhiteSpace(fileName))
+                                    fileName = "attachment" + attachmentId;
+                                string destPath = AttachmentFilenameCollisionResolver.Resolve(
+                                    destinationDirectory, fileName, System.IO.File.Exists);
+                                try
+                                {
+                                    att.Value.SaveAsFile(destPath);
+                                    Log.Information("Saved attachment {Id} to {Path}.", attachmentId, destPath);
+                                    return true;
+                                }
+                                catch (Exception ex)
+                                {
+                                    Log.Error(ex, "SaveAttachmentToFile failed for attachment {Id} to {Path}.",
+                                        attachmentId, destPath);
+                                    return false;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            Log.Warning("SaveAttachmentToFile: attachment {Id} not found.", attachmentId);
+            return false;
+        }
+
         public bool StripExternalBanner(MailItemRef item, string bannerSignature)
         {
             if (item == null || string.IsNullOrWhiteSpace(bannerSignature)) return false;

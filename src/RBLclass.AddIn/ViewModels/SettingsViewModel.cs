@@ -71,6 +71,28 @@ namespace RBLclass.AddIn.ViewModels
         /// </summary>
         public ObservableCollection<string> FavoriteFolders { get; }
 
+        /// <summary>F2: remove-attachments shows the disposition modal (Modal) or strips silently.</summary>
+        public bool AttachmentRemovalModeIsModal
+        {
+            get => _settings.AttachmentRemovalMode == AttachmentRemovalMode.Modal;
+            set { if (value) UpdateAttachmentRemovalMode(AttachmentRemovalMode.Modal); }
+        }
+
+        public bool AttachmentRemovalModeIsDeleteSilently
+        {
+            get => _settings.AttachmentRemovalMode == AttachmentRemovalMode.DeleteSilently;
+            set { if (value) UpdateAttachmentRemovalMode(AttachmentRemovalMode.DeleteSilently); }
+        }
+
+        private void UpdateAttachmentRemovalMode(AttachmentRemovalMode mode)
+        {
+            if (_settings.AttachmentRemovalMode == mode) return;
+            _settings.AttachmentRemovalMode = mode;
+            _settings.Save(_store);
+            OnPropertyChanged(nameof(AttachmentRemovalModeIsModal));
+            OnPropertyChanged(nameof(AttachmentRemovalModeIsDeleteSilently));
+        }
+
         /// <summary>Browse for a directory and add it (deduped, case-insensitive).</summary>
         public void AddFavoriteFolder()
         {

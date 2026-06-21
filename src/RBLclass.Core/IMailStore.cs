@@ -133,6 +133,31 @@ namespace RBLclass.Core
         bool RemoveAttachments(MailItemRef item);
 
         /// <summary>
+        /// List an item's attachments as Outlook-free descriptors (v2.4.0.0 F2),
+        /// for the disposition modal. Returns an empty list when the item does
+        /// not resolve or carries none. Touches COM - call on the Outlook UI
+        /// thread.
+        /// </summary>
+        IReadOnlyList<AttachmentInfo> GetAttachments(MailItemRef item);
+
+        /// <summary>
+        /// Save one attachment (identified by <paramref name="attachmentId"/> from
+        /// <see cref="GetAttachments"/>) into <paramref name="destinationDirectory"/>,
+        /// resolving filename collisions. Returns true on success (v2.4.0.0 F2).
+        /// Call before stripping, while the attachment still exists. Touches COM -
+        /// call on the Outlook UI thread.
+        /// </summary>
+        bool SaveAttachmentToFile(MailItemRef item, int attachmentId, string destinationDirectory);
+
+        /// <summary>
+        /// True when the item is S/MIME-encrypted/signed (<c>IPM.Note.SMIME*</c>),
+        /// whose attachments must never be exposed or stripped (v2.4.0.0 F2 uses
+        /// this to exclude such mail from the disposition modal and report it).
+        /// Touches COM - call on the Outlook UI thread.
+        /// </summary>
+        bool IsEncryptedMail(MailItemRef item);
+
+        /// <summary>
         /// Remove the learned external-sender banner (<paramref name="bannerSignature"/>,
         /// verbatim block HTML) from a mail item's HTML body and save it, via
         /// <see cref="ExternalBannerStripper"/> (v2.2). No-op (returns false) when

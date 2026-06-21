@@ -117,5 +117,12 @@ namespace RBLclass.Core
         /// chosen roots.
         /// </summary>
         public const string AttachmentFavoriteFolders = "AttachmentFavoriteFolders";
+
+        /// <summary>
+        /// Whether "remove attachments" shows the per-attachment disposition modal
+        /// (Modal, default) or silently strips all (DeleteSilently) - stored as the
+        /// <see cref="RBLclass.Core.AttachmentRemovalMode"/> name (v2.4.0.0 F2).
+        /// </summary>
+        public const string AttachmentRemovalMode = "AttachmentRemovalMode";
     }
 }

@@ -273,6 +273,27 @@ namespace RBLclass.AddIn
                     }
                 };
 
+                // F2: gather attachments and show the per-attachment disposition modal.
+                TaskPaneServices.GatherAttachments = items =>
+                {
+                    var groups = new List<(MailItemRef, IReadOnlyList<AttachmentInfo>, bool)>();
+                    foreach (var it in items)
+                    {
+                        bool encrypted = _mailStore.IsEncryptedMail(it);
+                        var atts = encrypted
+                            ? (IReadOnlyList<AttachmentInfo>)new AttachmentInfo[0]
+                            : _mailStore.GetAttachments(it);
+                        groups.Add((it, atts, encrypted));
+                    }
+                    return groups;
+                };
+                TaskPaneServices.ShowAttachmentDisposition = groups =>
+                {
+                    var vm = new AttachmentDispositionViewModel(groups, TaskPaneServices.Localization);
+                    var window = new AttachmentDispositionWindow { DataContext = vm };
+                    return window.ShowDialog() == true ? vm.BuildDispositions() : null;
+                };
+
                 // Keep the classify pane's selection count live.
                 try
                 {

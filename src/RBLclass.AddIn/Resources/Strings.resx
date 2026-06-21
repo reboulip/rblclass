@@ -141,6 +141,51 @@
   <data name="Settings_FavoriteFolders_BrowseDescription" xml:space="preserve">
     <value>Select a folder to add to your favourites</value>
   </data>
+  <data name="Settings_AttachmentRemovalMode_Label" xml:space="preserve">
+    <value>When removing attachments:</value>
+  </data>
+  <data name="Settings_AttachmentRemovalMode_Modal" xml:space="preserve">
+    <value>Ask what to do with each attachment (recommended)</value>
+  </data>
+  <data name="Settings_AttachmentRemovalMode_DeleteSilently" xml:space="preserve">
+    <value>Delete all attachments silently</value>
+  </data>
+  <data name="AttachDisp_Title" xml:space="preserve">
+    <value>RBLclass — Attachment disposition</value>
+  </data>
+  <data name="AttachDisp_Intro" xml:space="preserve">
+    <value>Choose what to do with each attachment before the mail is filed.</value>
+  </data>
+  <data name="AttachDisp_EncryptedExcluded_One" xml:space="preserve">
+    <value>{0} encrypted mail was excluded — its attachments stay with the mail.</value>
+  </data>
+  <data name="AttachDisp_EncryptedExcluded_Other" xml:space="preserve">
+    <value>{0} encrypted mails were excluded — their attachments stay with the mail.</value>
+  </data>
+  <data name="AttachDisp_DeleteAll_Button" xml:space="preserve">
+    <value>Delete all</value>
+  </data>
+  <data name="AttachDisp_Delete_Radio" xml:space="preserve">
+    <value>Delete</value>
+  </data>
+  <data name="AttachDisp_SaveTo_Radio" xml:space="preserve">
+    <value>Save to…</value>
+  </data>
+  <data name="AttachDisp_Browse_Button" xml:space="preserve">
+    <value>Browse…</value>
+  </data>
+  <data name="AttachDisp_SearchHint" xml:space="preserve">
+    <value>Search favourite folders</value>
+  </data>
+  <data name="AttachDisp_TargetPrefix" xml:space="preserve">
+    <value>Save to: </value>
+  </data>
+  <data name="AttachDisp_Confirm_Button" xml:space="preserve">
+    <value>Confirm</value>
+  </data>
+  <data name="AttachDisp_Cancel_Button" xml:space="preserve">
+    <value>Cancel</value>
+  </data>
 
   <!-- SettingsWindow -->
   <data name="Settings_Title" xml:space="preserve">

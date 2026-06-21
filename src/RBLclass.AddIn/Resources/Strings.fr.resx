@@ -141,6 +141,51 @@
   <data name="Settings_FavoriteFolders_BrowseDescription" xml:space="preserve">
     <value>Sélectionnez un dossier à ajouter à vos favoris</value>
   </data>
+  <data name="Settings_AttachmentRemovalMode_Label" xml:space="preserve">
+    <value>Lors de la suppression des pièces jointes :</value>
+  </data>
+  <data name="Settings_AttachmentRemovalMode_Modal" xml:space="preserve">
+    <value>Demander le traitement de chaque pièce jointe (recommandé)</value>
+  </data>
+  <data name="Settings_AttachmentRemovalMode_DeleteSilently" xml:space="preserve">
+    <value>Supprimer toutes les pièces jointes sans confirmation</value>
+  </data>
+  <data name="AttachDisp_Title" xml:space="preserve">
+    <value>RBLclass — Traitement des pièces jointes</value>
+  </data>
+  <data name="AttachDisp_Intro" xml:space="preserve">
+    <value>Choisissez le traitement de chaque pièce jointe avant le classement du message.</value>
+  </data>
+  <data name="AttachDisp_EncryptedExcluded_One" xml:space="preserve">
+    <value>{0} message chiffré exclu — ses pièces jointes restent avec le message.</value>
+  </data>
+  <data name="AttachDisp_EncryptedExcluded_Other" xml:space="preserve">
+    <value>{0} messages chiffrés exclus — leurs pièces jointes restent avec les messages.</value>
+  </data>
+  <data name="AttachDisp_DeleteAll_Button" xml:space="preserve">
+    <value>Tout supprimer</value>
+  </data>
+  <data name="AttachDisp_Delete_Radio" xml:space="preserve">
+    <value>Supprimer</value>
+  </data>
+  <data name="AttachDisp_SaveTo_Radio" xml:space="preserve">
+    <value>Enregistrer dans…</value>
+  </data>
+  <data name="AttachDisp_Browse_Button" xml:space="preserve">
+    <value>Parcourir…</value>
+  </data>
+  <data name="AttachDisp_SearchHint" xml:space="preserve">
+    <value>Rechercher dans les dossiers favoris</value>
+  </data>
+  <data name="AttachDisp_TargetPrefix" xml:space="preserve">
+    <value>Enregistrer dans : </value>
+  </data>
+  <data name="AttachDisp_Confirm_Button" xml:space="preserve">
+    <value>Confirmer</value>
+  </data>
+  <data name="AttachDisp_Cancel_Button" xml:space="preserve">
+    <value>Annuler</value>
+  </data>
 
   <!-- SettingsWindow -->
   <data name="Settings_Title" xml:space="preserve">

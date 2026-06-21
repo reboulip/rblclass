@@ -141,6 +141,51 @@
   <data name="Settings_FavoriteFolders_BrowseDescription" xml:space="preserve">
     <value>Wählen Sie einen Ordner für Ihre Favoriten aus</value>
   </data>
+  <data name="Settings_AttachmentRemovalMode_Label" xml:space="preserve">
+    <value>Beim Entfernen von Anlagen:</value>
+  </data>
+  <data name="Settings_AttachmentRemovalMode_Modal" xml:space="preserve">
+    <value>Bei jeder Anlage nachfragen (empfohlen)</value>
+  </data>
+  <data name="Settings_AttachmentRemovalMode_DeleteSilently" xml:space="preserve">
+    <value>Alle Anlagen ohne Nachfrage löschen</value>
+  </data>
+  <data name="AttachDisp_Title" xml:space="preserve">
+    <value>RBLclass — Anlagenverarbeitung</value>
+  </data>
+  <data name="AttachDisp_Intro" xml:space="preserve">
+    <value>Wählen Sie, was mit jeder Anlage geschehen soll, bevor die E-Mail abgelegt wird.</value>
+  </data>
+  <data name="AttachDisp_EncryptedExcluded_One" xml:space="preserve">
+    <value>{0} verschlüsselte E-Mail ausgeschlossen — ihre Anlagen verbleiben bei der E-Mail.</value>
+  </data>
+  <data name="AttachDisp_EncryptedExcluded_Other" xml:space="preserve">
+    <value>{0} verschlüsselte E-Mails ausgeschlossen — ihre Anlagen verbleiben bei den E-Mails.</value>
+  </data>
+  <data name="AttachDisp_DeleteAll_Button" xml:space="preserve">
+    <value>Alle löschen</value>
+  </data>
+  <data name="AttachDisp_Delete_Radio" xml:space="preserve">
+    <value>Löschen</value>
+  </data>
+  <data name="AttachDisp_SaveTo_Radio" xml:space="preserve">
+    <value>Speichern in…</value>
+  </data>
+  <data name="AttachDisp_Browse_Button" xml:space="preserve">
+    <value>Durchsuchen…</value>
+  </data>
+  <data name="AttachDisp_SearchHint" xml:space="preserve">
+    <value>Favoritenordner durchsuchen</value>
+  </data>
+  <data name="AttachDisp_TargetPrefix" xml:space="preserve">
+    <value>Speichern in: </value>
+  </data>
+  <data name="AttachDisp_Confirm_Button" xml:space="preserve">
+    <value>Bestätigen</value>
+  </data>
+  <data name="AttachDisp_Cancel_Button" xml:space="preserve">
+    <value>Abbrechen</value>
+  </data>
 
   <!-- SettingsWindow -->
   <data name="Settings_Title" xml:space="preserve">

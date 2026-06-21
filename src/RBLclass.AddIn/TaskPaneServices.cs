@@ -118,5 +118,22 @@ namespace RBLclass.AddIn
         /// hood; call on the UI thread.
         /// </summary>
         public static Func<string> BrowseForFolder;
+
+        /// <summary>
+        /// Gather each item's attachments (and whether it is encrypted) for the
+        /// F2 disposition modal. Touches COM - invoked on the UI thread.
+        /// </summary>
+        public static Func<IReadOnlyList<MailItemRef>,
+            IReadOnlyList<(MailItemRef Item, IReadOnlyList<AttachmentInfo> Attachments, bool IsEncrypted)>>
+            GatherAttachments;
+
+        /// <summary>
+        /// Show the F2 per-attachment disposition modal for the gathered groups
+        /// and return the user's choices, or null when cancelled (which aborts
+        /// the classify).
+        /// </summary>
+        public static Func<
+            IReadOnlyList<(MailItemRef Item, IReadOnlyList<AttachmentInfo> Attachments, bool IsEncrypted)>,
+            IReadOnlyList<AttachmentDisposition>> ShowAttachmentDisposition;
     }
 }

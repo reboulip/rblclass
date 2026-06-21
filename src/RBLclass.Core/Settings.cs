@@ -49,6 +49,7 @@ namespace RBLclass.Core
         public SentItemTriageMode SentItemTriageMode { get; set; }
         public bool ClassifyAfterMoveToInbox { get; set; }
         public IReadOnlyList<string> AttachmentFavoriteFolders { get; set; }
+        public AttachmentRemovalMode AttachmentRemovalMode { get; set; }
         public string PreferredUiLanguage { get; set; }
 
         /// <summary>Read every key, falling back to the same defaults the individual call sites use today.</summary>
@@ -80,6 +81,7 @@ namespace RBLclass.Core
                     store.GetBool(SettingsKeys.SentItemTriagePrompt, true)),
                 ClassifyAfterMoveToInbox = store.GetBool(SettingsKeys.ClassifyAfterMoveToInbox, true),
                 AttachmentFavoriteFolders = ParseList(store.Get(SettingsKeys.AttachmentFavoriteFolders, string.Empty)),
+                AttachmentRemovalMode = ParseAttachmentRemovalMode(store.Get(SettingsKeys.AttachmentRemovalMode, null)),
                 PreferredUiLanguage = ParseUiLanguage(store.Get(SettingsKeys.PreferredUiLanguage, null))
             };
         }
@@ -106,6 +108,7 @@ namespace RBLclass.Core
             store.Set(SettingsKeys.SentItemTriageMode, SentItemTriageMode.ToString());
             store.SetBool(SettingsKeys.ClassifyAfterMoveToInbox, ClassifyAfterMoveToInbox);
             store.Set(SettingsKeys.AttachmentFavoriteFolders, FormatList(AttachmentFavoriteFolders));
+            store.Set(SettingsKeys.AttachmentRemovalMode, AttachmentRemovalMode.ToString());
             store.Set(SettingsKeys.PreferredUiLanguage, PreferredUiLanguage);
         }
 
@@ -118,6 +121,15 @@ namespace RBLclass.Core
             // No stored mode: migrate the legacy on/off prompt (on -> ask, off ->
             // leave). Fresh installs default to asking each time.
             return legacyPromptOn ? SentItemTriageMode.AskEveryTime : SentItemTriageMode.Leave;
+        }
+
+        /// <summary>Unrecognised or missing values fall back to Modal (show the disposition prompt).</summary>
+        private static AttachmentRemovalMode ParseAttachmentRemovalMode(string raw)
+        {
+            AttachmentRemovalMode mode;
+            return Enum.TryParse(raw, out mode)
+                   && Enum.IsDefined(typeof(AttachmentRemovalMode), mode)
+                ? mode : AttachmentRemovalMode.Modal;
         }
 
         /// <summary>Unrecognised or missing values fall back to "Auto" (follow Outlook's UI language).</summary>

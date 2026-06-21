@@ -189,10 +189,7 @@ namespace RBLclass.Core
                         if (filedRef != null)
                         {
                             if (request.RemoveAttachments)
-                            {
-                                if (_store.RemoveAttachments(filedRef)) acc.Strips++;
-                                else acc.EncryptedSkips++;
-                            }
+                                ApplyAttachmentRemoval(item, filedRef, request, acc);
                             // Strip the learned external banner from the filed
                             // body (best-effort, not undoable - a body edit).
                             if (request.StripBanner)
@@ -228,6 +225,56 @@ namespace RBLclass.Core
                 // Unexpected per-item failure (e.g. the flag check); keep going.
                 acc.Errors++;
             }
+        }
+
+        /// <summary>
+        /// Remove attachments from the filed item (v2.4.0.0 F2). With per-attachment
+        /// dispositions (Modal mode), first save every "Save to" attachment into its
+        /// chosen directory, then strip; without them (DeleteSilently, or no rows for
+        /// this item), strip all - the pre-F2 behaviour. Acts on
+        /// <paramref name="filedRef"/> (the filed copy / moved item), never the kept
+        /// original. <see cref="IMailStore.RemoveAttachments"/> stays S/MIME-safe.
+        /// </summary>
+        private void ApplyAttachmentRemoval(MailItemRef originalItem, MailItemRef filedRef,
+                                            ClassifyRequest request, ClassifyAccumulator acc)
+        {
+            var rows = new List<AttachmentDisposition>();
+            foreach (var d in request.AttachmentDispositions)
+            {
+                if (d.Item.StoreId == originalItem.StoreId && d.Item.EntryId == originalItem.EntryId)
+                    rows.Add(d);
+            }
+
+            // Save the "Save to" attachments before stripping, while they still
+            // exist on the filed item.
+            bool allSavesSucceeded = true;
+            foreach (var d in rows)
+            {
+                if (d.Action == AttachmentDispositionAction.SaveTo
+                    && !string.IsNullOrWhiteSpace(d.TargetDirectory))
+                {
+                    bool saved;
+                    try { saved = _store.SaveAttachmentToFile(filedRef, d.AttachmentId, d.TargetDirectory); }
+                    catch { saved = false; } // adapter logs the cause
+                    if (!saved) allSavesSucceeded = false;
+                }
+            }
+
+            // Never strip when a requested save failed: the only strip primitive
+            // removes ALL attachments, so stripping after a failed save would
+            // lose the very file the user asked to keep. Leave every attachment
+            // in place and count it so the user is told to retry.
+            if (rows.Count > 0 && !allSavesSucceeded)
+            {
+                acc.Errors++;
+                return;
+            }
+
+            // F3 seam: compose and write the "former attachments" label here,
+            // from `rows`, before/after the strip (rows carry FileName + disposition).
+
+            if (_store.RemoveAttachments(filedRef)) acc.Strips++;
+            else acc.EncryptedSkips++;
         }
 
         /// <summary>

@@ -580,6 +580,27 @@ namespace RBLclass.AddIn.ViewModels
                     ? _settings.Get(SettingsKeys.ExternalBannerSignature, null)
                     : null;
 
+                // F2: in Modal mode, gather attachments and show the disposition
+                // modal in the preflight (before the responsive move loop). A
+                // cancel aborts the whole classify.
+                IReadOnlyList<AttachmentDisposition> attachmentDispositions = null;
+                if (_removeAttachments && _settings != null
+                    && Settings.Load(_settings).AttachmentRemovalMode == AttachmentRemovalMode.Modal
+                    && TaskPaneServices.GatherAttachments != null
+                    && TaskPaneServices.ShowAttachmentDisposition != null)
+                {
+                    var groups = TaskPaneServices.GatherAttachments(preflight.Items);
+                    if (groups.Any(g => g.IsEncrypted || g.Attachments.Count > 0))
+                    {
+                        attachmentDispositions = TaskPaneServices.ShowAttachmentDisposition(groups);
+                        if (attachmentDispositions == null)
+                        {
+                            Status = _loc.GetString("Status_ClassifyCancelled");
+                            return false;
+                        }
+                    }
+                }
+
                 // Core invokes Report synchronously on this (STA/UI) thread
                 // between items, so set Status inline - the Background yield that
                 // follows each item repaints it. (Progress<T> would Post the
@@ -592,7 +613,7 @@ namespace RBLclass.AddIn.ViewModels
                 var result = await _classifier.ClassifyAsync(
                     new ClassifyRequest(preflight.Items, destinations, _keepCopy,
                                         _removeAttachments, markTasksComplete, safetyCopy,
-                                        bannerSignature),
+                                        bannerSignature, attachmentDispositions),
                     progress,
                     YieldToPump);
 
