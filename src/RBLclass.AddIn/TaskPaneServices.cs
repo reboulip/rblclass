@@ -105,5 +105,18 @@ namespace RBLclass.AddIn
         /// then. The pin clears after the next classify or on selection change.
         /// </summary>
         public static Action<MailItemRef> PinMailForClassify;
+
+        /// <summary>
+        /// The favourite-folder filesystem index (v2.4.0.0 F1): keyword search
+        /// over the user's pre-indexed save-to directories.
+        /// </summary>
+        public static FavoriteFolderService FavoriteFolderService;
+
+        /// <summary>
+        /// Show the OS folder-browse dialog and return the selected path, or null
+        /// when cancelled (v2.4.0.0 F1). WinForms FolderBrowserDialog under the
+        /// hood; call on the UI thread.
+        /// </summary>
+        public static Func<string> BrowseForFolder;
     }
 }

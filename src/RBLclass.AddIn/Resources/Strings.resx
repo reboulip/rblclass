@@ -123,6 +123,24 @@
   <data name="Settings_ClassifyAfterMoveToInbox_CheckBox" xml:space="preserve">
     <value>After moving a sent mail to the Inbox, open the classify pane to file it</value>
   </data>
+  <data name="Settings_FavoriteFolders_Header" xml:space="preserve">
+    <value>Favourite attachment folders</value>
+  </data>
+  <data name="Settings_FavoriteFolders_Description" xml:space="preserve">
+    <value>Pre-index directories so you can find a save location as fast as an Outlook folder.</value>
+  </data>
+  <data name="Settings_FavoriteFolders_Add_Button" xml:space="preserve">
+    <value>Add…</value>
+  </data>
+  <data name="Settings_FavoriteFolders_Remove_Button" xml:space="preserve">
+    <value>Remove</value>
+  </data>
+  <data name="Settings_FavoriteFolders_Note" xml:space="preserve">
+    <value>Sub-folders are indexed to a depth of 4 (up to 2000 directories per root).</value>
+  </data>
+  <data name="Settings_FavoriteFolders_BrowseDescription" xml:space="preserve">
+    <value>Select a folder to add to your favourites</value>
+  </data>
 
   <!-- SettingsWindow -->
   <data name="Settings_Title" xml:space="preserve">

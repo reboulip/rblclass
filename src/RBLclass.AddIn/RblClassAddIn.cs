@@ -52,6 +52,7 @@ namespace RBLclass.AddIn
         private IClassifier _classifier;
         private IClassificationHistory _classificationHistory;
         private ISettingsStore _settingsStore;
+        private FavoriteFolderService _favoriteFolderService;
         private readonly ForgottenAttachmentGuard _attachmentGuard = new ForgottenAttachmentGuard();
         private readonly ExternalRecipientGuard _externalGuard = new ExternalRecipientGuard();
         private IndexResult _lastIndexResult;
@@ -251,6 +252,25 @@ namespace RBLclass.AddIn
                         loc.GetString("MsgBox_ConfirmSendToExternal_Title"),
                         MessageBoxButtons.YesNo, MessageBoxIcon.Warning);
                     return answer == DialogResult.Yes;
+                };
+
+                // Favourite-folder filesystem index (v2.4.0.0 F1): load the
+                // persisted tree now (no I/O walk) and re-walk in the background.
+                _repository.EnsureSchema(); // ensure the favourites table exists
+                _favoriteFolderService = new FavoriteFolderService(
+                    new DirectoryScanner(), (IFavoriteFolderRepository)_repository, _settingsStore);
+                _favoriteFolderService.LoadFromCache();
+                TaskPaneServices.FavoriteFolderService = _favoriteFolderService;
+                ReindexFavoritesInBackground();
+                TaskPaneServices.BrowseForFolder = () =>
+                {
+                    using (var dlg = new FolderBrowserDialog())
+                    {
+                        dlg.Description = TaskPaneServices.Localization.GetString(
+                            "Settings_FavoriteFolders_BrowseDescription");
+                        dlg.ShowNewFolderButton = false;
+                        return dlg.ShowDialog() == DialogResult.OK ? dlg.SelectedPath : null;
+                    }
                 };
 
                 // Keep the classify pane's selection count live.
@@ -823,11 +843,30 @@ namespace RBLclass.AddIn
                         _settingsStore,
                         () => _mailStore.GetSelectedItemHtmlBody())
                 }.ShowDialog();
+
+                // Re-index favourites in case the favourite-folder list changed
+                // while the dialog was open (v2.4.0.0 F1).
+                ReindexFavoritesInBackground();
             }
             catch (Exception ex)
             {
                 ShowError("Settings failed", ex);
             }
+        }
+
+        /// <summary>
+        /// Re-walk the favourite-folder roots off the UI thread (filesystem +
+        /// SQLite only, no Outlook COM) - v2.4.0.0 F1.
+        /// </summary>
+        private void ReindexFavoritesInBackground()
+        {
+            var service = _favoriteFolderService;
+            if (service == null) return;
+            System.Threading.Tasks.Task.Run(() =>
+            {
+                try { service.Reindex(); }
+                catch (Exception ex) { TryLog("Favourite folder reindex failed", ex); }
+            });
         }
 
         // --- index lifecycle helpers ---------------------------------------

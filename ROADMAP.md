@@ -183,7 +183,7 @@ it to a fast-to-pick filesystem location, then label the mail with what happened
 to each. Sequenced as three sub-items (F1 the searchable favourites index, F2
 the disposition modal + save/delete, F3 the label), built in that order.
 
-- [ ] **F1. Keyword-searchable "favourite folders" filesystem index.** Saving
+- [x] **F1. Keyword-searchable "favourite folders" filesystem index.** Saving
       an attachment to the right Windows directory is the slow step;
       pre-indexing user-chosen favourites makes target selection as fast as the
       Outlook folder search. **Decision (2026-06-20): favourites are Windows

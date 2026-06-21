@@ -123,6 +123,24 @@
   <data name="Settings_ClassifyAfterMoveToInbox_CheckBox" xml:space="preserve">
     <value>Après le déplacement d'un message envoyé vers la boîte de réception, ouvrir le volet de classement pour le classer</value>
   </data>
+  <data name="Settings_FavoriteFolders_Header" xml:space="preserve">
+    <value>Dossiers de pièces jointes favoris</value>
+  </data>
+  <data name="Settings_FavoriteFolders_Description" xml:space="preserve">
+    <value>Pré-indexez des répertoires pour trouver un emplacement de sauvegarde aussi vite qu'un dossier Outlook.</value>
+  </data>
+  <data name="Settings_FavoriteFolders_Add_Button" xml:space="preserve">
+    <value>Ajouter…</value>
+  </data>
+  <data name="Settings_FavoriteFolders_Remove_Button" xml:space="preserve">
+    <value>Supprimer</value>
+  </data>
+  <data name="Settings_FavoriteFolders_Note" xml:space="preserve">
+    <value>Les sous-dossiers sont indexés jusqu'à une profondeur de 4 (jusqu'à 2000 répertoires par racine).</value>
+  </data>
+  <data name="Settings_FavoriteFolders_BrowseDescription" xml:space="preserve">
+    <value>Sélectionnez un dossier à ajouter à vos favoris</value>
+  </data>
 
   <!-- SettingsWindow -->
   <data name="Settings_Title" xml:space="preserve">

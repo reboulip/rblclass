@@ -123,6 +123,24 @@
   <data name="Settings_ClassifyAfterMoveToInbox_CheckBox" xml:space="preserve">
     <value>Nach dem Verschieben einer gesendeten E-Mail in den Posteingang den Ablagebereich zum Ablegen öffnen</value>
   </data>
+  <data name="Settings_FavoriteFolders_Header" xml:space="preserve">
+    <value>Bevorzugte Anlagenordner</value>
+  </data>
+  <data name="Settings_FavoriteFolders_Description" xml:space="preserve">
+    <value>Indizieren Sie Verzeichnisse vor, um einen Speicherort so schnell wie einen Outlook-Ordner zu finden.</value>
+  </data>
+  <data name="Settings_FavoriteFolders_Add_Button" xml:space="preserve">
+    <value>Hinzufügen…</value>
+  </data>
+  <data name="Settings_FavoriteFolders_Remove_Button" xml:space="preserve">
+    <value>Entfernen</value>
+  </data>
+  <data name="Settings_FavoriteFolders_Note" xml:space="preserve">
+    <value>Unterordner werden bis zu einer Tiefe von 4 indiziert (bis zu 2000 Verzeichnisse pro Stammordner).</value>
+  </data>
+  <data name="Settings_FavoriteFolders_BrowseDescription" xml:space="preserve">
+    <value>Wählen Sie einen Ordner für Ihre Favoriten aus</value>
+  </data>
 
   <!-- SettingsWindow -->
   <data name="Settings_Title" xml:space="preserve">

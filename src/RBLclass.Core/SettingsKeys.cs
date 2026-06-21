@@ -109,5 +109,13 @@ namespace RBLclass.Core
         /// immediately (v2.4.0.0 E1, default on).
         /// </summary>
         public const string ClassifyAfterMoveToInbox = "ClassifyAfterMoveToInbox";
+
+        /// <summary>
+        /// Semicolon-separated Windows directory paths the user has marked as
+        /// favourites for saving attachments (v2.4.0.0 F1). The expanded
+        /// sub-directory index lives separately in SQLite; this holds only the
+        /// chosen roots.
+        /// </summary>
+        public const string AttachmentFavoriteFolders = "AttachmentFavoriteFolders";
     }
 }

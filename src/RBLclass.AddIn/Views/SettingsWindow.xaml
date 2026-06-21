@@ -114,6 +114,25 @@
                     </StackPanel>
                 </GroupBox>
 
+                <GroupBox Header="{loc:Loc Key=Settings_FavoriteFolders_Header}" Margin="0,0,0,8">
+                    <StackPanel Margin="6">
+                        <TextBlock TextWrapping="Wrap"
+                                   Text="{loc:Loc Key=Settings_FavoriteFolders_Description}" />
+                        <ListBox x:Name="FavoriteFoldersList" Margin="0,6,0,4" Height="96"
+                                 ItemsSource="{Binding FavoriteFolders}" />
+                        <DockPanel LastChildFill="False">
+                            <Button DockPanel.Dock="Left" Padding="8,2"
+                                    Content="{loc:Loc Key=Settings_FavoriteFolders_Add_Button}"
+                                    Click="AddFavoriteFolder_Click" />
+                            <Button DockPanel.Dock="Left" Padding="8,2" Margin="6,0,0,0"
+                                    Content="{loc:Loc Key=Settings_FavoriteFolders_Remove_Button}"
+                                    Click="RemoveFavoriteFolder_Click" />
+                        </DockPanel>
+                        <TextBlock Margin="0,4,0,0" TextWrapping="Wrap"
+                                   Text="{loc:Loc Key=Settings_FavoriteFolders_Note}" />
+                    </StackPanel>
+                </GroupBox>
+
                 <GroupBox Header="{loc:Loc Key=Settings_Language_Header}">
                     <StackPanel Margin="6">
                         <DockPanel LastChildFill="False">

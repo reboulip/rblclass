@@ -1,6 +1,8 @@
 using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Globalization;
+using System.Linq;
 using System.Runtime.CompilerServices;
 using RBLclass.AddIn.Localization;
 using RBLclass.AddIn.Mvvm;
@@ -57,6 +59,39 @@ namespace RBLclass.AddIn.ViewModels
                 new UiLanguageOption("fr", _loc.GetString("Settings_Language_French")),
                 new UiLanguageOption("de", _loc.GetString("Settings_Language_German")),
             };
+
+            FavoriteFolders = new ObservableCollection<string>(
+                _settings.AttachmentFavoriteFolders ?? new string[0]);
+        }
+
+        /// <summary>
+        /// The user's favourite save-to directories (v2.4.0.0 F1), edited via the
+        /// folder-browse dialog. Mutations persist immediately, like every other
+        /// setting here.
+        /// </summary>
+        public ObservableCollection<string> FavoriteFolders { get; }
+
+        /// <summary>Browse for a directory and add it (deduped, case-insensitive).</summary>
+        public void AddFavoriteFolder()
+        {
+            string path = TaskPaneServices.BrowseForFolder?.Invoke();
+            if (string.IsNullOrWhiteSpace(path)) return;
+            if (FavoriteFolders.Contains(path, StringComparer.OrdinalIgnoreCase)) return;
+            FavoriteFolders.Add(path);
+            PersistFavorites();
+        }
+
+        /// <summary>Remove a favourite directory.</summary>
+        public void RemoveFavoriteFolder(string path)
+        {
+            if (path == null || !FavoriteFolders.Remove(path)) return;
+            PersistFavorites();
+        }
+
+        private void PersistFavorites()
+        {
+            _settings.AttachmentFavoriteFolders = FavoriteFolders.ToArray();
+            _settings.Save(_store);
         }
 
         public bool OpenInNewWindow
