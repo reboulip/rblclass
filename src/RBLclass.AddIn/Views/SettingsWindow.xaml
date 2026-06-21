@@ -107,6 +107,10 @@
                                 </DataTemplate>
                             </ComboBox.ItemTemplate>
                         </ComboBox>
+                        <CheckBox Margin="0,8,0,0" IsChecked="{Binding ClassifyAfterMoveToInbox}">
+                            <TextBlock TextWrapping="Wrap" MaxWidth="400"
+                                       Text="{loc:Loc Key=Settings_ClassifyAfterMoveToInbox_CheckBox}" />
+                        </CheckBox>
                     </StackPanel>
                 </GroupBox>
 

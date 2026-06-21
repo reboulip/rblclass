@@ -102,5 +102,12 @@ namespace RBLclass.Core
         /// (msoCTPDockPositionRight = 2 is the default).
         /// </summary>
         public const string PaneDockPosition = "PaneDockPosition";
+
+        /// <summary>
+        /// After sent-item triage moves a mail to the Inbox, reveal the classify
+        /// pane with that mail pinned as the next target so the user can file it
+        /// immediately (v2.4.0.0 E1, default on).
+        /// </summary>
+        public const string ClassifyAfterMoveToInbox = "ClassifyAfterMoveToInbox";
     }
 }

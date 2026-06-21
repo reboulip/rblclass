@@ -631,6 +631,17 @@ namespace RBLclass.AddIn
                     Log.Information(
                         "Sent-item triage moved {Processed} mail(s) to the Inbox ({Errors} failed).",
                         result.ItemsProcessed, result.Errors);
+
+                    // E1: optionally hand the moved mail to the pane as the next
+                    // classify target and reveal it, so the user can file it now.
+                    if (_settingsStore.GetBool(SettingsKeys.ClassifyAfterMoveToInbox, true)
+                        && result.Undo != null && result.Undo.Moves.Count > 0)
+                    {
+                        EnsureTaskPane();
+                        TaskPaneServices.PinMailForClassify?.Invoke(result.Undo.Moves[0].Current);
+                        if (_taskPane != null) _taskPane.Visible = true;
+                        TaskPaneServices.Host?.RefreshOnShow();
+                    }
                     break;
             }
         }

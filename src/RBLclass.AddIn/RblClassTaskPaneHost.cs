@@ -68,6 +68,7 @@ namespace RBLclass.AddIn
                         TaskPaneServices.PromptForName,
                         TaskPaneServices.GetAllFolders);
                     vm.SubscribeToIndexStatus(TaskPaneServices.FolderIndex);
+                    TaskPaneServices.PinMailForClassify = vm.PinMailForClassify;
                     _view.DataContext = vm;
                 }
 

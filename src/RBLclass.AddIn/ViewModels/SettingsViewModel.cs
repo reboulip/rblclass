@@ -281,6 +281,16 @@ namespace RBLclass.AddIn.ViewModels
             set => Apply(_settings.SentItemTriageMode, value, v => _settings.SentItemTriageMode = v);
         }
 
+        /// <summary>
+        /// After triage moves a sent mail to the Inbox, reveal the classify pane
+        /// with that mail pinned so the user can file it immediately (E1).
+        /// </summary>
+        public bool ClassifyAfterMoveToInbox
+        {
+            get => _settings.ClassifyAfterMoveToInbox;
+            set => Apply(_settings.ClassifyAfterMoveToInbox, value, v => _settings.ClassifyAfterMoveToInbox = v);
+        }
+
         /// <summary>Options for the language dropdown (Auto/English/Français/Deutsch), Phase E.</summary>
         public IReadOnlyList<UiLanguageOption> UiLanguages { get; }
 

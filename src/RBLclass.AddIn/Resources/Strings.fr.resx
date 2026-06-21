@@ -117,6 +117,12 @@
   <data name="Status_Classify_Progress_Other" xml:space="preserve">
     <value>Classement {0} sur {1}…</value>
   </data>
+  <data name="MainPane_PinnedSentMail_Indicator" xml:space="preserve">
+    <value>Classement du message que vous venez d'envoyer — recherchez un dossier et classez-le :</value>
+  </data>
+  <data name="Settings_ClassifyAfterMoveToInbox_CheckBox" xml:space="preserve">
+    <value>Après le déplacement d'un message envoyé vers la boîte de réception, ouvrir le volet de classement pour le classer</value>
+  </data>
 
   <!-- SettingsWindow -->
   <data name="Settings_Title" xml:space="preserve">

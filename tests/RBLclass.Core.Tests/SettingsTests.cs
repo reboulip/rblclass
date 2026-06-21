@@ -49,6 +49,7 @@ namespace RBLclass.Core.Tests
             settings.InternalDomains.Should().BeEmpty();
             settings.ForgottenAttachmentKeywords.Should().Equal("attach", "enclos", "joint", "PJ");
             settings.SentItemTriageMode.Should().Be(SentItemTriageMode.AskEveryTime);
+            settings.ClassifyAfterMoveToInbox.Should().BeTrue();
             settings.MinSearchLength.Should().Be(FolderSearchOptions.DefaultMinQueryLength);
             settings.SearchDebounceMs.Should().Be(Settings.DefaultSearchDebounceMs);
             settings.PreferredUiLanguage.Should().Be("Auto");
@@ -74,6 +75,7 @@ namespace RBLclass.Core.Tests
                 InternalDomains = new[] { "example.com", "example.org" },
                 ForgottenAttachmentKeywords = new[] { "pièce jointe", "ci-joint" },
                 SentItemTriageMode = SentItemTriageMode.Delete,
+                ClassifyAfterMoveToInbox = false,
                 MinSearchLength = 3,
                 SearchDebounceMs = 450,
                 PreferredUiLanguage = "fr"
@@ -97,6 +99,7 @@ namespace RBLclass.Core.Tests
             reloaded.InternalDomains.Should().Equal("example.com", "example.org");
             reloaded.ForgottenAttachmentKeywords.Should().Equal("pièce jointe", "ci-joint");
             reloaded.SentItemTriageMode.Should().Be(SentItemTriageMode.Delete);
+            reloaded.ClassifyAfterMoveToInbox.Should().BeFalse();
             reloaded.MinSearchLength.Should().Be(3);
             reloaded.SearchDebounceMs.Should().Be(450);
             reloaded.PreferredUiLanguage.Should().Be("fr");

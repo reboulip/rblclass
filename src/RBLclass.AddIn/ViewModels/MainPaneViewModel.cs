@@ -43,6 +43,11 @@ namespace RBLclass.AddIn.ViewModels
         private bool _isBusy;
         private IndexStatus _indexStatus = IndexStatus.NotFound;
 
+        // E1: a just-sent mail (moved to the Inbox by triage) pinned as the next
+        // classify target, overriding the live Outlook selection until it is
+        // filed or the user changes the real explorer selection.
+        private MailItemRef _pinnedItem;
+
         // Debounces typing in the search box: re-search fires only once the
         // user has paused for Settings.SearchDebounceMs (v2.2).
         private DispatcherTimer _searchTimer;
@@ -374,12 +379,57 @@ namespace RBLclass.AddIn.ViewModels
             }
         }
 
-        public void SetSelectionCount(int count) =>
+        /// <summary>
+        /// Push a live explorer selection count into the header. A genuine
+        /// selection change drops a just-sent pin (E1) - the user has moved on.
+        /// </summary>
+        public void SetSelectionCount(int count)
+        {
+            ClearPin();
             SelectionSummary = _loc.Plural(count, "Status_MailSelected_One", "Status_MailSelected_Other");
+        }
+
+        /// <summary>
+        /// Pin a just-sent mail as the next classify target, overriding the live
+        /// selection until it is filed or the user changes the explorer selection
+        /// (E1). A prominent banner shows it so the user knows they are filing the
+        /// sent mail, not whatever is selected in the message list.
+        /// </summary>
+        public void PinMailForClassify(MailItemRef item)
+        {
+            if (item == null) return;
+            _pinnedItem = item;
+            SelectionSummary = string.Empty; // the pin banner takes over the header
+            OnPropertyChanged(nameof(HasPinnedItem));
+            OnPropertyChanged(nameof(PinnedItemSubject));
+        }
+
+        /// <summary>True while a just-sent mail is pinned (E1) - drives the pin banner.</summary>
+        public bool HasPinnedItem => _pinnedItem != null;
+
+        /// <summary>Subject of the pinned just-sent mail (E1), shown on its own wrapping line.</summary>
+        public string PinnedItemSubject =>
+            _pinnedItem == null
+                ? string.Empty
+                : (string.IsNullOrWhiteSpace(_pinnedItem.Subject)
+                    ? _loc.GetString("SentTriage_NoSubject")
+                    : _pinnedItem.Subject);
+
+        private void ClearPin()
+        {
+            if (_pinnedItem == null) return;
+            _pinnedItem = null;
+            OnPropertyChanged(nameof(HasPinnedItem));
+            OnPropertyChanged(nameof(PinnedItemSubject));
+        }
 
         public void RefreshSelection()
         {
-            SetSelectionCount(_getSelection != null ? _getSelection().Count : 0);
+            // While a sent mail is pinned, keep the pin indicator - the show/theme
+            // refresh must not overwrite it with the (unrelated) live count.
+            if (_pinnedItem == null)
+                SelectionSummary = _loc.Plural(_getSelection != null ? _getSelection().Count : 0,
+                    "Status_MailSelected_One", "Status_MailSelected_Other");
 
             // A banner may have been learned (or forgotten) in Settings while the
             // pane was open - keep the strip tickbox's availability current.
@@ -502,7 +552,11 @@ namespace RBLclass.AddIn.ViewModels
         {
             if (_isBusy) return false; // ignore a repeat trigger while a classify is in flight
 
-            var items = _getSelection != null ? _getSelection() : new MailItemRef[0];
+            // A pinned just-sent mail overrides the live selection for this one
+            // classify (E1); otherwise file the current Outlook selection.
+            var items = _pinnedItem != null
+                ? new[] { _pinnedItem }
+                : (_getSelection != null ? _getSelection() : new MailItemRef[0]);
             if (items.Count == 0) { Status = _loc.GetString("Status_NoMailSelectedAction"); return false; }
 
             IsBusy = true;
@@ -558,6 +612,7 @@ namespace RBLclass.AddIn.ViewModels
                 _lastUndo = result.Undo; // a non-undoable run clears the slot (null)
                 OnPropertyChanged(nameof(CanUndo));
 
+                ClearPin(); // E1: the pinned just-sent mail is now filed
                 RefreshSelection();
                 ClearQuerySilently();
                 ResetOptionsToDefaults();

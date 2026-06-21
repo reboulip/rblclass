@@ -27,29 +27,41 @@
                 <RowDefinition Height="Auto" />  <!-- 7: status -->
             </Grid.RowDefinitions>
 
-            <DockPanel Grid.Row="0" Margin="0,0,0,6" LastChildFill="False">
-                <TextBlock DockPanel.Dock="Left" FontWeight="Bold" VerticalAlignment="Center"
-                           Text="{Binding SelectionSummary}" />
-                <Button DockPanel.Dock="Right" Content="{loc:Loc Key=MainPane_AutoClass_Button}" Padding="6,1" FontSize="11"
-                        IsEnabled="{Binding CanAutoClass}" Click="AutoClass_Click"
-                        ToolTip="{loc:Loc Key=MainPane_AutoClass_ToolTip}" />
-                <Ellipse DockPanel.Dock="Right" Width="10" Height="10" Margin="0,0,6,0"
-                         VerticalAlignment="Center" ToolTip="{Binding IndexStatusToolTip}">
-                    <Ellipse.Style>
-                        <Style TargetType="Ellipse">
-                            <Setter Property="Fill" Value="#D13438" />
-                            <Style.Triggers>
-                                <DataTrigger Binding="{Binding IndexStatus}" Value="{x:Static core:IndexStatus.Indexing}">
-                                    <Setter Property="Fill" Value="#F2C811" />
-                                </DataTrigger>
-                                <DataTrigger Binding="{Binding IndexStatus}" Value="{x:Static core:IndexStatus.Ready}">
-                                    <Setter Property="Fill" Value="#3FA34D" />
-                                </DataTrigger>
-                            </Style.Triggers>
-                        </Style>
-                    </Ellipse.Style>
-                </Ellipse>
-            </DockPanel>
+            <StackPanel Grid.Row="0" Margin="0,0,0,6">
+                <!-- E1: prominent, width-adapting banner for a pinned just-sent mail. -->
+                <Border Background="#0078D4" CornerRadius="4" Padding="8,6" Margin="0,0,0,6"
+                        Visibility="{Binding HasPinnedItem, Converter={StaticResource BoolToVis}}">
+                    <StackPanel>
+                        <TextBlock Foreground="White" FontWeight="Bold" TextWrapping="Wrap"
+                                   Text="{loc:Loc Key=MainPane_PinnedSentMail_Indicator}" />
+                        <TextBlock Foreground="White" FontStyle="Italic" TextWrapping="Wrap" Margin="0,3,0,0"
+                                   Text="{Binding PinnedItemSubject}" />
+                    </StackPanel>
+                </Border>
+                <DockPanel LastChildFill="False">
+                    <TextBlock DockPanel.Dock="Left" FontWeight="Bold" VerticalAlignment="Center"
+                               Text="{Binding SelectionSummary}" />
+                    <Button DockPanel.Dock="Right" Content="{loc:Loc Key=MainPane_AutoClass_Button}" Padding="6,1" FontSize="11"
+                            IsEnabled="{Binding CanAutoClass}" Click="AutoClass_Click"
+                            ToolTip="{loc:Loc Key=MainPane_AutoClass_ToolTip}" />
+                    <Ellipse DockPanel.Dock="Right" Width="10" Height="10" Margin="0,0,6,0"
+                             VerticalAlignment="Center" ToolTip="{Binding IndexStatusToolTip}">
+                        <Ellipse.Style>
+                            <Style TargetType="Ellipse">
+                                <Setter Property="Fill" Value="#D13438" />
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding IndexStatus}" Value="{x:Static core:IndexStatus.Indexing}">
+                                        <Setter Property="Fill" Value="#F2C811" />
+                                    </DataTrigger>
+                                    <DataTrigger Binding="{Binding IndexStatus}" Value="{x:Static core:IndexStatus.Ready}">
+                                        <Setter Property="Fill" Value="#3FA34D" />
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </Ellipse.Style>
+                    </Ellipse>
+                </DockPanel>
+            </StackPanel>
 
             <TextBox Grid.Row="1" x:Name="QueryBox" Margin="0,0,0,6"
                      Text="{Binding Query, UpdateSourceTrigger=PropertyChanged}"

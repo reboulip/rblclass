@@ -117,6 +117,12 @@
   <data name="Status_Classify_Progress_Other" xml:space="preserve">
     <value>Filing {0} of {1}…</value>
   </data>
+  <data name="MainPane_PinnedSentMail_Indicator" xml:space="preserve">
+    <value>Filing the mail you just sent — search a folder and file it:</value>
+  </data>
+  <data name="Settings_ClassifyAfterMoveToInbox_CheckBox" xml:space="preserve">
+    <value>After moving a sent mail to the Inbox, open the classify pane to file it</value>
+  </data>
 
   <!-- SettingsWindow -->
   <data name="Settings_Title" xml:space="preserve">

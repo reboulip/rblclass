@@ -47,6 +47,7 @@ namespace RBLclass.Core
         public IReadOnlyList<string> InternalDomains { get; set; }
         public IReadOnlyList<string> ForgottenAttachmentKeywords { get; set; }
         public SentItemTriageMode SentItemTriageMode { get; set; }
+        public bool ClassifyAfterMoveToInbox { get; set; }
         public string PreferredUiLanguage { get; set; }
 
         /// <summary>Read every key, falling back to the same defaults the individual call sites use today.</summary>
@@ -76,6 +77,7 @@ namespace RBLclass.Core
                 SentItemTriageMode = ParseTriageMode(
                     store.Get(SettingsKeys.SentItemTriageMode, null),
                     store.GetBool(SettingsKeys.SentItemTriagePrompt, true)),
+                ClassifyAfterMoveToInbox = store.GetBool(SettingsKeys.ClassifyAfterMoveToInbox, true),
                 PreferredUiLanguage = ParseUiLanguage(store.Get(SettingsKeys.PreferredUiLanguage, null))
             };
         }
@@ -100,6 +102,7 @@ namespace RBLclass.Core
             store.Set(SettingsKeys.InternalDomains, FormatList(InternalDomains));
             store.Set(SettingsKeys.ForgottenAttachmentKeywords, FormatList(ForgottenAttachmentKeywords));
             store.Set(SettingsKeys.SentItemTriageMode, SentItemTriageMode.ToString());
+            store.SetBool(SettingsKeys.ClassifyAfterMoveToInbox, ClassifyAfterMoveToInbox);
             store.Set(SettingsKeys.PreferredUiLanguage, PreferredUiLanguage);
         }
 

@@ -117,6 +117,12 @@
   <data name="Status_Classify_Progress_Other" xml:space="preserve">
     <value>Ablage {0} von {1}…</value>
   </data>
+  <data name="MainPane_PinnedSentMail_Indicator" xml:space="preserve">
+    <value>Ablage der soeben gesendeten E-Mail — suchen Sie einen Ordner und legen Sie sie ab:</value>
+  </data>
+  <data name="Settings_ClassifyAfterMoveToInbox_CheckBox" xml:space="preserve">
+    <value>Nach dem Verschieben einer gesendeten E-Mail in den Posteingang den Ablagebereich zum Ablegen öffnen</value>
+  </data>
 
   <!-- SettingsWindow -->
   <data name="Settings_Title" xml:space="preserve">

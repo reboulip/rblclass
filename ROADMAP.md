@@ -144,7 +144,7 @@ taken with the maintainer on 2026-06-20 are baked into each item.
 
 ### E. Classify after send
 
-- [ ] **E1. Re-offer classification of a just-sent mail via Move-to-Inbox.**
+- [x] **E1. Re-offer classification of a just-sent mail via Move-to-Inbox.**
       Some users want to classify a mail right after sending it (a capability
       dropped earlier). **Decision (2026-06-20): the lightweight reuse of the
       existing sent-item triage**, not a new modal. When the triage action

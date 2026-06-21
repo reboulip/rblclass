@@ -97,5 +97,13 @@ namespace RBLclass.AddIn
         /// show/refresh the single task pane.
         /// </summary>
         public static RblClassTaskPaneHost Host;
+
+        /// <summary>
+        /// Pin a just-sent mail (moved to the Inbox by sent-item triage) as the
+        /// next classify target in the main pane (v2.4.0.0 E1). Wired to the
+        /// pane view model when the pane is first created, so it is null until
+        /// then. The pin clears after the next classify or on selection change.
+        /// </summary>
+        public static Action<MailItemRef> PinMailForClassify;
     }
 }
