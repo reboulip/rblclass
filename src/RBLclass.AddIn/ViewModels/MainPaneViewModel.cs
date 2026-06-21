@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
+using System.Threading.Tasks;
 using System.Windows.Threading;
 using RBLclass.AddIn.Localization;
 using RBLclass.AddIn.Mvvm;
@@ -35,10 +36,17 @@ namespace RBLclass.AddIn.ViewModels
         private string _query = string.Empty;
         private bool _allResults, _keepCopy, _removeAttachments, _widenConversation, _stripBanner;
         private bool _canStripBanner;
+        private bool _isOptionsExpanded;
         private SelectableFolder _selectedResult;
         private string _selectionSummary;
         private string _status = string.Empty;
         private bool _isBusy;
+        private IndexStatus _indexStatus = IndexStatus.NotFound;
+
+        // E1: a just-sent mail (moved to the Inbox by triage) pinned as the next
+        // classify target, overriding the live Outlook selection until it is
+        // filed or the user changes the real explorer selection.
+        private MailItemRef _pinnedItem;
 
         // Debounces typing in the search box: re-search fires only once the
         // user has paused for Settings.SearchDebounceMs (v2.2).
@@ -116,40 +124,47 @@ namespace RBLclass.AddIn.ViewModels
             set { if (SetProperty(ref _query, value)) ScheduleRefresh(); }
         }
 
+        // The five option toggles below are per-action overrides (v2.4 B1):
+        // they are seeded from the persisted Settings defaults in the
+        // constructor and reset back to them after each successful classify
+        // (ResetOptionsToDefaults). Toggling one here does NOT write to
+        // Settings - the Settings dialog is the only editor of the default.
+
         public bool AllResults
         {
             get => _allResults;
-            set { if (SetProperty(ref _allResults, value)) { _settings?.SetBool(SettingsKeys.AllResults, value); Refresh(); } }
+            set { if (SetProperty(ref _allResults, value)) Refresh(); }
         }
 
         public bool KeepCopy
         {
             get => _keepCopy;
-            set { if (SetProperty(ref _keepCopy, value)) _settings?.SetBool(SettingsKeys.KeepCopy, value); }
+            set => SetProperty(ref _keepCopy, value);
         }
 
         public bool RemoveAttachments
         {
             get => _removeAttachments;
-            set { if (SetProperty(ref _removeAttachments, value)) _settings?.SetBool(SettingsKeys.RemoveAttachments, value); }
+            set => SetProperty(ref _removeAttachments, value);
         }
 
         public bool WidenConversation
         {
             get => _widenConversation;
-            set { if (SetProperty(ref _widenConversation, value)) _settings?.SetBool(SettingsKeys.WidenConversation, value); }
+            set => SetProperty(ref _widenConversation, value);
         }
 
         /// <summary>
-        /// Strip the learned external banner from the filed copy (v2.2). Default
-        /// comes from the StripBannerOnClassify setting; toggling it here updates
-        /// that setting. Only meaningful when a banner has been learned
+        /// Strip the learned external banner from the filed copy (v2.2). The
+        /// default comes from the StripBannerOnClassify setting; toggling it
+        /// here is a per-action override (v2.4 B1) and does not change the
+        /// setting. Only meaningful when a banner has been learned
         /// (<see cref="CanStripBanner"/>).
         /// </summary>
         public bool StripBanner
         {
             get => _stripBanner;
-            set { if (SetProperty(ref _stripBanner, value)) _settings?.SetBool(SettingsKeys.StripBannerOnClassify, value); }
+            set => SetProperty(ref _stripBanner, value);
         }
 
         /// <summary>True when a banner has been learned, so the strip tickbox is worth showing.</summary>
@@ -157,6 +172,17 @@ namespace RBLclass.AddIn.ViewModels
         {
             get => _canStripBanner;
             private set => SetProperty(ref _canStripBanner, value);
+        }
+
+        /// <summary>
+        /// Whether the Options panel (the five per-action checkboxes) is expanded.
+        /// Toggled by the Options button and by Tab from the query box; collapsed
+        /// automatically after a successful classify (v2.4 B1).
+        /// </summary>
+        public bool IsOptionsExpanded
+        {
+            get => _isOptionsExpanded;
+            set => SetProperty(ref _isOptionsExpanded, value);
         }
 
         public SelectableFolder SelectedResult
@@ -185,6 +211,49 @@ namespace RBLclass.AddIn.ViewModels
         }
 
         public bool IsNotBusy => !_isBusy;
+
+        /// <summary>
+        /// Folder-index build status, bound to the pane header's colored dot:
+        /// Red = NotFound, Yellow = Indexing, Green = Ready. Driven by
+        /// <see cref="IFolderIndexService"/> via <see cref="SubscribeToIndexStatus"/>.
+        /// </summary>
+        public IndexStatus IndexStatus
+        {
+            get => _indexStatus;
+            private set { if (SetProperty(ref _indexStatus, value)) OnPropertyChanged(nameof(IndexStatusToolTip)); }
+        }
+
+        /// <summary>Localized tooltip for the index status dot.</summary>
+        public string IndexStatusToolTip
+        {
+            get
+            {
+                switch (_indexStatus)
+                {
+                    case IndexStatus.Indexing: return _loc.GetString("IndexStatus_Indexing");
+                    case IndexStatus.Ready: return _loc.GetString("IndexStatus_Ready");
+                    default: return _loc.GetString("IndexStatus_NotFound");
+                }
+            }
+        }
+
+        /// <summary>
+        /// Subscribe to the folder index service so <see cref="IndexStatus"/> and
+        /// its tooltip track the walk lifecycle. Called once by the pane host.
+        /// The service raises PropertyChanged on the Outlook STA thread, which is
+        /// also the pane's WPF dispatcher thread, so binding updates are safe
+        /// without marshalling.
+        /// </summary>
+        public void SubscribeToIndexStatus(IFolderIndexService service)
+        {
+            if (service == null) return;
+            IndexStatus = service.IndexStatus;
+            service.PropertyChanged += (s, e) =>
+            {
+                if (e.PropertyName == nameof(IFolderIndexService.IndexStatus))
+                    IndexStatus = service.IndexStatus;
+            };
+        }
 
         /// <summary>True when the last classify can be undone (enables the Undo button).</summary>
         public bool CanUndo => _lastUndo != null;
@@ -310,12 +379,57 @@ namespace RBLclass.AddIn.ViewModels
             }
         }
 
-        public void SetSelectionCount(int count) =>
+        /// <summary>
+        /// Push a live explorer selection count into the header. A genuine
+        /// selection change drops a just-sent pin (E1) - the user has moved on.
+        /// </summary>
+        public void SetSelectionCount(int count)
+        {
+            ClearPin();
             SelectionSummary = _loc.Plural(count, "Status_MailSelected_One", "Status_MailSelected_Other");
+        }
+
+        /// <summary>
+        /// Pin a just-sent mail as the next classify target, overriding the live
+        /// selection until it is filed or the user changes the explorer selection
+        /// (E1). A prominent banner shows it so the user knows they are filing the
+        /// sent mail, not whatever is selected in the message list.
+        /// </summary>
+        public void PinMailForClassify(MailItemRef item)
+        {
+            if (item == null) return;
+            _pinnedItem = item;
+            SelectionSummary = string.Empty; // the pin banner takes over the header
+            OnPropertyChanged(nameof(HasPinnedItem));
+            OnPropertyChanged(nameof(PinnedItemSubject));
+        }
+
+        /// <summary>True while a just-sent mail is pinned (E1) - drives the pin banner.</summary>
+        public bool HasPinnedItem => _pinnedItem != null;
+
+        /// <summary>Subject of the pinned just-sent mail (E1), shown on its own wrapping line.</summary>
+        public string PinnedItemSubject =>
+            _pinnedItem == null
+                ? string.Empty
+                : (string.IsNullOrWhiteSpace(_pinnedItem.Subject)
+                    ? _loc.GetString("SentTriage_NoSubject")
+                    : _pinnedItem.Subject);
+
+        private void ClearPin()
+        {
+            if (_pinnedItem == null) return;
+            _pinnedItem = null;
+            OnPropertyChanged(nameof(HasPinnedItem));
+            OnPropertyChanged(nameof(PinnedItemSubject));
+        }
 
         public void RefreshSelection()
         {
-            SetSelectionCount(_getSelection != null ? _getSelection().Count : 0);
+            // While a sent mail is pinned, keep the pin indicator - the show/theme
+            // refresh must not overwrite it with the (unrelated) live count.
+            if (_pinnedItem == null)
+                SelectionSummary = _loc.Plural(_getSelection != null ? _getSelection().Count : 0,
+                    "Status_MailSelected_One", "Status_MailSelected_Other");
 
             // A banner may have been learned (or forgotten) in Settings while the
             // pane was open - keep the strip tickbox's availability current.
@@ -337,26 +451,26 @@ namespace RBLclass.AddIn.ViewModels
         }
 
         /// <summary>File into the highlighted (or first) folder - Enter in the search box.</summary>
-        public void FileToHighlighted()
+        public async Task FileToHighlighted()
         {
             FlushPendingSearch(); // never file based on stale, pre-debounce results
             var folder = (SelectedResult ?? (Results.Count > 0 ? Results[0] : null))?.Folder;
             if (folder == null) { Status = _loc.GetString("Status_NoMatchingFolderToFile"); return; }
-            DoClassify(new[] { folder });
+            await DoClassifyAsync(new[] { folder });
         }
 
         /// <summary>File into one specific folder - the double-clicked row.</summary>
-        public void FileToFolder(FolderNode folder)
+        public async Task FileToFolder(FolderNode folder)
         {
-            if (folder != null) DoClassify(new[] { folder });
+            if (folder != null) await DoClassifyAsync(new[] { folder });
         }
 
         /// <summary>File into every accumulated destination (the Classify button).</summary>
-        public void ClassifyChecked()
+        public async Task ClassifyChecked()
         {
             var destinations = SelectedDestinations.ToList();
             if (destinations.Count == 0) { Status = _loc.GetString("Status_CheckAtLeastOneDestination"); return; }
-            if (DoClassify(destinations))
+            if (await DoClassifyAsync(destinations))
                 ClearDestinations(); // the batch is filed - start the next one clean
         }
 
@@ -427,17 +541,26 @@ namespace RBLclass.AddIn.ViewModels
             Refresh();
         }
 
-        /// <summary>Runs the classify; true when it actually executed (not busy/empty/cancelled).</summary>
-        private bool DoClassify(IReadOnlyList<FolderNode> destinations)
+        /// <summary>
+        /// Runs the classify; true when it actually executed (not busy/empty/
+        /// cancelled). Responsive (v2.4 D2): the moves stay on this STA thread
+        /// but the pump is yielded between items, so Outlook repaints and stays
+        /// interactive while a multi-item batch files, with per-item progress in
+        /// the status line.
+        /// </summary>
+        private async Task<bool> DoClassifyAsync(IReadOnlyList<FolderNode> destinations)
         {
             if (_isBusy) return false; // ignore a repeat trigger while a classify is in flight
 
-            var items = _getSelection != null ? _getSelection() : new MailItemRef[0];
+            // A pinned just-sent mail overrides the live selection for this one
+            // classify (E1); otherwise file the current Outlook selection.
+            var items = _pinnedItem != null
+                ? new[] { _pinnedItem }
+                : (_getSelection != null ? _getSelection() : new MailItemRef[0]);
             if (items.Count == 0) { Status = _loc.GetString("Status_NoMailSelectedAction"); return false; }
 
             IsBusy = true;
             Status = _loc.GetString("MainPane_Busy_Filing");
-            Dispatcher.CurrentDispatcher.Invoke(new Action(() => { }), DispatcherPriority.Render);
 
             try
             {
@@ -456,10 +579,58 @@ namespace RBLclass.AddIn.ViewModels
                 string bannerSignature = (_stripBanner && _settings != null)
                     ? _settings.Get(SettingsKeys.ExternalBannerSignature, null)
                     : null;
-                var result = _classifier.Classify(
+
+                // F2: in Modal mode, gather attachments and show the disposition
+                // modal in the preflight (before the responsive move loop). A
+                // cancel aborts the whole classify.
+                IReadOnlyList<AttachmentDisposition> attachmentDispositions = null;
+                if (_removeAttachments && _settings != null
+                    && Settings.Load(_settings).AttachmentRemovalMode == AttachmentRemovalMode.Modal
+                    && TaskPaneServices.GatherAttachments != null
+                    && TaskPaneServices.ShowAttachmentDisposition != null)
+                {
+                    var groups = TaskPaneServices.GatherAttachments(preflight.Items);
+                    if (groups.Any(g => g.IsEncrypted || g.Attachments.Count > 0))
+                    {
+                        attachmentDispositions = TaskPaneServices.ShowAttachmentDisposition(groups);
+                        if (attachmentDispositions == null)
+                        {
+                            Status = _loc.GetString("Status_ClassifyCancelled");
+                            return false;
+                        }
+                    }
+                }
+
+                // Core invokes Report synchronously on this (STA/UI) thread
+                // between items, so set Status inline - the Background yield that
+                // follows each item repaints it. (Progress<T> would Post the
+                // callback to the ambient SynchronizationContext, which this host
+                // does not set up, so the updates would not reach the binding.)
+                var progress = new SynchronousProgress<ClassifyProgress>(p =>
+                    Status = _loc.Plural(p.Completed, "Status_Classify_Progress_One",
+                                         "Status_Classify_Progress_Other", p.Total));
+
+                // F3: localized templates for the "former attachments" label,
+                // applied to each filed copy whose attachments were disposed of -
+                // unless the user chose to leave no trace.
+                AttachmentLabelOptions labelOptions = null;
+                if (attachmentDispositions != null && _settings != null
+                    && Settings.Load(_settings).AttachmentLabelLocation != AttachmentLabelLocation.None)
+                {
+                    labelOptions = new AttachmentLabelOptions(
+                        _loc.GetString("AttachmentLabel_Header_One"),
+                        _loc.GetString("AttachmentLabel_Header_Other"),
+                        _loc.GetString("AttachmentLabel_SavedTo"),
+                        _loc.GetString("AttachmentLabel_DeletedOn"),
+                        "yyyy-MM-dd");
+                }
+
+                var result = await _classifier.ClassifyAsync(
                     new ClassifyRequest(preflight.Items, destinations, _keepCopy,
                                         _removeAttachments, markTasksComplete, safetyCopy,
-                                        bannerSignature));
+                                        bannerSignature, attachmentDispositions, labelOptions),
+                    progress,
+                    YieldToPump);
 
                 string verb = _loc.GetString(_keepCopy ? "Status_Classify_Copied" : "Status_Classify_Filed");
                 string failed = result.Errors > 0
@@ -477,14 +648,75 @@ namespace RBLclass.AddIn.ViewModels
                 _lastUndo = result.Undo; // a non-undoable run clears the slot (null)
                 OnPropertyChanged(nameof(CanUndo));
 
+                ClearPin(); // E1: the pinned just-sent mail is now filed
                 RefreshSelection();
+                ClearQuerySilently();
+                ResetOptionsToDefaults();
                 return true;
             }
             finally
             {
-                Dispatcher.CurrentDispatcher.BeginInvoke(
-                    new Action(() => IsBusy = false), DispatcherPriority.Background);
+                IsBusy = false;
             }
+        }
+
+        /// <summary>
+        /// Release the STA message pump for one cycle at Background priority so
+        /// Outlook repaints and processes input between classified items (v2.4
+        /// D2). Resumes on this dispatcher, keeping the COM moves on the STA.
+        /// </summary>
+        private static async Task YieldToPump() =>
+            await Dispatcher.Yield(DispatcherPriority.Background);
+
+        /// <summary>
+        /// An <see cref="IProgress{T}"/> that invokes the handler synchronously
+        /// on the reporting thread, unlike <see cref="Progress{T}"/> which posts
+        /// to a captured <see cref="System.Threading.SynchronizationContext"/>.
+        /// The responsive classify reports on the UI thread, so this keeps the
+        /// status update inline and ordered with the message-pump yields.
+        /// </summary>
+        private sealed class SynchronousProgress<T> : IProgress<T>
+        {
+            private readonly Action<T> _handler;
+            public SynchronousProgress(Action<T> handler) => _handler = handler;
+            public void Report(T value) => _handler(value);
+        }
+
+        /// <summary>
+        /// Set the query to empty without triggering a re-search. Results remain
+        /// visible until the user types the next query (v2.4).
+        /// </summary>
+        private void ClearQuerySilently()
+        {
+            _query = string.Empty;
+            OnPropertyChanged(nameof(Query));
+        }
+
+        /// <summary>
+        /// Reset the option checkboxes to their persisted settings defaults and
+        /// collapse the Options panel, so the pane is clean for the next classify
+        /// session (v2.4 B1).
+        /// </summary>
+        private void ResetOptionsToDefaults()
+        {
+            if (_settings != null)
+            {
+                // Set the backing fields (not the public setters): the AllResults
+                // setter would call Refresh(), which clears the just-classified
+                // results the user wants to keep seeing (v2.4 A1); the others
+                // would re-write the same persisted value. Just notify the view.
+                _allResults = _settings.GetBool(SettingsKeys.AllResults, false);
+                _keepCopy = _settings.GetBool(SettingsKeys.KeepCopy, false);
+                _removeAttachments = _settings.GetBool(SettingsKeys.RemoveAttachments, false);
+                _widenConversation = _settings.GetBool(SettingsKeys.WidenConversation, false);
+                _stripBanner = _settings.GetBool(SettingsKeys.StripBannerOnClassify, false);
+                OnPropertyChanged(nameof(AllResults));
+                OnPropertyChanged(nameof(KeepCopy));
+                OnPropertyChanged(nameof(RemoveAttachments));
+                OnPropertyChanged(nameof(WidenConversation));
+                OnPropertyChanged(nameof(StripBanner));
+            }
+            IsOptionsExpanded = false;
         }
 
         /// <summary>

@@ -8,6 +8,9 @@
         Title="{loc:Loc Key=Settings_Title}" Height="640" Width="480"
         WindowStartupLocation="CenterOwner" ResizeMode="NoResize"
         d:DesignHeight="640" d:DesignWidth="480">
+    <Window.Resources>
+        <BooleanToVisibilityConverter x:Key="BoolToVis" />
+    </Window.Resources>
     <DockPanel Margin="12">
         <Button DockPanel.Dock="Bottom" Content="{loc:Loc Key=Settings_Close_Button}" Click="Close_Click"
                 HorizontalAlignment="Right" Margin="0,12,0,0"
@@ -49,6 +52,37 @@
                                   Content="{loc:Loc Key=Settings_KeepCopy_CheckBox}" />
                         <CheckBox Margin="0,3" IsChecked="{Binding RemoveAttachments}"
                                   Content="{loc:Loc Key=Settings_RemoveAttachments_CheckBox}" />
+                        <StackPanel Margin="18,0,0,3">
+                            <TextBlock Margin="0,2,0,0" FontStyle="Italic" Foreground="#777"
+                                       Text="{loc:Loc Key=Settings_AttachmentRemovalMode_Label}" />
+                            <RadioButton Margin="0,2" GroupName="AttachMode"
+                                         IsChecked="{Binding AttachmentRemovalModeIsModal}">
+                                <TextBlock TextWrapping="Wrap" MaxWidth="380"
+                                           Text="{loc:Loc Key=Settings_AttachmentRemovalMode_Modal}" />
+                            </RadioButton>
+                            <RadioButton Margin="0,2" GroupName="AttachMode"
+                                         IsChecked="{Binding AttachmentRemovalModeIsDeleteSilently}">
+                                <TextBlock TextWrapping="Wrap" MaxWidth="380"
+                                           Text="{loc:Loc Key=Settings_AttachmentRemovalMode_DeleteSilently}" />
+                            </RadioButton>
+                            <TextBlock Margin="0,6,0,0" FontStyle="Italic" Foreground="#777"
+                                       Text="{loc:Loc Key=Settings_AttachmentLabelLocation_Label}" />
+                            <RadioButton Margin="0,2" GroupName="AttachLabelLoc"
+                                         IsChecked="{Binding AttachmentLabelLocationIsBody}">
+                                <TextBlock TextWrapping="Wrap" MaxWidth="380"
+                                           Text="{loc:Loc Key=Settings_AttachmentLabelLocation_Body}" />
+                            </RadioButton>
+                            <RadioButton Margin="0,2" GroupName="AttachLabelLoc"
+                                         IsChecked="{Binding AttachmentLabelLocationIsInfoBar}">
+                                <TextBlock TextWrapping="Wrap" MaxWidth="380"
+                                           Text="{loc:Loc Key=Settings_AttachmentLabelLocation_InfoBar}" />
+                            </RadioButton>
+                            <RadioButton Margin="0,2" GroupName="AttachLabelLoc"
+                                         IsChecked="{Binding AttachmentLabelLocationIsNone}">
+                                <TextBlock TextWrapping="Wrap" MaxWidth="380"
+                                           Text="{loc:Loc Key=Settings_AttachmentLabelLocation_None}" />
+                            </RadioButton>
+                        </StackPanel>
                         <CheckBox Margin="0,3" IsChecked="{Binding ClassifySafetyCopy}">
                             <TextBlock TextWrapping="Wrap" MaxWidth="400"
                                        Text="{loc:Loc Key=Settings_ClassifySafetyCopy_CheckBox}" />
@@ -107,6 +141,29 @@
                                 </DataTemplate>
                             </ComboBox.ItemTemplate>
                         </ComboBox>
+                        <CheckBox Margin="0,8,0,0" IsChecked="{Binding ClassifyAfterMoveToInbox}">
+                            <TextBlock TextWrapping="Wrap" MaxWidth="400"
+                                       Text="{loc:Loc Key=Settings_ClassifyAfterMoveToInbox_CheckBox}" />
+                        </CheckBox>
+                    </StackPanel>
+                </GroupBox>
+
+                <GroupBox Header="{loc:Loc Key=Settings_FavoriteFolders_Header}" Margin="0,0,0,8">
+                    <StackPanel Margin="6">
+                        <TextBlock TextWrapping="Wrap"
+                                   Text="{loc:Loc Key=Settings_FavoriteFolders_Description}" />
+                        <ListBox x:Name="FavoriteFoldersList" Margin="0,6,0,4" Height="96"
+                                 ItemsSource="{Binding FavoriteFolders}" />
+                        <DockPanel LastChildFill="False">
+                            <Button DockPanel.Dock="Left" Padding="8,2"
+                                    Content="{loc:Loc Key=Settings_FavoriteFolders_Add_Button}"
+                                    Click="AddFavoriteFolder_Click" />
+                            <Button DockPanel.Dock="Left" Padding="8,2" Margin="6,0,0,0"
+                                    Content="{loc:Loc Key=Settings_FavoriteFolders_Remove_Button}"
+                                    Click="RemoveFavoriteFolder_Click" />
+                        </DockPanel>
+                        <TextBlock Margin="0,4,0,0" TextWrapping="Wrap"
+                                   Text="{loc:Loc Key=Settings_FavoriteFolders_Note}" />
                     </StackPanel>
                 </GroupBox>
 

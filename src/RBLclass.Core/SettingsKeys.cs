@@ -95,5 +95,41 @@ namespace RBLclass.Core
         /// <see cref="UiLanguageResolver"/>.
         /// </summary>
         public const string PreferredUiLanguage = "PreferredUiLanguage";
+
+        /// <summary>
+        /// Last dock position of the task pane, stored as the integer value of
+        /// <c>Microsoft.Office.Core.MsoCTPDockPosition</c>
+        /// (msoCTPDockPositionRight = 2 is the default).
+        /// </summary>
+        public const string PaneDockPosition = "PaneDockPosition";
+
+        /// <summary>
+        /// After sent-item triage moves a mail to the Inbox, reveal the classify
+        /// pane with that mail pinned as the next target so the user can file it
+        /// immediately (v2.4.0.0 E1, default on).
+        /// </summary>
+        public const string ClassifyAfterMoveToInbox = "ClassifyAfterMoveToInbox";
+
+        /// <summary>
+        /// Semicolon-separated Windows directory paths the user has marked as
+        /// favourites for saving attachments (v2.4.0.0 F1). The expanded
+        /// sub-directory index lives separately in SQLite; this holds only the
+        /// chosen roots.
+        /// </summary>
+        public const string AttachmentFavoriteFolders = "AttachmentFavoriteFolders";
+
+        /// <summary>
+        /// Whether "remove attachments" shows the per-attachment disposition modal
+        /// (Modal, default) or silently strips all (DeleteSilently) - stored as the
+        /// <see cref="RBLclass.Core.AttachmentRemovalMode"/> name (v2.4.0.0 F2).
+        /// </summary>
+        public const string AttachmentRemovalMode = "AttachmentRemovalMode";
+
+        /// <summary>
+        /// Where the "former attachments" label is written after disposition -
+        /// <see cref="RBLclass.Core.AttachmentLabelLocation"/> name (v2.4.0.0 F3;
+        /// InfoBar deferred, falls back to Body).
+        /// </summary>
+        public const string AttachmentLabelLocation = "AttachmentLabelLocation";
     }
 }

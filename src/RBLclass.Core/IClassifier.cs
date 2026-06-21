@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 
 namespace RBLclass.Core
 {
@@ -22,6 +23,20 @@ namespace RBLclass.Core
         ClassifyPreflight Preflight(IReadOnlyList<MailItemRef> items, bool widenConversation);
 
         ClassifyResult Classify(ClassifyRequest request);
+
+        /// <summary>
+        /// Responsive variant of <see cref="Classify"/> (v2.4 D2): same filing
+        /// semantics, undo plan and item order, but reports progress once per
+        /// processed item via <paramref name="progress"/> and awaits
+        /// <paramref name="yieldBetweenItems"/> between items so the caller can
+        /// keep its (STA) message pump alive - Outlook repaints and stays
+        /// interactive, and an inline mail scanner (Stormshield) gets a stable
+        /// window between moves (closes D1). The non-COM history write is
+        /// dispatched off the caller's thread. Pass a no-op yield in tests.
+        /// </summary>
+        Task<ClassifyResult> ClassifyAsync(ClassifyRequest request,
+                                           IProgress<ClassifyProgress> progress,
+                                           Func<Task> yieldBetweenItems);
 
         /// <summary>
         /// Reverse a previous classify (v2.2 Undo): re-mark un-completed flags,

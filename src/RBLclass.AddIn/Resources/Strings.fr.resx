@@ -87,8 +87,11 @@
   <data name="MainPane_OpenFolder_ToolTip" xml:space="preserve">
     <value>Ouvrir ce dossier dans Outlook</value>
   </data>
-  <data name="MainPane_NewSubfolder_ToolTip" xml:space="preserve">
-    <value>Créer un sous-dossier ici</value>
+  <data name="MainPane_NewSubfolder_MenuItem" xml:space="preserve">
+    <value>Ajouter un sous-dossier…</value>
+  </data>
+  <data name="MainPane_ExpandPath_ToolTip" xml:space="preserve">
+    <value>Afficher le chemin complet sur plusieurs lignes</value>
   </data>
   <data name="MainPane_ClearSelection_Button" xml:space="preserve">
     <value>effacer</value>
@@ -107,6 +110,105 @@
   </data>
   <data name="MainPane_Busy_Filing" xml:space="preserve">
     <value>Classement en cours…</value>
+  </data>
+  <data name="Status_Classify_Progress_One" xml:space="preserve">
+    <value>Classement {0} sur {1}…</value>
+  </data>
+  <data name="Status_Classify_Progress_Other" xml:space="preserve">
+    <value>Classement {0} sur {1}…</value>
+  </data>
+  <data name="MainPane_PinnedSentMail_Indicator" xml:space="preserve">
+    <value>Classement du message que vous venez d'envoyer — recherchez un dossier et classez-le :</value>
+  </data>
+  <data name="Settings_ClassifyAfterMoveToInbox_CheckBox" xml:space="preserve">
+    <value>Après le déplacement d'un message envoyé vers la boîte de réception, ouvrir le volet de classement pour le classer</value>
+  </data>
+  <data name="Settings_FavoriteFolders_Header" xml:space="preserve">
+    <value>Dossiers de pièces jointes favoris</value>
+  </data>
+  <data name="Settings_FavoriteFolders_Description" xml:space="preserve">
+    <value>Pré-indexez des répertoires pour trouver un emplacement de sauvegarde aussi vite qu'un dossier Outlook.</value>
+  </data>
+  <data name="Settings_FavoriteFolders_Add_Button" xml:space="preserve">
+    <value>Ajouter…</value>
+  </data>
+  <data name="Settings_FavoriteFolders_Remove_Button" xml:space="preserve">
+    <value>Supprimer</value>
+  </data>
+  <data name="Settings_FavoriteFolders_Note" xml:space="preserve">
+    <value>Les sous-dossiers sont indexés jusqu'à une profondeur de 4 (jusqu'à 2000 répertoires par racine).</value>
+  </data>
+  <data name="Settings_FavoriteFolders_BrowseDescription" xml:space="preserve">
+    <value>Sélectionnez un dossier à ajouter à vos favoris</value>
+  </data>
+  <data name="Settings_AttachmentRemovalMode_Label" xml:space="preserve">
+    <value>Lors de la suppression des pièces jointes :</value>
+  </data>
+  <data name="Settings_AttachmentRemovalMode_Modal" xml:space="preserve">
+    <value>Demander le traitement de chaque pièce jointe (recommandé)</value>
+  </data>
+  <data name="Settings_AttachmentRemovalMode_DeleteSilently" xml:space="preserve">
+    <value>Supprimer toutes les pièces jointes sans confirmation</value>
+  </data>
+  <data name="AttachDisp_Title" xml:space="preserve">
+    <value>RBLclass — Traitement des pièces jointes</value>
+  </data>
+  <data name="AttachDisp_Intro" xml:space="preserve">
+    <value>Choisissez le traitement de chaque pièce jointe avant le classement du message.</value>
+  </data>
+  <data name="AttachDisp_EncryptedExcluded_One" xml:space="preserve">
+    <value>{0} message chiffré exclu — ses pièces jointes restent avec le message.</value>
+  </data>
+  <data name="AttachDisp_EncryptedExcluded_Other" xml:space="preserve">
+    <value>{0} messages chiffrés exclus — leurs pièces jointes restent avec les messages.</value>
+  </data>
+  <data name="AttachDisp_DeleteAll_Button" xml:space="preserve">
+    <value>Tout supprimer</value>
+  </data>
+  <data name="AttachDisp_Delete_Radio" xml:space="preserve">
+    <value>Supprimer</value>
+  </data>
+  <data name="AttachDisp_SaveTo_Radio" xml:space="preserve">
+    <value>Enregistrer dans…</value>
+  </data>
+  <data name="AttachDisp_Browse_Button" xml:space="preserve">
+    <value>Parcourir…</value>
+  </data>
+  <data name="AttachDisp_SearchHint" xml:space="preserve">
+    <value>Rechercher dans les dossiers favoris</value>
+  </data>
+  <data name="AttachDisp_TargetPrefix" xml:space="preserve">
+    <value>Enregistrer dans : </value>
+  </data>
+  <data name="AttachDisp_Confirm_Button" xml:space="preserve">
+    <value>Confirmer</value>
+  </data>
+  <data name="AttachDisp_Cancel_Button" xml:space="preserve">
+    <value>Annuler</value>
+  </data>
+  <data name="Settings_AttachmentLabelLocation_Label" xml:space="preserve">
+    <value>Consigner les anciennes pièces jointes :</value>
+  </data>
+  <data name="Settings_AttachmentLabelLocation_Body" xml:space="preserve">
+    <value>Dans le corps du message</value>
+  </data>
+  <data name="Settings_AttachmentLabelLocation_InfoBar" xml:space="preserve">
+    <value>Barre d'infos (à venir — utilise le corps pour l'instant)</value>
+  </data>
+  <data name="Settings_AttachmentLabelLocation_None" xml:space="preserve">
+    <value>Ne rien consigner (aucune trace)</value>
+  </data>
+  <data name="AttachmentLabel_Header_One" xml:space="preserve">
+    <value>Ancienne pièce jointe :</value>
+  </data>
+  <data name="AttachmentLabel_Header_Other" xml:space="preserve">
+    <value>Anciennes pièces jointes :</value>
+  </data>
+  <data name="AttachmentLabel_SavedTo" xml:space="preserve">
+    <value>Enregistré dans {0}</value>
+  </data>
+  <data name="AttachmentLabel_DeletedOn" xml:space="preserve">
+    <value>Supprimé le {0}</value>
   </data>
 
   <!-- SettingsWindow -->
@@ -527,5 +629,17 @@ Relancez votre recherche pour voir les dossiers créés ou renommés.</value>
   </data>
   <data name="MsgBox_ErrorTitle" xml:space="preserve">
     <value>RBLclass - {0}</value>
+  </data>
+  <data name="IndexStatus_NotFound" xml:space="preserve">
+    <value>Index des dossiers non encore construit — cliquez sur Actualiser les dossiers pour le créer</value>
+  </data>
+  <data name="IndexStatus_Indexing" xml:space="preserve">
+    <value>Construction de l'index des dossiers…</value>
+  </data>
+  <data name="IndexStatus_Ready" xml:space="preserve">
+    <value>Index des dossiers prêt</value>
+  </data>
+  <data name="Pane_Options" xml:space="preserve">
+    <value>▶ Options</value>
   </data>
 </root>

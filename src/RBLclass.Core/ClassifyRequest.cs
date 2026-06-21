@@ -22,7 +22,9 @@ namespace RBLclass.Core
                                bool removeAttachments,
                                bool markTasksComplete = false,
                                bool safetyCopy = false,
-                               string bannerSignature = null)
+                               string bannerSignature = null,
+                               IReadOnlyList<AttachmentDisposition> attachmentDispositions = null,
+                               AttachmentLabelOptions labelOptions = null)
         {
             Items = (items ?? throw new ArgumentNullException(nameof(items))).ToArray();
             Destinations = (destinations ?? throw new ArgumentNullException(nameof(destinations))).ToArray();
@@ -31,6 +33,10 @@ namespace RBLclass.Core
             MarkTasksComplete = markTasksComplete;
             SafetyCopy = safetyCopy;
             BannerSignature = bannerSignature;
+            AttachmentDispositions = attachmentDispositions != null
+                ? attachmentDispositions.ToArray()
+                : (IReadOnlyList<AttachmentDisposition>)new AttachmentDisposition[0];
+            LabelOptions = labelOptions;
         }
 
         /// <summary>The mail items to file (already widened, if requested).</summary>
@@ -80,5 +86,20 @@ namespace RBLclass.Core
 
         /// <summary>True when a banner strip is requested (a signature is present).</summary>
         public bool StripBanner => !string.IsNullOrWhiteSpace(BannerSignature);
+
+        /// <summary>
+        /// Per-attachment choices from the F2 disposition modal (v2.4.0.0), keyed
+        /// to the original items by (StoreId, EntryId). Empty when the modal was
+        /// not used (DeleteSilently mode, or no attachments): the classifier then
+        /// falls back to stripping all attachments. Acts on the filed copy /
+        /// moved item, mirroring the other attachment rules.
+        /// </summary>
+        public IReadOnlyList<AttachmentDisposition> AttachmentDispositions { get; }
+
+        /// <summary>
+        /// Localized templates for the F3 "former attachments" label written on
+        /// each filed copy after a disposition (v2.4.0.0). Null = no label.
+        /// </summary>
+        public AttachmentLabelOptions LabelOptions { get; }
     }
 }

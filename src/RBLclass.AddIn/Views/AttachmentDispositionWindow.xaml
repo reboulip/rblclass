@@ -1,0 +1,103 @@
+<Window x:Class="RBLclass.AddIn.Views.AttachmentDispositionWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        mc:Ignorable="d"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:loc="clr-namespace:RBLclass.AddIn.Localization"
+        Title="{loc:Loc Key=AttachDisp_Title}" Height="540" Width="760"
+        WindowStartupLocation="CenterOwner" MinHeight="340" MinWidth="560"
+        d:DesignHeight="540" d:DesignWidth="760">
+    <Window.Resources>
+        <BooleanToVisibilityConverter x:Key="BoolToVis" />
+    </Window.Resources>
+    <DockPanel Margin="12">
+        <DockPanel DockPanel.Dock="Bottom" LastChildFill="False" Margin="0,12,0,0">
+            <Button DockPanel.Dock="Right" Content="{loc:Loc Key=AttachDisp_Confirm_Button}"
+                    IsDefault="True" Padding="18,4" Click="Confirm_Click"
+                    IsEnabled="{Binding CanConfirm}" />
+            <Button DockPanel.Dock="Right" Content="{loc:Loc Key=AttachDisp_Cancel_Button}"
+                    IsCancel="True" Padding="18,4" Margin="0,0,8,0" Click="Cancel_Click" />
+        </DockPanel>
+
+        <StackPanel DockPanel.Dock="Top">
+            <TextBlock Text="{loc:Loc Key=AttachDisp_Intro}" TextWrapping="Wrap" Margin="0,0,0,6" />
+            <Border Background="{DynamicResource Theme.ControlBackground}"
+                    BorderBrush="{DynamicResource Theme.ControlBorder}" BorderThickness="1"
+                    CornerRadius="3" Padding="8,5" Margin="0,0,0,6"
+                    Visibility="{Binding HasEncryptedNotice, Converter={StaticResource BoolToVis}}">
+                <TextBlock Text="{Binding EncryptedNotice}" TextWrapping="Wrap" />
+            </Border>
+            <Button HorizontalAlignment="Left" Padding="8,2" Margin="0,0,0,6"
+                    Content="{loc:Loc Key=AttachDisp_DeleteAll_Button}" Click="DeleteAll_Click"
+                    Visibility="{Binding HasRows, Converter={StaticResource BoolToVis}}" />
+        </StackPanel>
+
+        <ListBox ItemsSource="{Binding Rows}" HorizontalContentAlignment="Stretch"
+                 ScrollViewer.HorizontalScrollBarVisibility="Disabled">
+            <ListBox.ItemTemplate>
+                <DataTemplate>
+                    <Border BorderBrush="{DynamicResource Theme.ControlBorder}" BorderThickness="0,0,0,1" Padding="2,6">
+                        <StackPanel>
+                            <DockPanel LastChildFill="True">
+                                <TextBlock DockPanel.Dock="Right" Text="{Binding SizeText}"
+                                           Style="{DynamicResource MutedText}"
+                                           Margin="8,0,0,0" VerticalAlignment="Center" />
+                                <TextBlock Text="{Binding FileName}" FontWeight="Bold"
+                                           TextTrimming="CharacterEllipsis" />
+                            </DockPanel>
+                            <TextBlock Text="{Binding MailSubject}" Style="{DynamicResource MutedText}"
+                                       FontSize="11" TextTrimming="CharacterEllipsis" />
+                            <StackPanel Orientation="Horizontal" Margin="0,4,0,0">
+                                <RadioButton Content="{loc:Loc Key=AttachDisp_Delete_Radio}"
+                                             IsChecked="{Binding IsDelete}" VerticalAlignment="Center" />
+                                <RadioButton Content="{loc:Loc Key=AttachDisp_SaveTo_Radio}"
+                                             IsChecked="{Binding IsSaveTo}" Margin="16,0,0,0"
+                                             VerticalAlignment="Center" />
+                            </StackPanel>
+                            <StackPanel Margin="20,4,0,0"
+                                        Visibility="{Binding IsSaveTo, Converter={StaticResource BoolToVis}}">
+                                <DockPanel LastChildFill="True">
+                                    <Button DockPanel.Dock="Right" Content="{loc:Loc Key=AttachDisp_Browse_Button}"
+                                            Padding="8,2" Margin="6,0,0,0" Click="Browse_Click" />
+                                    <TextBox Text="{Binding FavoriteQuery, UpdateSourceTrigger=PropertyChanged}"
+                                             ToolTip="{loc:Loc Key=AttachDisp_SearchHint}" />
+                                </DockPanel>
+                                <ListBox ItemsSource="{Binding FavoriteResults}" MaxHeight="140" Margin="0,4,0,0"
+                                         SelectionChanged="FavoriteResult_SelectionChanged"
+                                         Background="{DynamicResource Theme.ControlBackground}"
+                                         BorderBrush="{DynamicResource Theme.ControlBorder}"
+                                         ScrollViewer.HorizontalScrollBarVisibility="Disabled">
+                                    <ListBox.Style>
+                                        <Style TargetType="ListBox">
+                                            <Style.Triggers>
+                                                <Trigger Property="HasItems" Value="False">
+                                                    <Setter Property="Visibility" Value="Collapsed" />
+                                                </Trigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </ListBox.Style>
+                                    <ListBox.ItemTemplate>
+                                        <DataTemplate>
+                                            <TextBlock Text="{Binding}" FontSize="12"
+                                                       Foreground="{DynamicResource Theme.Foreground}"
+                                                       TextTrimming="CharacterEllipsis" ToolTip="{Binding}" />
+                                        </DataTemplate>
+                                    </ListBox.ItemTemplate>
+                                </ListBox>
+                                <Border Margin="0,4,0,0" Background="{DynamicResource Theme.SelectionBackground}"
+                                        CornerRadius="3" Padding="6,4"
+                                        Visibility="{Binding HasTarget, Converter={StaticResource BoolToVis}}">
+                                    <TextBlock TextWrapping="Wrap">
+                                        <Run Text="{loc:Loc Key=AttachDisp_TargetPrefix}" FontWeight="Bold" />
+                                        <Run Text="{Binding TargetDirectory}" />
+                                    </TextBlock>
+                                </Border>
+                            </StackPanel>
+                        </StackPanel>
+                    </Border>
+                </DataTemplate>
+            </ListBox.ItemTemplate>
+        </ListBox>
+    </DockPanel>
+</Window>

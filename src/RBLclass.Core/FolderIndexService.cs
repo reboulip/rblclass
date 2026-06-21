@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Linq;
 
 namespace RBLclass.Core
@@ -11,7 +12,7 @@ namespace RBLclass.Core
     /// reimplementation of the legacy <c>indexFolders</c>, but persistent: the
     /// tree is walked once and thereafter loaded from SQLite.
     /// </summary>
-    public sealed class FolderIndexService : IFolderTree
+    public sealed class FolderIndexService : IFolderIndexService
     {
         private readonly IMailStore _mailStore;
         private readonly IFolderRepository _repository;
@@ -19,6 +20,19 @@ namespace RBLclass.Core
 
         private readonly object _gate = new object();
         private List<FolderNode> _cache = new List<FolderNode>();
+        private IndexStatus _indexStatus = IndexStatus.NotFound;
+
+        public event PropertyChangedEventHandler PropertyChanged;
+
+        public IndexStatus IndexStatus
+        {
+            get { lock (_gate) { return _indexStatus; } }
+            private set
+            {
+                lock (_gate) { _indexStatus = value; }
+                PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(IndexStatus)));
+            }
+        }
 
         public FolderIndexService(IMailStore mailStore,
                                   IFolderRepository repository,
@@ -35,16 +49,21 @@ namespace RBLclass.Core
             _repository.EnsureSchema();
 
             if (!_repository.HasAnyFolders())
+            {
+                IndexStatus = IndexStatus.NotFound;
                 return new IndexResult(IndexSource.NeedsWalk, 0, 0);
+            }
 
             var folders = _repository.LoadAll().ToList();
             SetCache(folders);
+            IndexStatus = IndexStatus.Ready;
             return new IndexResult(IndexSource.LoadedFromCache,
                                    CountStores(folders), folders.Count);
         }
 
         public IndexResult WalkAndPersist()
         {
+            IndexStatus = IndexStatus.Indexing;
             _repository.EnsureSchema();
 
             var all = new List<FolderNode>();
@@ -61,6 +80,7 @@ namespace RBLclass.Core
 
             _repository.ReplaceAll(all);
             SetCache(all);
+            IndexStatus = IndexStatus.Ready;
             return new IndexResult(IndexSource.Walked, storeCount, all.Count);
         }
 

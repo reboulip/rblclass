@@ -10,10 +10,10 @@ namespace RBLclass.Core.Persistence
     /// (see the Step 1 architecture decision). Opens one connection per logical
     /// operation with WAL journaling, per CLAUDE.md SQLite rules.
     /// </summary>
-    public sealed class SqliteFolderRepository : IFolderRepository
+    public sealed class SqliteFolderRepository : IFolderRepository, IFavoriteFolderRepository
     {
         /// <summary>Schema version this build expects. Bump with each migration.</summary>
-        public const int CurrentSchemaVersion = 2;
+        public const int CurrentSchemaVersion = 3;
 
         private readonly string _connectionString;
 
@@ -41,6 +41,8 @@ namespace RBLclass.Core.Persistence
                         ApplyV1(conn, tx);
                     if (version < 2)
                         ApplyV2(conn, tx);
+                    if (version < 3)
+                        ApplyV3(conn, tx);
 
                     WriteSchemaVersion(conn, tx, CurrentSchemaVersion);
                     tx.Commit();
@@ -125,6 +127,60 @@ namespace RBLclass.Core.Persistence
                 InsertMany(conn, tx, folders);
                 tx.Commit();
             }
+        }
+
+        // --- favourite-folder index (v2.4.0.0 F1) ---------------------------
+
+        public void SaveFavorites(IEnumerable<FavoriteFolder> folders)
+        {
+            if (folders == null) throw new ArgumentNullException(nameof(folders));
+
+            using (var conn = Open())
+            using (var tx = conn.BeginTransaction())
+            {
+                using (var del = conn.CreateCommand())
+                {
+                    del.Transaction = tx;
+                    del.CommandText = "DELETE FROM FavoriteFolders;";
+                    del.ExecuteNonQuery();
+                }
+
+                using (var cmd = conn.CreateCommand())
+                {
+                    cmd.Transaction = tx;
+                    cmd.CommandText =
+                        "INSERT OR REPLACE INTO FavoriteFolders (Path, DisplayName) " +
+                        "VALUES ($path, $name);";
+                    var pPath = cmd.Parameters.Add("$path", SqliteType.Text);
+                    var pName = cmd.Parameters.Add("$name", SqliteType.Text);
+                    foreach (var f in folders)
+                    {
+                        pPath.Value = f.Path;
+                        pName.Value = f.DisplayName;
+                        cmd.ExecuteNonQuery();
+                    }
+                }
+
+                tx.Commit();
+            }
+        }
+
+        public IReadOnlyList<FavoriteFolder> LoadFavorites()
+        {
+            var result = new List<FavoriteFolder>();
+
+            using (var conn = Open())
+            using (var cmd = conn.CreateCommand())
+            {
+                cmd.CommandText = "SELECT Path, DisplayName FROM FavoriteFolders ORDER BY Path;";
+                using (var reader = cmd.ExecuteReader())
+                {
+                    while (reader.Read())
+                        result.Add(new FavoriteFolder(reader.GetString(0), reader.GetString(1)));
+                }
+            }
+
+            return result;
         }
 
         // --- internals ------------------------------------------------------
@@ -243,6 +299,21 @@ namespace RBLclass.Core.Persistence
             {
                 cmd.Transaction = tx;
                 cmd.CommandText = SqliteClassificationHistory.CreateTableSql;
+                cmd.ExecuteNonQuery();
+            }
+        }
+
+        /// <summary>Schema v3: the favourite-folder filesystem index (v2.4.0.0 F1).</summary>
+        private static void ApplyV3(SqliteConnection conn, SqliteTransaction tx)
+        {
+            using (var cmd = conn.CreateCommand())
+            {
+                cmd.Transaction = tx;
+                cmd.CommandText =
+                    "CREATE TABLE IF NOT EXISTS FavoriteFolders (" +
+                    "  Path        TEXT PRIMARY KEY," +
+                    "  DisplayName TEXT NOT NULL" +
+                    ");";
                 cmd.ExecuteNonQuery();
             }
         }

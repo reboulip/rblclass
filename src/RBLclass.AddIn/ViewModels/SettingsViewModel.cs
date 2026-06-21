@@ -1,6 +1,8 @@
 using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Globalization;
+using System.Linq;
 using System.Runtime.CompilerServices;
 using RBLclass.AddIn.Localization;
 using RBLclass.AddIn.Mvvm;
@@ -57,6 +59,90 @@ namespace RBLclass.AddIn.ViewModels
                 new UiLanguageOption("fr", _loc.GetString("Settings_Language_French")),
                 new UiLanguageOption("de", _loc.GetString("Settings_Language_German")),
             };
+
+            FavoriteFolders = new ObservableCollection<string>(
+                _settings.AttachmentFavoriteFolders ?? new string[0]);
+        }
+
+        /// <summary>
+        /// The user's favourite save-to directories (v2.4.0.0 F1), edited via the
+        /// folder-browse dialog. Mutations persist immediately, like every other
+        /// setting here.
+        /// </summary>
+        public ObservableCollection<string> FavoriteFolders { get; }
+
+        /// <summary>F2: remove-attachments shows the disposition modal (Modal) or strips silently.</summary>
+        public bool AttachmentRemovalModeIsModal
+        {
+            get => _settings.AttachmentRemovalMode == AttachmentRemovalMode.Modal;
+            set { if (value) UpdateAttachmentRemovalMode(AttachmentRemovalMode.Modal); }
+        }
+
+        public bool AttachmentRemovalModeIsDeleteSilently
+        {
+            get => _settings.AttachmentRemovalMode == AttachmentRemovalMode.DeleteSilently;
+            set { if (value) UpdateAttachmentRemovalMode(AttachmentRemovalMode.DeleteSilently); }
+        }
+
+        private void UpdateAttachmentRemovalMode(AttachmentRemovalMode mode)
+        {
+            if (_settings.AttachmentRemovalMode == mode) return;
+            _settings.AttachmentRemovalMode = mode;
+            _settings.Save(_store);
+            OnPropertyChanged(nameof(AttachmentRemovalModeIsModal));
+            OnPropertyChanged(nameof(AttachmentRemovalModeIsDeleteSilently));
+        }
+
+        /// <summary>F3: where the former-attachments label is recorded (Body, or InfoBar - deferred).</summary>
+        public bool AttachmentLabelLocationIsBody
+        {
+            get => _settings.AttachmentLabelLocation == AttachmentLabelLocation.Body;
+            set { if (value) UpdateAttachmentLabelLocation(AttachmentLabelLocation.Body); }
+        }
+
+        public bool AttachmentLabelLocationIsInfoBar
+        {
+            get => _settings.AttachmentLabelLocation == AttachmentLabelLocation.InfoBar;
+            set { if (value) UpdateAttachmentLabelLocation(AttachmentLabelLocation.InfoBar); }
+        }
+
+        public bool AttachmentLabelLocationIsNone
+        {
+            get => _settings.AttachmentLabelLocation == AttachmentLabelLocation.None;
+            set { if (value) UpdateAttachmentLabelLocation(AttachmentLabelLocation.None); }
+        }
+
+        private void UpdateAttachmentLabelLocation(AttachmentLabelLocation location)
+        {
+            if (_settings.AttachmentLabelLocation == location) return;
+            _settings.AttachmentLabelLocation = location;
+            _settings.Save(_store);
+            OnPropertyChanged(nameof(AttachmentLabelLocationIsBody));
+            OnPropertyChanged(nameof(AttachmentLabelLocationIsInfoBar));
+            OnPropertyChanged(nameof(AttachmentLabelLocationIsNone));
+        }
+
+        /// <summary>Browse for a directory and add it (deduped, case-insensitive).</summary>
+        public void AddFavoriteFolder()
+        {
+            string path = TaskPaneServices.BrowseForFolder?.Invoke();
+            if (string.IsNullOrWhiteSpace(path)) return;
+            if (FavoriteFolders.Contains(path, StringComparer.OrdinalIgnoreCase)) return;
+            FavoriteFolders.Add(path);
+            PersistFavorites();
+        }
+
+        /// <summary>Remove a favourite directory.</summary>
+        public void RemoveFavoriteFolder(string path)
+        {
+            if (path == null || !FavoriteFolders.Remove(path)) return;
+            PersistFavorites();
+        }
+
+        private void PersistFavorites()
+        {
+            _settings.AttachmentFavoriteFolders = FavoriteFolders.ToArray();
+            _settings.Save(_store);
         }
 
         public bool OpenInNewWindow
@@ -279,6 +365,16 @@ namespace RBLclass.AddIn.ViewModels
         {
             get => _settings.SentItemTriageMode;
             set => Apply(_settings.SentItemTriageMode, value, v => _settings.SentItemTriageMode = v);
+        }
+
+        /// <summary>
+        /// After triage moves a sent mail to the Inbox, reveal the classify pane
+        /// with that mail pinned so the user can file it immediately (E1).
+        /// </summary>
+        public bool ClassifyAfterMoveToInbox
+        {
+            get => _settings.ClassifyAfterMoveToInbox;
+            set => Apply(_settings.ClassifyAfterMoveToInbox, value, v => _settings.ClassifyAfterMoveToInbox = v);
         }
 
         /// <summary>Options for the language dropdown (Auto/English/Français/Deutsch), Phase E.</summary>

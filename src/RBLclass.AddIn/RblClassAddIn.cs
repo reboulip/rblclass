@@ -6,6 +6,7 @@ using System.Linq;
 using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Windows.Forms;
+using System.Windows.Threading;
 using Extensibility;
 using RBLclass.AddIn.Localization;
 using RBLclass.AddIn.ViewModels;
@@ -46,11 +47,12 @@ namespace RBLclass.AddIn
 
         private IFolderRepository _repository;
         private IMailStore _mailStore;
-        private IFolderTree _folderTree;
+        private IFolderIndexService _folderTree;
         private IFolderSearch _folderSearch;
         private IClassifier _classifier;
         private IClassificationHistory _classificationHistory;
         private ISettingsStore _settingsStore;
+        private FavoriteFolderService _favoriteFolderService;
         private readonly ForgottenAttachmentGuard _attachmentGuard = new ForgottenAttachmentGuard();
         private readonly ExternalRecipientGuard _externalGuard = new ExternalRecipientGuard();
         private IndexResult _lastIndexResult;
@@ -178,6 +180,7 @@ namespace RBLclass.AddIn
                 TaskPaneServices.Classifier = _classifier;
                 TaskPaneServices.GetSelection = () => _mailStore.GetSelectedItems();
                 TaskPaneServices.GetAllFolders = () => _folderTree.GetAll();
+                TaskPaneServices.FolderIndex = _folderTree;
                 TaskPaneServices.CreateSubfolder = (parent, name) =>
                 {
                     try
@@ -249,6 +252,46 @@ namespace RBLclass.AddIn
                         loc.GetString("MsgBox_ConfirmSendToExternal_Title"),
                         MessageBoxButtons.YesNo, MessageBoxIcon.Warning);
                     return answer == DialogResult.Yes;
+                };
+
+                // Favourite-folder filesystem index (v2.4.0.0 F1): load the
+                // persisted tree now (no I/O walk) and re-walk in the background.
+                _repository.EnsureSchema(); // ensure the favourites table exists
+                _favoriteFolderService = new FavoriteFolderService(
+                    new DirectoryScanner(), (IFavoriteFolderRepository)_repository, _settingsStore);
+                _favoriteFolderService.LoadFromCache();
+                TaskPaneServices.FavoriteFolderService = _favoriteFolderService;
+                ReindexFavoritesInBackground();
+                TaskPaneServices.BrowseForFolder = () =>
+                {
+                    using (var dlg = new FolderBrowserDialog())
+                    {
+                        dlg.Description = TaskPaneServices.Localization.GetString(
+                            "Settings_FavoriteFolders_BrowseDescription");
+                        dlg.ShowNewFolderButton = false;
+                        return dlg.ShowDialog() == DialogResult.OK ? dlg.SelectedPath : null;
+                    }
+                };
+
+                // F2: gather attachments and show the per-attachment disposition modal.
+                TaskPaneServices.GatherAttachments = items =>
+                {
+                    var groups = new List<(MailItemRef, IReadOnlyList<AttachmentInfo>, bool)>();
+                    foreach (var it in items)
+                    {
+                        bool encrypted = _mailStore.IsEncryptedMail(it);
+                        var atts = encrypted
+                            ? (IReadOnlyList<AttachmentInfo>)new AttachmentInfo[0]
+                            : _mailStore.GetAttachments(it);
+                        groups.Add((it, atts, encrypted));
+                    }
+                    return groups;
+                };
+                TaskPaneServices.ShowAttachmentDisposition = groups =>
+                {
+                    var vm = new AttachmentDispositionViewModel(groups, TaskPaneServices.Localization);
+                    var window = new AttachmentDispositionWindow { DataContext = vm };
+                    return window.ShowDialog() == true ? vm.BuildDispositions() : null;
                 };
 
                 // Keep the classify pane's selection count live.
@@ -355,6 +398,7 @@ namespace RBLclass.AddIn
 
                 if (_taskPane != null)
                 {
+                    try { _taskPane.DockPositionStateChange -= OnTaskPaneDockPositionStateChange; } catch { }
                     try { Marshal.ReleaseComObject(_taskPane); } catch { }
                     _taskPane = null;
                 }
@@ -628,6 +672,17 @@ namespace RBLclass.AddIn
                     Log.Information(
                         "Sent-item triage moved {Processed} mail(s) to the Inbox ({Errors} failed).",
                         result.ItemsProcessed, result.Errors);
+
+                    // E1: optionally hand the moved mail to the pane as the next
+                    // classify target and reveal it, so the user can file it now.
+                    if (_settingsStore.GetBool(SettingsKeys.ClassifyAfterMoveToInbox, true)
+                        && result.Undo != null && result.Undo.Moves.Count > 0)
+                    {
+                        EnsureTaskPane();
+                        TaskPaneServices.PinMailForClassify?.Invoke(result.Undo.Moves[0].Current);
+                        if (_taskPane != null) _taskPane.Visible = true;
+                        TaskPaneServices.Host?.RefreshOnShow();
+                    }
                     break;
             }
         }
@@ -664,11 +719,36 @@ namespace RBLclass.AddIn
                 return;
             }
 
+            // Read the persisted dock position; fall back to Right (= 2) if absent/invalid.
+            int dockInt;
+            if (!int.TryParse(_settingsStore?.Get(SettingsKeys.PaneDockPosition, null),
+                              out dockInt))
+                dockInt = (int)Office.MsoCTPDockPosition.msoCTPDockPositionRight;
+
             // CreateCTP instantiates the COM-registered host control by ProgId.
             _taskPane = _ctpFactory.CreateCTP(
                 RblClassTaskPaneHost.ProgIdString, "RBLclass", Type.Missing);
-            _taskPane.DockPosition = Office.MsoCTPDockPosition.msoCTPDockPositionRight;
+            _taskPane.DockPosition = (Office.MsoCTPDockPosition)dockInt;
             _taskPane.Width = 360;
+            _taskPane.DockPositionStateChange += OnTaskPaneDockPositionStateChange;
+        }
+
+        /// <summary>
+        /// Persists the new dock position whenever the user moves the task pane.
+        /// Fires on the Outlook UI (STA) thread.
+        /// </summary>
+        private void OnTaskPaneDockPositionStateChange(Office.CustomTaskPane customTaskPaneInst)
+        {
+            try
+            {
+                int pos = (int)customTaskPaneInst.DockPosition;
+                _settingsStore?.Set(SettingsKeys.PaneDockPosition,
+                    pos.ToString(System.Globalization.CultureInfo.InvariantCulture));
+            }
+            catch (Exception ex)
+            {
+                TryLog("DockPositionStateChange handler failed", ex);
+            }
         }
 
         /// <summary>
@@ -731,26 +811,41 @@ namespace RBLclass.AddIn
                     return;
                 }
 
-                Cursor.Current = Cursors.WaitCursor;
-                try
-                {
-                    var sw = Stopwatch.StartNew();
-                    _lastIndexResult = _folderTree.WalkAndPersist();
-                    sw.Stop();
-                    Log.Information(
-                        "Manual folder refresh: {Stores} stores, {Folders} folders in {Ms} ms.",
-                        _lastIndexResult.StoreCount, _lastIndexResult.FolderCount, sw.ElapsedMilliseconds);
-                }
-                finally
-                {
-                    Cursor.Current = Cursors.Default;
-                }
+                // Ignore a repeat click while a walk is already running.
+                if (_folderTree.IndexStatus == IndexStatus.Indexing)
+                    return;
 
-                MessageBox.Show(
-                    loc.GetString("MsgBox_RefreshFolders_Result",
-                        _lastIndexResult.StoreCount, _lastIndexResult.FolderCount),
-                    loc.GetString("MsgBox_RefreshFolders_Title"),
-                    MessageBoxButtons.OK, MessageBoxIcon.Information);
+                // Let the indicator paint 'Indexing' (yellow) before the
+                // synchronous, STA-bound COM walk runs: WalkAndPersist sets the
+                // status itself (Indexing -> Ready), and the dot - not a modal -
+                // is the completion signal. The walk must stay on this (UI/STA)
+                // thread because Outlook OM is single-threaded apartment.
+                Dispatcher.CurrentDispatcher.BeginInvoke(
+                    DispatcherPriority.Background,
+                    new Action(RunFolderWalk));
+            }
+            catch (Exception ex)
+            {
+                ShowError("Refresh folders failed", ex);
+            }
+        }
+
+        /// <summary>
+        /// Runs a full folder walk on the Outlook UI (STA) thread and logs the
+        /// result. Status transitions (Indexing -> Ready) are driven by
+        /// <see cref="FolderIndexService.WalkAndPersist"/> and surfaced by the
+        /// pane's colored indicator.
+        /// </summary>
+        private void RunFolderWalk()
+        {
+            try
+            {
+                var sw = Stopwatch.StartNew();
+                _lastIndexResult = _folderTree.WalkAndPersist();
+                sw.Stop();
+                Log.Information(
+                    "Folder refresh: {Stores} stores, {Folders} folders in {Ms} ms.",
+                    _lastIndexResult.StoreCount, _lastIndexResult.FolderCount, sw.ElapsedMilliseconds);
             }
             catch (Exception ex)
             {
@@ -769,11 +864,30 @@ namespace RBLclass.AddIn
                         _settingsStore,
                         () => _mailStore.GetSelectedItemHtmlBody())
                 }.ShowDialog();
+
+                // Re-index favourites in case the favourite-folder list changed
+                // while the dialog was open (v2.4.0.0 F1).
+                ReindexFavoritesInBackground();
             }
             catch (Exception ex)
             {
                 ShowError("Settings failed", ex);
             }
+        }
+
+        /// <summary>
+        /// Re-walk the favourite-folder roots off the UI thread (filesystem +
+        /// SQLite only, no Outlook COM) - v2.4.0.0 F1.
+        /// </summary>
+        private void ReindexFavoritesInBackground()
+        {
+            var service = _favoriteFolderService;
+            if (service == null) return;
+            System.Threading.Tasks.Task.Run(() =>
+            {
+                try { service.Reindex(); }
+                catch (Exception ex) { TryLog("Favourite folder reindex failed", ex); }
+            });
         }
 
         // --- index lifecycle helpers ---------------------------------------

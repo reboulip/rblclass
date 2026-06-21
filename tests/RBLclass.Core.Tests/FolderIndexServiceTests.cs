@@ -162,5 +162,56 @@ namespace RBLclass.Core.Tests
             reloaded.GetAll().Select(f => f.EntryId)
                     .Should().BeEquivalentTo("a1", "a2", "b1");
         }
+
+        [Fact]
+        public void IndexStatus_starts_NotFound_and_stays_NotFound_after_empty_Load()
+        {
+            var service = new FolderIndexService(Substitute.For<IMailStore>(), NewRepo());
+
+            service.IndexStatus.Should().Be(IndexStatus.NotFound);
+
+            service.Load();
+
+            service.IndexStatus.Should().Be(IndexStatus.NotFound);
+        }
+
+        [Fact]
+        public void Load_from_cache_sets_IndexStatus_Ready()
+        {
+            var stores = new[] { new StoreInfo("pst1", "Archive", isDataFileStore: true) };
+            var folders = new Dictionary<string, IReadOnlyList<FolderNode>>
+            {
+                ["pst1"] = new[] { Node("pst1", "e1", null, "Inbox", "Archive / Inbox") },
+            };
+            new FolderIndexService(StoreWith(stores, folders), NewRepo()).WalkAndPersist();
+
+            var service = new FolderIndexService(Substitute.For<IMailStore>(), NewRepo());
+            service.Load();
+
+            service.IndexStatus.Should().Be(IndexStatus.Ready);
+        }
+
+        [Fact]
+        public void WalkAndPersist_transitions_Indexing_then_Ready_and_raises_PropertyChanged()
+        {
+            var stores = new[] { new StoreInfo("pst1", "Archive", isDataFileStore: true) };
+            var folders = new Dictionary<string, IReadOnlyList<FolderNode>>
+            {
+                ["pst1"] = new[] { Node("pst1", "e1", null, "Inbox", "Archive / Inbox") },
+            };
+            var service = new FolderIndexService(StoreWith(stores, folders), NewRepo());
+
+            var observed = new List<IndexStatus>();
+            service.PropertyChanged += (s, e) =>
+            {
+                if (e.PropertyName == nameof(FolderIndexService.IndexStatus))
+                    observed.Add(service.IndexStatus);
+            };
+
+            service.WalkAndPersist();
+
+            observed.Should().ContainInOrder(IndexStatus.Indexing, IndexStatus.Ready);
+            service.IndexStatus.Should().Be(IndexStatus.Ready);
+        }
     }
 }

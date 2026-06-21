@@ -334,6 +334,17 @@ namespace RBLclass.Outlook.Adapter
                     {
                         try
                         {
+                            // D1 investigation (v2.4): BEGIN/END timing markers
+                            // around the COM move, so the multi-item-classify
+                            // MAPI_E_NOT_FOUND from Stormshield's OnBeforeReadAsync
+                            // can be correlated against when each item was moving.
+                            // Logged at Information so they appear in any build
+                            // installed on the (Stormshield) target.
+                            var sw = System.Diagnostics.Stopwatch.StartNew();
+                            Log.Information(
+                                "Classify move BEGIN (D1): item {EntryId} -> {Path}",
+                                item.EntryId, destination.FullPath);
+
                             // Move returns the moved item; the original reference
                             // is now invalid (CLAUDE.md). No transient copy is
                             // created and nothing lands in Deleted Items - the
@@ -346,6 +357,10 @@ namespace RBLclass.Outlook.Adapter
                                 if (movedItem == null) return null;
                                 string movedEntryId = Safe(() => movedItem.EntryID, null);
                                 if (movedEntryId == null) return null;
+                                sw.Stop();
+                                Log.Information(
+                                    "Classify move END (D1): item {EntryId} -> {Path} in {Ms} ms",
+                                    item.EntryId, destination.FullPath, sw.ElapsedMilliseconds);
                                 return new MailItemRef(destination.StoreId, movedEntryId, item.Subject);
                             }
                         }
@@ -770,6 +785,174 @@ namespace RBLclass.Outlook.Adapter
             }
 
             return true;
+        }
+
+        public bool AppendHtmlNote(MailItemRef item, string htmlBlock)
+        {
+            if (item == null || string.IsNullOrWhiteSpace(htmlBlock)) return false;
+
+            using (var session = new ComRef<OutlookOM.NameSpace>(_app.Session))
+            {
+                object rawItem;
+                try { rawItem = session.Value.GetItemFromID(item.EntryId, item.StoreId); }
+                catch { return false; }
+
+                using (var comItem = new ComRef<object>(rawItem))
+                {
+                    var mail = comItem.Value as OutlookOM.MailItem;
+                    if (mail == null) return false;
+
+                    // Never rewrite an encrypted/signed body (same rule as the banner strip).
+                    string messageClass = Safe(() => mail.MessageClass, string.Empty);
+                    if (messageClass.StartsWith("IPM.Note.SMIME", StringComparison.OrdinalIgnoreCase))
+                        return false;
+
+                    string html = Safe(() => mail.HTMLBody, null) ?? string.Empty;
+                    try
+                    {
+                        mail.HTMLBody = InsertAfterBodyTag(html, htmlBlock);
+                        mail.Save();
+                        Log.Information("Appended attachment-disposition label to a filed mail.");
+                        return true;
+                    }
+                    catch (Exception ex)
+                    {
+                        Log.Warning(ex, "Appending the attachment-disposition label failed.");
+                        return false;
+                    }
+                }
+            }
+        }
+
+        /// <summary>Insert <paramref name="block"/> just inside the opening &lt;body&gt; tag, or prepend when there is none.</summary>
+        private static string InsertAfterBodyTag(string html, string block)
+        {
+            if (string.IsNullOrEmpty(html)) return block;
+            int bodyStart = html.IndexOf("<body", StringComparison.OrdinalIgnoreCase);
+            if (bodyStart >= 0)
+            {
+                int close = html.IndexOf('>', bodyStart);
+                if (close >= 0) return html.Insert(close + 1, block);
+            }
+            return block + html;
+        }
+
+        public bool IsEncryptedMail(MailItemRef item)
+        {
+            if (item == null) return false;
+
+            using (var session = new ComRef<OutlookOM.NameSpace>(_app.Session))
+            {
+                object rawItem;
+                try { rawItem = session.Value.GetItemFromID(item.EntryId, item.StoreId); }
+                catch { return false; }
+
+                using (var comItem = new ComRef<object>(rawItem))
+                {
+                    var mail = comItem.Value as OutlookOM.MailItem;
+                    if (mail == null) return false;
+                    string messageClass = Safe(() => mail.MessageClass, string.Empty);
+                    return messageClass.StartsWith("IPM.Note.SMIME", StringComparison.OrdinalIgnoreCase);
+                }
+            }
+        }
+
+        public IReadOnlyList<AttachmentInfo> GetAttachments(MailItemRef item)
+        {
+            if (item == null) return new AttachmentInfo[0];
+
+            using (var session = new ComRef<OutlookOM.NameSpace>(_app.Session))
+            {
+                object rawItem;
+                try { rawItem = session.Value.GetItemFromID(item.EntryId, item.StoreId); }
+                catch { return new AttachmentInfo[0]; }
+
+                using (var comItem = new ComRef<object>(rawItem))
+                {
+                    var mail = comItem.Value as OutlookOM.MailItem;
+                    if (mail == null) return new AttachmentInfo[0];
+
+                    var result = new List<AttachmentInfo>();
+                    using (var attachments = new ComRef<OutlookOM.Attachments>(mail.Attachments))
+                    {
+                        int count = attachments.Value.Count;
+                        for (int i = 1; i <= count; i++)
+                        {
+                            OutlookOM.Attachment raw;
+                            try { raw = attachments.Value[i]; } catch { continue; }
+                            using (var att = new ComRef<OutlookOM.Attachment>(raw))
+                            {
+                                string name = Safe(() => att.Value.FileName, string.Empty);
+                                long size = Safe(() => (long)att.Value.Size, 0L);
+                                int id = Safe(() => att.Value.Index, i);
+                                result.Add(new AttachmentInfo(id, name, size));
+                            }
+                        }
+                    }
+                    return result;
+                }
+            }
+        }
+
+        public bool SaveAttachmentToFile(MailItemRef item, int attachmentId, string destinationDirectory)
+        {
+            if (item == null || string.IsNullOrWhiteSpace(destinationDirectory)) return false;
+
+            // Outlook's SaveAsFile throws an opaque "file not found" when the
+            // directory is absent; create it (covers a OneDrive folder not yet
+            // materialised locally) and bail clearly if that is not possible.
+            try { System.IO.Directory.CreateDirectory(destinationDirectory); }
+            catch (Exception ex)
+            {
+                Log.Error(ex, "SaveAttachmentToFile: destination directory unusable: {Dir}", destinationDirectory);
+                return false;
+            }
+
+            using (var session = new ComRef<OutlookOM.NameSpace>(_app.Session))
+            {
+                object rawItem;
+                try { rawItem = session.Value.GetItemFromID(item.EntryId, item.StoreId); }
+                catch { return false; }
+
+                using (var comItem = new ComRef<object>(rawItem))
+                {
+                    var mail = comItem.Value as OutlookOM.MailItem;
+                    if (mail == null) return false;
+
+                    using (var attachments = new ComRef<OutlookOM.Attachments>(mail.Attachments))
+                    {
+                        int count = attachments.Value.Count;
+                        for (int i = 1; i <= count; i++)
+                        {
+                            OutlookOM.Attachment raw;
+                            try { raw = attachments.Value[i]; } catch { continue; }
+                            using (var att = new ComRef<OutlookOM.Attachment>(raw))
+                            {
+                                if (Safe(() => att.Value.Index, -1) != attachmentId) continue;
+                                string fileName = Safe(() => att.Value.FileName, null);
+                                if (string.IsNullOrWhiteSpace(fileName))
+                                    fileName = "attachment" + attachmentId;
+                                string destPath = AttachmentFilenameCollisionResolver.Resolve(
+                                    destinationDirectory, fileName, System.IO.File.Exists);
+                                try
+                                {
+                                    att.Value.SaveAsFile(destPath);
+                                    Log.Information("Saved attachment {Id} to {Path}.", attachmentId, destPath);
+                                    return true;
+                                }
+                                catch (Exception ex)
+                                {
+                                    Log.Error(ex, "SaveAttachmentToFile failed for attachment {Id} to {Path}.",
+                                        attachmentId, destPath);
+                                    return false;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            Log.Warning("SaveAttachmentToFile: attachment {Id} not found.", attachmentId);
+            return false;
         }
 
         public bool StripExternalBanner(MailItemRef item, string bannerSignature)

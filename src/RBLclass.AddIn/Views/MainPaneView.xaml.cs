@@ -1,8 +1,11 @@
+using System;
+using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
 using RBLclass.AddIn.ViewModels;
+using Serilog;
 
 namespace RBLclass.AddIn.Views
 {
@@ -23,12 +26,13 @@ namespace RBLclass.AddIn.Views
         // pressed - releasing it must then NOT toggle "List every matching folder".
         private bool _ctrlComboUsed;
 
-        private void QueryBox_KeyDown(object sender, KeyEventArgs e)
+        private async void QueryBox_KeyDown(object sender, KeyEventArgs e)
         {
             if (e.Key == Key.Enter)
             {
-                Vm?.FileToHighlighted();
                 e.Handled = true;
+                try { await (Vm?.FileToHighlighted() ?? Task.CompletedTask); }
+                catch (Exception ex) { Log.Error(ex, "FileToHighlighted failed."); }
             }
         }
 
@@ -43,6 +47,23 @@ namespace RBLclass.AddIn.Views
             {
                 _ctrlComboUsed = true; // Ctrl is acting as a modifier
             }
+            else if (key == Key.Tab && (Keyboard.Modifiers & ModifierKeys.Shift) == 0)
+            {
+                // Tab from the query box opens the Options panel and moves
+                // focus to its first checkbox (v2.4 B1). The focus is deferred:
+                // the checkbox is in a just-made-visible panel and is not yet
+                // realized in this frame, so Focus() here would no-op.
+                if (Vm != null) Vm.IsOptionsExpanded = true;
+                Dispatcher.BeginInvoke(
+                    System.Windows.Threading.DispatcherPriority.Input,
+                    new Action(() => FirstOptionCheckBox?.Focus()));
+                e.Handled = true;
+            }
+        }
+
+        private void Options_Click(object sender, RoutedEventArgs e)
+        {
+            if (Vm != null) Vm.IsOptionsExpanded = !Vm.IsOptionsExpanded;
         }
 
         /// <summary>Ctrl pressed and released on its own toggles "List every matching folder" (v2.2).</summary>
@@ -57,25 +78,7 @@ namespace RBLclass.AddIn.Views
             }
         }
 
-        /// <summary>
-        /// Clicking into the unfocused search box selects the whole query so
-        /// typing replaces it - sequential classifying nearly always starts a
-        /// fresh search (v2.2). Clicks while already focused keep normal caret
-        /// placement.
-        /// </summary>
-        private void QueryBox_PreviewMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
-        {
-            if (QueryBox.IsKeyboardFocusWithin) return;
-            QueryBox.Focus(); // triggers GotKeyboardFocus -> SelectAll
-            e.Handled = true; // don't let the click collapse the selection to a caret
-        }
-
-        private void QueryBox_GotKeyboardFocus(object sender, KeyboardFocusChangedEventArgs e)
-        {
-            QueryBox.SelectAll();
-        }
-
-        private void ResultsList_MouseDoubleClick(object sender, MouseButtonEventArgs e)
+        private async void ResultsList_MouseDoubleClick(object sender, MouseButtonEventArgs e)
         {
             // Ignore double-clicks that land on the per-row buttons.
             if (IsWithinButton(e.OriginalSource as DependencyObject)) return;
@@ -84,10 +87,16 @@ namespace RBLclass.AddIn.Views
             // current selection (clicking a row toggles its checkbox without
             // changing the ListBox selection).
             var folder = ResolveFolder(e.OriginalSource as DependencyObject);
-            if (folder != null) Vm?.FileToFolder(folder.Folder);
+            if (folder == null) return;
+            try { await (Vm?.FileToFolder(folder.Folder) ?? Task.CompletedTask); }
+            catch (Exception ex) { Log.Error(ex, "FileToFolder failed."); }
         }
 
-        private void Classify_Click(object sender, RoutedEventArgs e) => Vm?.ClassifyChecked();
+        private async void Classify_Click(object sender, RoutedEventArgs e)
+        {
+            try { await (Vm?.ClassifyChecked() ?? Task.CompletedTask); }
+            catch (Exception ex) { Log.Error(ex, "ClassifyChecked failed."); }
+        }
 
         private void RemoveDestination_Click(object sender, RoutedEventArgs e)
         {
@@ -111,6 +120,12 @@ namespace RBLclass.AddIn.Views
         {
             var folder = (sender as FrameworkElement)?.DataContext as SelectableFolder;
             if (folder != null) Vm?.CreateSubfolderUnder(folder.Folder);
+        }
+
+        private void ExpandPath_Click(object sender, RoutedEventArgs e)
+        {
+            var folder = (sender as FrameworkElement)?.DataContext as SelectableFolder;
+            if (folder != null) folder.IsExpanded = !folder.IsExpanded;
         }
 
         private static bool IsWithinButton(DependencyObject node)

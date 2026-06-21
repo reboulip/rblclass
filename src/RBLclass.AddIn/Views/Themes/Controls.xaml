@@ -26,6 +26,10 @@
         <Setter Property="Foreground" Value="{DynamicResource Theme.Foreground}" />
     </Style>
 
+    <Style TargetType="{x:Type RadioButton}">
+        <Setter Property="Foreground" Value="{DynamicResource Theme.Foreground}" />
+    </Style>
+
     <Style TargetType="{x:Type GroupBox}">
         <Setter Property="Foreground" Value="{DynamicResource Theme.Foreground}" />
         <Setter Property="BorderBrush" Value="{DynamicResource Theme.ControlBorder}" />

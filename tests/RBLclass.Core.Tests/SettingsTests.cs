@@ -49,6 +49,9 @@ namespace RBLclass.Core.Tests
             settings.InternalDomains.Should().BeEmpty();
             settings.ForgottenAttachmentKeywords.Should().Equal("attach", "enclos", "joint", "PJ");
             settings.SentItemTriageMode.Should().Be(SentItemTriageMode.AskEveryTime);
+            settings.ClassifyAfterMoveToInbox.Should().BeTrue();
+            settings.AttachmentRemovalMode.Should().Be(AttachmentRemovalMode.Modal);
+            settings.AttachmentLabelLocation.Should().Be(AttachmentLabelLocation.Body);
             settings.MinSearchLength.Should().Be(FolderSearchOptions.DefaultMinQueryLength);
             settings.SearchDebounceMs.Should().Be(Settings.DefaultSearchDebounceMs);
             settings.PreferredUiLanguage.Should().Be("Auto");
@@ -74,6 +77,9 @@ namespace RBLclass.Core.Tests
                 InternalDomains = new[] { "example.com", "example.org" },
                 ForgottenAttachmentKeywords = new[] { "pièce jointe", "ci-joint" },
                 SentItemTriageMode = SentItemTriageMode.Delete,
+                ClassifyAfterMoveToInbox = false,
+                AttachmentRemovalMode = AttachmentRemovalMode.DeleteSilently,
+                AttachmentLabelLocation = AttachmentLabelLocation.InfoBar,
                 MinSearchLength = 3,
                 SearchDebounceMs = 450,
                 PreferredUiLanguage = "fr"
@@ -97,6 +103,9 @@ namespace RBLclass.Core.Tests
             reloaded.InternalDomains.Should().Equal("example.com", "example.org");
             reloaded.ForgottenAttachmentKeywords.Should().Equal("pièce jointe", "ci-joint");
             reloaded.SentItemTriageMode.Should().Be(SentItemTriageMode.Delete);
+            reloaded.ClassifyAfterMoveToInbox.Should().BeFalse();
+            reloaded.AttachmentRemovalMode.Should().Be(AttachmentRemovalMode.DeleteSilently);
+            reloaded.AttachmentLabelLocation.Should().Be(AttachmentLabelLocation.InfoBar);
             reloaded.MinSearchLength.Should().Be(3);
             reloaded.SearchDebounceMs.Should().Be(450);
             reloaded.PreferredUiLanguage.Should().Be("fr");
@@ -186,6 +195,20 @@ namespace RBLclass.Core.Tests
 
             _store.Set(SettingsKeys.MaxResults, "-5");
             Settings.Load(_store).MaxResults.Should().Be(FolderSearchOptions.DefaultMaxResults);
+        }
+
+        [Fact]
+        public void Load_falls_back_to_Modal_when_the_stored_attachment_removal_mode_is_unrecognised()
+        {
+            _store.Set(SettingsKeys.AttachmentRemovalMode, "Shred");
+            Settings.Load(_store).AttachmentRemovalMode.Should().Be(AttachmentRemovalMode.Modal);
+        }
+
+        [Fact]
+        public void Load_falls_back_to_Body_when_the_stored_attachment_label_location_is_unrecognised()
+        {
+            _store.Set(SettingsKeys.AttachmentLabelLocation, "Hologram");
+            Settings.Load(_store).AttachmentLabelLocation.Should().Be(AttachmentLabelLocation.Body);
         }
 
         [Fact]

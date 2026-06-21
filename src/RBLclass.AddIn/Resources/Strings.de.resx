@@ -87,8 +87,11 @@
   <data name="MainPane_OpenFolder_ToolTip" xml:space="preserve">
     <value>Diesen Ordner in Outlook öffnen</value>
   </data>
-  <data name="MainPane_NewSubfolder_ToolTip" xml:space="preserve">
-    <value>Hier einen Unterordner erstellen</value>
+  <data name="MainPane_NewSubfolder_MenuItem" xml:space="preserve">
+    <value>Unterordner hinzufügen…</value>
+  </data>
+  <data name="MainPane_ExpandPath_ToolTip" xml:space="preserve">
+    <value>Den vollständigen Pfad mehrzeilig anzeigen</value>
   </data>
   <data name="MainPane_ClearSelection_Button" xml:space="preserve">
     <value>leeren</value>
@@ -107,6 +110,105 @@
   </data>
   <data name="MainPane_Busy_Filing" xml:space="preserve">
     <value>Wird abgelegt…</value>
+  </data>
+  <data name="Status_Classify_Progress_One" xml:space="preserve">
+    <value>Ablage {0} von {1}…</value>
+  </data>
+  <data name="Status_Classify_Progress_Other" xml:space="preserve">
+    <value>Ablage {0} von {1}…</value>
+  </data>
+  <data name="MainPane_PinnedSentMail_Indicator" xml:space="preserve">
+    <value>Ablage der soeben gesendeten E-Mail — suchen Sie einen Ordner und legen Sie sie ab:</value>
+  </data>
+  <data name="Settings_ClassifyAfterMoveToInbox_CheckBox" xml:space="preserve">
+    <value>Nach dem Verschieben einer gesendeten E-Mail in den Posteingang den Ablagebereich zum Ablegen öffnen</value>
+  </data>
+  <data name="Settings_FavoriteFolders_Header" xml:space="preserve">
+    <value>Bevorzugte Anlagenordner</value>
+  </data>
+  <data name="Settings_FavoriteFolders_Description" xml:space="preserve">
+    <value>Indizieren Sie Verzeichnisse vor, um einen Speicherort so schnell wie einen Outlook-Ordner zu finden.</value>
+  </data>
+  <data name="Settings_FavoriteFolders_Add_Button" xml:space="preserve">
+    <value>Hinzufügen…</value>
+  </data>
+  <data name="Settings_FavoriteFolders_Remove_Button" xml:space="preserve">
+    <value>Entfernen</value>
+  </data>
+  <data name="Settings_FavoriteFolders_Note" xml:space="preserve">
+    <value>Unterordner werden bis zu einer Tiefe von 4 indiziert (bis zu 2000 Verzeichnisse pro Stammordner).</value>
+  </data>
+  <data name="Settings_FavoriteFolders_BrowseDescription" xml:space="preserve">
+    <value>Wählen Sie einen Ordner für Ihre Favoriten aus</value>
+  </data>
+  <data name="Settings_AttachmentRemovalMode_Label" xml:space="preserve">
+    <value>Beim Entfernen von Anlagen:</value>
+  </data>
+  <data name="Settings_AttachmentRemovalMode_Modal" xml:space="preserve">
+    <value>Bei jeder Anlage nachfragen (empfohlen)</value>
+  </data>
+  <data name="Settings_AttachmentRemovalMode_DeleteSilently" xml:space="preserve">
+    <value>Alle Anlagen ohne Nachfrage löschen</value>
+  </data>
+  <data name="AttachDisp_Title" xml:space="preserve">
+    <value>RBLclass — Anlagenverarbeitung</value>
+  </data>
+  <data name="AttachDisp_Intro" xml:space="preserve">
+    <value>Wählen Sie, was mit jeder Anlage geschehen soll, bevor die E-Mail abgelegt wird.</value>
+  </data>
+  <data name="AttachDisp_EncryptedExcluded_One" xml:space="preserve">
+    <value>{0} verschlüsselte E-Mail ausgeschlossen — ihre Anlagen verbleiben bei der E-Mail.</value>
+  </data>
+  <data name="AttachDisp_EncryptedExcluded_Other" xml:space="preserve">
+    <value>{0} verschlüsselte E-Mails ausgeschlossen — ihre Anlagen verbleiben bei den E-Mails.</value>
+  </data>
+  <data name="AttachDisp_DeleteAll_Button" xml:space="preserve">
+    <value>Alle löschen</value>
+  </data>
+  <data name="AttachDisp_Delete_Radio" xml:space="preserve">
+    <value>Löschen</value>
+  </data>
+  <data name="AttachDisp_SaveTo_Radio" xml:space="preserve">
+    <value>Speichern in…</value>
+  </data>
+  <data name="AttachDisp_Browse_Button" xml:space="preserve">
+    <value>Durchsuchen…</value>
+  </data>
+  <data name="AttachDisp_SearchHint" xml:space="preserve">
+    <value>Favoritenordner durchsuchen</value>
+  </data>
+  <data name="AttachDisp_TargetPrefix" xml:space="preserve">
+    <value>Speichern in: </value>
+  </data>
+  <data name="AttachDisp_Confirm_Button" xml:space="preserve">
+    <value>Bestätigen</value>
+  </data>
+  <data name="AttachDisp_Cancel_Button" xml:space="preserve">
+    <value>Abbrechen</value>
+  </data>
+  <data name="Settings_AttachmentLabelLocation_Label" xml:space="preserve">
+    <value>Frühere Anlagen vermerken:</value>
+  </data>
+  <data name="Settings_AttachmentLabelLocation_Body" xml:space="preserve">
+    <value>Im E-Mail-Text</value>
+  </data>
+  <data name="Settings_AttachmentLabelLocation_InfoBar" xml:space="preserve">
+    <value>Infozeile (in Kürze — nutzt vorerst den Text)</value>
+  </data>
+  <data name="Settings_AttachmentLabelLocation_None" xml:space="preserve">
+    <value>Nicht vermerken (keine Spur)</value>
+  </data>
+  <data name="AttachmentLabel_Header_One" xml:space="preserve">
+    <value>Früherer Anhang:</value>
+  </data>
+  <data name="AttachmentLabel_Header_Other" xml:space="preserve">
+    <value>Frühere Anhänge:</value>
+  </data>
+  <data name="AttachmentLabel_SavedTo" xml:space="preserve">
+    <value>Gespeichert in {0}</value>
+  </data>
+  <data name="AttachmentLabel_DeletedOn" xml:space="preserve">
+    <value>Gelöscht am {0}</value>
   </data>
 
   <!-- SettingsWindow -->
@@ -527,5 +629,17 @@ Führen Sie Ihre Suche erneut aus, um neu erstellte oder umbenannte Ordner zu se
   </data>
   <data name="MsgBox_ErrorTitle" xml:space="preserve">
     <value>RBLclass - {0}</value>
+  </data>
+  <data name="IndexStatus_NotFound" xml:space="preserve">
+    <value>Ordnerindex noch nicht erstellt — klicken Sie auf Ordner aktualisieren, um ihn zu erstellen</value>
+  </data>
+  <data name="IndexStatus_Indexing" xml:space="preserve">
+    <value>Ordnerindex wird erstellt…</value>
+  </data>
+  <data name="IndexStatus_Ready" xml:space="preserve">
+    <value>Ordnerindex bereit</value>
+  </data>
+  <data name="Pane_Options" xml:space="preserve">
+    <value>▶ Optionen</value>
   </data>
 </root>

@@ -38,6 +38,13 @@ namespace RBLclass.AddIn
         /// </summary>
         public static Func<IReadOnlyList<FolderNode>> GetAllFolders;
 
+        /// <summary>
+        /// The folder index service, published at startup so the pane can
+        /// subscribe to <see cref="IFolderIndexService.IndexStatus"/> changes and
+        /// drive the header's colored status dot.
+        /// </summary>
+        public static IFolderIndexService FolderIndex;
+
         /// <summary>Read the current Outlook explorer mail selection (UI thread).</summary>
         public static Func<IReadOnlyList<MailItemRef>> GetSelection;
 
@@ -90,5 +97,43 @@ namespace RBLclass.AddIn
         /// show/refresh the single task pane.
         /// </summary>
         public static RblClassTaskPaneHost Host;
+
+        /// <summary>
+        /// Pin a just-sent mail (moved to the Inbox by sent-item triage) as the
+        /// next classify target in the main pane (v2.4.0.0 E1). Wired to the
+        /// pane view model when the pane is first created, so it is null until
+        /// then. The pin clears after the next classify or on selection change.
+        /// </summary>
+        public static Action<MailItemRef> PinMailForClassify;
+
+        /// <summary>
+        /// The favourite-folder filesystem index (v2.4.0.0 F1): keyword search
+        /// over the user's pre-indexed save-to directories.
+        /// </summary>
+        public static FavoriteFolderService FavoriteFolderService;
+
+        /// <summary>
+        /// Show the OS folder-browse dialog and return the selected path, or null
+        /// when cancelled (v2.4.0.0 F1). WinForms FolderBrowserDialog under the
+        /// hood; call on the UI thread.
+        /// </summary>
+        public static Func<string> BrowseForFolder;
+
+        /// <summary>
+        /// Gather each item's attachments (and whether it is encrypted) for the
+        /// F2 disposition modal. Touches COM - invoked on the UI thread.
+        /// </summary>
+        public static Func<IReadOnlyList<MailItemRef>,
+            IReadOnlyList<(MailItemRef Item, IReadOnlyList<AttachmentInfo> Attachments, bool IsEncrypted)>>
+            GatherAttachments;
+
+        /// <summary>
+        /// Show the F2 per-attachment disposition modal for the gathered groups
+        /// and return the user's choices, or null when cancelled (which aborts
+        /// the classify).
+        /// </summary>
+        public static Func<
+            IReadOnlyList<(MailItemRef Item, IReadOnlyList<AttachmentInfo> Attachments, bool IsEncrypted)>,
+            IReadOnlyList<AttachmentDisposition>> ShowAttachmentDisposition;
     }
 }

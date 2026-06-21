@@ -25,5 +25,14 @@ namespace RBLclass.AddIn.Views
 
         private void ClearBanner_Click(object sender, RoutedEventArgs e) =>
             (DataContext as SettingsViewModel)?.ClearBanner();
+
+        private void AddFavoriteFolder_Click(object sender, RoutedEventArgs e) =>
+            (DataContext as SettingsViewModel)?.AddFavoriteFolder();
+
+        private void RemoveFavoriteFolder_Click(object sender, RoutedEventArgs e)
+        {
+            if (FavoriteFoldersList.SelectedItem is string path)
+                (DataContext as SettingsViewModel)?.RemoveFavoriteFolder(path);
+        }
     }
 }
