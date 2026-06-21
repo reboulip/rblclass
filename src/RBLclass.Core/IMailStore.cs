@@ -212,6 +212,15 @@ namespace RBLclass.Core
         MailItemRef ResolveMailItem(object item);
 
         /// <summary>
+        /// Prepend <paramref name="htmlBlock"/> as a note inside the HTML body of
+        /// <paramref name="item"/> and save it (v2.4.0.0 F3 "former attachments"
+        /// label). No-op returning false for an S/MIME-encrypted item or one that
+        /// no longer resolves; true when the body was changed. Touches COM - call
+        /// on the Outlook UI thread.
+        /// </summary>
+        bool AppendHtmlNote(MailItemRef item, string htmlBlock);
+
+        /// <summary>
         /// Resolve the default store's Inbox as a filing destination (legacy 6c
         /// "move to Inbox"), or null when unavailable. Resolved by
         /// <c>OlDefaultFolders.olFolderInbox</c> - locale-independent, unlike

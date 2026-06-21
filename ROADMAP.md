@@ -260,7 +260,7 @@ the disposition modal + save/delete, F3 the label), built in that order.
         protected folder needs CFA to allow `outlook.exe`. Confirm the policy /
         allow-listing on the 32-bit target before pilot.
 
-- [ ] **F3. "Former attachments" label on the filed mail.** After disposition,
+- [x] **F3. "Former attachments" label on the filed mail.** After disposition,
       record on each affected mail what its attachments were and where each
       went. **Decision (2026-06-20): the label location is a user setting,
       `AttachmentLabelLocation` = `InfoBar` or `Body`.**

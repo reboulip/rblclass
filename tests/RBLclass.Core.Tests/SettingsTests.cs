@@ -51,6 +51,7 @@ namespace RBLclass.Core.Tests
             settings.SentItemTriageMode.Should().Be(SentItemTriageMode.AskEveryTime);
             settings.ClassifyAfterMoveToInbox.Should().BeTrue();
             settings.AttachmentRemovalMode.Should().Be(AttachmentRemovalMode.Modal);
+            settings.AttachmentLabelLocation.Should().Be(AttachmentLabelLocation.Body);
             settings.MinSearchLength.Should().Be(FolderSearchOptions.DefaultMinQueryLength);
             settings.SearchDebounceMs.Should().Be(Settings.DefaultSearchDebounceMs);
             settings.PreferredUiLanguage.Should().Be("Auto");
@@ -78,6 +79,7 @@ namespace RBLclass.Core.Tests
                 SentItemTriageMode = SentItemTriageMode.Delete,
                 ClassifyAfterMoveToInbox = false,
                 AttachmentRemovalMode = AttachmentRemovalMode.DeleteSilently,
+                AttachmentLabelLocation = AttachmentLabelLocation.InfoBar,
                 MinSearchLength = 3,
                 SearchDebounceMs = 450,
                 PreferredUiLanguage = "fr"
@@ -103,6 +105,7 @@ namespace RBLclass.Core.Tests
             reloaded.SentItemTriageMode.Should().Be(SentItemTriageMode.Delete);
             reloaded.ClassifyAfterMoveToInbox.Should().BeFalse();
             reloaded.AttachmentRemovalMode.Should().Be(AttachmentRemovalMode.DeleteSilently);
+            reloaded.AttachmentLabelLocation.Should().Be(AttachmentLabelLocation.InfoBar);
             reloaded.MinSearchLength.Should().Be(3);
             reloaded.SearchDebounceMs.Should().Be(450);
             reloaded.PreferredUiLanguage.Should().Be("fr");
@@ -199,6 +202,13 @@ namespace RBLclass.Core.Tests
         {
             _store.Set(SettingsKeys.AttachmentRemovalMode, "Shred");
             Settings.Load(_store).AttachmentRemovalMode.Should().Be(AttachmentRemovalMode.Modal);
+        }
+
+        [Fact]
+        public void Load_falls_back_to_Body_when_the_stored_attachment_label_location_is_unrecognised()
+        {
+            _store.Set(SettingsKeys.AttachmentLabelLocation, "Hologram");
+            Settings.Load(_store).AttachmentLabelLocation.Should().Be(AttachmentLabelLocation.Body);
         }
 
         [Fact]

@@ -65,6 +65,23 @@
                                 <TextBlock TextWrapping="Wrap" MaxWidth="380"
                                            Text="{loc:Loc Key=Settings_AttachmentRemovalMode_DeleteSilently}" />
                             </RadioButton>
+                            <TextBlock Margin="0,6,0,0" FontStyle="Italic" Foreground="#777"
+                                       Text="{loc:Loc Key=Settings_AttachmentLabelLocation_Label}" />
+                            <RadioButton Margin="0,2" GroupName="AttachLabelLoc"
+                                         IsChecked="{Binding AttachmentLabelLocationIsBody}">
+                                <TextBlock TextWrapping="Wrap" MaxWidth="380"
+                                           Text="{loc:Loc Key=Settings_AttachmentLabelLocation_Body}" />
+                            </RadioButton>
+                            <RadioButton Margin="0,2" GroupName="AttachLabelLoc"
+                                         IsChecked="{Binding AttachmentLabelLocationIsInfoBar}">
+                                <TextBlock TextWrapping="Wrap" MaxWidth="380"
+                                           Text="{loc:Loc Key=Settings_AttachmentLabelLocation_InfoBar}" />
+                            </RadioButton>
+                            <RadioButton Margin="0,2" GroupName="AttachLabelLoc"
+                                         IsChecked="{Binding AttachmentLabelLocationIsNone}">
+                                <TextBlock TextWrapping="Wrap" MaxWidth="380"
+                                           Text="{loc:Loc Key=Settings_AttachmentLabelLocation_None}" />
+                            </RadioButton>
                         </StackPanel>
                         <CheckBox Margin="0,3" IsChecked="{Binding ClassifySafetyCopy}">
                             <TextBlock TextWrapping="Wrap" MaxWidth="400"

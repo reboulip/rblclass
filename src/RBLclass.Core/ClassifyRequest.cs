@@ -23,7 +23,8 @@ namespace RBLclass.Core
                                bool markTasksComplete = false,
                                bool safetyCopy = false,
                                string bannerSignature = null,
-                               IReadOnlyList<AttachmentDisposition> attachmentDispositions = null)
+                               IReadOnlyList<AttachmentDisposition> attachmentDispositions = null,
+                               AttachmentLabelOptions labelOptions = null)
         {
             Items = (items ?? throw new ArgumentNullException(nameof(items))).ToArray();
             Destinations = (destinations ?? throw new ArgumentNullException(nameof(destinations))).ToArray();
@@ -35,6 +36,7 @@ namespace RBLclass.Core
             AttachmentDispositions = attachmentDispositions != null
                 ? attachmentDispositions.ToArray()
                 : (IReadOnlyList<AttachmentDisposition>)new AttachmentDisposition[0];
+            LabelOptions = labelOptions;
         }
 
         /// <summary>The mail items to file (already widened, if requested).</summary>
@@ -93,5 +95,11 @@ namespace RBLclass.Core
         /// moved item, mirroring the other attachment rules.
         /// </summary>
         public IReadOnlyList<AttachmentDisposition> AttachmentDispositions { get; }
+
+        /// <summary>
+        /// Localized templates for the F3 "former attachments" label written on
+        /// each filed copy after a disposition (v2.4.0.0). Null = no label.
+        /// </summary>
+        public AttachmentLabelOptions LabelOptions { get; }
     }
 }

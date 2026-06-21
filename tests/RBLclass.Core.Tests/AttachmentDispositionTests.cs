@@ -108,6 +108,41 @@ namespace RBLclass.Core.Tests
         }
 
         [Fact]
+        public void A_label_is_written_to_the_filed_item_after_disposition()
+        {
+            var store = StoreWithWorkingMove();
+            var sut = new ClassifierService(store);
+            var labelOptions = new AttachmentLabelOptions(
+                "Former attachment:", "Former attachments:", "Saved to {0}", "Deleted on {0}", "yyyy-MM-dd");
+
+            sut.Classify(new ClassifyRequest(new[] { Item("e1") }, new[] { D1 },
+                keepCopy: false, removeAttachments: true,
+                attachmentDispositions: new[] { Del(Item("e1"), 1) },
+                labelOptions: labelOptions));
+
+            store.Received(1).AppendHtmlNote(
+                Arg.Is<MailItemRef>(m => m.EntryId == "moved-e1"),
+                Arg.Is<string>(s => !string.IsNullOrEmpty(s)));
+        }
+
+        [Fact]
+        public void No_label_is_written_when_the_strip_is_refused()
+        {
+            var store = StoreWithWorkingMove();
+            store.RemoveAttachments(Arg.Any<MailItemRef>()).Returns(false); // encrypted
+            var sut = new ClassifierService(store);
+            var labelOptions = new AttachmentLabelOptions(
+                "Former attachment:", "Former attachments:", "Saved to {0}", "Deleted on {0}", "yyyy-MM-dd");
+
+            sut.Classify(new ClassifyRequest(new[] { Item("e1") }, new[] { D1 },
+                keepCopy: false, removeAttachments: true,
+                attachmentDispositions: new[] { Del(Item("e1"), 1) },
+                labelOptions: labelOptions));
+
+            store.DidNotReceive().AppendHtmlNote(Arg.Any<MailItemRef>(), Arg.Any<string>());
+        }
+
+        [Fact]
         public void SaveTo_acts_on_the_copy_when_keeping_a_copy()
         {
             var store = StoreWithWorkingMove();

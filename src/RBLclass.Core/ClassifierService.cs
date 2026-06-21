@@ -270,10 +270,21 @@ namespace RBLclass.Core
                 return;
             }
 
-            // F3 seam: compose and write the "former attachments" label here,
-            // from `rows`, before/after the strip (rows carry FileName + disposition).
+            if (_store.RemoveAttachments(filedRef))
+            {
+                acc.Strips++;
 
-            if (_store.RemoveAttachments(filedRef)) acc.Strips++;
+                // F3: record what happened to each attachment on the filed copy.
+                if (request.LabelOptions != null && rows.Count > 0)
+                {
+                    var block = AttachmentLabelFormatter.Format(rows, request.LabelOptions, DateTime.Now);
+                    if (block != null)
+                    {
+                        try { _store.AppendHtmlNote(filedRef, block); }
+                        catch { /* best-effort; a label write never fails the filing */ }
+                    }
+                }
+            }
             else acc.EncryptedSkips++;
         }
 

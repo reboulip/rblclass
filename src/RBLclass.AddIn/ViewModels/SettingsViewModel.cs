@@ -93,6 +93,35 @@ namespace RBLclass.AddIn.ViewModels
             OnPropertyChanged(nameof(AttachmentRemovalModeIsDeleteSilently));
         }
 
+        /// <summary>F3: where the former-attachments label is recorded (Body, or InfoBar - deferred).</summary>
+        public bool AttachmentLabelLocationIsBody
+        {
+            get => _settings.AttachmentLabelLocation == AttachmentLabelLocation.Body;
+            set { if (value) UpdateAttachmentLabelLocation(AttachmentLabelLocation.Body); }
+        }
+
+        public bool AttachmentLabelLocationIsInfoBar
+        {
+            get => _settings.AttachmentLabelLocation == AttachmentLabelLocation.InfoBar;
+            set { if (value) UpdateAttachmentLabelLocation(AttachmentLabelLocation.InfoBar); }
+        }
+
+        public bool AttachmentLabelLocationIsNone
+        {
+            get => _settings.AttachmentLabelLocation == AttachmentLabelLocation.None;
+            set { if (value) UpdateAttachmentLabelLocation(AttachmentLabelLocation.None); }
+        }
+
+        private void UpdateAttachmentLabelLocation(AttachmentLabelLocation location)
+        {
+            if (_settings.AttachmentLabelLocation == location) return;
+            _settings.AttachmentLabelLocation = location;
+            _settings.Save(_store);
+            OnPropertyChanged(nameof(AttachmentLabelLocationIsBody));
+            OnPropertyChanged(nameof(AttachmentLabelLocationIsInfoBar));
+            OnPropertyChanged(nameof(AttachmentLabelLocationIsNone));
+        }
+
         /// <summary>Browse for a directory and add it (deduped, case-insensitive).</summary>
         public void AddFavoriteFolder()
         {

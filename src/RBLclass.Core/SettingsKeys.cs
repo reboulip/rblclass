@@ -124,5 +124,12 @@ namespace RBLclass.Core
         /// <see cref="RBLclass.Core.AttachmentRemovalMode"/> name (v2.4.0.0 F2).
         /// </summary>
         public const string AttachmentRemovalMode = "AttachmentRemovalMode";
+
+        /// <summary>
+        /// Where the "former attachments" label is written after disposition -
+        /// <see cref="RBLclass.Core.AttachmentLabelLocation"/> name (v2.4.0.0 F3;
+        /// InfoBar deferred, falls back to Body).
+        /// </summary>
+        public const string AttachmentLabelLocation = "AttachmentLabelLocation";
     }
 }

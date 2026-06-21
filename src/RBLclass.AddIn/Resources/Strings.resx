@@ -186,6 +186,30 @@
   <data name="AttachDisp_Cancel_Button" xml:space="preserve">
     <value>Cancel</value>
   </data>
+  <data name="Settings_AttachmentLabelLocation_Label" xml:space="preserve">
+    <value>Record former attachments:</value>
+  </data>
+  <data name="Settings_AttachmentLabelLocation_Body" xml:space="preserve">
+    <value>In the mail body</value>
+  </data>
+  <data name="Settings_AttachmentLabelLocation_InfoBar" xml:space="preserve">
+    <value>Info bar (coming soon — uses the body for now)</value>
+  </data>
+  <data name="Settings_AttachmentLabelLocation_None" xml:space="preserve">
+    <value>Don't record (leave no trace)</value>
+  </data>
+  <data name="AttachmentLabel_Header_One" xml:space="preserve">
+    <value>Former attachment:</value>
+  </data>
+  <data name="AttachmentLabel_Header_Other" xml:space="preserve">
+    <value>Former attachments:</value>
+  </data>
+  <data name="AttachmentLabel_SavedTo" xml:space="preserve">
+    <value>Saved to {0}</value>
+  </data>
+  <data name="AttachmentLabel_DeletedOn" xml:space="preserve">
+    <value>Deleted on {0}</value>
+  </data>
 
   <!-- SettingsWindow -->
   <data name="Settings_Title" xml:space="preserve">

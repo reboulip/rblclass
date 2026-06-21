@@ -787,6 +787,56 @@ namespace RBLclass.Outlook.Adapter
             return true;
         }
 
+        public bool AppendHtmlNote(MailItemRef item, string htmlBlock)
+        {
+            if (item == null || string.IsNullOrWhiteSpace(htmlBlock)) return false;
+
+            using (var session = new ComRef<OutlookOM.NameSpace>(_app.Session))
+            {
+                object rawItem;
+                try { rawItem = session.Value.GetItemFromID(item.EntryId, item.StoreId); }
+                catch { return false; }
+
+                using (var comItem = new ComRef<object>(rawItem))
+                {
+                    var mail = comItem.Value as OutlookOM.MailItem;
+                    if (mail == null) return false;
+
+                    // Never rewrite an encrypted/signed body (same rule as the banner strip).
+                    string messageClass = Safe(() => mail.MessageClass, string.Empty);
+                    if (messageClass.StartsWith("IPM.Note.SMIME", StringComparison.OrdinalIgnoreCase))
+                        return false;
+
+                    string html = Safe(() => mail.HTMLBody, null) ?? string.Empty;
+                    try
+                    {
+                        mail.HTMLBody = InsertAfterBodyTag(html, htmlBlock);
+                        mail.Save();
+                        Log.Information("Appended attachment-disposition label to a filed mail.");
+                        return true;
+                    }
+                    catch (Exception ex)
+                    {
+                        Log.Warning(ex, "Appending the attachment-disposition label failed.");
+                        return false;
+                    }
+                }
+            }
+        }
+
+        /// <summary>Insert <paramref name="block"/> just inside the opening &lt;body&gt; tag, or prepend when there is none.</summary>
+        private static string InsertAfterBodyTag(string html, string block)
+        {
+            if (string.IsNullOrEmpty(html)) return block;
+            int bodyStart = html.IndexOf("<body", StringComparison.OrdinalIgnoreCase);
+            if (bodyStart >= 0)
+            {
+                int close = html.IndexOf('>', bodyStart);
+                if (close >= 0) return html.Insert(close + 1, block);
+            }
+            return block + html;
+        }
+
         public bool IsEncryptedMail(MailItemRef item)
         {
             if (item == null) return false;

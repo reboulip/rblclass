@@ -186,6 +186,30 @@
   <data name="AttachDisp_Cancel_Button" xml:space="preserve">
     <value>Abbrechen</value>
   </data>
+  <data name="Settings_AttachmentLabelLocation_Label" xml:space="preserve">
+    <value>Frühere Anlagen vermerken:</value>
+  </data>
+  <data name="Settings_AttachmentLabelLocation_Body" xml:space="preserve">
+    <value>Im E-Mail-Text</value>
+  </data>
+  <data name="Settings_AttachmentLabelLocation_InfoBar" xml:space="preserve">
+    <value>Infozeile (in Kürze — nutzt vorerst den Text)</value>
+  </data>
+  <data name="Settings_AttachmentLabelLocation_None" xml:space="preserve">
+    <value>Nicht vermerken (keine Spur)</value>
+  </data>
+  <data name="AttachmentLabel_Header_One" xml:space="preserve">
+    <value>Früherer Anhang:</value>
+  </data>
+  <data name="AttachmentLabel_Header_Other" xml:space="preserve">
+    <value>Frühere Anhänge:</value>
+  </data>
+  <data name="AttachmentLabel_SavedTo" xml:space="preserve">
+    <value>Gespeichert in {0}</value>
+  </data>
+  <data name="AttachmentLabel_DeletedOn" xml:space="preserve">
+    <value>Gelöscht am {0}</value>
+  </data>
 
   <!-- SettingsWindow -->
   <data name="Settings_Title" xml:space="preserve">

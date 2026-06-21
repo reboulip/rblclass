@@ -50,6 +50,7 @@ namespace RBLclass.Core
         public bool ClassifyAfterMoveToInbox { get; set; }
         public IReadOnlyList<string> AttachmentFavoriteFolders { get; set; }
         public AttachmentRemovalMode AttachmentRemovalMode { get; set; }
+        public AttachmentLabelLocation AttachmentLabelLocation { get; set; }
         public string PreferredUiLanguage { get; set; }
 
         /// <summary>Read every key, falling back to the same defaults the individual call sites use today.</summary>
@@ -82,6 +83,7 @@ namespace RBLclass.Core
                 ClassifyAfterMoveToInbox = store.GetBool(SettingsKeys.ClassifyAfterMoveToInbox, true),
                 AttachmentFavoriteFolders = ParseList(store.Get(SettingsKeys.AttachmentFavoriteFolders, string.Empty)),
                 AttachmentRemovalMode = ParseAttachmentRemovalMode(store.Get(SettingsKeys.AttachmentRemovalMode, null)),
+                AttachmentLabelLocation = ParseAttachmentLabelLocation(store.Get(SettingsKeys.AttachmentLabelLocation, null)),
                 PreferredUiLanguage = ParseUiLanguage(store.Get(SettingsKeys.PreferredUiLanguage, null))
             };
         }
@@ -109,6 +111,7 @@ namespace RBLclass.Core
             store.SetBool(SettingsKeys.ClassifyAfterMoveToInbox, ClassifyAfterMoveToInbox);
             store.Set(SettingsKeys.AttachmentFavoriteFolders, FormatList(AttachmentFavoriteFolders));
             store.Set(SettingsKeys.AttachmentRemovalMode, AttachmentRemovalMode.ToString());
+            store.Set(SettingsKeys.AttachmentLabelLocation, AttachmentLabelLocation.ToString());
             store.Set(SettingsKeys.PreferredUiLanguage, PreferredUiLanguage);
         }
 
@@ -130,6 +133,15 @@ namespace RBLclass.Core
             return Enum.TryParse(raw, out mode)
                    && Enum.IsDefined(typeof(AttachmentRemovalMode), mode)
                 ? mode : AttachmentRemovalMode.Modal;
+        }
+
+        /// <summary>Unrecognised or missing values fall back to Body (the reliable label location).</summary>
+        private static AttachmentLabelLocation ParseAttachmentLabelLocation(string raw)
+        {
+            AttachmentLabelLocation loc;
+            return Enum.TryParse(raw, out loc)
+                   && Enum.IsDefined(typeof(AttachmentLabelLocation), loc)
+                ? loc : AttachmentLabelLocation.Body;
         }
 
         /// <summary>Unrecognised or missing values fall back to "Auto" (follow Outlook's UI language).</summary>

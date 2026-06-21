@@ -186,6 +186,30 @@
   <data name="AttachDisp_Cancel_Button" xml:space="preserve">
     <value>Annuler</value>
   </data>
+  <data name="Settings_AttachmentLabelLocation_Label" xml:space="preserve">
+    <value>Consigner les anciennes pièces jointes :</value>
+  </data>
+  <data name="Settings_AttachmentLabelLocation_Body" xml:space="preserve">
+    <value>Dans le corps du message</value>
+  </data>
+  <data name="Settings_AttachmentLabelLocation_InfoBar" xml:space="preserve">
+    <value>Barre d'infos (à venir — utilise le corps pour l'instant)</value>
+  </data>
+  <data name="Settings_AttachmentLabelLocation_None" xml:space="preserve">
+    <value>Ne rien consigner (aucune trace)</value>
+  </data>
+  <data name="AttachmentLabel_Header_One" xml:space="preserve">
+    <value>Ancienne pièce jointe :</value>
+  </data>
+  <data name="AttachmentLabel_Header_Other" xml:space="preserve">
+    <value>Anciennes pièces jointes :</value>
+  </data>
+  <data name="AttachmentLabel_SavedTo" xml:space="preserve">
+    <value>Enregistré dans {0}</value>
+  </data>
+  <data name="AttachmentLabel_DeletedOn" xml:space="preserve">
+    <value>Supprimé le {0}</value>
+  </data>
 
   <!-- SettingsWindow -->
   <data name="Settings_Title" xml:space="preserve">

@@ -610,10 +610,25 @@ namespace RBLclass.AddIn.ViewModels
                     Status = _loc.Plural(p.Completed, "Status_Classify_Progress_One",
                                          "Status_Classify_Progress_Other", p.Total));
 
+                // F3: localized templates for the "former attachments" label,
+                // applied to each filed copy whose attachments were disposed of -
+                // unless the user chose to leave no trace.
+                AttachmentLabelOptions labelOptions = null;
+                if (attachmentDispositions != null && _settings != null
+                    && Settings.Load(_settings).AttachmentLabelLocation != AttachmentLabelLocation.None)
+                {
+                    labelOptions = new AttachmentLabelOptions(
+                        _loc.GetString("AttachmentLabel_Header_One"),
+                        _loc.GetString("AttachmentLabel_Header_Other"),
+                        _loc.GetString("AttachmentLabel_SavedTo"),
+                        _loc.GetString("AttachmentLabel_DeletedOn"),
+                        "yyyy-MM-dd");
+                }
+
                 var result = await _classifier.ClassifyAsync(
                     new ClassifyRequest(preflight.Items, destinations, _keepCopy,
                                         _removeAttachments, markTasksComplete, safetyCopy,
-                                        bannerSignature, attachmentDispositions),
+                                        bannerSignature, attachmentDispositions, labelOptions),
                     progress,
                     YieldToPump);
 
