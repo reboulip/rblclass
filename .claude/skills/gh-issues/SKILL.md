@@ -1,16 +1,16 @@
 ---
 name: gh-issues
-description: Review open GH issues that are not yet planned, propose roadmap items for each, ask disambiguation questions as needed, then write them to ROADMAP.md and label/comment each issue in GH.
+description: Triage open GH issues (implement / defer / drop with labels), then plan implement issues into ROADMAP.md and label/comment each one in GH.
 ---
 
 # /gh-issues — plan open GH issues into the roadmap
 
 ## What this does
 
-1. Fetches all open GH issues not yet carrying the `roadmap` label.
-2. Reads each one's full details and classifies its nature.
-3. Proposes a mapping to roadmap items — which version section, how to group or split, and the item text — asking disambiguation questions where placement is uncertain.
-4. After explicit user confirmation: writes items to `ROADMAP.md`, labels each issue `roadmap` in GH, and posts a roadmap-link comment on each issue.
+1. Fetches all open GH issues not yet carrying a disposition label (`roadmap`, `deferred`, or `dropped`).
+2. Reads each one and classifies its nature.
+3. **Triages each issue** with the user — implement, drop, or defer — and immediately applies the decided disposition (label + comment) before planning starts.
+4. For issues marked *implement*: proposes a roadmap mapping, asks disambiguation questions as needed, writes items to `ROADMAP.md`, labels each issue `roadmap`, and posts a roadmap-link comment.
 
 ---
 
@@ -20,40 +20,99 @@ description: Review open GH issues that are not yet planned, propose roadmap ite
 gh issue list --state open --json number,title,labels,body --limit 100
 ```
 
-Filter out any issue that already carries the `roadmap` label — those are planned.
+Filter out any issue that already carries one of the following labels — those are already triaged:
+- `roadmap`
+- `deferred`
+- `dropped`
 
-Also scan `ROADMAP.md` for `[#N]` back-references. If an issue number appears there but lacks the label, it is effectively planned — add the label silently and skip it from the planning flow.
+Also scan `ROADMAP.md` for `[#N]` back-references. If an issue number appears there but lacks the `roadmap` label, it is effectively planned — add the label silently and skip it from the triage flow.
+
+If no unresolved issues remain after filtering, report that and stop.
 
 ---
 
 ## Step 2 — Read issue details
 
-For each unplanned issue:
+For each unresolved issue:
 
 ```powershell
 gh issue view <number> --json number,title,body,labels,comments
 ```
 
 Classify each issue as one of:
-- **Bug** — defect in existing functionality. Candidate for the active sprint or a hotfix section.
-- **Enhancement** — improvement to existing functionality. Candidate for the next minor version.
-- **Feature** — new capability. Candidate for the next minor or major version.
+- **Bug** — defect in existing functionality.
+- **Enhancement** — improvement to existing functionality.
+- **Feature** — new capability.
+
+Also form a tentative triage suggestion for each issue:
+- Bugs → lean toward **implement** unless clearly out of scope.
+- Enhancements/Features → weigh scope, complexity, and fit. Large or speculative items lean toward **defer**.
 
 ---
 
-## Step 3 — Read ROADMAP.md
+## Step 3 — Triage review
+
+Present the full list of unresolved issues as a text summary with your suggested disposition:
+
+```
+#N — <title> [Bug / Enhancement / Feature]
+   Suggested: implement / drop / defer
+   Reason: <one sentence>
+
+#M — <title> [Bug / Enhancement / Feature]
+   Suggested: implement / drop / defer
+   Reason: <one sentence>
+```
+
+Then use `AskUserQuestion` to collect the user's disposition for each issue. Process in batches of up to 4 issues per call (one question per issue), where each question has options:
+- **Implement** — plan into roadmap
+- **Defer** — label and set aside for a future cycle
+- **Drop** — label and close; will not implement
+
+After each batch, immediately apply the decided dispositions (Step 3a) before asking the next batch — this keeps progress visible and is resilient to the user stopping mid-review.
+
+### Step 3a — Apply triage dispositions
+
+For each issue just triaged, apply its disposition immediately:
+
+**Dropped:**
+```powershell
+# Create label if needed
+gh label create dropped --color b60205 --description "Will not be implemented" 2>$null
+
+gh issue edit <number> --add-label dropped
+gh issue comment <number> --body "Closing as out of scope — will not implement in the current product direction."
+gh issue close <number>
+```
+
+**Deferred:**
+```powershell
+# Create label if needed
+gh label create deferred --color e4e669 --description "Deferred to a future cycle" 2>$null
+
+gh issue edit <number> --add-label deferred
+gh issue comment <number> --body "Deferring for now — this may be revisited in a future cycle."
+```
+
+**Implement:** no action yet — these proceed to roadmap planning in Steps 4–8.
+
+---
+
+## Step 4 — Read ROADMAP.md
 
 Read `ROADMAP.md` in full. Identify:
 - The **active sprint section** (highest `## vX.X.X.X` with at least one unchecked item).
 - Any open **future-phase sections** that could absorb new items.
 - The **next available label** in each candidate section (to assign G1, H1, etc.).
 
+Skip this step if no issues were triaged as *implement*.
+
 ---
 
-## Step 4 — Propose a mapping
+## Step 5 — Propose a mapping
 
-For each unplanned issue (or group of related issues), propose:
-- **Target section**: an existing open section when it fits naturally; a new section when a different version makes more sense (e.g. a hotfix before a planned minor, or a clearly forward-looking feature).
+For each *implement* issue (or group of related issues), propose:
+- **Target section**: an existing open section when it fits naturally; a new section when a different version makes more sense.
 - **Item label**: next unused label in that section.
 - **Item text**: one concise imperative sentence in the existing roadmap style.
 - **Grouping rationale**: if two issues share a root cause or subsystem, propose merging them into one item; if one issue covers distinct sub-problems, propose splitting. Always explain the rationale.
@@ -62,9 +121,9 @@ When target section is uncertain, use `AskUserQuestion` before proceeding. Keep 
 
 ---
 
-## Step 5 — Confirm the full plan
+## Step 6 — Confirm the full plan
 
-Before writing anything, present the complete proposed mapping as a text summary:
+Before writing anything to ROADMAP.md, present the complete proposed mapping as a text summary:
 
 ```
 Issue #N — <title>
@@ -78,11 +137,13 @@ Then use `AskUserQuestion`:
 - **"Confirm — proceed"** — write the plan as proposed.
 - **"Redirect — I'll provide corrections"** — wait for the user to describe what to change, then revise and ask again.
 
-Only proceed to Step 6 after receiving explicit confirmation.
+Only proceed to Step 7 after receiving explicit confirmation.
+
+Skip this step if no issues are being implemented.
 
 ---
 
-## Step 6 — Update ROADMAP.md
+## Step 7 — Update ROADMAP.md
 
 For each approved item, find the target section and append the item to its checklist:
 
@@ -98,7 +159,7 @@ After writing, verify that the ROADMAP.md structure is intact (no broken section
 
 ---
 
-## Step 7 — Label issues in GH
+## Step 8 — Label implement issues in GH
 
 ```powershell
 # Create the label if it does not exist
@@ -110,7 +171,7 @@ gh issue edit <number> --add-label roadmap
 
 ---
 
-## Step 8 — Post a planning comment on each issue
+## Step 9 — Post a planning comment on each implement issue
 
 ```powershell
 gh issue comment <number> --body "This issue has been planned for development.
@@ -122,8 +183,9 @@ gh issue comment <number> --body "This issue has been planned for development.
 
 ## Rules
 
-- Never write to `ROADMAP.md` before Step 5 confirmation.
+- Never write to `ROADMAP.md` before Step 6 confirmation.
 - Always include a `[#N]` back-reference on every roadmap item sourced from a GH issue.
-- Never close or resolve GH issues — this skill only plans them.
+- Apply triage dispositions (Step 3a) per batch as soon as the user confirms — do not wait until the end of the full triage.
+- `dropped` issues are closed in GH; `deferred` issues remain open.
 - If a proposed new version section could conflict with existing version numbering, ask the user before creating it.
 - Unrelated issues can live in the same release section. A hotfix section before a minor section is valid when the urgency warrants it — explain the reasoning when proposing it.
