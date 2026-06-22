@@ -39,7 +39,8 @@ namespace RBLclass.AddIn.ViewModels
         private bool _isOptionsExpanded;
         private SelectableFolder _selectedResult;
         private string _selectionSummary;
-        private string _status = string.Empty;
+        private string _searchFeedback = string.Empty;
+        private string _busyStatus = string.Empty;
         private bool _isBusy;
         private IndexStatus _indexStatus = IndexStatus.NotFound;
 
@@ -93,6 +94,49 @@ namespace RBLclass.AddIn.ViewModels
 
         public ObservableCollection<SelectableFolder> Results { get; } =
             new ObservableCollection<SelectableFolder>();
+
+        private const int StatusLogCapacity = 5;
+
+        /// <summary>
+        /// Rolling in-session log of action outcomes and notifications, newest
+        /// first, capped at <see cref="StatusLogCapacity"/> entries (v2.5.0.0
+        /// A1). Replaces the single overwriting status string so short-lived
+        /// messages (classify results, encrypted-skip notices, cancellations)
+        /// stay readable instead of being clobbered by the next one. Live search
+        /// feedback (<see cref="SearchFeedback"/>) and transient progress
+        /// (<see cref="BusyStatus"/>) are deliberately kept off this log so they
+        /// do not flood it.
+        /// </summary>
+        public ObservableCollection<string> StatusLog { get; } =
+            new ObservableCollection<string>();
+
+        public bool HasStatusEntries => StatusLog.Count > 0;
+
+        private bool _isStatusLogExpanded;
+
+        /// <summary>
+        /// Whether the rolling journal (<see cref="StatusLog"/>) is expanded.
+        /// Collapsed by default and toggled by the Journal button, mirroring the
+        /// Options zone (v2.5.0.0 A1).
+        /// </summary>
+        public bool IsStatusLogExpanded
+        {
+            get => _isStatusLogExpanded;
+            set => SetProperty(ref _isStatusLogExpanded, value);
+        }
+
+        /// <summary>
+        /// Prepend <paramref name="message"/> to <see cref="StatusLog"/>,
+        /// dropping the oldest entry past the cap. Null/empty is ignored.
+        /// </summary>
+        private void PushStatus(string message)
+        {
+            if (string.IsNullOrEmpty(message)) return;
+            StatusLog.Insert(0, message);
+            while (StatusLog.Count > StatusLogCapacity)
+                StatusLog.RemoveAt(StatusLog.Count - 1);
+            OnPropertyChanged(nameof(HasStatusEntries));
+        }
 
         /// <summary>
         /// Destinations accumulated across searches (v2.2): checking a row adds
@@ -197,10 +241,27 @@ namespace RBLclass.AddIn.ViewModels
             private set => SetProperty(ref _selectionSummary, value);
         }
 
-        public string Status
+        /// <summary>
+        /// Live, single-line feedback for the folder-search results list (count,
+        /// "no matching folders", "type at least N chars"). Updated on every
+        /// query change, so it is its own self-superseding line rather than a
+        /// <see cref="StatusLog"/> entry (v2.5.0.0 A1).
+        /// </summary>
+        public string SearchFeedback
         {
-            get => _status;
-            private set => SetProperty(ref _status, value);
+            get => _searchFeedback;
+            private set => SetProperty(ref _searchFeedback, value);
+        }
+
+        /// <summary>
+        /// Transient progress shown in the busy overlay while a classify / undo /
+        /// auto-class runs (e.g. "Filing 3 / 12"). Self-superseding, so it is not
+        /// pushed to <see cref="StatusLog"/> (v2.5.0.0 A1).
+        /// </summary>
+        public string BusyStatus
+        {
+            get => _busyStatus;
+            private set => SetProperty(ref _busyStatus, value);
         }
 
         /// <summary>True while a classify runs - disables the pane and guards against double-firing.</summary>
@@ -274,10 +335,10 @@ namespace RBLclass.AddIn.ViewModels
             _searchTimer?.Stop(); // don't let a pending search overwrite our results
 
             var items = _getSelection != null ? _getSelection() : new MailItemRef[0];
-            if (items.Count == 0) { Status = _loc.GetString("Status_NoMailSelectedAction"); return; }
+            if (items.Count == 0) { PushStatus(_loc.GetString("Status_NoMailSelectedAction")); return; }
 
             IsBusy = true;
-            Status = _loc.GetString("Status_AutoClassing");
+            BusyStatus = _loc.GetString("Status_AutoClassing");
             Dispatcher.CurrentDispatcher.Invoke(new Action(() => { }), DispatcherPriority.Render);
 
             try
@@ -325,7 +386,7 @@ namespace RBLclass.AddIn.ViewModels
                             attachmentDispositions = TaskPaneServices.ShowAttachmentDisposition(groups);
                             if (attachmentDispositions == null)
                             {
-                                Status = _loc.GetString("Status_ClassifyCancelled");
+                                PushStatus(_loc.GetString("Status_ClassifyCancelled"));
                                 return;
                             }
                         }
@@ -352,12 +413,14 @@ namespace RBLclass.AddIn.ViewModels
                 foreach (var dest in result.FiledDestinations)
                     AddResultRow(new FolderSearchResult(dest, isCollapsed: false));
 
-                Status = DescribeAutoClass(result, _loc);
+                string autoClassStatus = DescribeAutoClass(result, _loc);
 
                 if (encryptedOnlySkippedModal)
-                    Status += _loc.Plural(items.Count,
+                    autoClassStatus += _loc.Plural(items.Count,
                         "Status_Classify_EncryptedAttachmentsKept_One",
                         "Status_Classify_EncryptedAttachmentsKept_Other");
+
+                PushStatus(autoClassStatus);
 
                 if (result.Undo != null)
                 {
@@ -402,7 +465,7 @@ namespace RBLclass.AddIn.ViewModels
             OnPropertyChanged(nameof(CanUndo));
 
             IsBusy = true;
-            Status = _loc.GetString("Status_Undoing");
+            BusyStatus = _loc.GetString("Status_Undoing");
             Dispatcher.CurrentDispatcher.Invoke(new Action(() => { }), DispatcherPriority.Render);
 
             try
@@ -414,9 +477,10 @@ namespace RBLclass.AddIn.ViewModels
                 string stepsFailed = undone.Errors > 0
                     ? _loc.Plural(undone.Errors, "Status_Undo_StepsFailed_One", "Status_Undo_StepsFailed_Other")
                     : string.Empty;
-                Status = _loc.GetString("Status_Undo_Result", movesRestored, copiesDeleted, stepsFailed);
+                string undoStatus = _loc.GetString("Status_Undo_Result", movesRestored, copiesDeleted, stepsFailed);
                 if (plan.AttachmentStrips > 0)
-                    Status += _loc.GetString("Status_Undo_AttachmentsNotRestored");
+                    undoStatus += _loc.GetString("Status_Undo_AttachmentsNotRestored");
+                PushStatus(undoStatus);
 
                 RefreshSelection();
             }
@@ -503,7 +567,7 @@ namespace RBLclass.AddIn.ViewModels
         {
             FlushPendingSearch(); // never file based on stale, pre-debounce results
             var folder = (SelectedResult ?? (Results.Count > 0 ? Results[0] : null))?.Folder;
-            if (folder == null) { Status = _loc.GetString("Status_NoMatchingFolderToFile"); return; }
+            if (folder == null) { PushStatus(_loc.GetString("Status_NoMatchingFolderToFile")); return; }
             await DoClassifyAsync(new[] { folder });
         }
 
@@ -517,7 +581,7 @@ namespace RBLclass.AddIn.ViewModels
         public async Task ClassifyChecked()
         {
             var destinations = SelectedDestinations.ToList();
-            if (destinations.Count == 0) { Status = _loc.GetString("Status_CheckAtLeastOneDestination"); return; }
+            if (destinations.Count == 0) { PushStatus(_loc.GetString("Status_CheckAtLeastOneDestination")); return; }
             if (await DoClassifyAsync(destinations))
                 ClearDestinations(); // the batch is filed - start the next one clean
         }
@@ -583,9 +647,9 @@ namespace RBLclass.AddIn.ViewModels
             if (string.IsNullOrWhiteSpace(name)) return;
 
             var created = _createSubfolder(parent, name.Trim());
-            if (created == null) { Status = _loc.GetString("Status_CouldNotCreateFolder"); return; }
+            if (created == null) { PushStatus(_loc.GetString("Status_CouldNotCreateFolder")); return; }
 
-            Status = _loc.GetString("Status_FolderCreated", created.Name, parent.Name);
+            PushStatus(_loc.GetString("Status_FolderCreated", created.Name, parent.Name));
             Refresh();
         }
 
@@ -605,10 +669,10 @@ namespace RBLclass.AddIn.ViewModels
             var items = _pinnedItem != null
                 ? new[] { _pinnedItem }
                 : (_getSelection != null ? _getSelection() : new MailItemRef[0]);
-            if (items.Count == 0) { Status = _loc.GetString("Status_NoMailSelectedAction"); return false; }
+            if (items.Count == 0) { PushStatus(_loc.GetString("Status_NoMailSelectedAction")); return false; }
 
             IsBusy = true;
-            Status = _loc.GetString("MainPane_Busy_Filing");
+            BusyStatus = _loc.GetString("MainPane_Busy_Filing");
 
             try
             {
@@ -618,7 +682,7 @@ namespace RBLclass.AddIn.ViewModels
                 if (preflight.FlaggedIncomplete.Count > 0 && _confirmMarkTasksComplete != null)
                 {
                     var answer = _confirmMarkTasksComplete(preflight.FlaggedIncomplete.Count);
-                    if (answer == null) { Status = _loc.GetString("Status_ClassifyCancelled"); return false; }
+                    if (answer == null) { PushStatus(_loc.GetString("Status_ClassifyCancelled")); return false; }
                     markTasksComplete = answer.Value;
                 }
 
@@ -652,7 +716,7 @@ namespace RBLclass.AddIn.ViewModels
                             attachmentDispositions = TaskPaneServices.ShowAttachmentDisposition(groups);
                             if (attachmentDispositions == null)
                             {
-                                Status = _loc.GetString("Status_ClassifyCancelled");
+                                PushStatus(_loc.GetString("Status_ClassifyCancelled"));
                                 return false;
                             }
                         }
@@ -665,8 +729,8 @@ namespace RBLclass.AddIn.ViewModels
                 // callback to the ambient SynchronizationContext, which this host
                 // does not set up, so the updates would not reach the binding.)
                 var progress = new SynchronousProgress<ClassifyProgress>(p =>
-                    Status = _loc.Plural(p.Completed, "Status_Classify_Progress_One",
-                                         "Status_Classify_Progress_Other", p.Total));
+                    BusyStatus = _loc.Plural(p.Completed, "Status_Classify_Progress_One",
+                                             "Status_Classify_Progress_Other", p.Total));
 
                 // F3: localized templates for the "former attachments" label,
                 // applied to each filed copy whose attachments were disposed of -
@@ -694,19 +758,22 @@ namespace RBLclass.AddIn.ViewModels
                 string failed = result.Errors > 0
                     ? _loc.GetString("Status_Classify_Failed", result.Errors)
                     : string.Empty;
-                Status = _loc.Plural(result.ItemsProcessed, "Status_Classify_Result_One", "Status_Classify_Result_Other",
-                                      verb, destinations.Count, failed);
+                var classifyStatus = new System.Text.StringBuilder(
+                    _loc.Plural(result.ItemsProcessed, "Status_Classify_Result_One", "Status_Classify_Result_Other",
+                                verb, destinations.Count, failed));
 
                 if (result.EncryptedStripSkips > 0)
-                    Status += _loc.Plural(result.EncryptedStripSkips, "Status_Classify_EncryptedKept_One", "Status_Classify_EncryptedKept_Other");
+                    classifyStatus.Append(_loc.Plural(result.EncryptedStripSkips, "Status_Classify_EncryptedKept_One", "Status_Classify_EncryptedKept_Other"));
 
                 if (encryptedOnlySkippedModal && result.EncryptedStripSkips == 0)
-                    Status += _loc.Plural(preflight.Items.Count,
+                    classifyStatus.Append(_loc.Plural(preflight.Items.Count,
                         "Status_Classify_EncryptedAttachmentsKept_One",
-                        "Status_Classify_EncryptedAttachmentsKept_Other");
+                        "Status_Classify_EncryptedAttachmentsKept_Other"));
 
                 if (preflight.SkippedEncrypted.Count > 0)
-                    Status += _loc.Plural(preflight.SkippedEncrypted.Count, "Status_Classify_EncryptedInConversation_One", "Status_Classify_EncryptedInConversation_Other");
+                    classifyStatus.Append(_loc.Plural(preflight.SkippedEncrypted.Count, "Status_Classify_EncryptedInConversation_One", "Status_Classify_EncryptedInConversation_Other"));
+
+                PushStatus(classifyStatus.ToString());
 
                 _lastUndo = result.Undo; // a non-undoable run clears the slot (null)
                 OnPropertyChanged(nameof(CanUndo));
@@ -867,16 +934,16 @@ namespace RBLclass.AddIn.ViewModels
             if (outcome.TotalMatchCount == 0)
             {
                 if (trimmed.Length == 0)
-                    Status = string.Empty;
+                    SearchFeedback = string.Empty;
                 else if (trimmed.Length < minLength)
-                    Status = _loc.GetString("Status_TypeAtLeastChars", minLength);
+                    SearchFeedback = _loc.GetString("Status_TypeAtLeastChars", minLength);
                 else
-                    Status = _loc.GetString("Status_NoMatchingFolders");
+                    SearchFeedback = _loc.GetString("Status_NoMatchingFolders");
             }
             else if (outcome.LimitExceeded)
-                Status = _loc.GetString("Status_ShowingResults", Results.Count, outcome.TotalMatchCount);
+                SearchFeedback = _loc.GetString("Status_ShowingResults", Results.Count, outcome.TotalMatchCount);
             else
-                Status = _loc.Plural(outcome.TotalMatchCount, "Status_FoldersFound_One", "Status_FoldersFound_Other");
+                SearchFeedback = _loc.Plural(outcome.TotalMatchCount, "Status_FoldersFound_One", "Status_FoldersFound_Other");
         }
     }
 }

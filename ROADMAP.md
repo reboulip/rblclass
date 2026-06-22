@@ -306,7 +306,7 @@ the disposition modal + save/delete, F3 the label), built in that order.
 
 ### A. Status & notifications
 
-- [ ] **A1.** Replace the single status-area notification with a rolling in-session log capped at ~5 entries, so short-lived messages remain visible. [#9]
+- [x] **A1.** Replace the single status-area notification with a rolling in-session log capped at ~5 entries, so short-lived messages remain visible. [#9]
 
 ### B. Attachment enhancements
 

@@ -645,6 +645,9 @@ Re-run your search to see newly created or renamed folders.</value>
   <data name="IndexStatus_Ready" xml:space="preserve">
     <value>Folder index ready</value>
   </data>
+  <data name="Pane_Journal" xml:space="preserve">
+    <value>▶ Journal</value>
+  </data>
   <data name="Pane_Options" xml:space="preserve">
     <value>▶ Options</value>
   </data>

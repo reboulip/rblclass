@@ -180,14 +180,32 @@
                         ToolTip="{loc:Loc Key=MainPane_Undo_ToolTip}" />
             </StackPanel>
 
-            <TextBlock Grid.Row="7" Margin="0,6,0,0" Style="{DynamicResource MutedText}"
-                       Text="{Binding Status}" TextWrapping="Wrap" />
+            <!-- Row 7: live search feedback (single self-superseding line) above a
+                 collapsible rolling journal of action outcomes, newest first,
+                 collapsed by default and toggled like the Options zone (v2.5.0.0 A1). -->
+            <StackPanel Grid.Row="7" Margin="0,6,0,0">
+                <TextBlock Style="{DynamicResource MutedText}" TextWrapping="Wrap"
+                           Text="{Binding SearchFeedback}" />
+                <Button x:Name="JournalToggle" Content="{loc:Loc Key=Pane_Journal}"
+                        HorizontalAlignment="Left" Padding="4,2" Margin="0,4,0,0" FontSize="11"
+                        Click="Journal_Click"
+                        Visibility="{Binding HasStatusEntries, Converter={StaticResource BoolToVis}}" />
+                <ItemsControl Margin="0,2,0,0" ItemsSource="{Binding StatusLog}"
+                              Visibility="{Binding IsStatusLogExpanded, Converter={StaticResource BoolToVis}}">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <TextBlock Style="{DynamicResource MutedText}" TextWrapping="Wrap"
+                                       Text="{Binding}" />
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </StackPanel>
         </Grid>
 
         <!-- Busy overlay. -->
         <Border Background="{DynamicResource Theme.Background}" Opacity="0.85"
                 Visibility="{Binding IsBusy, Converter={StaticResource BoolToVis}}">
-            <TextBlock Text="{loc:Loc Key=MainPane_Busy_Filing}" FontWeight="Bold"
+            <TextBlock Text="{Binding BusyStatus}" FontWeight="Bold"
                        HorizontalAlignment="Center" VerticalAlignment="Center" />
         </Border>
     </Grid>

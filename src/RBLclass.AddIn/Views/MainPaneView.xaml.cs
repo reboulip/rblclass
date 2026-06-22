@@ -66,6 +66,11 @@ namespace RBLclass.AddIn.Views
             if (Vm != null) Vm.IsOptionsExpanded = !Vm.IsOptionsExpanded;
         }
 
+        private void Journal_Click(object sender, RoutedEventArgs e)
+        {
+            if (Vm != null) Vm.IsStatusLogExpanded = !Vm.IsStatusLogExpanded;
+        }
+
         /// <summary>Ctrl pressed and released on its own toggles "List every matching folder" (v2.2).</summary>
         private void QueryBox_KeyUp(object sender, KeyEventArgs e)
         {
