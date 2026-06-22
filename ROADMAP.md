@@ -297,7 +297,7 @@ the disposition modal + save/delete, F3 the label), built in that order.
 ## v2.4.1.0 — Attachment & indexing bug fixes
 
 - [x] **A1.** Fix the re-index button to fully offload PST enumeration to a background thread so the Outlook UI stays responsive during manual reindex, with the colour indicator cycling to yellow as designed in A2. [#6]
-- [ ] **A2.** Show the attachment-disposition modal during auto-classify when "remove attachments" is on, matching the manual-classify flow. [#7]
+- [x] **A2.** Show the attachment-disposition modal during auto-classify when "remove attachments" is on, matching the manual-classify flow. [#7]
 - [ ] **A3.** Replace the attachment-disposition modal with a discrete status-area notice when classifying encrypted mail (which always retains its attachments). [#8]
 
 ---

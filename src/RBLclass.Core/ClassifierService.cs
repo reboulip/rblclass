@@ -385,7 +385,9 @@ namespace RBLclass.Core
 
         public AutoClassifyResult AutoClassify(IReadOnlyList<MailItemRef> items,
                                                Func<string, string, FolderNode> resolveLiveFolder,
-                                               bool keepCopy, bool removeAttachments, bool safetyCopy)
+                                               bool keepCopy, bool removeAttachments, bool safetyCopy,
+                                               IReadOnlyList<AttachmentDisposition> attachmentDispositions = null,
+                                               AttachmentLabelOptions labelOptions = null)
         {
             if (items == null) throw new ArgumentNullException(nameof(items));
             if (resolveLiveFolder == null) throw new ArgumentNullException(nameof(resolveLiveFolder));
@@ -433,7 +435,10 @@ namespace RBLclass.Core
                 // semantics, and it records a fresh batch that Undo rolls back.
                 var result = Classify(new ClassifyRequest(
                     new[] { item }, live, keepCopy, removeAttachments,
-                    markTasksComplete: false, safetyCopy: safetyCopy));
+                    markTasksComplete: false, safetyCopy: safetyCopy,
+                    bannerSignature: null,
+                    attachmentDispositions: attachmentDispositions,
+                    labelOptions: labelOptions));
 
                 if (result.ItemsProcessed > 0)
                 {

@@ -431,6 +431,76 @@ namespace RBLclass.Core.Tests
         }
 
         [Fact]
+        public void AutoClassify_passes_attachment_dispositions_to_the_inner_classify()
+        {
+            var store = StoreWithWorkingMove();
+            store.RemoveAttachments(Arg.Any<MailItemRef>()).Returns(true);
+            store.GetParentFolder(Arg.Any<MailItemRef>()).Returns(Dest("src", "Inbox"));
+            var history = Substitute.For<IClassificationHistory>();
+            var item = Item("e1");
+            store.GetConversationKey(item).Returns("conv-1");
+            history.GetLatestDestinations("conv-1")
+                   .Returns(new[] { new HistoryDestination("s1", "d1") });
+            var sut = new ClassifierService(store, history);
+
+            var dispositions = new[]
+            {
+                new AttachmentDisposition(item, attachmentId: 1, "report.pdf",
+                                          AttachmentDispositionAction.Delete),
+            };
+
+            var result = sut.AutoClassify(
+                new[] { item }, (s, e) => (s == "s1" && e == "d1") ? D1 : null,
+                keepCopy: false, removeAttachments: true, safetyCopy: false,
+                attachmentDispositions: dispositions);
+
+            result.Filed.Should().Be(1);
+            store.Received(1).RemoveAttachments(Arg.Any<MailItemRef>());
+            result.Undo.AttachmentStrips.Should().Be(1);
+        }
+
+        [Fact]
+        public void AutoClassify_without_dispositions_still_strips_when_removeAttachments_is_true()
+        {
+            var store = StoreWithWorkingMove();
+            store.RemoveAttachments(Arg.Any<MailItemRef>()).Returns(true);
+            store.GetParentFolder(Arg.Any<MailItemRef>()).Returns(Dest("src", "Inbox"));
+            var history = Substitute.For<IClassificationHistory>();
+            var item = Item("e1");
+            store.GetConversationKey(item).Returns("conv-1");
+            history.GetLatestDestinations("conv-1")
+                   .Returns(new[] { new HistoryDestination("s1", "d1") });
+            var sut = new ClassifierService(store, history);
+
+            var result = sut.AutoClassify(
+                new[] { item }, (s, e) => (s == "s1" && e == "d1") ? D1 : null,
+                keepCopy: false, removeAttachments: true, safetyCopy: false);
+
+            result.Filed.Should().Be(1);
+            store.Received(1).RemoveAttachments(Arg.Any<MailItemRef>());
+        }
+
+        [Fact]
+        public void AutoClassify_does_not_strip_when_removeAttachments_is_false()
+        {
+            var store = StoreWithWorkingMove();
+            store.GetParentFolder(Arg.Any<MailItemRef>()).Returns(Dest("src", "Inbox"));
+            var history = Substitute.For<IClassificationHistory>();
+            var item = Item("e1");
+            store.GetConversationKey(item).Returns("conv-1");
+            history.GetLatestDestinations("conv-1")
+                   .Returns(new[] { new HistoryDestination("s1", "d1") });
+            var sut = new ClassifierService(store, history);
+
+            var result = sut.AutoClassify(
+                new[] { item }, (s, e) => (s == "s1" && e == "d1") ? D1 : null,
+                keepCopy: false, removeAttachments: false, safetyCopy: false);
+
+            result.Filed.Should().Be(1);
+            store.DidNotReceive().RemoveAttachments(Arg.Any<MailItemRef>());
+        }
+
+        [Fact]
         public void A_move_that_resolves_nothing_counts_as_an_error_and_processes_nothing()
         {
             var store = Substitute.For<IMailStore>(); // MoveItemToFolder returns null

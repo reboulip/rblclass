@@ -293,15 +293,49 @@ namespace RBLclass.AddIn.ViewModels
                 };
 
                 bool keepCopy = false, removeAttachments = false, safetyCopy = false;
+                Settings s = null;
                 if (_settings != null)
                 {
-                    var s = Settings.Load(_settings);
+                    s = Settings.Load(_settings);
                     keepCopy = s.KeepCopy;
                     removeAttachments = s.RemoveAttachments;
                     safetyCopy = s.ClassifySafetyCopy;
                 }
 
-                var result = _classifier.AutoClassify(items, resolve, keepCopy, removeAttachments, safetyCopy);
+                // A2: in Modal mode, show the attachment-disposition modal before
+                // auto-classify runs, matching the manual-classify flow (DoClassifyAsync).
+                IReadOnlyList<AttachmentDisposition> attachmentDispositions = null;
+                AttachmentLabelOptions labelOptions = null;
+                if (removeAttachments && s != null
+                    && s.AttachmentRemovalMode == AttachmentRemovalMode.Modal
+                    && TaskPaneServices.GatherAttachments != null
+                    && TaskPaneServices.ShowAttachmentDisposition != null)
+                {
+                    var groups = TaskPaneServices.GatherAttachments(items);
+                    if (groups.Any(g => g.IsEncrypted || g.Attachments.Count > 0))
+                    {
+                        attachmentDispositions = TaskPaneServices.ShowAttachmentDisposition(groups);
+                        if (attachmentDispositions == null)
+                        {
+                            Status = _loc.GetString("Status_ClassifyCancelled");
+                            return;
+                        }
+                    }
+
+                    if (attachmentDispositions != null
+                        && s.AttachmentLabelLocation != AttachmentLabelLocation.None)
+                    {
+                        labelOptions = new AttachmentLabelOptions(
+                            _loc.GetString("AttachmentLabel_Header_One"),
+                            _loc.GetString("AttachmentLabel_Header_Other"),
+                            _loc.GetString("AttachmentLabel_SavedTo"),
+                            _loc.GetString("AttachmentLabel_DeletedOn"),
+                            "yyyy-MM-dd");
+                    }
+                }
+
+                var result = _classifier.AutoClassify(items, resolve, keepCopy, removeAttachments, safetyCopy,
+                                                       attachmentDispositions, labelOptions);
 
                 // Show where the mail went (the destination folders), so the
                 // user can see and open them; empty when nothing was filed.
