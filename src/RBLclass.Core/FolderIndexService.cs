@@ -84,6 +84,21 @@ namespace RBLclass.Core
             return new IndexResult(IndexSource.Walked, storeCount, all.Count);
         }
 
+        public void MarkIndexing() => IndexStatus = IndexStatus.Indexing;
+
+        public void MarkReady() => IndexStatus = IndexStatus.Ready;
+
+        public IndexResult PersistWalkedStores(
+            IReadOnlyList<(StoreInfo Store, IReadOnlyList<FolderNode> Folders)> walkedStores)
+        {
+            if (walkedStores == null) throw new ArgumentNullException(nameof(walkedStores));
+            _repository.EnsureSchema();
+            var all = walkedStores.SelectMany(w => w.Folders).ToList();
+            _repository.ReplaceAll(all);
+            SetCache(all);
+            return new IndexResult(IndexSource.Walked, walkedStores.Count, all.Count);
+        }
+
         public void ReindexStore(string storeId)
         {
             if (storeId == null) throw new ArgumentNullException(nameof(storeId));

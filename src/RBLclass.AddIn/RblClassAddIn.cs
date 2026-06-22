@@ -5,6 +5,7 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.InteropServices;
+using System.Threading.Tasks;
 using System.Windows.Forms;
 using System.Windows.Threading;
 using Extensibility;
@@ -794,9 +795,9 @@ namespace RBLclass.AddIn
         /// <summary>
         /// Ribbon "Refresh folders": re-walk the live stores on demand so folders
         /// created or renamed directly in Outlook (not via our own "New subfolder"
-        /// action) surface in search. Reuses the first-run walk path
-        /// (<see cref="IFolderTree.WalkAndPersist"/>); ribbon callbacks already run
-        /// on the Outlook UI (STA) thread, which is where COM access must happen.
+        /// action) surface in search. Fires and forgets an async walk that yields
+        /// the STA message pump between stores so the yellow indicator paints and
+        /// Outlook stays interactive throughout the walk.
         /// </summary>
         public void OnRefreshFoldersClick(Office.IRibbonControl control)
         {
@@ -811,18 +812,10 @@ namespace RBLclass.AddIn
                     return;
                 }
 
-                // Ignore a repeat click while a walk is already running.
                 if (_folderTree.IndexStatus == IndexStatus.Indexing)
                     return;
 
-                // Let the indicator paint 'Indexing' (yellow) before the
-                // synchronous, STA-bound COM walk runs: WalkAndPersist sets the
-                // status itself (Indexing -> Ready), and the dot - not a modal -
-                // is the completion signal. The walk must stay on this (UI/STA)
-                // thread because Outlook OM is single-threaded apartment.
-                Dispatcher.CurrentDispatcher.BeginInvoke(
-                    DispatcherPriority.Background,
-                    new Action(RunFolderWalk));
+                _ = RunFolderWalkAsync();
             }
             catch (Exception ex)
             {
@@ -830,26 +823,42 @@ namespace RBLclass.AddIn
             }
         }
 
-        /// <summary>
-        /// Runs a full folder walk on the Outlook UI (STA) thread and logs the
-        /// result. Status transitions (Indexing -> Ready) are driven by
-        /// <see cref="FolderIndexService.WalkAndPersist"/> and surfaced by the
-        /// pane's colored indicator.
-        /// </summary>
-        private void RunFolderWalk()
+        private async Task RunFolderWalkAsync()
         {
             try
             {
+                // Signal Indexing before the first yield so the yellow dot paints.
+                _folderTree.MarkIndexing();
+                await Dispatcher.Yield(DispatcherPriority.Background);
+
+                var exclusion = new FolderExclusionPolicy(FolderExclusionOptions.Default);
+                var includedStores = _mailStore.GetStores()
+                    .Where(s => !exclusion.IsStoreExcluded(s))
+                    .ToList();
+
                 var sw = Stopwatch.StartNew();
-                _lastIndexResult = _folderTree.WalkAndPersist();
+                var walked = new List<(StoreInfo Store, IReadOnlyList<FolderNode> Folders)>();
+                foreach (var store in includedStores)
+                {
+                    walked.Add((store, _mailStore.GetFolders(store.StoreId)));
+                    await Dispatcher.Yield(DispatcherPriority.Background);
+                }
+
+                _lastIndexResult = _folderTree.PersistWalkedStores(walked);
                 sw.Stop();
                 Log.Information(
                     "Folder refresh: {Stores} stores, {Folders} folders in {Ms} ms.",
-                    _lastIndexResult.StoreCount, _lastIndexResult.FolderCount, sw.ElapsedMilliseconds);
+                    _lastIndexResult.StoreCount, _lastIndexResult.FolderCount,
+                    sw.ElapsedMilliseconds);
             }
             catch (Exception ex)
             {
                 ShowError("Refresh folders failed", ex);
+            }
+            finally
+            {
+                if (_folderTree?.IndexStatus == IndexStatus.Indexing)
+                    _folderTree.MarkReady();
             }
         }
 
