@@ -294,6 +294,31 @@ the disposition modal + save/delete, F3 the label), built in that order.
 
 ---
 
+## v2.4.1.0 — Attachment & indexing bug fixes
+
+- [ ] **A1.** Fix the re-index button to fully offload PST enumeration to a background thread so the Outlook UI stays responsive during manual reindex, with the colour indicator cycling to yellow as designed in A2. [#6]
+- [ ] **A2.** Show the attachment-disposition modal during auto-classify when "remove attachments" is on, matching the manual-classify flow. [#7]
+- [ ] **A3.** Replace the attachment-disposition modal with a discrete status-area notice when classifying encrypted mail (which always retains its attachments). [#8]
+
+---
+
+## v2.5.0.0 — Attachment refinements & UX polish
+
+### A. Status & notifications
+
+- [ ] **A1.** Replace the single status-area notification with a rolling in-session log capped at ~5 entries, so short-lived messages remain visible. [#9]
+
+### B. Attachment enhancements
+
+- [ ] **B1.** Add a "Keep" disposition option per attachment row in the removal modal, leaving chosen attachments on the filed copy untouched. [#5]
+- [ ] **B2.** Auto-exclude inline/embedded images from the attachment-removal flow so only true detached files are presented for disposition. [#4]
+
+### C. Packaging
+
+- [ ] **C1.** Update the MSI to detect and remove files from a previously installed version before laying down the new one, eliminating the manual uninstall step. [#10]
+
+---
+
 ## Phase 6 — Pilot rollout (in progress)
 
 - [x] Documentation: trilingual (EN/DE/FR) self-contained single-file HTML
