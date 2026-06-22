@@ -16,7 +16,7 @@
 <Wix xmlns="http://wixtoolset.org/schemas/v4/wxs">
   <Package Name="RBLclass - Email Classifier"
            Manufacturer="Romain Reboulleau"
-           Version="2.2.0.0"
+           Version="2.4.0.0"
            UpgradeCode="{4048303C-8921-4CAA-BC74-F2A61D03A8E6}"
            Scope="perUser">
 
@@ -67,12 +67,12 @@
           <RegistryValue Value="mscoree.dll" Type="string" />
           <RegistryValue Name="ThreadingModel" Value="Both" Type="string" />
           <RegistryValue Name="Class" Value="RBLclass.AddIn.RblClassAddIn" Type="string" />
-          <RegistryValue Name="Assembly" Value="RBLclass.AddIn, Version=2.2.0.0, Culture=neutral, PublicKeyToken=null" Type="string" />
+          <RegistryValue Name="Assembly" Value="RBLclass.AddIn, Version=2.4.0.0, Culture=neutral, PublicKeyToken=null" Type="string" />
           <RegistryValue Name="RuntimeVersion" Value="v4.0.30319" Type="string" />
           <RegistryValue Name="CodeBase" Value="file:///[#fil_MainDll]" Type="string" />
-          <RegistryKey Key="2.2.0.0">
+          <RegistryKey Key="2.4.0.0">
             <RegistryValue Name="Class" Value="RBLclass.AddIn.RblClassAddIn" Type="string" />
-            <RegistryValue Name="Assembly" Value="RBLclass.AddIn, Version=2.2.0.0, Culture=neutral, PublicKeyToken=null" Type="string" />
+            <RegistryValue Name="Assembly" Value="RBLclass.AddIn, Version=2.4.0.0, Culture=neutral, PublicKeyToken=null" Type="string" />
             <RegistryValue Name="RuntimeVersion" Value="v4.0.30319" Type="string" />
             <RegistryValue Name="CodeBase" Value="file:///[#fil_MainDll]" Type="string" />
           </RegistryKey>
@@ -91,12 +91,12 @@
           <RegistryValue Value="mscoree.dll" Type="string" />
           <RegistryValue Name="ThreadingModel" Value="Both" Type="string" />
           <RegistryValue Name="Class" Value="RBLclass.AddIn.RblClassAddIn" Type="string" />
-          <RegistryValue Name="Assembly" Value="RBLclass.AddIn, Version=2.2.0.0, Culture=neutral, PublicKeyToken=null" Type="string" />
+          <RegistryValue Name="Assembly" Value="RBLclass.AddIn, Version=2.4.0.0, Culture=neutral, PublicKeyToken=null" Type="string" />
           <RegistryValue Name="RuntimeVersion" Value="v4.0.30319" Type="string" />
           <RegistryValue Name="CodeBase" Value="file:///[#fil_MainDll]" Type="string" />
-          <RegistryKey Key="2.2.0.0">
+          <RegistryKey Key="2.4.0.0">
             <RegistryValue Name="Class" Value="RBLclass.AddIn.RblClassAddIn" Type="string" />
-            <RegistryValue Name="Assembly" Value="RBLclass.AddIn, Version=2.2.0.0, Culture=neutral, PublicKeyToken=null" Type="string" />
+            <RegistryValue Name="Assembly" Value="RBLclass.AddIn, Version=2.4.0.0, Culture=neutral, PublicKeyToken=null" Type="string" />
             <RegistryValue Name="RuntimeVersion" Value="v4.0.30319" Type="string" />
             <RegistryValue Name="CodeBase" Value="file:///[#fil_MainDll]" Type="string" />
           </RegistryKey>
@@ -132,12 +132,12 @@
           <RegistryValue Value="mscoree.dll" Type="string" />
           <RegistryValue Name="ThreadingModel" Value="Both" Type="string" />
           <RegistryValue Name="Class" Value="RBLclass.AddIn.RblClassTaskPaneHost" Type="string" />
-          <RegistryValue Name="Assembly" Value="RBLclass.AddIn, Version=2.2.0.0, Culture=neutral, PublicKeyToken=null" Type="string" />
+          <RegistryValue Name="Assembly" Value="RBLclass.AddIn, Version=2.4.0.0, Culture=neutral, PublicKeyToken=null" Type="string" />
           <RegistryValue Name="RuntimeVersion" Value="v4.0.30319" Type="string" />
           <RegistryValue Name="CodeBase" Value="file:///[#fil_MainDll]" Type="string" />
-          <RegistryKey Key="2.2.0.0">
+          <RegistryKey Key="2.4.0.0">
             <RegistryValue Name="Class" Value="RBLclass.AddIn.RblClassTaskPaneHost" Type="string" />
-            <RegistryValue Name="Assembly" Value="RBLclass.AddIn, Version=2.2.0.0, Culture=neutral, PublicKeyToken=null" Type="string" />
+            <RegistryValue Name="Assembly" Value="RBLclass.AddIn, Version=2.4.0.0, Culture=neutral, PublicKeyToken=null" Type="string" />
             <RegistryValue Name="RuntimeVersion" Value="v4.0.30319" Type="string" />
             <RegistryValue Name="CodeBase" Value="file:///[#fil_MainDll]" Type="string" />
           </RegistryKey>
@@ -159,12 +159,12 @@
           <RegistryValue Value="mscoree.dll" Type="string" />
           <RegistryValue Name="ThreadingModel" Value="Both" Type="string" />
           <RegistryValue Name="Class" Value="RBLclass.AddIn.RblClassTaskPaneHost" Type="string" />
-          <RegistryValue Name="Assembly" Value="RBLclass.AddIn, Version=2.2.0.0, Culture=neutral, PublicKeyToken=null" Type="string" />
+          <RegistryValue Name="Assembly" Value="RBLclass.AddIn, Version=2.4.0.0, Culture=neutral, PublicKeyToken=null" Type="string" />
           <RegistryValue Name="RuntimeVersion" Value="v4.0.30319" Type="string" />
           <RegistryValue Name="CodeBase" Value="file:///[#fil_MainDll]" Type="string" />
-          <RegistryKey Key="2.2.0.0">
+          <RegistryKey Key="2.4.0.0">
             <RegistryValue Name="Class" Value="RBLclass.AddIn.RblClassTaskPaneHost" Type="string" />
-            <RegistryValue Name="Assembly" Value="RBLclass.AddIn, Version=2.2.0.0, Culture=neutral, PublicKeyToken=null" Type="string" />
+            <RegistryValue Name="Assembly" Value="RBLclass.AddIn, Version=2.4.0.0, Culture=neutral, PublicKeyToken=null" Type="string" />
             <RegistryValue Name="RuntimeVersion" Value="v4.0.30319" Type="string" />
             <RegistryValue Name="CodeBase" Value="file:///[#fil_MainDll]" Type="string" />
           </RegistryKey>
