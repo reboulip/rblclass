@@ -133,6 +133,17 @@ namespace RBLclass.Core
         bool RemoveAttachments(MailItemRef item);
 
         /// <summary>
+        /// Remove one attachment (identified by <paramref name="attachmentId"/>
+        /// from <see cref="GetAttachments"/>) and save the item (v2.5.0.0 B1).
+        /// Used when a disposition leaves some attachments on the filed copy
+        /// (the "Keep" action), so the bulk <see cref="RemoveAttachments"/> -
+        /// which strips everything - cannot be used. S/MIME-safe like
+        /// <see cref="RemoveAttachments"/>. Returns true when the attachment was
+        /// removed. Touches COM - call on the Outlook UI thread.
+        /// </summary>
+        bool RemoveAttachment(MailItemRef item, int attachmentId);
+
+        /// <summary>
         /// List an item's attachments as Outlook-free descriptors (v2.4.0.0 F2),
         /// for the disposition modal. Returns an empty list when the item does
         /// not resolve or carries none. Touches COM - call on the Outlook UI

@@ -11,8 +11,9 @@ namespace RBLclass.AddIn.ViewModels
     /// <summary>
     /// View model for the F2 per-attachment disposition modal: one row per
     /// attachment across all selected mails (encrypted mails excluded and
-    /// reported), each row Delete or Save-to a directory. Confirm is gated until
-    /// every Save-to row has a directory.
+    /// reported), each row Delete, Save-to a directory, or Keep (leave it on the
+    /// filed copy, v2.5.0.0 B1). Confirm is gated until every Save-to row has a
+    /// directory; Delete and Keep rows never block it.
     /// </summary>
     public sealed class AttachmentDispositionViewModel : ObservableObject
     {

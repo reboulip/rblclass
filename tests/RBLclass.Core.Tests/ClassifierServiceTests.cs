@@ -300,6 +300,142 @@ namespace RBLclass.Core.Tests
             result.Undo.AttachmentStrips.Should().Be(1);
         }
 
+        // --- Keep disposition (v2.5.0.0 B1) -------------------------------
+
+        [Fact]
+        public void Keep_disposition_leaves_attachments_without_stripping()
+        {
+            var store = StoreWithWorkingMove();
+            store.GetParentFolder(Arg.Any<MailItemRef>()).Returns(Dest("src", "Inbox"));
+            var sut = new ClassifierService(store);
+
+            var item = Item("e1");
+            var dispositions = new[]
+            {
+                new AttachmentDisposition(item, attachmentId: 1, "keep.pdf",
+                                          AttachmentDispositionAction.Keep),
+            };
+
+            var result = sut.Classify(new ClassifyRequest(
+                new[] { item }, new[] { D1 },
+                keepCopy: false, removeAttachments: true,
+                attachmentDispositions: dispositions));
+
+            store.DidNotReceive().RemoveAttachments(Arg.Any<MailItemRef>());
+            store.DidNotReceive().RemoveAttachment(Arg.Any<MailItemRef>(), Arg.Any<int>());
+            result.Undo.AttachmentStrips.Should().Be(0);
+        }
+
+        [Fact]
+        public void Keep_with_a_delete_sibling_removes_only_the_non_kept_attachment()
+        {
+            var store = StoreWithWorkingMove();
+            store.GetParentFolder(Arg.Any<MailItemRef>()).Returns(Dest("src", "Inbox"));
+            store.RemoveAttachment(Arg.Any<MailItemRef>(), Arg.Any<int>()).Returns(true);
+            var sut = new ClassifierService(store);
+
+            var item = Item("e1");
+            var dispositions = new[]
+            {
+                new AttachmentDisposition(item, attachmentId: 1, "del.pdf",
+                                          AttachmentDispositionAction.Delete),
+                new AttachmentDisposition(item, attachmentId: 2, "keep.pdf",
+                                          AttachmentDispositionAction.Keep),
+            };
+
+            var result = sut.Classify(new ClassifyRequest(
+                new[] { item }, new[] { D1 },
+                keepCopy: false, removeAttachments: true,
+                attachmentDispositions: dispositions));
+
+            store.Received(1).RemoveAttachment(Arg.Is<MailItemRef>(m => m.EntryId == "moved-e1"), 1);
+            store.DidNotReceive().RemoveAttachment(Arg.Any<MailItemRef>(), 2);
+            store.DidNotReceive().RemoveAttachments(Arg.Any<MailItemRef>());
+            result.Undo.AttachmentStrips.Should().Be(1);
+        }
+
+        [Fact]
+        public void Keep_with_a_save_sibling_saves_then_removes_the_saved_attachment()
+        {
+            var store = StoreWithWorkingMove();
+            store.GetParentFolder(Arg.Any<MailItemRef>()).Returns(Dest("src", "Inbox"));
+            store.SaveAttachmentToFile(Arg.Any<MailItemRef>(), Arg.Any<int>(), Arg.Any<string>()).Returns(true);
+            store.RemoveAttachment(Arg.Any<MailItemRef>(), Arg.Any<int>()).Returns(true);
+            var sut = new ClassifierService(store);
+
+            var item = Item("e1");
+            var dispositions = new[]
+            {
+                new AttachmentDisposition(item, attachmentId: 1, "save.pdf",
+                                          AttachmentDispositionAction.SaveTo, @"C:\Docs"),
+                new AttachmentDisposition(item, attachmentId: 2, "keep.pdf",
+                                          AttachmentDispositionAction.Keep),
+            };
+
+            sut.Classify(new ClassifyRequest(
+                new[] { item }, new[] { D1 },
+                keepCopy: false, removeAttachments: true,
+                attachmentDispositions: dispositions));
+
+            store.Received(1).SaveAttachmentToFile(Arg.Is<MailItemRef>(m => m.EntryId == "moved-e1"), 1, @"C:\Docs");
+            store.Received(1).RemoveAttachment(Arg.Is<MailItemRef>(m => m.EntryId == "moved-e1"), 1);
+            store.DidNotReceive().RemoveAttachment(Arg.Any<MailItemRef>(), 2);
+            store.DidNotReceive().RemoveAttachments(Arg.Any<MailItemRef>());
+        }
+
+        [Fact]
+        public void A_kept_only_disposition_writes_no_label()
+        {
+            var store = StoreWithWorkingMove();
+            store.GetParentFolder(Arg.Any<MailItemRef>()).Returns(Dest("src", "Inbox"));
+            var sut = new ClassifierService(store);
+
+            var item = Item("e1");
+            var dispositions = new[]
+            {
+                new AttachmentDisposition(item, attachmentId: 1, "keep.pdf",
+                                          AttachmentDispositionAction.Keep),
+            };
+            var labelOptions = new AttachmentLabelOptions(
+                "Former attachment:", "Former attachments:", "Saved to {0}", "Deleted on {0}", "yyyy-MM-dd");
+
+            sut.Classify(new ClassifyRequest(
+                new[] { item }, new[] { D1 },
+                keepCopy: false, removeAttachments: true,
+                attachmentDispositions: dispositions, labelOptions: labelOptions));
+
+            store.DidNotReceive().AppendHtmlNote(Arg.Any<MailItemRef>(), Arg.Any<string>());
+        }
+
+        [Fact]
+        public void A_kept_attachment_is_not_listed_in_the_label_for_its_deleted_sibling()
+        {
+            var store = StoreWithWorkingMove();
+            store.GetParentFolder(Arg.Any<MailItemRef>()).Returns(Dest("src", "Inbox"));
+            store.RemoveAttachment(Arg.Any<MailItemRef>(), Arg.Any<int>()).Returns(true);
+            var sut = new ClassifierService(store);
+
+            var item = Item("e1");
+            var dispositions = new[]
+            {
+                new AttachmentDisposition(item, attachmentId: 1, "del.pdf",
+                                          AttachmentDispositionAction.Delete),
+                new AttachmentDisposition(item, attachmentId: 2, "keep.pdf",
+                                          AttachmentDispositionAction.Keep),
+            };
+            var labelOptions = new AttachmentLabelOptions(
+                "Former attachment:", "Former attachments:", "Saved to {0}", "Deleted on {0}", "yyyy-MM-dd");
+
+            sut.Classify(new ClassifyRequest(
+                new[] { item }, new[] { D1 },
+                keepCopy: false, removeAttachments: true,
+                attachmentDispositions: dispositions, labelOptions: labelOptions));
+
+            store.Received(1).AppendHtmlNote(
+                Arg.Is<MailItemRef>(m => m.EntryId == "moved-e1"),
+                Arg.Is<string>(s => s.Contains("del.pdf") && !s.Contains("keep.pdf")));
+        }
+
         // --- Auto-class history (v2.2) ------------------------------------
 
         [Fact]

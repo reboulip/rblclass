@@ -54,6 +54,9 @@
                                 <RadioButton Content="{loc:Loc Key=AttachDisp_SaveTo_Radio}"
                                              IsChecked="{Binding IsSaveTo}" Margin="16,0,0,0"
                                              VerticalAlignment="Center" />
+                                <RadioButton Content="{loc:Loc Key=AttachDisp_Keep_Radio}"
+                                             IsChecked="{Binding IsKeep}" Margin="16,0,0,0"
+                                             VerticalAlignment="Center" />
                             </StackPanel>
                             <StackPanel Margin="20,4,0,0"
                                         Visibility="{Binding IsSaveTo, Converter={StaticResource BoolToVis}}">

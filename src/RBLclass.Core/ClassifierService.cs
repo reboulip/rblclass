@@ -270,14 +270,42 @@ namespace RBLclass.Core
                 return;
             }
 
-            if (_store.RemoveAttachments(filedRef))
+            // B1: a "Keep" row leaves its attachment on the filed copy. When any
+            // Keep is present, the strip-all primitive would also take the kept
+            // ones, so remove only the non-Keep attachments individually (highest
+            // id first, since removing one shifts the indexes of those above it).
+            // With no Keep rows the single strip-all call is kept (also the
+            // DeleteSilently path, where there are no rows at all).
+            bool stripped;
+            if (rows.Any(d => d.Action == AttachmentDispositionAction.Keep))
             {
-                acc.Strips++;
-
-                // F3: record what happened to each attachment on the filed copy.
-                if (request.LabelOptions != null && rows.Count > 0)
+                stripped = false;
+                foreach (var d in rows.Where(d => d.Action != AttachmentDispositionAction.Keep)
+                                      .OrderByDescending(d => d.AttachmentId))
                 {
-                    var block = AttachmentLabelFormatter.Format(rows, request.LabelOptions, DateTime.Now);
+                    bool removed;
+                    try { removed = _store.RemoveAttachment(filedRef, d.AttachmentId); }
+                    catch { removed = false; }
+                    if (removed) stripped = true;
+                }
+            }
+            else
+            {
+                stripped = _store.RemoveAttachments(filedRef);
+                if (!stripped) acc.EncryptedSkips++;
+            }
+
+            if (stripped) acc.Strips++;
+
+            // F3: record only the attachments that left the filed copy (Saved /
+            // Deleted). Kept attachments are still on the mail, so they need no
+            // note (v2.5.0.0 B1).
+            if (request.LabelOptions != null && stripped)
+            {
+                var labelRows = rows.Where(d => d.Action != AttachmentDispositionAction.Keep).ToList();
+                if (labelRows.Count > 0)
+                {
+                    var block = AttachmentLabelFormatter.Format(labelRows, request.LabelOptions, DateTime.Now);
                     if (block != null)
                     {
                         try { _store.AppendHtmlNote(filedRef, block); }
@@ -285,7 +313,6 @@ namespace RBLclass.Core
                     }
                 }
             }
-            else acc.EncryptedSkips++;
         }
 
         /// <summary>

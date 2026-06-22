@@ -787,6 +787,64 @@ namespace RBLclass.Outlook.Adapter
             return true;
         }
 
+        public bool RemoveAttachment(MailItemRef item, int attachmentId)
+        {
+            if (item == null) return false;
+
+            using (var session = new ComRef<OutlookOM.NameSpace>(_app.Session))
+            {
+                object rawItem;
+                try { rawItem = session.Value.GetItemFromID(item.EntryId, item.StoreId); }
+                catch { return false; }
+
+                using (var comItem = new ComRef<object>(rawItem))
+                {
+                    var mail = comItem.Value as OutlookOM.MailItem;
+                    if (mail == null) return false;
+
+                    // Same S/MIME guard as RemoveAttachments: never touch an
+                    // encrypted/signed payload.
+                    string messageClass = Safe(() => mail.MessageClass, string.Empty);
+                    if (messageClass.StartsWith("IPM.Note.SMIME", StringComparison.OrdinalIgnoreCase))
+                    {
+                        Log.Information(
+                            "RemoveAttachment skipped an encrypted/signed item ({MessageClass}).",
+                            messageClass);
+                        return false;
+                    }
+
+                    using (var attachments = new ComRef<OutlookOM.Attachments>(mail.Attachments))
+                    {
+                        int count = attachments.Value.Count;
+                        for (int i = 1; i <= count; i++)
+                        {
+                            OutlookOM.Attachment raw;
+                            try { raw = attachments.Value[i]; } catch { continue; }
+                            using (var att = new ComRef<OutlookOM.Attachment>(raw))
+                            {
+                                if (Safe(() => att.Value.Index, -1) != attachmentId) continue;
+                                try
+                                {
+                                    att.Value.Delete();
+                                    mail.Save();
+                                    Log.Information("Removed attachment {Id} from a filed mail.", attachmentId);
+                                    return true;
+                                }
+                                catch (Exception ex)
+                                {
+                                    Log.Warning(ex, "Removing attachment {Id} failed.", attachmentId);
+                                    return false;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            Log.Warning("RemoveAttachment: attachment {Id} not found.", attachmentId);
+            return false;
+        }
+
         public bool AppendHtmlNote(MailItemRef item, string htmlBlock)
         {
             if (item == null || string.IsNullOrWhiteSpace(htmlBlock)) return false;

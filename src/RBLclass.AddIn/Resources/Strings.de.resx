@@ -171,6 +171,9 @@
   <data name="AttachDisp_SaveTo_Radio" xml:space="preserve">
     <value>Speichern in…</value>
   </data>
+  <data name="AttachDisp_Keep_Radio" xml:space="preserve">
+    <value>Behalten</value>
+  </data>
   <data name="AttachDisp_Browse_Button" xml:space="preserve">
     <value>Durchsuchen…</value>
   </data>
