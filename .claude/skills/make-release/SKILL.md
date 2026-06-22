@@ -112,6 +112,69 @@ out — it's easy to grab the wrong artifact by accident; clean it up if the
 user confirms it's no longer needed (the folder is gitignored, so this is
 just local-build-output hygiene, not a source change).
 
+## Create the ship PR and GitHub release
+
+This step runs **after** the kit and MSI are successfully produced.
+
+### Find issues closed by this release
+
+Scan the `## vX.X.X.X` section in `ROADMAP.md` that matches the version
+being released. Collect every `[#N]` back-reference that appears on a
+**checked** item line (`- [x]`). These are the resolved issues.
+
+If unchecked items remain in that section, warn the user: the sprint is not
+complete and the PR body will only reference the implemented items.
+
+### Push and open the PR
+
+```powershell
+# Ensure develop is pushed
+git push origin develop
+
+# Build the PR body (one "Closes #N" per resolved issue)
+$closes = ($resolvedIssues | ForEach-Object { "Closes #$_" }) -join "`n"
+
+gh pr create `
+  --base main `
+  --head develop `
+  --title "Release <version>" `
+  --body "## Release <version>
+
+$closes"
+```
+
+Print the PR URL to the user and instruct them to review and merge it on
+GitHub. GitHub will auto-close the linked issues when the PR is merged into
+`main`.
+
+### Wait for the merge, then tag and publish
+
+Use `AskUserQuestion` with: **"PR merged — create tag and GH release"** /
+**"Not yet — I'll come back"**.
+
+On confirmation:
+
+```powershell
+git checkout main
+git pull origin main
+
+# Annotated tag
+git tag -a <version> -m "Release <version>"
+git push origin <version>
+
+# GitHub release — attach both artifacts
+gh release create <version> `
+  --target main `
+  --title "Release <version>" `
+  --notes "See ROADMAP.md for the full change list." `
+  "<path-to-kit.zip>" `
+  "installer\bin\RBLclass-<AssemblyVersion>.msi"
+```
+
+Print the release URL.
+
+---
+
 ## Signing (optional)
 
 Authenticode signing is **not** required for Outlook to load a COM add-in

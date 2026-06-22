@@ -27,9 +27,74 @@ to date with main before starting.
 
 ---
 
-## Step 0 — Locate the active sprint
+## Step 0 — Version stamp
 
-Read `ROADMAP.md`. The active sprint is the **highest-versioned** `## vX.X.X`
+### 0a — Locate the active sprint and read current version
+
+Read `ROADMAP.md`. The active sprint is the **highest-versioned** `## vX.X.X.X`
+section that contains at least one unchecked item (`- [ ]`). Extract the
+sprint version label (e.g. `v2.4.0.0`).
+
+Read the current `AssemblyVersion` from
+`src/RBLclass.AddIn/Properties/AssemblyInfo.cs`.
+
+### 0b — Classify the sprint and present a version proposal
+
+Scan the sprint's full item list. Classify the overall change as:
+- **Hotfix** — bug fixes only, no new user-facing capability.
+- **Minor** — new features or enhancements; no breaking changes.
+- **Major** — breaking changes, architectural overhaul, or a full-product
+  version boundary.
+
+Present a brief summary (5–10 words per item) and the classification
+rationale, then ask the user to confirm or override the target version
+via `AskUserQuestion`:
+
+```
+Sprint: <roadmap version>
+Current AssemblyVersion: <x.y.z.w>
+Classification: <Hotfix | Minor | Major> — <one-line rationale>
+
+Planned changes:
+  • <Label>: <brief description>
+  …
+
+Proposed version: <roadmap version>
+```
+
+Options: **"Confirm <roadmap version>"** / the user may select "Other" to
+provide a different version string.
+
+### 0c — Stamp version files (if needed)
+
+If the confirmed version differs from the current `AssemblyVersion` in
+`AssemblyInfo.cs`:
+
+1. Update `src/RBLclass.AddIn/Properties/AssemblyInfo.cs`:
+   - `[assembly: AssemblyVersion("X.X.X.X")]`
+   - `[assembly: AssemblyFileVersion("X.X.X.X")]`
+2. Update `.claude/skills/make-release/release.config.json`:
+   - `"AssemblyVersion": "X.X.X.X"`
+3. Commit both files:
+   ```
+   Bump version to <version>
+
+   Co-Authored-By: Claude Sonnet 4.6 <noreply@anthropic.com>
+   ```
+
+If the versions already match, skip the file edits and the commit — just
+state that the version is already correct and continue.
+
+> **Note:** changing `AssemblyVersion` changes the COM strong-name baked
+> into the HKCU registration. Target workstations will need a reinstall
+> (re-run the install kit or MSI) to pick up the new version. Remind the
+> user of this if the version changed.
+
+---
+
+## Step 1 — Locate the active sprint
+
+Read `ROADMAP.md`. The active sprint is the **highest-versioned** `## vX.X.X.X`
 section that contains at least one unchecked item (`- [ ]`). Extract:
 - The sprint version label (e.g. `v2.4.0.0`).
 - The ordered list of unchecked items: label (A1, A2, B1, …), title, and
@@ -40,7 +105,7 @@ and stop.
 
 ---
 
-## Step 1 — Prepare item[0]
+## Step 2 — Prepare item[0]
 
 Spawn `feature-prep` for the first unchecked item (foreground — wait for
 the result before continuing):
@@ -55,7 +120,7 @@ Agent({
 
 ---
 
-## Step 2 — Pre-fetch item[1] in the background
+## Step 3 — Pre-fetch item[1] in the background
 
 Immediately after receiving the brief for item[0], if item[1] exists, start
 its preparation without waiting for the result:
@@ -71,7 +136,7 @@ Agent({
 
 ---
 
-## Step 3 — Implement item[0]
+## Step 4 — Implement item[0]
 
 The brief for item[0] is in context. Invoke the implementation skill:
 
@@ -85,26 +150,25 @@ verification questions passed and commit made) before advancing.
 
 ---
 
-## Step 4 — Advance to the next item
+## Step 5 — Advance to the next item
 
 After item[0] is committed:
 1. Wait for the background notification confirming item[1]'s brief is ready
    (if not already received).
 2. If item[2] exists and has not yet been pre-fetched, start it in the
-   background now (same pattern as Step 2).
+   background now (same pattern as Step 3).
 3. The brief for item[1] is in context. Invoke `Skill("feature-impl")`.
 4. Repeat until all items in the sprint are implemented and committed.
 
 ---
 
-## Step 5 — Sprint complete
+## Step 6 — Sprint complete
 
 When the last item commits, report:
 - Sprint version completed.
 - All items done (label + title for each).
-- Remind the user to run `/make-release` when ready to package, and to
-  merge `develop` into `main` (with `--no-ff`) per CLAUDE.md once the
-  build is validated on the 32-bit target.
+- Remind the user to run `/make-release` when ready to package (it will
+  handle the develop → main PR, issue closing, tagging, and GH release).
 
 ---
 
@@ -119,4 +183,5 @@ When the last item commits, report:
 - The ROADMAP.md checkbox update is inside the feature commit (done by
   `/feature-impl`). The sprint skill never makes a standalone roadmap commit.
 - If the user interrupts the sprint, resume by re-reading `ROADMAP.md` from
-  scratch (Step 0) to discover which items remain unchecked.
+  scratch (Step 1) to discover which items remain unchecked. Skip Step 0
+  (version stamp) on resume — the version was already committed at sprint start.
