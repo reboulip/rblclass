@@ -522,6 +522,12 @@
   <data name="Status_Classify_EncryptedKept_Other" xml:space="preserve">
     <value> {0} messages chiffrés ont conservé leurs pièces jointes.</value>
   </data>
+  <data name="Status_Classify_EncryptedAttachmentsKept_One" xml:space="preserve">
+    <value> Pièces jointes conservées — {0} message chiffré ne peut pas être traité.</value>
+  </data>
+  <data name="Status_Classify_EncryptedAttachmentsKept_Other" xml:space="preserve">
+    <value> Pièces jointes conservées — {0} messages chiffrés ne peuvent pas être traités.</value>
+  </data>
   <data name="Status_Classify_EncryptedInConversation_One" xml:space="preserve">
     <value> {0} message chiffré de la conversation a été laissé en place.</value>
   </data>

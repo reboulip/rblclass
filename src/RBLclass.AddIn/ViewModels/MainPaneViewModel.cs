@@ -302,10 +302,12 @@ namespace RBLclass.AddIn.ViewModels
                     safetyCopy = s.ClassifySafetyCopy;
                 }
 
-                // A2: in Modal mode, show the attachment-disposition modal before
-                // auto-classify runs, matching the manual-classify flow (DoClassifyAsync).
+                // A2/A3: in Modal mode, show the attachment-disposition modal before
+                // auto-classify runs, unless all attachment-bearing items are encrypted
+                // (in which case skip the modal and show a status notice instead).
                 IReadOnlyList<AttachmentDisposition> attachmentDispositions = null;
                 AttachmentLabelOptions labelOptions = null;
+                bool encryptedOnlySkippedModal = false;
                 if (removeAttachments && s != null
                     && s.AttachmentRemovalMode == AttachmentRemovalMode.Modal
                     && TaskPaneServices.GatherAttachments != null
@@ -314,11 +316,18 @@ namespace RBLclass.AddIn.ViewModels
                     var groups = TaskPaneServices.GatherAttachments(items);
                     if (groups.Any(g => g.IsEncrypted || g.Attachments.Count > 0))
                     {
-                        attachmentDispositions = TaskPaneServices.ShowAttachmentDisposition(groups);
-                        if (attachmentDispositions == null)
+                        if (AllAttachmentBearersAreEncrypted(groups))
                         {
-                            Status = _loc.GetString("Status_ClassifyCancelled");
-                            return;
+                            encryptedOnlySkippedModal = true;
+                        }
+                        else
+                        {
+                            attachmentDispositions = TaskPaneServices.ShowAttachmentDisposition(groups);
+                            if (attachmentDispositions == null)
+                            {
+                                Status = _loc.GetString("Status_ClassifyCancelled");
+                                return;
+                            }
                         }
                     }
 
@@ -344,6 +353,11 @@ namespace RBLclass.AddIn.ViewModels
                     AddResultRow(new FolderSearchResult(dest, isCollapsed: false));
 
                 Status = DescribeAutoClass(result, _loc);
+
+                if (encryptedOnlySkippedModal)
+                    Status += _loc.Plural(items.Count,
+                        "Status_Classify_EncryptedAttachmentsKept_One",
+                        "Status_Classify_EncryptedAttachmentsKept_Other");
 
                 if (result.Undo != null)
                 {
@@ -618,6 +632,7 @@ namespace RBLclass.AddIn.ViewModels
                 // modal in the preflight (before the responsive move loop). A
                 // cancel aborts the whole classify.
                 IReadOnlyList<AttachmentDisposition> attachmentDispositions = null;
+                bool encryptedOnlySkippedModal = false;
                 if (_removeAttachments && _settings != null
                     && Settings.Load(_settings).AttachmentRemovalMode == AttachmentRemovalMode.Modal
                     && TaskPaneServices.GatherAttachments != null
@@ -626,11 +641,20 @@ namespace RBLclass.AddIn.ViewModels
                     var groups = TaskPaneServices.GatherAttachments(preflight.Items);
                     if (groups.Any(g => g.IsEncrypted || g.Attachments.Count > 0))
                     {
-                        attachmentDispositions = TaskPaneServices.ShowAttachmentDisposition(groups);
-                        if (attachmentDispositions == null)
+                        if (AllAttachmentBearersAreEncrypted(groups))
                         {
-                            Status = _loc.GetString("Status_ClassifyCancelled");
-                            return false;
+                            // A3: skip modal when only encrypted items are present;
+                            // a status notice will be appended after classify completes.
+                            encryptedOnlySkippedModal = true;
+                        }
+                        else
+                        {
+                            attachmentDispositions = TaskPaneServices.ShowAttachmentDisposition(groups);
+                            if (attachmentDispositions == null)
+                            {
+                                Status = _loc.GetString("Status_ClassifyCancelled");
+                                return false;
+                            }
                         }
                     }
                 }
@@ -676,6 +700,11 @@ namespace RBLclass.AddIn.ViewModels
                 if (result.EncryptedStripSkips > 0)
                     Status += _loc.Plural(result.EncryptedStripSkips, "Status_Classify_EncryptedKept_One", "Status_Classify_EncryptedKept_Other");
 
+                if (encryptedOnlySkippedModal && result.EncryptedStripSkips == 0)
+                    Status += _loc.Plural(preflight.Items.Count,
+                        "Status_Classify_EncryptedAttachmentsKept_One",
+                        "Status_Classify_EncryptedAttachmentsKept_Other");
+
                 if (preflight.SkippedEncrypted.Count > 0)
                     Status += _loc.Plural(preflight.SkippedEncrypted.Count, "Status_Classify_EncryptedInConversation_One", "Status_Classify_EncryptedInConversation_Other");
 
@@ -701,6 +730,21 @@ namespace RBLclass.AddIn.ViewModels
         /// </summary>
         private static async Task YieldToPump() =>
             await Dispatcher.Yield(DispatcherPriority.Background);
+
+        private static bool AllAttachmentBearersAreEncrypted(
+            IReadOnlyList<(MailItemRef Item, IReadOnlyList<AttachmentInfo> Attachments, bool IsEncrypted)> groups)
+        {
+            bool anyParticipant = false;
+            foreach (var g in groups)
+            {
+                if (g.IsEncrypted || g.Attachments.Count > 0)
+                {
+                    anyParticipant = true;
+                    if (!g.IsEncrypted) return false;
+                }
+            }
+            return anyParticipant;
+        }
 
         /// <summary>
         /// An <see cref="IProgress{T}"/> that invokes the handler synchronously

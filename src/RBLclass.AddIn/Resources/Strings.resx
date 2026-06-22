@@ -522,6 +522,12 @@
   <data name="Status_Classify_EncryptedKept_Other" xml:space="preserve">
     <value> {0} encrypted mails kept their attachments.</value>
   </data>
+  <data name="Status_Classify_EncryptedAttachmentsKept_One" xml:space="preserve">
+    <value> Attachments were retained — {0} encrypted mail cannot be stripped.</value>
+  </data>
+  <data name="Status_Classify_EncryptedAttachmentsKept_Other" xml:space="preserve">
+    <value> Attachments were retained — {0} encrypted mails cannot be stripped.</value>
+  </data>
   <data name="Status_Classify_EncryptedInConversation_One" xml:space="preserve">
     <value> {0} encrypted message in the conversation was left in place.</value>
   </data>

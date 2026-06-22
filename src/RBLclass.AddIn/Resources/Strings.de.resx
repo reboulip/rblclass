@@ -522,6 +522,12 @@
   <data name="Status_Classify_EncryptedKept_Other" xml:space="preserve">
     <value> {0} verschlüsselte E-Mails haben ihre Anhänge behalten.</value>
   </data>
+  <data name="Status_Classify_EncryptedAttachmentsKept_One" xml:space="preserve">
+    <value> Anhänge behalten — {0} verschlüsselte E-Mail kann nicht verarbeitet werden.</value>
+  </data>
+  <data name="Status_Classify_EncryptedAttachmentsKept_Other" xml:space="preserve">
+    <value> Anhänge behalten — {0} verschlüsselte E-Mails können nicht verarbeitet werden.</value>
+  </data>
   <data name="Status_Classify_EncryptedInConversation_One" xml:space="preserve">
     <value> {0} verschlüsselte Nachricht der Unterhaltung wurde unverändert gelassen.</value>
   </data>
