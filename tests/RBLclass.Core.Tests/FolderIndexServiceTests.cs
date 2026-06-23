@@ -213,5 +213,81 @@ namespace RBLclass.Core.Tests
             observed.Should().ContainInOrder(IndexStatus.Indexing, IndexStatus.Ready);
             service.IndexStatus.Should().Be(IndexStatus.Ready);
         }
+
+        [Fact]
+        public void PersistWalkedStores_updates_cache_and_db_without_touching_mailstore()
+        {
+            var mail = Substitute.For<IMailStore>();
+            var service = new FolderIndexService(mail, NewRepo());
+
+            var store1Folders = new IReadOnlyList<FolderNode>[]
+            {
+                new[] { Node("s1", "a1", null, "A1", "One / A1") },
+            }[0];
+            var store2Folders = new IReadOnlyList<FolderNode>[]
+            {
+                new[] { Node("s2", "b1", null, "B1", "Two / B1"), Node("s2", "b2", "b1", "B2", "Two / B1 / B2") },
+            }[0];
+
+            var walked = new List<(StoreInfo Store, IReadOnlyList<FolderNode> Folders)>
+            {
+                (new StoreInfo("s1", "One", isDataFileStore: true), store1Folders),
+                (new StoreInfo("s2", "Two", isDataFileStore: true), store2Folders),
+            };
+
+            var result = service.PersistWalkedStores(walked);
+
+            result.Source.Should().Be(IndexSource.Walked);
+            result.StoreCount.Should().Be(2);
+            result.FolderCount.Should().Be(3);
+            service.GetAll().Select(f => f.EntryId).Should().BeEquivalentTo("a1", "b1", "b2");
+
+            // Core must not call GetFolders — the shell already walked COM.
+            mail.DidNotReceive().GetFolders(Arg.Any<string>());
+
+            // Persisted: a fresh service loads the same folders.
+            var reloaded = new FolderIndexService(Substitute.For<IMailStore>(), NewRepo());
+            reloaded.Load();
+            reloaded.GetAll().Select(f => f.EntryId).Should().BeEquivalentTo("a1", "b1", "b2");
+        }
+
+        [Fact]
+        public void MarkIndexing_and_MarkReady_raise_PropertyChanged_in_order()
+        {
+            var service = new FolderIndexService(Substitute.For<IMailStore>(), NewRepo());
+
+            var observed = new List<IndexStatus>();
+            service.PropertyChanged += (s, e) =>
+            {
+                if (e.PropertyName == nameof(FolderIndexService.IndexStatus))
+                    observed.Add(service.IndexStatus);
+            };
+
+            service.MarkIndexing();
+            service.MarkReady();
+
+            observed.Should().ContainInOrder(IndexStatus.Indexing, IndexStatus.Ready);
+            service.IndexStatus.Should().Be(IndexStatus.Ready);
+        }
+
+        [Fact]
+        public void PersistWalkedStores_with_empty_list_clears_the_index()
+        {
+            var stores = new[] { new StoreInfo("pst1", "Archive", isDataFileStore: true) };
+            var folders = new Dictionary<string, IReadOnlyList<FolderNode>>
+            {
+                ["pst1"] = new[] { Node("pst1", "e1", null, "Inbox", "Archive / Inbox") },
+            };
+            var service = new FolderIndexService(StoreWith(stores, folders), NewRepo());
+            service.WalkAndPersist();
+            service.GetAll().Should().HaveCount(1);
+
+            var result = service.PersistWalkedStores(
+                new List<(StoreInfo Store, IReadOnlyList<FolderNode> Folders)>());
+
+            result.StoreCount.Should().Be(0);
+            result.FolderCount.Should().Be(0);
+            service.GetAll().Should().BeEmpty();
+        }
     }
 }

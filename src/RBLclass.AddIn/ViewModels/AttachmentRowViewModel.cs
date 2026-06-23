@@ -40,6 +40,15 @@ namespace RBLclass.AddIn.ViewModels
                 if (!SetProperty(ref _action, value)) return;
                 OnPropertyChanged(nameof(IsDelete));
                 OnPropertyChanged(nameof(IsSaveTo));
+                OnPropertyChanged(nameof(IsKeep));
+                // Leaving Save-to clears its directory search state so a stale
+                // target can't gate Confirm or be re-applied (v2.5.0.0 B1).
+                if (_action != AttachmentDispositionAction.SaveTo)
+                {
+                    _favoriteQuery = string.Empty;
+                    OnPropertyChanged(nameof(FavoriteQuery));
+                    FavoriteResults.Clear();
+                }
             }
         }
 
@@ -53,6 +62,13 @@ namespace RBLclass.AddIn.ViewModels
         {
             get => _action == AttachmentDispositionAction.SaveTo;
             set { if (value) Action = AttachmentDispositionAction.SaveTo; }
+        }
+
+        /// <summary>Leave this attachment on the filed copy untouched (v2.5.0.0 B1).</summary>
+        public bool IsKeep
+        {
+            get => _action == AttachmentDispositionAction.Keep;
+            set { if (value) Action = AttachmentDispositionAction.Keep; }
         }
 
         /// <summary>Directory the attachment will be saved into when <see cref="IsSaveTo"/>.</summary>

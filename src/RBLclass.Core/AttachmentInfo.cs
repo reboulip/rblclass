@@ -6,11 +6,12 @@ namespace RBLclass.Core
     /// </summary>
     public sealed class AttachmentInfo
     {
-        public AttachmentInfo(int id, string fileName, long sizeBytes)
+        public AttachmentInfo(int id, string fileName, long sizeBytes, bool isInline = false)
         {
             Id = id;
             FileName = fileName ?? string.Empty;
             SizeBytes = sizeBytes;
+            IsInline = isInline;
         }
 
         /// <summary>Position-based id (Outlook <c>Attachment.Index</c>), stable until attachments are removed.</summary>
@@ -19,5 +20,13 @@ namespace RBLclass.Core
         public string FileName { get; }
 
         public long SizeBytes { get; }
+
+        /// <summary>
+        /// True when this is an inline/embedded attachment (a cid:-linked body
+        /// image, signature logo, or OLE/embedded item) rather than a true
+        /// detached file (v2.5.0.0 B2). Such attachments are not offered for
+        /// disposition and are never stripped. Populated by the Outlook adapter.
+        /// </summary>
+        public bool IsInline { get; }
     }
 }

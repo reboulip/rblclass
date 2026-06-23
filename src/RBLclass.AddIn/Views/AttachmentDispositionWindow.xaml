@@ -28,6 +28,12 @@
                     Visibility="{Binding HasEncryptedNotice, Converter={StaticResource BoolToVis}}">
                 <TextBlock Text="{Binding EncryptedNotice}" TextWrapping="Wrap" />
             </Border>
+            <Border Background="{DynamicResource Theme.ControlBackground}"
+                    BorderBrush="{DynamicResource Theme.ControlBorder}" BorderThickness="1"
+                    CornerRadius="3" Padding="8,5" Margin="0,0,0,6"
+                    Visibility="{Binding HasInlineNotice, Converter={StaticResource BoolToVis}}">
+                <TextBlock Text="{Binding InlineNotice}" TextWrapping="Wrap" />
+            </Border>
             <Button HorizontalAlignment="Left" Padding="8,2" Margin="0,0,0,6"
                     Content="{loc:Loc Key=AttachDisp_DeleteAll_Button}" Click="DeleteAll_Click"
                     Visibility="{Binding HasRows, Converter={StaticResource BoolToVis}}" />
@@ -53,6 +59,9 @@
                                              IsChecked="{Binding IsDelete}" VerticalAlignment="Center" />
                                 <RadioButton Content="{loc:Loc Key=AttachDisp_SaveTo_Radio}"
                                              IsChecked="{Binding IsSaveTo}" Margin="16,0,0,0"
+                                             VerticalAlignment="Center" />
+                                <RadioButton Content="{loc:Loc Key=AttachDisp_Keep_Radio}"
+                                             IsChecked="{Binding IsKeep}" Margin="16,0,0,0"
                                              VerticalAlignment="Center" />
                             </StackPanel>
                             <StackPanel Margin="20,4,0,0"

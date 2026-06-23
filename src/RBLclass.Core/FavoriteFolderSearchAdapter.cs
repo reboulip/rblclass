@@ -34,5 +34,8 @@ namespace RBLclass.Core
         public IndexResult Load() => throw new NotSupportedException();
         public IndexResult WalkAndPersist() => throw new NotSupportedException();
         public void ReindexStore(string storeId) => throw new NotSupportedException();
+        public IndexResult PersistWalkedStores(
+            IReadOnlyList<(StoreInfo Store, IReadOnlyList<FolderNode> Folders)> walkedStores)
+            => throw new NotSupportedException();
     }
 }

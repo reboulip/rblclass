@@ -38,5 +38,14 @@ namespace RBLclass.Core
 
         /// <summary>A snapshot of the currently cached folders.</summary>
         IReadOnlyList<FolderNode> GetAll();
+
+        /// <summary>
+        /// Persist pre-walked store data and populate the in-memory cache in one
+        /// transaction. Called from the shell's per-store async loop after all COM
+        /// access is done; Core does no further COM calls. Does NOT transition
+        /// IndexStatus — the caller owns Indexing → Ready.
+        /// </summary>
+        IndexResult PersistWalkedStores(
+            IReadOnlyList<(StoreInfo Store, IReadOnlyList<FolderNode> Folders)> walkedStores);
     }
 }

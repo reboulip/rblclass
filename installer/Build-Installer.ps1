@@ -96,6 +96,7 @@ Write-Host "  identity: $($config.Clsid) / $($config.ProgId)"
 
 & $wix build (Join-Path $installerDir "Package.wxs") `
     -d "PayloadDir=$payloadDir" `
+    -d "AssemblyVersion=$($config.AssemblyVersion)" `
     -arch x86 `
     -o $OutputPath
 if ($LASTEXITCODE -ne 0) {

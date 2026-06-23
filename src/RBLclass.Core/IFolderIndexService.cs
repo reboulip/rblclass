@@ -10,5 +10,8 @@ namespace RBLclass.Core
     public interface IFolderIndexService : IFolderTree, INotifyPropertyChanged
     {
         IndexStatus IndexStatus { get; }
+
+        void MarkIndexing();
+        void MarkReady();
     }
 }

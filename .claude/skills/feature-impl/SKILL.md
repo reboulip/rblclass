@@ -97,6 +97,17 @@ Wait for the answers before doing anything else.
    ```
    Example: `Clear search field after classify (v2.4.0.0 A1)`
 4. Do **not** push — that is a separate user action.
+5. **GH issue comment (if applicable).** Scan the roadmap item's full text
+   for `[#N]` back-references (regex `\[#(\d+)\]`). If any are found:
+   ```powershell
+   $sha = git rev-parse HEAD
+   $shortSha = git rev-parse --short HEAD
+   $repoUrl = gh repo view --json url --jq .url
+   gh issue comment <N> --body "Implemented in commit [$shortSha]($repoUrl/commit/$sha).
+   Forecasted release: <sprint version>."
+   ```
+   The sprint version is the `## vX.X.X.X` section header of the item being
+   implemented. If no `[#N]` ref is present, skip this step silently.
 
 ## Step 8b — Any fail → diagnose and loop
 

@@ -6,7 +6,9 @@ namespace RBLclass.Core
     public enum AttachmentDispositionAction
     {
         Delete = 0,
-        SaveTo = 1
+        SaveTo = 1,
+        /// <summary>Leave the attachment on the filed copy untouched (v2.5.0.0 B1).</summary>
+        Keep = 2
     }
 
     /// <summary>

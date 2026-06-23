@@ -162,6 +162,12 @@
   <data name="AttachDisp_EncryptedExcluded_Other" xml:space="preserve">
     <value>{0} verschlüsselte E-Mails ausgeschlossen — ihre Anlagen verbleiben bei den E-Mails.</value>
   </data>
+  <data name="AttachDisp_InlineExcluded_One" xml:space="preserve">
+    <value>{0} eingebettetes Bild ausgeschlossen — eingebettete Bilder sind keine trennbaren Anlagen.</value>
+  </data>
+  <data name="AttachDisp_InlineExcluded_Other" xml:space="preserve">
+    <value>{0} eingebettete Bilder ausgeschlossen — eingebettete Bilder sind keine trennbaren Anlagen.</value>
+  </data>
   <data name="AttachDisp_DeleteAll_Button" xml:space="preserve">
     <value>Alle löschen</value>
   </data>
@@ -170,6 +176,9 @@
   </data>
   <data name="AttachDisp_SaveTo_Radio" xml:space="preserve">
     <value>Speichern in…</value>
+  </data>
+  <data name="AttachDisp_Keep_Radio" xml:space="preserve">
+    <value>Behalten</value>
   </data>
   <data name="AttachDisp_Browse_Button" xml:space="preserve">
     <value>Durchsuchen…</value>
@@ -522,6 +531,12 @@
   <data name="Status_Classify_EncryptedKept_Other" xml:space="preserve">
     <value> {0} verschlüsselte E-Mails haben ihre Anhänge behalten.</value>
   </data>
+  <data name="Status_Classify_EncryptedAttachmentsKept_One" xml:space="preserve">
+    <value> Anhänge behalten — {0} verschlüsselte E-Mail kann nicht verarbeitet werden.</value>
+  </data>
+  <data name="Status_Classify_EncryptedAttachmentsKept_Other" xml:space="preserve">
+    <value> Anhänge behalten — {0} verschlüsselte E-Mails können nicht verarbeitet werden.</value>
+  </data>
   <data name="Status_Classify_EncryptedInConversation_One" xml:space="preserve">
     <value> {0} verschlüsselte Nachricht der Unterhaltung wurde unverändert gelassen.</value>
   </data>
@@ -638,6 +653,9 @@ Führen Sie Ihre Suche erneut aus, um neu erstellte oder umbenannte Ordner zu se
   </data>
   <data name="IndexStatus_Ready" xml:space="preserve">
     <value>Ordnerindex bereit</value>
+  </data>
+  <data name="Pane_Journal" xml:space="preserve">
+    <value>▶ Journal</value>
   </data>
   <data name="Pane_Options" xml:space="preserve">
     <value>▶ Optionen</value>

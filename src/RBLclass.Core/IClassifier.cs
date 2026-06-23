@@ -59,8 +59,16 @@ namespace RBLclass.Core
         /// options as a manual classify and produces one combined undo plan.
         /// Requires that this service was constructed with a history store.
         /// </summary>
+        /// <param name="attachmentDispositions">
+        /// Per-attachment choices collected by the caller's modal pre-flight.
+        /// When non-null, the classifier honours each per-attachment action
+        /// (matching the Modal-mode manual classify flow). When null, all
+        /// attachments are stripped silently (DeleteSilently behaviour).
+        /// </param>
         AutoClassifyResult AutoClassify(IReadOnlyList<MailItemRef> items,
                                         Func<string, string, FolderNode> resolveLiveFolder,
-                                        bool keepCopy, bool removeAttachments, bool safetyCopy);
+                                        bool keepCopy, bool removeAttachments, bool safetyCopy,
+                                        IReadOnlyList<AttachmentDisposition> attachmentDispositions = null,
+                                        AttachmentLabelOptions labelOptions = null);
     }
 }

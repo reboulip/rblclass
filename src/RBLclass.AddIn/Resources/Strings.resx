@@ -162,6 +162,12 @@
   <data name="AttachDisp_EncryptedExcluded_Other" xml:space="preserve">
     <value>{0} encrypted mails were excluded — their attachments stay with the mail.</value>
   </data>
+  <data name="AttachDisp_InlineExcluded_One" xml:space="preserve">
+    <value>{0} inline image was excluded — embedded images are not detachable files.</value>
+  </data>
+  <data name="AttachDisp_InlineExcluded_Other" xml:space="preserve">
+    <value>{0} inline images were excluded — embedded images are not detachable files.</value>
+  </data>
   <data name="AttachDisp_DeleteAll_Button" xml:space="preserve">
     <value>Delete all</value>
   </data>
@@ -170,6 +176,9 @@
   </data>
   <data name="AttachDisp_SaveTo_Radio" xml:space="preserve">
     <value>Save to…</value>
+  </data>
+  <data name="AttachDisp_Keep_Radio" xml:space="preserve">
+    <value>Keep</value>
   </data>
   <data name="AttachDisp_Browse_Button" xml:space="preserve">
     <value>Browse…</value>
@@ -522,6 +531,12 @@
   <data name="Status_Classify_EncryptedKept_Other" xml:space="preserve">
     <value> {0} encrypted mails kept their attachments.</value>
   </data>
+  <data name="Status_Classify_EncryptedAttachmentsKept_One" xml:space="preserve">
+    <value> Attachments were retained — {0} encrypted mail cannot be stripped.</value>
+  </data>
+  <data name="Status_Classify_EncryptedAttachmentsKept_Other" xml:space="preserve">
+    <value> Attachments were retained — {0} encrypted mails cannot be stripped.</value>
+  </data>
   <data name="Status_Classify_EncryptedInConversation_One" xml:space="preserve">
     <value> {0} encrypted message in the conversation was left in place.</value>
   </data>
@@ -638,6 +653,9 @@ Re-run your search to see newly created or renamed folders.</value>
   </data>
   <data name="IndexStatus_Ready" xml:space="preserve">
     <value>Folder index ready</value>
+  </data>
+  <data name="Pane_Journal" xml:space="preserve">
+    <value>▶ Journal</value>
   </data>
   <data name="Pane_Options" xml:space="preserve">
     <value>▶ Options</value>

@@ -162,6 +162,12 @@
   <data name="AttachDisp_EncryptedExcluded_Other" xml:space="preserve">
     <value>{0} messages chiffrés exclus — leurs pièces jointes restent avec les messages.</value>
   </data>
+  <data name="AttachDisp_InlineExcluded_One" xml:space="preserve">
+    <value>{0} image intégrée exclue — les images incorporées ne sont pas des pièces jointes détachables.</value>
+  </data>
+  <data name="AttachDisp_InlineExcluded_Other" xml:space="preserve">
+    <value>{0} images intégrées exclues — les images incorporées ne sont pas des pièces jointes détachables.</value>
+  </data>
   <data name="AttachDisp_DeleteAll_Button" xml:space="preserve">
     <value>Tout supprimer</value>
   </data>
@@ -170,6 +176,9 @@
   </data>
   <data name="AttachDisp_SaveTo_Radio" xml:space="preserve">
     <value>Enregistrer dans…</value>
+  </data>
+  <data name="AttachDisp_Keep_Radio" xml:space="preserve">
+    <value>Conserver</value>
   </data>
   <data name="AttachDisp_Browse_Button" xml:space="preserve">
     <value>Parcourir…</value>
@@ -522,6 +531,12 @@
   <data name="Status_Classify_EncryptedKept_Other" xml:space="preserve">
     <value> {0} messages chiffrés ont conservé leurs pièces jointes.</value>
   </data>
+  <data name="Status_Classify_EncryptedAttachmentsKept_One" xml:space="preserve">
+    <value> Pièces jointes conservées — {0} message chiffré ne peut pas être traité.</value>
+  </data>
+  <data name="Status_Classify_EncryptedAttachmentsKept_Other" xml:space="preserve">
+    <value> Pièces jointes conservées — {0} messages chiffrés ne peuvent pas être traités.</value>
+  </data>
   <data name="Status_Classify_EncryptedInConversation_One" xml:space="preserve">
     <value> {0} message chiffré de la conversation a été laissé en place.</value>
   </data>
@@ -638,6 +653,9 @@ Relancez votre recherche pour voir les dossiers créés ou renommés.</value>
   </data>
   <data name="IndexStatus_Ready" xml:space="preserve">
     <value>Index des dossiers prêt</value>
+  </data>
+  <data name="Pane_Journal" xml:space="preserve">
+    <value>▶ Journal</value>
   </data>
   <data name="Pane_Options" xml:space="preserve">
     <value>▶ Options</value>
