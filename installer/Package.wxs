@@ -16,11 +16,19 @@
 <Wix xmlns="http://wixtoolset.org/schemas/v4/wxs">
   <Package Name="RBLclass - Email Classifier"
            Manufacturer="Romain Reboulleau"
-           Version="2.4.0.0"
+           Version="$(var.AssemblyVersion)"
            UpgradeCode="{4048303C-8921-4CAA-BC74-F2A61D03A8E6}"
            Scope="perUser">
 
-    <MajorUpgrade DowngradeErrorMessage="A newer version of [ProductName] is already installed." />
+    <!--
+      Major upgrade: detect a previously installed RBLclass (same UpgradeCode)
+      and remove it before laying down the new version, so no manual uninstall
+      is needed (v2.5.0.0 C1). afterInstallInitialize removes the old files
+      first, which is the correct schedule for a same-directory upgrade.
+      DowngradeErrorMessage blocks installing an older version over a newer one.
+    -->
+    <MajorUpgrade Schedule="afterInstallInitialize"
+                  DowngradeErrorMessage="A newer version of [ProductName] is already installed." />
     <MediaTemplate EmbedCab="yes" />
 
     <!--
@@ -67,12 +75,12 @@
           <RegistryValue Value="mscoree.dll" Type="string" />
           <RegistryValue Name="ThreadingModel" Value="Both" Type="string" />
           <RegistryValue Name="Class" Value="RBLclass.AddIn.RblClassAddIn" Type="string" />
-          <RegistryValue Name="Assembly" Value="RBLclass.AddIn, Version=2.4.0.0, Culture=neutral, PublicKeyToken=null" Type="string" />
+          <RegistryValue Name="Assembly" Value="RBLclass.AddIn, Version=$(var.AssemblyVersion), Culture=neutral, PublicKeyToken=null" Type="string" />
           <RegistryValue Name="RuntimeVersion" Value="v4.0.30319" Type="string" />
           <RegistryValue Name="CodeBase" Value="file:///[#fil_MainDll]" Type="string" />
-          <RegistryKey Key="2.4.0.0">
+          <RegistryKey Key="$(var.AssemblyVersion)">
             <RegistryValue Name="Class" Value="RBLclass.AddIn.RblClassAddIn" Type="string" />
-            <RegistryValue Name="Assembly" Value="RBLclass.AddIn, Version=2.4.0.0, Culture=neutral, PublicKeyToken=null" Type="string" />
+            <RegistryValue Name="Assembly" Value="RBLclass.AddIn, Version=$(var.AssemblyVersion), Culture=neutral, PublicKeyToken=null" Type="string" />
             <RegistryValue Name="RuntimeVersion" Value="v4.0.30319" Type="string" />
             <RegistryValue Name="CodeBase" Value="file:///[#fil_MainDll]" Type="string" />
           </RegistryKey>
@@ -91,12 +99,12 @@
           <RegistryValue Value="mscoree.dll" Type="string" />
           <RegistryValue Name="ThreadingModel" Value="Both" Type="string" />
           <RegistryValue Name="Class" Value="RBLclass.AddIn.RblClassAddIn" Type="string" />
-          <RegistryValue Name="Assembly" Value="RBLclass.AddIn, Version=2.4.0.0, Culture=neutral, PublicKeyToken=null" Type="string" />
+          <RegistryValue Name="Assembly" Value="RBLclass.AddIn, Version=$(var.AssemblyVersion), Culture=neutral, PublicKeyToken=null" Type="string" />
           <RegistryValue Name="RuntimeVersion" Value="v4.0.30319" Type="string" />
           <RegistryValue Name="CodeBase" Value="file:///[#fil_MainDll]" Type="string" />
-          <RegistryKey Key="2.4.0.0">
+          <RegistryKey Key="$(var.AssemblyVersion)">
             <RegistryValue Name="Class" Value="RBLclass.AddIn.RblClassAddIn" Type="string" />
-            <RegistryValue Name="Assembly" Value="RBLclass.AddIn, Version=2.4.0.0, Culture=neutral, PublicKeyToken=null" Type="string" />
+            <RegistryValue Name="Assembly" Value="RBLclass.AddIn, Version=$(var.AssemblyVersion), Culture=neutral, PublicKeyToken=null" Type="string" />
             <RegistryValue Name="RuntimeVersion" Value="v4.0.30319" Type="string" />
             <RegistryValue Name="CodeBase" Value="file:///[#fil_MainDll]" Type="string" />
           </RegistryKey>
@@ -132,12 +140,12 @@
           <RegistryValue Value="mscoree.dll" Type="string" />
           <RegistryValue Name="ThreadingModel" Value="Both" Type="string" />
           <RegistryValue Name="Class" Value="RBLclass.AddIn.RblClassTaskPaneHost" Type="string" />
-          <RegistryValue Name="Assembly" Value="RBLclass.AddIn, Version=2.4.0.0, Culture=neutral, PublicKeyToken=null" Type="string" />
+          <RegistryValue Name="Assembly" Value="RBLclass.AddIn, Version=$(var.AssemblyVersion), Culture=neutral, PublicKeyToken=null" Type="string" />
           <RegistryValue Name="RuntimeVersion" Value="v4.0.30319" Type="string" />
           <RegistryValue Name="CodeBase" Value="file:///[#fil_MainDll]" Type="string" />
-          <RegistryKey Key="2.4.0.0">
+          <RegistryKey Key="$(var.AssemblyVersion)">
             <RegistryValue Name="Class" Value="RBLclass.AddIn.RblClassTaskPaneHost" Type="string" />
-            <RegistryValue Name="Assembly" Value="RBLclass.AddIn, Version=2.4.0.0, Culture=neutral, PublicKeyToken=null" Type="string" />
+            <RegistryValue Name="Assembly" Value="RBLclass.AddIn, Version=$(var.AssemblyVersion), Culture=neutral, PublicKeyToken=null" Type="string" />
             <RegistryValue Name="RuntimeVersion" Value="v4.0.30319" Type="string" />
             <RegistryValue Name="CodeBase" Value="file:///[#fil_MainDll]" Type="string" />
           </RegistryKey>
@@ -159,12 +167,12 @@
           <RegistryValue Value="mscoree.dll" Type="string" />
           <RegistryValue Name="ThreadingModel" Value="Both" Type="string" />
           <RegistryValue Name="Class" Value="RBLclass.AddIn.RblClassTaskPaneHost" Type="string" />
-          <RegistryValue Name="Assembly" Value="RBLclass.AddIn, Version=2.4.0.0, Culture=neutral, PublicKeyToken=null" Type="string" />
+          <RegistryValue Name="Assembly" Value="RBLclass.AddIn, Version=$(var.AssemblyVersion), Culture=neutral, PublicKeyToken=null" Type="string" />
           <RegistryValue Name="RuntimeVersion" Value="v4.0.30319" Type="string" />
           <RegistryValue Name="CodeBase" Value="file:///[#fil_MainDll]" Type="string" />
-          <RegistryKey Key="2.4.0.0">
+          <RegistryKey Key="$(var.AssemblyVersion)">
             <RegistryValue Name="Class" Value="RBLclass.AddIn.RblClassTaskPaneHost" Type="string" />
-            <RegistryValue Name="Assembly" Value="RBLclass.AddIn, Version=2.4.0.0, Culture=neutral, PublicKeyToken=null" Type="string" />
+            <RegistryValue Name="Assembly" Value="RBLclass.AddIn, Version=$(var.AssemblyVersion), Culture=neutral, PublicKeyToken=null" Type="string" />
             <RegistryValue Name="RuntimeVersion" Value="v4.0.30319" Type="string" />
             <RegistryValue Name="CodeBase" Value="file:///[#fil_MainDll]" Type="string" />
           </RegistryKey>

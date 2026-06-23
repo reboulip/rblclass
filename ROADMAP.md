@@ -315,7 +315,7 @@ the disposition modal + save/delete, F3 the label), built in that order.
 
 ### C. Packaging
 
-- [ ] **C1.** Update the MSI to detect and remove files from a previously installed version before laying down the new one, eliminating the manual uninstall step. [#10]
+- [x] **C1.** Update the MSI to detect and remove files from a previously installed version before laying down the new one, eliminating the manual uninstall step. [#10]
 
 ---
 
