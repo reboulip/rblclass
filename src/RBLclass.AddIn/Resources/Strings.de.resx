@@ -162,6 +162,12 @@
   <data name="AttachDisp_EncryptedExcluded_Other" xml:space="preserve">
     <value>{0} verschlüsselte E-Mails ausgeschlossen — ihre Anlagen verbleiben bei den E-Mails.</value>
   </data>
+  <data name="AttachDisp_InlineExcluded_One" xml:space="preserve">
+    <value>{0} eingebettetes Bild ausgeschlossen — eingebettete Bilder sind keine trennbaren Anlagen.</value>
+  </data>
+  <data name="AttachDisp_InlineExcluded_Other" xml:space="preserve">
+    <value>{0} eingebettete Bilder ausgeschlossen — eingebettete Bilder sind keine trennbaren Anlagen.</value>
+  </data>
   <data name="AttachDisp_DeleteAll_Button" xml:space="preserve">
     <value>Alle löschen</value>
   </data>

@@ -375,7 +375,7 @@ namespace RBLclass.AddIn.ViewModels
                     && TaskPaneServices.ShowAttachmentDisposition != null)
                 {
                     var groups = TaskPaneServices.GatherAttachments(items);
-                    if (groups.Any(g => g.IsEncrypted || g.Attachments.Count > 0))
+                    if (groups.Any(g => g.IsEncrypted || g.Attachments.Any(a => !a.IsInline)))
                     {
                         if (AllAttachmentBearersAreEncrypted(groups))
                         {
@@ -703,7 +703,7 @@ namespace RBLclass.AddIn.ViewModels
                     && TaskPaneServices.ShowAttachmentDisposition != null)
                 {
                     var groups = TaskPaneServices.GatherAttachments(preflight.Items);
-                    if (groups.Any(g => g.IsEncrypted || g.Attachments.Count > 0))
+                    if (groups.Any(g => g.IsEncrypted || g.Attachments.Any(a => !a.IsInline)))
                     {
                         if (AllAttachmentBearersAreEncrypted(groups))
                         {
@@ -804,7 +804,7 @@ namespace RBLclass.AddIn.ViewModels
             bool anyParticipant = false;
             foreach (var g in groups)
             {
-                if (g.IsEncrypted || g.Attachments.Count > 0)
+                if (g.IsEncrypted || g.Attachments.Any(a => !a.IsInline))
                 {
                     anyParticipant = true;
                     if (!g.IsEncrypted) return false;

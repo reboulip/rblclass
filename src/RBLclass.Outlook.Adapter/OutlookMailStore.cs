@@ -771,10 +771,17 @@ namespace RBLclass.Outlook.Adapter
                         int count = attachments.Value.Count;
                         bool removedAny = false;
                         // Remove from the end so indexes don't shift underneath us.
+                        // Inline/embedded images are left in place (v2.5.0.0 B2).
                         for (int i = count; i >= 1; i--)
                         {
-                            try { attachments.Value.Remove(i); removedAny = true; }
-                            catch { }
+                            OutlookOM.Attachment rawAtt;
+                            try { rawAtt = attachments.Value[i]; } catch { continue; }
+                            using (var attRef = new ComRef<OutlookOM.Attachment>(rawAtt))
+                            {
+                                if (IsInlineAttachment(attRef.Value)) continue;
+                                try { attRef.Value.Delete(); removedAny = true; }
+                                catch { }
+                            }
                         }
                         if (removedAny)
                         {
@@ -940,16 +947,61 @@ namespace RBLclass.Outlook.Adapter
                             try { raw = attachments.Value[i]; } catch { continue; }
                             using (var att = new ComRef<OutlookOM.Attachment>(raw))
                             {
+                                bool inline = IsInlineAttachment(att.Value);
                                 string name = Safe(() => att.Value.FileName, string.Empty);
                                 long size = Safe(() => (long)att.Value.Size, 0L);
                                 int id = Safe(() => att.Value.Index, i);
-                                result.Add(new AttachmentInfo(id, name, size));
+                                result.Add(new AttachmentInfo(id, name, size, inline));
                             }
                         }
                     }
                     return result;
                 }
             }
+        }
+
+        /// <summary>
+        /// True when the attachment is inline/embedded (a cid:-linked body image,
+        /// signature logo, or embedded/OLE item) rather than a true detached file
+        /// (v2.5.0.0 B2). Any one signal is sufficient:
+        /// 1. Type is olEmbeddeditem or olOLE (embedded objects, never standalone files).
+        /// 2. PR_ATTACHMENT_HIDDEN (0x7FFE000B) true - Outlook's hidden-attachment flag.
+        /// 3. A content-id (PR_ATTACH_CONTENT_ID) AND the ATT_MHTML_REF bit in
+        ///    PR_ATTACH_FLAGS - i.e. actually referenced from the HTML body. A
+        ///    content-id ALONE is not enough: Outlook assigns one to ordinary
+        ///    attachments too, so checking it alone wrongly hides real files.
+        /// olByValue (normal files) and olByReference (linked files) are NOT inline.
+        /// </summary>
+        private static bool IsInlineAttachment(OutlookOM.Attachment att)
+        {
+            var type = Safe(() => att.Type, OutlookOM.OlAttachmentType.olByValue);
+            if (type == OutlookOM.OlAttachmentType.olEmbeddeditem
+                || type == OutlookOM.OlAttachmentType.olOLE)
+                return true;
+
+            // The flags below need the PropertyAccessor, which not every store
+            // exposes for every MAPI tag (PST vs Exchange differ), so failures
+            // fall through to "not inline" (the attachment is shown, as pre-B2).
+            try
+            {
+                using (var pa = new ComRef<OutlookOM.PropertyAccessor>(att.PropertyAccessor))
+                {
+                    const string PR_ATTACHMENT_HIDDEN = "http://schemas.microsoft.com/mapi/proptag/0x7FFE000B";
+                    if (Safe(() => (bool)pa.Value.GetProperty(PR_ATTACHMENT_HIDDEN), false))
+                        return true;
+
+                    const string PR_ATTACH_CONTENT_ID = "http://schemas.microsoft.com/mapi/proptag/0x3712001F";
+                    const string PR_ATTACH_FLAGS = "http://schemas.microsoft.com/mapi/proptag/0x37140003";
+                    const int ATT_MHTML_REF = 0x00000004;
+                    string cid = Safe(() => pa.Value.GetProperty(PR_ATTACH_CONTENT_ID) as string, null);
+                    int flags = Safe(() => Convert.ToInt32(pa.Value.GetProperty(PR_ATTACH_FLAGS)), 0);
+                    if (!string.IsNullOrEmpty(cid) && (flags & ATT_MHTML_REF) != 0)
+                        return true;
+                }
+            }
+            catch { /* property not available for this store/item - treat as not inline */ }
+
+            return false;
         }
 
         public bool SaveAttachmentToFile(MailItemRef item, int attachmentId, string destinationDirectory)

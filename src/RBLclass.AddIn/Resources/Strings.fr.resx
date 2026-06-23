@@ -162,6 +162,12 @@
   <data name="AttachDisp_EncryptedExcluded_Other" xml:space="preserve">
     <value>{0} messages chiffrés exclus — leurs pièces jointes restent avec les messages.</value>
   </data>
+  <data name="AttachDisp_InlineExcluded_One" xml:space="preserve">
+    <value>{0} image intégrée exclue — les images incorporées ne sont pas des pièces jointes détachables.</value>
+  </data>
+  <data name="AttachDisp_InlineExcluded_Other" xml:space="preserve">
+    <value>{0} images intégrées exclues — les images incorporées ne sont pas des pièces jointes détachables.</value>
+  </data>
   <data name="AttachDisp_DeleteAll_Button" xml:space="preserve">
     <value>Tout supprimer</value>
   </data>

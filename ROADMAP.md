@@ -311,7 +311,7 @@ the disposition modal + save/delete, F3 the label), built in that order.
 ### B. Attachment enhancements
 
 - [x] **B1.** Add a "Keep" disposition option per attachment row in the removal modal, leaving chosen attachments on the filed copy untouched. [#5]
-- [ ] **B2.** Auto-exclude inline/embedded images from the attachment-removal flow so only true detached files are presented for disposition. [#4]
+- [x] **B2.** Auto-exclude inline/embedded images from the attachment-removal flow so only true detached files are presented for disposition. [#4]
 
 ### C. Packaging
 

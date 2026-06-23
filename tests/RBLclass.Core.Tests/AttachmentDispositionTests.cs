@@ -29,6 +29,18 @@ namespace RBLclass.Core.Tests
         }
 
         [Fact]
+        public void AttachmentInfo_is_not_inline_by_default()
+        {
+            new AttachmentInfo(1, "report.pdf", 100).IsInline.Should().BeFalse();
+        }
+
+        [Fact]
+        public void AttachmentInfo_carries_the_inline_flag_when_set()
+        {
+            new AttachmentInfo(1, "logo.png", 50, isInline: true).IsInline.Should().BeTrue();
+        }
+
+        [Fact]
         public void Delete_disposition_strips_but_never_saves()
         {
             var store = StoreWithWorkingMove();

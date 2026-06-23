@@ -162,6 +162,12 @@
   <data name="AttachDisp_EncryptedExcluded_Other" xml:space="preserve">
     <value>{0} encrypted mails were excluded — their attachments stay with the mail.</value>
   </data>
+  <data name="AttachDisp_InlineExcluded_One" xml:space="preserve">
+    <value>{0} inline image was excluded — embedded images are not detachable files.</value>
+  </data>
+  <data name="AttachDisp_InlineExcluded_Other" xml:space="preserve">
+    <value>{0} inline images were excluded — embedded images are not detachable files.</value>
+  </data>
   <data name="AttachDisp_DeleteAll_Button" xml:space="preserve">
     <value>Delete all</value>
   </data>
