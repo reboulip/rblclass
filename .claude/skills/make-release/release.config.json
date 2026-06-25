@@ -9,7 +9,7 @@
   "ProgId": "RBLclass.AddIn",
   "AssemblyName": "RBLclass.AddIn",
   "AssemblyClass": "RBLclass.AddIn.RblClassAddIn",
-  "AssemblyVersion": "2.5.0.0",
+  "AssemblyVersion": "2.5.1.0",
 
   "_comment_taskpane": "The Custom Task Pane host is a ComVisible WinForms UserControl in the same assembly. A raw Shared COM Add-in (no VSTO) must register the control's CLSID/ProgId itself, plus the ActiveX Control category, so Office's ICTPFactory.CreateCTP can instantiate it. CLSID/ProgId here MUST match the [Guid]/[ProgId] on RblClassTaskPaneHost.",
   "TaskPaneControl": {
