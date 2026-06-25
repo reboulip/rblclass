@@ -7,6 +7,7 @@ using System.Windows.Threading;
 using RBLclass.AddIn.Localization;
 using RBLclass.AddIn.Mvvm;
 using RBLclass.Core;
+using Serilog;
 
 namespace RBLclass.AddIn.ViewModels
 {
@@ -341,12 +342,22 @@ namespace RBLclass.AddIn.ViewModels
             BusyStatus = _loc.GetString("Status_AutoClassing");
             Dispatcher.CurrentDispatcher.Invoke(new Action(() => { }), DispatcherPriority.Render);
 
+            // PERF (v2.5.1.0): envelope timing for the whole Auto-class action,
+            // so the diagnostic log shows the snapshot-build cost, the Core call
+            // cost, and the item count - the user reports Auto-class feeling slow.
+            var swAuto = System.Diagnostics.Stopwatch.StartNew();
+            Log.Information("PERF AutoClass START: {Items} selected item(s)", items.Count);
+
             try
             {
                 // One live-index snapshot, indexed for the staleness check.
+                var swSnapshot = System.Diagnostics.Stopwatch.StartNew();
                 var byKey = new Dictionary<string, FolderNode>();
                 foreach (var f in _getAllFolders())
                     byKey[KeyOf(f)] = f;
+                swSnapshot.Stop();
+                Log.Information("PERF AutoClass folder-snapshot built {Ms} ms: {Folders} folder(s)",
+                                swSnapshot.ElapsedMilliseconds, byKey.Count);
                 Func<string, string, FolderNode> resolve = (storeId, entryId) =>
                 {
                     FolderNode node;
@@ -404,8 +415,13 @@ namespace RBLclass.AddIn.ViewModels
                     }
                 }
 
+                var swCore = System.Diagnostics.Stopwatch.StartNew();
                 var result = _classifier.AutoClassify(items, resolve, keepCopy, removeAttachments, safetyCopy,
                                                        attachmentDispositions, labelOptions);
+                swCore.Stop();
+                Log.Information(
+                    "PERF AutoClass core {Ms} ms: filed={Filed}, noHistory={NoHistory}, stale={Stale}, errors={Errors}",
+                    swCore.ElapsedMilliseconds, result.Filed, result.NoHistory, result.StaleFolders, result.Errors);
 
                 // Show where the mail went (the destination folders), so the
                 // user can see and open them; empty when nothing was filed.
@@ -432,6 +448,9 @@ namespace RBLclass.AddIn.ViewModels
             }
             finally
             {
+                swAuto.Stop();
+                Log.Information("PERF AutoClass END: total {Ms} ms for {Items} item(s)",
+                                swAuto.ElapsedMilliseconds, items.Count);
                 Dispatcher.CurrentDispatcher.BeginInvoke(
                     new Action(() => IsBusy = false), DispatcherPriority.Background);
             }
@@ -674,9 +693,21 @@ namespace RBLclass.AddIn.ViewModels
             IsBusy = true;
             BusyStatus = _loc.GetString("MainPane_Busy_Filing");
 
+            // PERF (v2.5.1.0): envelope timing for the whole classify action -
+            // separates the (COM-heavy, conversation-widening) preflight from the
+            // per-item move loop, to localise the random classify-time slowness.
+            var swClassify = System.Diagnostics.Stopwatch.StartNew();
+            Log.Information(
+                "PERF Classify START: {Items} item(s) -> {Destinations} destination(s), widen={Widen}, keepCopy={KeepCopy}, removeAttachments={RemoveAttachments}",
+                items.Count, destinations.Count, _widenConversation, _keepCopy, _removeAttachments);
+
             try
             {
+                var swPreflight = System.Diagnostics.Stopwatch.StartNew();
                 var preflight = _classifier.Preflight(items, _widenConversation);
+                swPreflight.Stop();
+                Log.Information("PERF Classify preflight {Ms} ms: {Items} item(s) after widen/dedupe",
+                                swPreflight.ElapsedMilliseconds, preflight.Items.Count);
 
                 bool markTasksComplete = false;
                 if (preflight.FlaggedIncomplete.Count > 0 && _confirmMarkTasksComplete != null)
@@ -747,12 +778,17 @@ namespace RBLclass.AddIn.ViewModels
                         "yyyy-MM-dd");
                 }
 
+                var swCore = System.Diagnostics.Stopwatch.StartNew();
                 var result = await _classifier.ClassifyAsync(
                     new ClassifyRequest(preflight.Items, destinations, _keepCopy,
                                         _removeAttachments, markTasksComplete, safetyCopy,
                                         bannerSignature, attachmentDispositions, labelOptions),
                     progress,
                     YieldToPump);
+                swCore.Stop();
+                Log.Information(
+                    "PERF Classify core {Ms} ms: processed={Processed}, copies={Copies}, moved={Moved}, errors={Errors}",
+                    swCore.ElapsedMilliseconds, result.ItemsProcessed, result.CopiesMade, result.OriginalsMoved, result.Errors);
 
                 string verb = _loc.GetString(_keepCopy ? "Status_Classify_Copied" : "Status_Classify_Filed");
                 string failed = result.Errors > 0
@@ -786,6 +822,8 @@ namespace RBLclass.AddIn.ViewModels
             }
             finally
             {
+                swClassify.Stop();
+                Log.Information("PERF Classify END: total {Ms} ms", swClassify.ElapsedMilliseconds);
                 IsBusy = false;
             }
         }

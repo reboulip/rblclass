@@ -257,6 +257,11 @@ namespace RBLclass.Outlook.Adapter
         {
             if (item == null || destination == null) return null;
 
+            // PERF (v2.5.1.0): time the whole copy-then-move primitive, including
+            // the session open + item/folder resolution, so a classify-time
+            // timeline can be reconstructed from the rolling log on the target.
+            var swPerf = System.Diagnostics.Stopwatch.StartNew();
+
             using (var session = new ComRef<OutlookOM.NameSpace>(_app.Session))
             {
                 object rawItem;
@@ -291,6 +296,10 @@ namespace RBLclass.Outlook.Adapter
                                     if (moved == null) return null;
                                     string movedEntryId = Safe(() => moved.EntryID, null);
                                     if (movedEntryId == null) return null;
+                                    swPerf.Stop();
+                                    Log.Information(
+                                        "PERF CopyItemToFolder {Ms} ms: item {EntryId} -> {Path}",
+                                        swPerf.ElapsedMilliseconds, item.EntryId, destination.FullPath);
                                     return new MailItemRef(destination.StoreId, movedEntryId, item.Subject);
                                 }
                             }
@@ -313,6 +322,12 @@ namespace RBLclass.Outlook.Adapter
         public MailItemRef MoveItemToFolder(MailItemRef item, FolderNode destination)
         {
             if (item == null || destination == null) return null;
+
+            // PERF (v2.5.1.0): full-method timer (session open + resolution +
+            // move). Compared against the move-only D1 timing below, the
+            // difference isolates the per-call resolution overhead - the
+            // suspected tax behind the slow per-item auto-class loop.
+            var swPerf = System.Diagnostics.Stopwatch.StartNew();
 
             using (var session = new ComRef<OutlookOM.NameSpace>(_app.Session))
             {
@@ -358,9 +373,14 @@ namespace RBLclass.Outlook.Adapter
                                 string movedEntryId = Safe(() => movedItem.EntryID, null);
                                 if (movedEntryId == null) return null;
                                 sw.Stop();
+                                swPerf.Stop();
                                 Log.Information(
                                     "Classify move END (D1): item {EntryId} -> {Path} in {Ms} ms",
                                     item.EntryId, destination.FullPath, sw.ElapsedMilliseconds);
+                                Log.Information(
+                                    "PERF MoveItemToFolder {Ms} ms (move-only {MoveMs} ms): item {EntryId} -> {Path}",
+                                    swPerf.ElapsedMilliseconds, sw.ElapsedMilliseconds,
+                                    item.EntryId, destination.FullPath);
                                 return new MailItemRef(destination.StoreId, movedEntryId, item.Subject);
                             }
                         }
@@ -404,6 +424,10 @@ namespace RBLclass.Outlook.Adapter
         {
             if (item == null) return null;
 
+            // PERF (v2.5.1.0): resolved once per item on the !keepCopy classify
+            // path (to make a move undoable).
+            var swPerf = System.Diagnostics.Stopwatch.StartNew();
+
             using (var session = new ComRef<OutlookOM.NameSpace>(_app.Session))
             {
                 object rawItem;
@@ -427,6 +451,9 @@ namespace RBLclass.Outlook.Adapter
                         // FolderPath is "\\Store\A\B"; good enough for Undo's
                         // purposes (a destination ref + logging) without a walk.
                         string fullPath = Safe(() => parent.Value.FolderPath, name);
+                        swPerf.Stop();
+                        Log.Information("PERF GetParentFolder {Ms} ms: item {EntryId}",
+                                        swPerf.ElapsedMilliseconds, item.EntryId);
                         return new FolderNode(storeId, entryId, parentEntryId: null,
                                               name: name, fullPath: fullPath, isLeaf: false);
                     }
@@ -439,6 +466,10 @@ namespace RBLclass.Outlook.Adapter
         public string GetConversationKey(MailItemRef item)
         {
             if (item == null) return null;
+
+            // PERF (v2.5.1.0): read per item for the Auto-class history (once on a
+            // manual classify, again per item inside the auto-class loop).
+            var swPerf = System.Diagnostics.Stopwatch.StartNew();
 
             using (var session = new ComRef<OutlookOM.NameSpace>(_app.Session))
             {
@@ -455,7 +486,11 @@ namespace RBLclass.Outlook.Adapter
                     // moves between folders/stores - the right key for the
                     // Auto-class history. Null/empty when conversation tracking
                     // is off for the item's store.
-                    return Safe(() => mail.ConversationID, null);
+                    string key = Safe(() => mail.ConversationID, null);
+                    swPerf.Stop();
+                    Log.Information("PERF GetConversationKey {Ms} ms: item {EntryId}",
+                                    swPerf.ElapsedMilliseconds, item.EntryId);
+                    return key;
                 }
             }
         }
@@ -556,7 +591,21 @@ namespace RBLclass.Outlook.Adapter
         {
             var result = new List<MailItemRef>();
             var skipped = new List<string>();
-            ConversationSiblings Outcome() => new ConversationSiblings(result, skipped);
+
+            // PERF (v2.5.1.0): conversation widening on the manual-classify
+            // preflight - GetConversation + GetTable + a per-sibling
+            // GetItemFromID. A prime suspect for the random classify-time
+            // slowness, since it touches the conversation index/server. Logged
+            // on every exit path, with the sibling/skip counts it produced.
+            var swPerf = System.Diagnostics.Stopwatch.StartNew();
+            ConversationSiblings Outcome()
+            {
+                swPerf.Stop();
+                Log.Information(
+                    "PERF GetConversationSiblings {Ms} ms: item {EntryId}, {Siblings} sibling(s), {Skipped} skipped",
+                    swPerf.ElapsedMilliseconds, item?.EntryId, result.Count, skipped.Count);
+                return new ConversationSiblings(result, skipped);
+            }
 
             if (item == null) return Outcome();
 
@@ -692,6 +741,9 @@ namespace RBLclass.Outlook.Adapter
         {
             if (item == null) return false;
 
+            // PERF (v2.5.1.0): checked once per item during the classify preflight.
+            var swPerf = System.Diagnostics.Stopwatch.StartNew();
+
             using (var session = new ComRef<OutlookOM.NameSpace>(_app.Session))
             {
                 object rawItem;
@@ -707,9 +759,13 @@ namespace RBLclass.Outlook.Adapter
                     // "01/01/4501" TaskCompletedDate sentinel: a follow-up flag
                     // that hasn't been completed reports olFlagMarked (vs
                     // olFlagComplete / olNoFlag).
-                    return Safe(() => mail.IsMarkedAsTask, false)
+                    bool flagged = Safe(() => mail.IsMarkedAsTask, false)
                         && Safe(() => mail.FlagStatus, OutlookOM.OlFlagStatus.olNoFlag)
                                == OutlookOM.OlFlagStatus.olFlagMarked;
+                    swPerf.Stop();
+                    Log.Information("PERF IsFlaggedIncomplete {Ms} ms: item {EntryId}",
+                                    swPerf.ElapsedMilliseconds, item.EntryId);
+                    return flagged;
                 }
             }
         }
@@ -742,6 +798,11 @@ namespace RBLclass.Outlook.Adapter
         public bool RemoveAttachments(MailItemRef item)
         {
             if (item == null) return true;
+
+            // PERF (v2.5.1.0): attachment stripping is COM-heavy (a Save per
+            // mail, plus PropertyAccessor probes for inline detection) and a
+            // candidate for the slow path when "remove attachments" is on.
+            var swPerf = System.Diagnostics.Stopwatch.StartNew();
 
             using (var session = new ComRef<OutlookOM.NameSpace>(_app.Session))
             {
@@ -787,6 +848,10 @@ namespace RBLclass.Outlook.Adapter
                         {
                             try { mail.Save(); } catch { }
                         }
+                        swPerf.Stop();
+                        Log.Information(
+                            "PERF RemoveAttachments {Ms} ms: item {EntryId}, {Count} attachment(s) scanned, removedAny={Removed}",
+                            swPerf.ElapsedMilliseconds, item.EntryId, count, removedAny);
                     }
                 }
             }
