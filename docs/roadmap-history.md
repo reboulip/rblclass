@@ -232,10 +232,11 @@ Auto-class build on, then feature work.
       "Auto-class" button in the pane; filed destinations shown in the results
       list; outcomes in the status line.
 
-## v2.4.0.0 — shipped items (third feedback wave)
+## v2.4.0.0 — Third feedback wave (shipped)
 
-The quick wins and pane/visual redesigns that shipped before the bug-fix and
-new-feature work documented in the active [../ROADMAP.md](../ROADMAP.md).
+Quick wins and pane/visual redesigns (A–C), then the classify
+performance/freeze fix (D), classify-after-send (E), and the
+attachment-disposition capability (F).
 
 ### A. Quick wins
 - [x] **A1. Clear the search field after a successful classify** —
@@ -269,3 +270,89 @@ new-feature work documented in the active [../ROADMAP.md](../ROADMAP.md).
       (12 px/depth) with the `↗`/`+` buttons only on the leaf row; a
       `DataTemplateSelector` switches templates. Settings toggle in EN/FR/DE;
       xUnit over `PathSegments` splitting.
+
+### D. Classify reliability & performance
+- [x] **D1. Stormshield `MAPI_E_NOT_FOUND` on multi-item classify — cosmetic.**
+      Folded into D2: the inter-item pump-yield gives Stormshield's async scan a
+      stable window after each `Move`. Cosmetic only (classify succeeds, mail
+      lands); manifests with multiple items selected. Re-verify on the
+      Stormshield 32-bit target alongside D2; optional hidden `InterItemDelayMs`
+      fallback if a residual remains.
+- [x] **D2. Responsive classify (no UI freeze).** Classify ran synchronously on
+      the STA UI thread, blocking the message pump for the whole run (Outlook
+      appeared hung). Reworked to an async path that yields the STA pump between
+      items (`Dispatcher.Yield`/`DispatcherFrame`) so Outlook repaints and stays
+      interactive; per-item progress in the status line
+      (`Status_Classify_Progress`); non-COM work (`ClassificationHistory`
+      writes, undo-plan persistence) dispatched to the thread pool; the COM
+      moves stay on the STA. Core stays UI-free via an injected yield callback;
+      `IsBusy` anti-double-fire preserved. xUnit over the progress/yield
+      callbacks and undo-plan invariance.
+
+### E. Classify after send
+- [x] **E1. Re-offer classification of a just-sent mail via Move-to-Inbox.**
+      When sent-item triage resolves to "Move to Inbox", the moved
+      `MailItemRef` is pinned into `MainPaneViewModel` as the active classify
+      target (overrides `GetSelectedItems` for the next classify; clears after
+      that classify or on a real selection change) and the pane is revealed.
+      New setting `ClassifyAfterMoveToInbox` (default on). The OM has no reliable
+      API to set `Explorer.Selection`, hence the pin approach rather than
+      selecting the item in the message list.
+
+### F. Attachment disposition & filesystem favourites
+- [x] **F1. Keyword-searchable "favourite folders" filesystem index.** Settings
+      editor to add/remove favourite Windows directories
+      (`AttachmentFavoriteFolders`); recursive **path-only** indexing with a
+      depth/count cap (32-bit memory budget); persisted in SQLite **schema v3**
+      (`FavoriteFolders`) and searched with the same
+      `FolderSearchService`/`FolderMatchMode` matcher. Directory walk behind an
+      injected `IDirectoryScanner`/`IFavoriteFolderSource`. xUnit over keyword
+      matching, path-segment splitting, caps, empty/duplicate paths.
+- [x] **F2. Per-attachment disposition modal.** New setting
+      `AttachmentRemovalMode` = **Modal** (default) / **DeleteSilently**. When
+      Modal + remove-attachments, classify shows a modal listing each attachment
+      (filename, size, source subject) with a per-row **Delete** or **Save to…**
+      (folder picker over the F1 favourites index + browse fallback). Encrypted
+      mail (`IPM.Note.SMIME`) excluded entirely and reported
+      ([[never-strip-encrypted-attachments]]). On confirm: save each (collision
+      resolved with ` (1)`, ` (2)`…), strip the chosen attachments, apply the F3
+      label — on the filed copy / moved item ([[classify-attachments-on-copy]]).
+      Adapter gains `GetAttachments` / `SaveAttachmentToFile`; `AttachmentInfo`
+      is an Outlook-free Core type. **Fails safe** when a save is blocked
+      (Windows Controlled Folder Access): nothing stripped, run reports a
+      failure. Confirm CFA allow-listing of `outlook.exe` on the 32-bit target.
+- [x] **F3. "Former attachments" label on the filed mail.**
+      `AttachmentLabelLocation` = **InfoBar** / **Body**. Body path shipped: an
+      HTML note block appended to `HTMLBody` listing each former attachment and
+      its disposition ("Saved to `<path>`" / "Deleted on `<date>`"), reusing the
+      banner-rewrite pattern. InfoBar (`OlkInfoBar`) is a form-region control
+      with no durable per-item label for stored items — **recorded as deferred**,
+      Body is the fallback. Pure-Core `AttachmentLabelFormatter` with
+      `_One`/`_Other` plurals. xUnit over saved/deleted/mixed compositions and
+      single-vs-multiple (plural) rendering.
+
+## v2.4.1.0 — Attachment & indexing bug fixes (shipped)
+
+- [x] **A1.** Re-index button fully offloads PST enumeration to a background
+      thread so the Outlook UI stays responsive during manual reindex, colour
+      indicator cycling to yellow. [#6]
+- [x] **A2.** Attachment-disposition modal shown during auto-classify when
+      "remove attachments" is on, matching the manual-classify flow. [#7]
+- [x] **A3.** Discrete status-area notice instead of the modal when classifying
+      encrypted mail (which always retains its attachments). [#8]
+
+## v2.5.0.0 — Attachment refinements & UX polish (shipped)
+
+### A. Status & notifications
+- [x] **A1.** Single status-area notification replaced by a rolling in-session
+      log capped at ~5 entries, so short-lived messages stay visible. [#9]
+
+### B. Attachment enhancements
+- [x] **B1.** "Keep" disposition per attachment row in the removal modal,
+      leaving chosen attachments on the filed copy untouched. [#5]
+- [x] **B2.** Inline/embedded images auto-excluded from the attachment-removal
+      flow, so only true detached files are presented for disposition. [#4]
+
+### C. Packaging
+- [x] **C1.** MSI detects and removes a previously installed version before
+      laying down the new one, eliminating the manual uninstall step. [#10]
