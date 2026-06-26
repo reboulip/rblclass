@@ -84,6 +84,9 @@
   <data name="MainPane_StripBanner_CheckBox" xml:space="preserve">
     <value>Supprimer la bannière d'expéditeur externe</value>
   </data>
+  <data name="Settings_AutoExpand_CheckBox" xml:space="preserve">
+    <value>Développer automatiquement les résultats (afficher les chemins complets)</value>
+  </data>
   <data name="MainPane_OpenFolder_ToolTip" xml:space="preserve">
     <value>Ouvrir ce dossier dans Outlook</value>
   </data>

@@ -106,9 +106,16 @@
             <ListBox Grid.Row="2" x:Name="ResultsList"
                      ItemsSource="{Binding Results}"
                      SelectedItem="{Binding SelectedResult}"
-                     HorizontalContentAlignment="Stretch"
                      MouseDoubleClick="ResultsList_MouseDoubleClick"
                      ScrollViewer.HorizontalScrollBarVisibility="Disabled">
+                <ListBox.ItemContainerStyle>
+                    <Style TargetType="ListBoxItem">
+                        <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+                        <Setter Property="BorderThickness" Value="0,0,0,1" />
+                        <Setter Property="BorderBrush" Value="{DynamicResource Theme.ControlBorder}" />
+                        <Setter Property="Padding" Value="0" />
+                    </Style>
+                </ListBox.ItemContainerStyle>
                 <ListBox.ItemTemplate>
                     <DataTemplate>
                         <DockPanel LastChildFill="True">

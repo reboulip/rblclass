@@ -1036,6 +1036,9 @@ namespace RBLclass.AddIn.ViewModels
             Results.Clear();
             foreach (var r in outcome.Results)
                 AddResultRow(r);
+            if (_settings != null && _settings.GetBool(SettingsKeys.AutoExpandResults, false))
+                foreach (var row in Results)
+                    row.IsExpanded = true;
 
             string trimmed = (_query ?? string.Empty).Trim();
             if (outcome.TotalMatchCount == 0)

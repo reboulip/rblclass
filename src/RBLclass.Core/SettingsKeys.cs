@@ -134,5 +134,8 @@ namespace RBLclass.Core
 
         /// <summary>Whether the Auto-class button easter egg (pig icon) is active (v2.6.0.0).</summary>
         public const string EasterEggActive = "EasterEggActive";
+
+        /// <summary>Automatically expand every result row (show full path) after each search (v2.6.0.0 A3).</summary>
+        public const string AutoExpandResults = "AutoExpandResults";
     }
 }

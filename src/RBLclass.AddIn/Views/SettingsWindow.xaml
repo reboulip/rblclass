@@ -28,6 +28,8 @@
                         </CheckBox>
                         <CheckBox Margin="0,3" IsChecked="{Binding OpenInNewWindow}"
                                   Content="{loc:Loc Key=Settings_OpenInNewWindow_CheckBox}" />
+                        <CheckBox Margin="0,3" IsChecked="{Binding AutoExpandResults}"
+                                  Content="{loc:Loc Key=Settings_AutoExpand_CheckBox}" />
                         <DockPanel Margin="0,8,0,2" LastChildFill="False">
                             <TextBlock Text="{loc:Loc Key=Settings_MaxResults_Label}" VerticalAlignment="Center" />
                             <TextBox DockPanel.Dock="Right" Width="60" Margin="6,0,0,0"

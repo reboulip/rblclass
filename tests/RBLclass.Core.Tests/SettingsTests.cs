@@ -55,6 +55,7 @@ namespace RBLclass.Core.Tests
             settings.MinSearchLength.Should().Be(FolderSearchOptions.DefaultMinQueryLength);
             settings.SearchDebounceMs.Should().Be(Settings.DefaultSearchDebounceMs);
             settings.PreferredUiLanguage.Should().Be("Auto");
+            settings.AutoExpandResults.Should().BeFalse();
         }
 
         [Fact]
@@ -82,6 +83,7 @@ namespace RBLclass.Core.Tests
                 AttachmentLabelLocation = AttachmentLabelLocation.InfoBar,
                 MinSearchLength = 3,
                 SearchDebounceMs = 450,
+                AutoExpandResults = true,
                 PreferredUiLanguage = "fr"
             };
 
@@ -108,6 +110,7 @@ namespace RBLclass.Core.Tests
             reloaded.AttachmentLabelLocation.Should().Be(AttachmentLabelLocation.InfoBar);
             reloaded.MinSearchLength.Should().Be(3);
             reloaded.SearchDebounceMs.Should().Be(450);
+            reloaded.AutoExpandResults.Should().BeTrue();
             reloaded.PreferredUiLanguage.Should().Be("fr");
         }
 

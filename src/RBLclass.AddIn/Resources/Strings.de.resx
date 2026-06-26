@@ -84,6 +84,9 @@
   <data name="MainPane_StripBanner_CheckBox" xml:space="preserve">
     <value>Banner für externe Absender entfernen</value>
   </data>
+  <data name="Settings_AutoExpand_CheckBox" xml:space="preserve">
+    <value>Ergebnisse automatisch aufklappen (vollständige Pfade anzeigen)</value>
+  </data>
   <data name="MainPane_OpenFolder_ToolTip" xml:space="preserve">
     <value>Diesen Ordner in Outlook öffnen</value>
   </data>

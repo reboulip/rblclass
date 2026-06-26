@@ -157,6 +157,12 @@ namespace RBLclass.AddIn.ViewModels
             set => Apply(_settings.AllResults, value, v => _settings.AllResults = v);
         }
 
+        public bool AutoExpandResults
+        {
+            get => _settings.AutoExpandResults;
+            set => Apply(_settings.AutoExpandResults, value, v => _settings.AutoExpandResults = v);
+        }
+
         /// <summary>
         /// Word-prefix is the opt-in stricter mode; the default is the broader
         /// "contains" (substring) search. Bound to a single checkbox that is

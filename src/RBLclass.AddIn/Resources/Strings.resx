@@ -84,6 +84,9 @@
   <data name="MainPane_StripBanner_CheckBox" xml:space="preserve">
     <value>Strip the external-sender banner</value>
   </data>
+  <data name="Settings_AutoExpand_CheckBox" xml:space="preserve">
+    <value>Auto-expand results (show full paths)</value>
+  </data>
   <data name="MainPane_OpenFolder_ToolTip" xml:space="preserve">
     <value>Open this folder in Outlook</value>
   </data>

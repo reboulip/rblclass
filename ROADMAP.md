@@ -65,7 +65,7 @@ Phase 6 (pilot rollout) is in progress; Phases 7–9 are forward-looking.
 ### A — UI & ribbon
 - [x] **A1.** Ribbon UI overhaul: add a Settings icon, remove the "Remove Attachments" and "Index Status" buttons, add an About button (version / author / tech info), and an easter egg — clicking the hidden item in About replaces the Auto-Class button label with a pig icon. [#15]
 - [x] **A2.** Increase the prominence of the Classify button in the task pane. [#17]
-- [ ] **A3.** Add an auto-expand toggle and a visual row separator to search results. [#13]
+- [x] **A3.** Add an auto-expand toggle and a visual row separator to search results. [#13]
 
 ### B — Classify & attachments
 - [ ] **B1.** Extend the auto-classify conversation-history retention window and expose it as a configurable setting. [#16]
