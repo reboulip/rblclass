@@ -269,7 +269,15 @@ namespace RBLclass.AddIn.ViewModels
         public bool IsBusy
         {
             get => _isBusy;
-            private set { if (SetProperty(ref _isBusy, value)) OnPropertyChanged(nameof(IsNotBusy)); }
+            private set
+            {
+                if (SetProperty(ref _isBusy, value)) OnPropertyChanged(nameof(IsNotBusy));
+                // Mirror the batch lifetime to the add-in's selection handler so
+                // it can skip the redundant per-item GetSelectedItems COM walk
+                // that mid-batch SelectionChange events would otherwise trigger.
+                // IsBusy is true only during a move batch (classify/auto/undo).
+                TaskPaneServices.BatchInProgress = value;
+            }
         }
 
         public bool IsNotBusy => !_isBusy;
@@ -444,7 +452,7 @@ namespace RBLclass.AddIn.ViewModels
                     OnPropertyChanged(nameof(CanUndo));
                 }
 
-                RefreshSelection();
+                ScheduleSelectionRefresh("AutoClass");
             }
             finally
             {
@@ -501,7 +509,7 @@ namespace RBLclass.AddIn.ViewModels
                     undoStatus += _loc.GetString("Status_Undo_AttachmentsNotRestored");
                 PushStatus(undoStatus);
 
-                RefreshSelection();
+                ScheduleSelectionRefresh("Undo");
             }
             finally
             {
@@ -567,6 +575,43 @@ namespace RBLclass.AddIn.ViewModels
             if (_settings != null)
                 CanStripBanner = !string.IsNullOrWhiteSpace(
                     _settings.Get(SettingsKeys.ExternalBannerSignature, string.Empty));
+        }
+
+        /// <summary>
+        /// Post the pane's own post-filing refresh (the COM-touching selection
+        /// re-read in <see cref="RefreshSelection"/>) to the back of the STA pump
+        /// at Background priority. After a move, the filed mail leaves the active
+        /// view and Outlook must repaint its explorer and pick the next item -
+        /// that is the priority. Our refresh is purely cosmetic (the "N mail
+        /// selected" caption), so it waits until Outlook has settled rather than
+        /// fighting it for the single STA thread at the worst possible moment.
+        /// PERF (v2.5.1.x): logs how long the continuation waited for the pump
+        /// (= the Outlook-busy time, now off the critical path) versus how long
+        /// the refresh's COM work itself took once Outlook was free.
+        /// </summary>
+        private void ScheduleSelectionRefresh(string context)
+        {
+            var swWait = System.Diagnostics.Stopwatch.StartNew();
+            Dispatcher.CurrentDispatcher.BeginInvoke(new Action(() =>
+            {
+                swWait.Stop();
+                var swRun = System.Diagnostics.Stopwatch.StartNew();
+                try
+                {
+                    RefreshSelection();
+                }
+                catch (Exception ex)
+                {
+                    Log.Warning(ex, "Deferred RefreshSelection ({Context}) failed", context);
+                }
+                finally
+                {
+                    swRun.Stop();
+                    Log.Information(
+                        "PERF RefreshSelection deferred ({Context}): waited {Wait} ms for pump, ran {Run} ms",
+                        context, swWait.ElapsedMilliseconds, swRun.ElapsedMilliseconds);
+                }
+            }), DispatcherPriority.Background);
         }
 
         /// <summary>
@@ -815,7 +860,7 @@ namespace RBLclass.AddIn.ViewModels
                 OnPropertyChanged(nameof(CanUndo));
 
                 ClearPin(); // E1: the pinned just-sent mail is now filed
-                RefreshSelection();
+                ScheduleSelectionRefresh("Classify");
                 ClearQuerySilently();
                 ResetOptionsToDefaults();
                 return true;
