@@ -203,7 +203,8 @@
             </StackPanel>
 
             <StackPanel Grid.Row="6" Orientation="Horizontal" Margin="0,8,0,0">
-                <Button Padding="12,4" Content="{Binding ClassifyButtonText}" Click="Classify_Click" />
+                <Button Style="{DynamicResource AccentButton}"
+                        Content="{Binding ClassifyButtonText}" Click="Classify_Click" />
                 <Button Padding="12,4" Margin="6,0,0,0" Content="{loc:Loc Key=MainPane_Undo_Button}"
                         IsEnabled="{Binding CanUndo}" Click="Undo_Click"
                         ToolTip="{loc:Loc Key=MainPane_Undo_ToolTip}" />
