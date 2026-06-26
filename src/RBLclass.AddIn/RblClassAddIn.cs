@@ -544,7 +544,22 @@ namespace RBLclass.AddIn
         {
             try
             {
+                // During a move batch (classify/auto/undo) the inter-item pump-
+                // yield (D1/D2) lets Outlook re-select the next mail and fire this
+                // event once per moved item. Re-counting the selection then is
+                // pointless work on the busy STA thread - the pane does one
+                // deferred refresh when the batch ends. Skip, but log so the PERF
+                // trace shows how many mid-batch fires we suppressed.
+                if (TaskPaneServices.BatchInProgress)
+                {
+                    Log.Information("PERF SelectionChange suppressed (batch in progress)");
+                    return;
+                }
+
+                var sw = System.Diagnostics.Stopwatch.StartNew();
                 int count = _mailStore.GetSelectedItems().Count;
+                sw.Stop();
+                Log.Information("PERF SelectionChange handled {Ms} ms: {Count} selected", sw.ElapsedMilliseconds, count);
                 TaskPaneServices.Host?.SetSelectionCount(count);
             }
             catch (Exception ex)
