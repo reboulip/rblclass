@@ -10,13 +10,25 @@ Reference docs from the legacy analysis:
 [docs/legacy-reimplementation-roadmap.md](docs/legacy-reimplementation-roadmap.md),
 [docs/parity-and-regression.md](docs/parity-and-regression.md).
 
-## Where we are (2026-06-25)
+## Where we are (2026-06-26)
 
 The rewritten add-in reached full legacy parity and shipped as **v2.0.0.0**,
 followed by feedback/refinement waves **v2.1.0.0**, **v2.2.0.0**, **v2.4.0.0**
 (classify performance/freeze fix, classify-after-send, attachment disposition),
-**v2.4.1.0**, and **v2.5.0.0** — all complete and recorded in
+**v2.4.1.0**, **v2.5.0.0**, **v2.5.1.0** (diagnostic PERF logging), and
+**v2.5.2.0** (classify-time freeze fix: deferred post-classify refresh +
+mid-batch selection suppression) — all complete and recorded in
 [history](docs/roadmap-history.md).
+
+- [x] **Classify-time freeze — FIXED & verified (v2.5.2.0).** The
+      selection-event storm during classify is gone: the 2026-06-26 production
+      logs show `SelectionChange suppressed (batch in progress)` on every
+      multi-item batch and a single deferred `RefreshSelection` (ran ≤56 ms)
+      after each classify; normal classify latency is ~80–650 ms total. This is
+      the freeze the user cared about. *(Separately observed, not this issue: two
+      ~80–90 s stalls on the attachment-save-to-SharePoint path, and a 1× auto-class
+      COMException moving into the account-root inbox — tracked as their own
+      follow-ups, not the classify freeze.)*
 
 The only remaining product item is the live re-verification of the
 external-sender banner strip (below — not reproducible on the dev machine).
@@ -45,6 +57,23 @@ Phase 6 (pilot rollout) is in progress; Phases 7–9 are forward-looking.
       implemented in the v2.1.0.0 scope; **not verified live** (no
       external-banner mail on the dev machine). Re-verify on a workstation that
       receives the company banner before closing.
+
+---
+
+## v2.6.0.0 — UI refresh & classify depth
+
+### A — UI & ribbon
+- [ ] **A1.** Ribbon UI overhaul: add a Settings icon, remove the "Remove Attachments" and "Index Status" buttons, add an About button (version / author / tech info), and an easter egg — clicking the hidden item in About replaces the Auto-Class button label with a pig icon. [#15]
+- [ ] **A2.** Increase the prominence of the Classify button in the task pane. [#17]
+- [ ] **A3.** Add an auto-expand toggle and a visual row separator to search results. [#13]
+
+### B — Classify & attachments
+- [ ] **B1.** Extend the auto-classify conversation-history retention window and expose it as a configurable setting. [#16]
+- [ ] **B2.** Add a "use the same save directory" checkbox (checked by default) to the multi-mail attachment disposition UI. [#18]
+- [ ] **B3.** Add diagnostics for external-sender banner detection, improve reliability, and add fine-grained configuration; closes the open carried-over verification item. [#19]
+
+### C — Meeting items
+- [ ] **C1.** Support classifying MeetingItem objects from the selection, enabled via an opt-in toggle in Settings. [#12]
 
 ---
 
