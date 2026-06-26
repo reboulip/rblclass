@@ -131,5 +131,8 @@ namespace RBLclass.Core
         /// InfoBar deferred, falls back to Body).
         /// </summary>
         public const string AttachmentLabelLocation = "AttachmentLabelLocation";
+
+        /// <summary>Whether the Auto-class button easter egg (pig icon) is active (v2.6.0.0).</summary>
+        public const string EasterEggActive = "EasterEggActive";
     }
 }

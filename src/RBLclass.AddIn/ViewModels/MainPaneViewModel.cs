@@ -44,6 +44,8 @@ namespace RBLclass.AddIn.ViewModels
         private string _busyStatus = string.Empty;
         private bool _isBusy;
         private IndexStatus _indexStatus = IndexStatus.NotFound;
+        private string _autoClassLabel;
+        private bool _easterEggActive;
 
         // E1: a just-sent mail (moved to the Inbox by triage) pinned as the next
         // classify target, overriding the live Outlook selection until it is
@@ -80,6 +82,7 @@ namespace RBLclass.AddIn.ViewModels
             _getAllFolders = getAllFolders;
             _loc = TaskPaneServices.Localization;
             _selectionSummary = _loc.GetString("Status_NoMailSelectedSummary");
+            _autoClassLabel = _loc.GetString("MainPane_AutoClass_Button");
 
             if (_settings != null)
             {
@@ -90,6 +93,9 @@ namespace RBLclass.AddIn.ViewModels
                 _stripBanner = _settings.GetBool(SettingsKeys.StripBannerOnClassify, false);
                 _canStripBanner = !string.IsNullOrWhiteSpace(
                     _settings.Get(SettingsKeys.ExternalBannerSignature, string.Empty));
+                _easterEggActive = _settings.GetBool(SettingsKeys.EasterEggActive, false);
+                if (_easterEggActive)
+                    _autoClassLabel = _loc.GetString("MainPane_AutoClass_EasterEgg");
             }
         }
 
@@ -240,6 +246,24 @@ namespace RBLclass.AddIn.ViewModels
         {
             get => _selectionSummary;
             private set => SetProperty(ref _selectionSummary, value);
+        }
+
+        public string AutoClassLabel
+        {
+            get => _autoClassLabel;
+            private set => SetProperty(ref _autoClassLabel, value);
+        }
+
+        public bool IsEasterEggActive => _easterEggActive;
+
+        public void ActivatePigEasterEgg()
+        {
+            _easterEggActive = !_easterEggActive;
+            AutoClassLabel = _easterEggActive
+                ? _loc.GetString("MainPane_AutoClass_EasterEgg")
+                : _loc.GetString("MainPane_AutoClass_Button");
+            OnPropertyChanged(nameof(IsEasterEggActive));
+            _settings?.SetBool(SettingsKeys.EasterEggActive, _easterEggActive);
         }
 
         /// <summary>

@@ -11,13 +11,6 @@
                   onAction="OnTogglePaneClick"
                   screentip="Afficher ou masquer le volet RBLclass"
                   supertip="Ouvrir le volet RBLclass : recherchez dans l'arborescence des dossiers, accédez à un dossier (bouton d'ouverture) et classez le message sélectionné - un clic sur un dossier l'ajoute comme destination, un double-clic le classe directement." />
-          <button id="RemoveAttachmentsButton"
-                  label="Supprimer les pièces jointes"
-                  size="large"
-                  imageMso="AttachmentRemove"
-                  onAction="OnRemoveAttachmentsClick"
-                  screentip="Supprimer les pièces jointes"
-                  supertip="Supprime toutes les pièces jointes du/des message(s) sélectionné(s), après confirmation." />
           <button id="RefreshFoldersButton"
                   label="Actualiser les dossiers"
                   size="large"
@@ -25,20 +18,20 @@
                   onAction="OnRefreshFoldersClick"
                   screentip="Actualiser l'index des dossiers"
                   supertip="Réanalyse vos magasins PST afin que les dossiers créés ou renommés directement dans Outlook apparaissent dans la recherche. À exécuter après avoir ajouté des dossiers manuellement." />
-          <button id="IndexStatusButton"
-                  label="État de l'index"
-                  size="large"
-                  imageMso="Info"
-                  onAction="OnIndexStatusClick"
-                  screentip="État de l'index des dossiers"
-                  supertip="Indique si l'index des dossiers a été chargé depuis le cache ou recréé, avec le nombre de magasins/dossiers. Diagnostic de l'étape 1 - l'interface de recherche arrive à l'étape 3." />
           <button id="SettingsButton"
                   label="Paramètres"
                   size="large"
-                  imageMso="ToolsOptions"
+                  imageMso="PropertySheet"
                   onAction="OnSettingsClick"
                   screentip="Paramètres de RBLclass"
                   supertip="Configurez la recherche de dossiers, le classement, les garde-fous d'envoi et le triage des éléments envoyés. Chaque modification s'applique et est conservée immédiatement." />
+          <button id="AboutButton"
+                  label="À propos"
+                  size="large"
+                  imageMso="About"
+                  onAction="OnAboutClick"
+                  screentip="À propos de RBLclass"
+                  supertip="Version, auteur et informations techniques sur RBLclass." />
         </group>
       </tab>
     </tabs>

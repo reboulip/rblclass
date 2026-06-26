@@ -586,48 +586,6 @@ Envoyer quand même ?</value>
   <data name="MsgBox_Info_Title" xml:space="preserve">
     <value>RBLclass</value>
   </data>
-  <data name="MsgBox_RemoveAttachments_Title" xml:space="preserve">
-    <value>RBLclass - Supprimer les pièces jointes</value>
-  </data>
-  <data name="MsgBox_RemoveAttachments_SelectFirst" xml:space="preserve">
-    <value>Sélectionnez d'abord un ou plusieurs messages.</value>
-  </data>
-  <data name="MsgBox_RemoveAttachments_Confirm" xml:space="preserve">
-    <value>Supprimer toutes les pièces jointes de {0} message(s) ? Cette action est irréversible.</value>
-  </data>
-  <data name="MsgBox_RemoveAttachments_Summary" xml:space="preserve">
-    <value>Pièces jointes supprimées de {0} message(s).</value>
-  </data>
-  <data name="MsgBox_RemoveAttachments_SkippedEncrypted_One" xml:space="preserve">
-    <value>
-
-{0} message chiffré a été ignoré - ses pièces jointes sont le message lui-même.</value>
-  </data>
-  <data name="MsgBox_RemoveAttachments_SkippedEncrypted_Other" xml:space="preserve">
-    <value>
-
-{0} messages chiffrés ont été ignorés - leurs pièces jointes sont le message lui-même.</value>
-  </data>
-  <data name="MsgBox_IndexStatus_Title" xml:space="preserve">
-    <value>RBLclass - Index des dossiers</value>
-  </data>
-  <data name="MsgBox_IndexStatus_NotStarted" xml:space="preserve">
-    <value>L'indexation n'a pas encore commencé.</value>
-  </data>
-  <data name="MsgBox_IndexStatus_WalkScheduled" xml:space="preserve">
-    <value>Le parcours initial des dossiers est planifié / en cours.
-Rouvrez cette fenêtre dans un instant pour voir les chiffres.</value>
-  </data>
-  <data name="MsgBox_IndexStatus_Summary" xml:space="preserve">
-    <value>Source de l'index : {0}
-Magasins           : {1}
-Dossiers           : {2}
-En cache           : {3}</value>
-  </data>
-  <data name="MsgBox_IndexStatus_Footer" xml:space="preserve">
-    <value>Base de données : {0}
-Journaux        : {1}</value>
-  </data>
   <data name="MsgBox_RefreshFolders_Title" xml:space="preserve">
     <value>RBLclass - Actualiser les dossiers</value>
   </data>
@@ -659,5 +617,29 @@ Relancez votre recherche pour voir les dossiers créés ou renommés.</value>
   </data>
   <data name="Pane_Options" xml:space="preserve">
     <value>▶ Options</value>
+  </data>
+  <data name="About_Title" xml:space="preserve">
+    <value>RBLclass - À propos</value>
+  </data>
+  <data name="About_Version_Label" xml:space="preserve">
+    <value>Version :</value>
+  </data>
+  <data name="About_Author_Label" xml:space="preserve">
+    <value>Auteur :</value>
+  </data>
+  <data name="About_Author_Text" xml:space="preserve">
+    <value>Romain Reboulleau</value>
+  </data>
+  <data name="About_Tech_Label" xml:space="preserve">
+    <value>Technologie :</value>
+  </data>
+  <data name="About_Tech_Text" xml:space="preserve">
+    <value>C# / .NET Framework 4.8 · WPF · SQLite · complément COM Outlook</value>
+  </data>
+  <data name="About_Close_Button" xml:space="preserve">
+    <value>Fermer</value>
+  </data>
+  <data name="MainPane_AutoClass_EasterEgg" xml:space="preserve">
+    <value>🐷</value>
   </data>
 </root>

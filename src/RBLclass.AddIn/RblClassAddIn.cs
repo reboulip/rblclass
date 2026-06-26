@@ -273,6 +273,8 @@ namespace RBLclass.AddIn
                         return dlg.ShowDialog() == DialogResult.OK ? dlg.SelectedPath : null;
                     }
                 };
+                TaskPaneServices.ActivateEasterEgg = () =>
+                    TaskPaneServices.Host?.ActivatePigEasterEgg();
 
                 // F2: gather attachments and show the per-attachment disposition modal.
                 TaskPaneServices.GatherAttachments = items =>
@@ -451,57 +453,6 @@ namespace RBLclass.AddIn
         {
             try { TogglePane(); }
             catch (Exception ex) { ShowError("RBLclass pane failed", ex); }
-        }
-
-        /// <summary>
-        /// Ribbon "Remove attachments": strip attachments from the current mail
-        /// selection (legacy 5e standalone entry point), with confirmation.
-        /// </summary>
-        public void OnRemoveAttachmentsClick(Office.IRibbonControl control)
-        {
-            try
-            {
-                var loc = TaskPaneServices.Localization;
-                var items = _mailStore.GetSelectedItems();
-                if (items.Count == 0)
-                {
-                    MessageBox.Show(loc.GetString("MsgBox_RemoveAttachments_SelectFirst"),
-                                    loc.GetString("MsgBox_Info_Title"),
-                                    MessageBoxButtons.OK, MessageBoxIcon.Information);
-                    return;
-                }
-
-                var confirm = MessageBox.Show(
-                    loc.GetString("MsgBox_RemoveAttachments_Confirm", items.Count),
-                    loc.GetString("MsgBox_RemoveAttachments_Title"),
-                    MessageBoxButtons.YesNo, MessageBoxIcon.Warning);
-                if (confirm != DialogResult.Yes) return;
-
-                int done = 0, skippedEncrypted = 0;
-                foreach (var item in items)
-                {
-                    try
-                    {
-                        if (_mailStore.RemoveAttachments(item)) done++;
-                        else skippedEncrypted++; // encrypted/signed - never stripped
-                    }
-                    catch (Exception ex) { Log.Error(ex, "RemoveAttachments failed for an item."); }
-                }
-
-                Log.Information("Removed attachments from {Count} mail(s) ({Skipped} encrypted skipped).",
-                                done, skippedEncrypted);
-                string summary = loc.GetString("MsgBox_RemoveAttachments_Summary", done);
-                if (skippedEncrypted > 0)
-                    summary += loc.Plural(skippedEncrypted,
-                        "MsgBox_RemoveAttachments_SkippedEncrypted_One",
-                        "MsgBox_RemoveAttachments_SkippedEncrypted_Other");
-                MessageBox.Show(summary, loc.GetString("MsgBox_Info_Title"),
-                                MessageBoxButtons.OK, MessageBoxIcon.Information);
-            }
-            catch (Exception ex)
-            {
-                ShowError("Remove attachments failed", ex);
-            }
         }
 
         /// <summary>
@@ -768,46 +719,6 @@ namespace RBLclass.AddIn
         }
 
         /// <summary>
-        /// Step 1 diagnostic: report the folder-index status so the increment
-        /// can be verified on the dev machine before the search UI exists
-        /// (Step 3). Replaced by the real actions in later steps.
-        /// </summary>
-        public void OnIndexStatusClick(Office.IRibbonControl control)
-        {
-            try
-            {
-                var loc = TaskPaneServices.Localization;
-                var r = _lastIndexResult;
-                int cached = _folderTree != null ? _folderTree.GetAll().Count : 0;
-
-                string status;
-                if (r == null)
-                {
-                    status = loc.GetString("MsgBox_IndexStatus_NotStarted");
-                }
-                else if (r.Source == IndexSource.NeedsWalk)
-                {
-                    status = loc.GetString("MsgBox_IndexStatus_WalkScheduled");
-                }
-                else
-                {
-                    status = loc.GetString("MsgBox_IndexStatus_Summary",
-                        r.Source, r.StoreCount, r.FolderCount, cached);
-                }
-
-                string message = status + Environment.NewLine + Environment.NewLine +
-                    loc.GetString("MsgBox_IndexStatus_Footer", _dbPath, _logDirectory);
-
-                MessageBox.Show(message, loc.GetString("MsgBox_IndexStatus_Title"),
-                                MessageBoxButtons.OK, MessageBoxIcon.Information);
-            }
-            catch (Exception ex)
-            {
-                ShowError("Index status failed", ex);
-            }
-        }
-
-        /// <summary>
         /// Ribbon "Refresh folders": re-walk the live stores on demand so folders
         /// created or renamed directly in Outlook (not via our own "New subfolder"
         /// action) surface in search. Fires and forgets an async walk that yields
@@ -896,6 +807,20 @@ namespace RBLclass.AddIn
             catch (Exception ex)
             {
                 ShowError("Settings failed", ex);
+            }
+        }
+
+        /// <summary>Ribbon "About": modal dialog with version, author and tech info.</summary>
+        public void OnAboutClick(Office.IRibbonControl control)
+        {
+            try
+            {
+                var version = System.Reflection.Assembly.GetExecutingAssembly().GetName().Version;
+                new Views.AboutWindow(version).ShowDialog();
+            }
+            catch (Exception ex)
+            {
+                ShowError("About failed", ex);
             }
         }
 

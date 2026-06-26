@@ -63,7 +63,7 @@ Phase 6 (pilot rollout) is in progress; Phases 7–9 are forward-looking.
 ## v2.6.0.0 — UI refresh & classify depth
 
 ### A — UI & ribbon
-- [ ] **A1.** Ribbon UI overhaul: add a Settings icon, remove the "Remove Attachments" and "Index Status" buttons, add an About button (version / author / tech info), and an easter egg — clicking the hidden item in About replaces the Auto-Class button label with a pig icon. [#15]
+- [x] **A1.** Ribbon UI overhaul: add a Settings icon, remove the "Remove Attachments" and "Index Status" buttons, add an About button (version / author / tech info), and an easter egg — clicking the hidden item in About replaces the Auto-Class button label with a pig icon. [#15]
 - [ ] **A2.** Increase the prominence of the Classify button in the task pane. [#17]
 - [ ] **A3.** Add an auto-expand toggle and a visual row separator to search results. [#13]
 

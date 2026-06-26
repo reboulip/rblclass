@@ -11,13 +11,6 @@
                   onAction="OnTogglePaneClick"
                   screentip="Show or hide the RBLclass pane"
                   supertip="Open the RBLclass pane: search the folder tree, jump to a folder (open button), and file the selected mail - single-click a folder to add it as a destination, double-click to file into it." />
-          <button id="RemoveAttachmentsButton"
-                  label="Remove attachments"
-                  size="large"
-                  imageMso="AttachmentRemove"
-                  onAction="OnRemoveAttachmentsClick"
-                  screentip="Remove attachments"
-                  supertip="Strip all attachments from the selected mail(s), after confirmation." />
           <button id="RefreshFoldersButton"
                   label="Refresh folders"
                   size="large"
@@ -25,20 +18,20 @@
                   onAction="OnRefreshFoldersClick"
                   screentip="Refresh the folder index"
                   supertip="Re-scan your PST stores so folders you created or renamed directly in Outlook show up in search. Run this after adding folders by hand." />
-          <button id="IndexStatusButton"
-                  label="Index status"
-                  size="large"
-                  imageMso="Info"
-                  onAction="OnIndexStatusClick"
-                  screentip="Folder index status"
-                  supertip="Shows whether the folder index was loaded from cache or freshly walked, with store/folder counts. Step 1 diagnostic - the search UI arrives in Step 3." />
           <button id="SettingsButton"
                   label="Settings"
                   size="large"
-                  imageMso="ToolsOptions"
+                  imageMso="PropertySheet"
                   onAction="OnSettingsClick"
                   screentip="RBLclass settings"
                   supertip="Configure folder search, classify, sending guards and sent-item triage. Every change applies and persists immediately." />
+          <button id="AboutButton"
+                  label="About"
+                  size="large"
+                  imageMso="About"
+                  onAction="OnAboutClick"
+                  screentip="About RBLclass"
+                  supertip="Version, author and technology information about RBLclass." />
         </group>
       </tab>
     </tabs>
