@@ -290,6 +290,30 @@
   <data name="Settings_StripBannerOnClassify_CheckBox" xml:space="preserve">
     <value>Banner standardmäßig beim Klassieren aus der abgelegten Kopie entfernen</value>
   </data>
+  <data name="Settings_StripBannerOnAutoClassify_CheckBox" xml:space="preserve">
+    <value>Banner aus automatisch abgelegten Kopien entfernen</value>
+  </data>
+  <data name="Settings_DiagnoseBanner_Button" xml:space="preserve">
+    <value>Ausgewählte E-Mail diagnostizieren</value>
+  </data>
+  <data name="Settings_Banner_Diag_NoSignature" xml:space="preserve">
+    <value>Keine Banner-Signatur konfiguriert — zuerst eine lernen.</value>
+  </data>
+  <data name="Settings_Banner_Diag_NoSelection" xml:space="preserve">
+    <value>Keine E-Mail ausgewählt. Wählen Sie eine E-Mail aus und versuchen Sie es erneut.</value>
+  </data>
+  <data name="Settings_Banner_Diag_FoundExact" xml:space="preserve">
+    <value>Banner gefunden (exakte Übereinstimmung, {0} Zeichen).</value>
+  </data>
+  <data name="Settings_Banner_Diag_FoundTolerant" xml:space="preserve">
+    <value>Banner gefunden (leerraumtolerante Übereinstimmung, {0} Zeichen).</value>
+  </data>
+  <data name="Settings_Banner_Diag_NotFound" xml:space="preserve">
+    <value>Banner in dieser E-Mail nicht gefunden (Signatur: {0} Zeichen).</value>
+  </data>
+  <data name="Settings_Banner_Diag_Unavailable" xml:space="preserve">
+    <value>Diagnose nicht verfügbar (keine Auswahlquelle).</value>
+  </data>
   <data name="Settings_SendingGuards_Header" xml:space="preserve">
     <value>Sende-Sicherungen</value>
   </data>

@@ -290,6 +290,30 @@
   <data name="Settings_StripBannerOnClassify_CheckBox" xml:space="preserve">
     <value>Supprimer la bannière de la copie classée par défaut lors du classement</value>
   </data>
+  <data name="Settings_StripBannerOnAutoClassify_CheckBox" xml:space="preserve">
+    <value>Supprimer la bannière des copies classées automatiquement</value>
+  </data>
+  <data name="Settings_DiagnoseBanner_Button" xml:space="preserve">
+    <value>Diagnostiquer le message sélectionné</value>
+  </data>
+  <data name="Settings_Banner_Diag_NoSignature" xml:space="preserve">
+    <value>Aucune signature de bannière configurée — apprenez-en une d'abord.</value>
+  </data>
+  <data name="Settings_Banner_Diag_NoSelection" xml:space="preserve">
+    <value>Aucun message sélectionné. Sélectionnez un message et réessayez.</value>
+  </data>
+  <data name="Settings_Banner_Diag_FoundExact" xml:space="preserve">
+    <value>Bannière trouvée (correspondance exacte, {0} caractères).</value>
+  </data>
+  <data name="Settings_Banner_Diag_FoundTolerant" xml:space="preserve">
+    <value>Bannière trouvée (correspondance tolérante aux espaces, {0} caractères).</value>
+  </data>
+  <data name="Settings_Banner_Diag_NotFound" xml:space="preserve">
+    <value>Bannière introuvable dans ce message (signature : {0} caractères).</value>
+  </data>
+  <data name="Settings_Banner_Diag_Unavailable" xml:space="preserve">
+    <value>Diagnostic indisponible (pas de source de sélection).</value>
+  </data>
   <data name="Settings_SendingGuards_Header" xml:space="preserve">
     <value>Garde-fous à l'envoi</value>
   </data>

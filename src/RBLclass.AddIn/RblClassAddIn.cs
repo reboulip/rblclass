@@ -464,7 +464,6 @@ namespace RBLclass.AddIn
         /// </summary>
         private void OnNewInspector(OutlookOM.Inspector inspector)
         {
-            object item = null;
             try
             {
                 var settings = Settings.Load(_settingsStore);
@@ -472,21 +471,35 @@ namespace RBLclass.AddIn
                     string.IsNullOrWhiteSpace(settings.ExternalBannerSignature))
                     return;
 
-                try { item = inspector.CurrentItem; } catch { item = null; }
-                if (item == null) return;
+                // NewInspector fires before Outlook populates the quoted body in
+                // a reply/forward draft. Deferring to Inspector.Activate ensures
+                // the full body (including quoted original with its banner) is
+                // present. One-shot: unsubscribe after the first Activate.
+                var inspectorEvents = inspector as OutlookOM.InspectorEvents_10_Event;
+                if (inspectorEvents == null) return;
 
-                _mailStore.StripBannerFromDraft(item, settings.ExternalBannerSignature);
+                string sig = settings.ExternalBannerSignature;
+                OutlookOM.InspectorEvents_10_ActivateEventHandler handler = null;
+                handler = () =>
+                {
+                    try
+                    {
+                        inspectorEvents.Activate -= handler;
+                        object item = null;
+                        try { item = inspector.CurrentItem; } catch { }
+                        if (item != null)
+                        {
+                            try { _mailStore.StripBannerFromDraft(item, sig); }
+                            finally { try { Marshal.ReleaseComObject(item); } catch { } }
+                        }
+                    }
+                    catch (Exception ex) { TryLog("Inspector.Activate banner strip failed", ex); }
+                };
+                inspectorEvents.Activate += handler;
             }
             catch (Exception ex)
             {
-                TryLog("NewInspector banner strip failed", ex);
-            }
-            finally
-            {
-                if (item != null)
-                {
-                    try { Marshal.ReleaseComObject(item); } catch { }
-                }
+                TryLog("NewInspector banner strip setup failed", ex);
             }
         }
 

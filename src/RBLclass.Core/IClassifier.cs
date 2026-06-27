@@ -70,6 +70,7 @@ namespace RBLclass.Core
                                         bool keepCopy, bool removeAttachments, bool safetyCopy,
                                         IReadOnlyList<AttachmentDisposition> attachmentDispositions = null,
                                         AttachmentLabelOptions labelOptions = null,
-                                        int historyRetentionDays = 0);
+                                        int historyRetentionDays = 0,
+                                        string bannerSignature = null);
     }
 }

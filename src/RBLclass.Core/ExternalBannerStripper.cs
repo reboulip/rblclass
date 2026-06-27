@@ -5,6 +5,17 @@ using System.Text.RegularExpressions;
 
 namespace RBLclass.Core
 {
+    public enum BannerDiagnosticOutcome { NoSignature, NoSelection, Found, NotFound }
+
+    public struct BannerDiagnosticResult
+    {
+        public BannerDiagnosticOutcome Outcome { get; }
+        public int SignatureLength { get; }
+        public bool MatchedExact { get; }
+        public BannerDiagnosticResult(BannerDiagnosticOutcome outcome, int sigLen, bool exact)
+        { Outcome = outcome; SignatureLength = sigLen; MatchedExact = exact; }
+    }
+
     /// <summary>
     /// Learns the "external sender" reminder banner from one captured sample and
     /// strips it back out of other mail bodies (v2.2). The banner is the block a
@@ -115,6 +126,37 @@ namespace RBLclass.Core
             bool stripped;
             Strip(htmlBody, bannerBlock, out stripped);
             return stripped;
+        }
+
+        /// <summary>
+        /// Run the detection pipeline against <paramref name="htmlBody"/> and
+        /// return a structured result for the Settings diagnostics UI (B3).
+        /// </summary>
+        public static BannerDiagnosticResult Diagnose(string htmlBody, string bannerSignature)
+        {
+            if (string.IsNullOrWhiteSpace(bannerSignature))
+                return new BannerDiagnosticResult(BannerDiagnosticOutcome.NoSignature, 0, false);
+            if (string.IsNullOrEmpty(htmlBody))
+                return new BannerDiagnosticResult(BannerDiagnosticOutcome.NoSelection, bannerSignature.Trim().Length, false);
+
+            string needle = bannerSignature.Trim();
+            int idx = htmlBody.IndexOf(needle, StringComparison.Ordinal);
+            if (idx >= 0)
+                return new BannerDiagnosticResult(BannerDiagnosticOutcome.Found, needle.Length, true);
+
+            var pattern = BuildWhitespaceTolerantPattern(needle);
+            if (pattern != null)
+            {
+                try
+                {
+                    var m = Regex.Match(htmlBody, pattern, RegexOptions.None, MatchTimeout);
+                    if (m.Success)
+                        return new BannerDiagnosticResult(BannerDiagnosticOutcome.Found, needle.Length, false);
+                }
+                catch (RegexMatchTimeoutException) { }
+            }
+
+            return new BannerDiagnosticResult(BannerDiagnosticOutcome.NotFound, needle.Length, false);
         }
 
         // --- internals ------------------------------------------------------

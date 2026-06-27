@@ -449,9 +449,13 @@ namespace RBLclass.AddIn.ViewModels
 
                 var swCore = System.Diagnostics.Stopwatch.StartNew();
                 int retentionDays = s?.AutoClassHistoryDays ?? Settings.DefaultAutoClassHistoryDays;
+                string autoClassBannerSig = (s != null && s.StripBannerOnAutoClassify
+                    && !string.IsNullOrWhiteSpace(s.ExternalBannerSignature))
+                    ? s.ExternalBannerSignature : null;
                 var result = _classifier.AutoClassify(items, resolve, keepCopy, removeAttachments, safetyCopy,
                                                        attachmentDispositions, labelOptions,
-                                                       historyRetentionDays: retentionDays);
+                                                       historyRetentionDays: retentionDays,
+                                                       bannerSignature: autoClassBannerSig);
                 swCore.Stop();
                 Log.Information(
                     "PERF AutoClass core {Ms} ms: filed={Filed}, noHistory={NoHistory}, stale={Stale}, errors={Errors}",

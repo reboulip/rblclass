@@ -57,6 +57,7 @@ namespace RBLclass.Core.Tests
             settings.PreferredUiLanguage.Should().Be("Auto");
             settings.AutoExpandResults.Should().BeFalse();
             settings.AutoClassHistoryDays.Should().Be(Settings.DefaultAutoClassHistoryDays);
+            settings.StripBannerOnAutoClassify.Should().BeFalse();
         }
 
         [Fact]
@@ -86,6 +87,7 @@ namespace RBLclass.Core.Tests
                 SearchDebounceMs = 450,
                 AutoExpandResults = true,
                 AutoClassHistoryDays = 180,
+                StripBannerOnAutoClassify = true,
                 PreferredUiLanguage = "fr"
             };
 
@@ -114,6 +116,7 @@ namespace RBLclass.Core.Tests
             reloaded.SearchDebounceMs.Should().Be(450);
             reloaded.AutoExpandResults.Should().BeTrue();
             reloaded.AutoClassHistoryDays.Should().Be(180);
+            reloaded.StripBannerOnAutoClassify.Should().BeTrue();
             reloaded.PreferredUiLanguage.Should().Be("fr");
         }
 

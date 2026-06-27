@@ -48,6 +48,7 @@ namespace RBLclass.Core
         public string ExternalBannerSignature { get; set; }
         public bool StripBannerOnReply { get; set; }
         public bool StripBannerOnClassify { get; set; }
+        public bool StripBannerOnAutoClassify { get; set; }
         public bool WidenConversation { get; set; }
         public bool SendExternalWarning { get; set; }
         public IReadOnlyList<string> InternalDomains { get; set; }
@@ -80,6 +81,7 @@ namespace RBLclass.Core
                 ExternalBannerSignature = store.Get(SettingsKeys.ExternalBannerSignature, string.Empty),
                 StripBannerOnReply = store.GetBool(SettingsKeys.StripBannerOnReply, false),
                 StripBannerOnClassify = store.GetBool(SettingsKeys.StripBannerOnClassify, false),
+                StripBannerOnAutoClassify = store.GetBool(SettingsKeys.StripBannerOnAutoClassify, false),
                 WidenConversation = store.GetBool(SettingsKeys.WidenConversation, false),
                 SendExternalWarning = store.GetBool(SettingsKeys.SendExternalWarning, true),
                 InternalDomains = ParseList(store.Get(SettingsKeys.InternalDomains, string.Empty)),
@@ -114,6 +116,7 @@ namespace RBLclass.Core
             store.Set(SettingsKeys.ExternalBannerSignature, ExternalBannerSignature ?? string.Empty);
             store.SetBool(SettingsKeys.StripBannerOnReply, StripBannerOnReply);
             store.SetBool(SettingsKeys.StripBannerOnClassify, StripBannerOnClassify);
+            store.SetBool(SettingsKeys.StripBannerOnAutoClassify, StripBannerOnAutoClassify);
             store.SetBool(SettingsKeys.WidenConversation, WidenConversation);
             store.SetBool(SettingsKeys.SendExternalWarning, SendExternalWarning);
             store.Set(SettingsKeys.InternalDomains, FormatList(InternalDomains));

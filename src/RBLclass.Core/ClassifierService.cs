@@ -415,7 +415,8 @@ namespace RBLclass.Core
                                                bool keepCopy, bool removeAttachments, bool safetyCopy,
                                                IReadOnlyList<AttachmentDisposition> attachmentDispositions = null,
                                                AttachmentLabelOptions labelOptions = null,
-                                               int historyRetentionDays = 0)
+                                               int historyRetentionDays = 0,
+                                               string bannerSignature = null)
         {
             if (items == null) throw new ArgumentNullException(nameof(items));
             if (resolveLiveFolder == null) throw new ArgumentNullException(nameof(resolveLiveFolder));
@@ -468,7 +469,7 @@ namespace RBLclass.Core
                 var result = Classify(new ClassifyRequest(
                     new[] { item }, live, keepCopy, removeAttachments,
                     markTasksComplete: false, safetyCopy: safetyCopy,
-                    bannerSignature: null,
+                    bannerSignature: bannerSignature,
                     attachmentDispositions: attachmentDispositions,
                     labelOptions: labelOptions));
 

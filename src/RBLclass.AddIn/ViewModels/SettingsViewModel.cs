@@ -29,6 +29,7 @@ namespace RBLclass.AddIn.ViewModels
         private string _searchDebounceMsText;
         private string _autoClassHistoryDaysText;
         private string _bannerStatus;
+        private string _bannerDiagnosticStatus = string.Empty;
 
         /// <param name="captureSelectedHtml">
         /// Returns the HTML body of the currently selected mail, for the "learn
@@ -307,6 +308,18 @@ namespace RBLclass.AddIn.ViewModels
             set => Apply(_settings.StripBannerOnClassify, value, v => _settings.StripBannerOnClassify = v);
         }
 
+        public bool StripBannerOnAutoClassify
+        {
+            get => _settings.StripBannerOnAutoClassify;
+            set => Apply(_settings.StripBannerOnAutoClassify, value, v => _settings.StripBannerOnAutoClassify = v);
+        }
+
+        public string BannerDiagnosticStatus
+        {
+            get => _bannerDiagnosticStatus;
+            private set => SetProperty(ref _bannerDiagnosticStatus, value);
+        }
+
         /// <summary>True when a banner has been learned (gates the strip toggles in the view).</summary>
         public bool HasBanner => !string.IsNullOrWhiteSpace(_settings.ExternalBannerSignature);
 
@@ -349,17 +362,54 @@ namespace RBLclass.AddIn.ViewModels
             OnPropertyChanged(nameof(HasBanner));
         }
 
+        public void DiagnoseSelectedMail()
+        {
+            if (_captureSelectedHtml == null)
+            {
+                BannerDiagnosticStatus = _loc.GetString("Settings_Banner_Diag_Unavailable");
+                return;
+            }
+
+            string html = _captureSelectedHtml();
+            string sig = _settings.ExternalBannerSignature;
+            var result = ExternalBannerStripper.Diagnose(html, sig);
+
+            switch (result.Outcome)
+            {
+                case BannerDiagnosticOutcome.NoSignature:
+                    BannerDiagnosticStatus = _loc.GetString("Settings_Banner_Diag_NoSignature");
+                    break;
+                case BannerDiagnosticOutcome.NoSelection:
+                    BannerDiagnosticStatus = _loc.GetString("Settings_Banner_Diag_NoSelection");
+                    break;
+                case BannerDiagnosticOutcome.Found:
+                    BannerDiagnosticStatus = result.MatchedExact
+                        ? _loc.GetString("Settings_Banner_Diag_FoundExact", result.SignatureLength)
+                        : _loc.GetString("Settings_Banner_Diag_FoundTolerant", result.SignatureLength);
+                    break;
+                case BannerDiagnosticOutcome.NotFound:
+                    BannerDiagnosticStatus = _loc.GetString("Settings_Banner_Diag_NotFound", result.SignatureLength);
+                    break;
+                default:
+                    BannerDiagnosticStatus = string.Empty;
+                    break;
+            }
+        }
+
         /// <summary>Forget the learned banner (and turn the strip options off, since they'd be inert).</summary>
         public void ClearBanner()
         {
             _settings.ExternalBannerSignature = string.Empty;
             _settings.StripBannerOnReply = false;
             _settings.StripBannerOnClassify = false;
+            _settings.StripBannerOnAutoClassify = false;
             _settings.Save(_store);
             BannerStatus = DescribeBanner(string.Empty);
+            BannerDiagnosticStatus = string.Empty;
             OnPropertyChanged(nameof(HasBanner));
             OnPropertyChanged(nameof(StripBannerOnReply));
             OnPropertyChanged(nameof(StripBannerOnClassify));
+            OnPropertyChanged(nameof(StripBannerOnAutoClassify));
         }
 
         private string DescribeBanner(string signature) =>

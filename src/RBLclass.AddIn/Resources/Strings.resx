@@ -290,6 +290,30 @@
   <data name="Settings_StripBannerOnClassify_CheckBox" xml:space="preserve">
     <value>Strip the banner from the filed copy by default when classifying</value>
   </data>
+  <data name="Settings_StripBannerOnAutoClassify_CheckBox" xml:space="preserve">
+    <value>Strip the banner from auto-classified filed copies</value>
+  </data>
+  <data name="Settings_DiagnoseBanner_Button" xml:space="preserve">
+    <value>Diagnose selected mail</value>
+  </data>
+  <data name="Settings_Banner_Diag_NoSignature" xml:space="preserve">
+    <value>No banner signature configured — learn one first.</value>
+  </data>
+  <data name="Settings_Banner_Diag_NoSelection" xml:space="preserve">
+    <value>No mail selected. Select a mail and try again.</value>
+  </data>
+  <data name="Settings_Banner_Diag_FoundExact" xml:space="preserve">
+    <value>Banner found (exact match, {0} characters).</value>
+  </data>
+  <data name="Settings_Banner_Diag_FoundTolerant" xml:space="preserve">
+    <value>Banner found (whitespace-tolerant match, {0} characters).</value>
+  </data>
+  <data name="Settings_Banner_Diag_NotFound" xml:space="preserve">
+    <value>Banner not found in this mail (signature: {0} characters).</value>
+  </data>
+  <data name="Settings_Banner_Diag_Unavailable" xml:space="preserve">
+    <value>Diagnostics unavailable (no selection source).</value>
+  </data>
   <data name="Settings_SendingGuards_Header" xml:space="preserve">
     <value>Sending guards</value>
   </data>

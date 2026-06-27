@@ -33,6 +33,9 @@ namespace RBLclass.Core
         /// <summary>Auto-strip the learned banner from reply/forward drafts (v2.2, default off).</summary>
         public const string StripBannerOnReply = "StripBannerOnReply";
 
+        /// <summary>Auto-strip the learned banner from auto-classified filed copies (v2.6.0.0 B3, default off).</summary>
+        public const string StripBannerOnAutoClassify = "StripBannerOnAutoClassify";
+
         /// <summary>Default state of the classify-time "strip banner from the filed copy" tickbox (v2.2).</summary>
         public const string StripBannerOnClassify = "StripBannerOnClassify";
 

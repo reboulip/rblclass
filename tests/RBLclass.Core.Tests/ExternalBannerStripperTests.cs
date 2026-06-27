@@ -148,5 +148,60 @@ namespace RBLclass.Core.Tests
             ExternalBannerStripper.ContainsBanner(Body(Banner), Banner).Should().BeTrue();
             ExternalBannerStripper.ContainsBanner(Body("<p>nope</p>"), Banner).Should().BeFalse();
         }
+
+        [Fact]
+        public void Diagnose_returns_NoSignature_when_no_signature_set()
+        {
+            var result = ExternalBannerStripper.Diagnose("<html><body><p>hi</p></body></html>", null);
+            result.Outcome.Should().Be(BannerDiagnosticOutcome.NoSignature);
+            result.SignatureLength.Should().Be(0);
+        }
+
+        [Fact]
+        public void Diagnose_returns_NoSignature_when_signature_is_whitespace()
+        {
+            var result = ExternalBannerStripper.Diagnose("<html>...</html>", "   ");
+            result.Outcome.Should().Be(BannerDiagnosticOutcome.NoSignature);
+        }
+
+        [Fact]
+        public void Diagnose_returns_NoSelection_when_html_is_null()
+        {
+            var result = ExternalBannerStripper.Diagnose(null, Banner);
+            result.Outcome.Should().Be(BannerDiagnosticOutcome.NoSelection);
+            result.SignatureLength.Should().Be(Banner.Trim().Length);
+        }
+
+        [Fact]
+        public void Diagnose_returns_Found_exact_when_banner_present_verbatim()
+        {
+            var html = Body(Banner + "<p>content</p>");
+            var result = ExternalBannerStripper.Diagnose(html, Banner);
+            result.Outcome.Should().Be(BannerDiagnosticOutcome.Found);
+            result.MatchedExact.Should().BeTrue();
+            result.SignatureLength.Should().Be(Banner.Trim().Length);
+        }
+
+        [Fact]
+        public void Diagnose_returns_Found_tolerant_when_whitespace_differs()
+        {
+            // Signature has extra whitespace (as captured); body has the same
+            // structure but compacted — same pattern as Strip_matches_despite_whitespace_reflow.
+            var whitespaceSignature =
+                "<table border=\"0\">\r\n  <tr>\r\n    <td>External sender.</td>\r\n  </tr>\r\n</table>";
+            var html = Body("<table border=\"0\"><tr><td>External sender.</td></tr></table><p>hi</p>");
+            var result = ExternalBannerStripper.Diagnose(html, whitespaceSignature);
+            result.Outcome.Should().Be(BannerDiagnosticOutcome.Found);
+            result.MatchedExact.Should().BeFalse();
+        }
+
+        [Fact]
+        public void Diagnose_returns_NotFound_when_banner_absent()
+        {
+            var html = Body("<p>No banner here.</p>");
+            var result = ExternalBannerStripper.Diagnose(html, Banner);
+            result.Outcome.Should().Be(BannerDiagnosticOutcome.NotFound);
+            result.SignatureLength.Should().Be(Banner.Trim().Length);
+        }
     }
 }
