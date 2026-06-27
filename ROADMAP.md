@@ -54,9 +54,7 @@ Phase 6 (pilot rollout) is in progress; Phases 7–9 are forward-looking.
 ## Open carried-over items
 
 - [ ] **Strip the external-sender banner on reply and on classify** —
-      implemented in the v2.1.0.0 scope; **not verified live** (no
-      external-banner mail on the dev machine). Re-verify on a workstation that
-      receives the company banner before closing.
+      implemented in the v2.1.0.0 scope; didn't work, so was re-implemented in v2.6.0.0 - pending tests
 
 ---
 
@@ -70,10 +68,10 @@ Phase 6 (pilot rollout) is in progress; Phases 7–9 are forward-looking.
 ### B — Classify & attachments
 - [x] **B1.** Extend the auto-classify conversation-history retention window and expose it as a configurable setting. [#16]
 - [x] **B2.** Add a "use the same save directory" checkbox (checked by default) to the multi-mail attachment disposition UI. [#18]
-- [ ] **B3.** Add diagnostics for external-sender banner detection, improve reliability, and add fine-grained configuration; closes the open carried-over verification item. [#19]
+- [ ] **B3.** Add diagnostics for external-sender banner detection, improve reliability, and add fine-grained configuration; closes the open carried-over verification item. [#19] - shipped, pending tests
 
 ### C — Meeting items
-- [ ] **C1.** Support classifying MeetingItem objects from the selection, enabled via an opt-in toggle in Settings. [#12]
+- [ ] **C1.** Support classifying MeetingItem objects from the selection, enabled via an opt-in toggle in Settings. [#12] - shipped,pending tests
 
 ---
 
@@ -86,20 +84,20 @@ Phase 6 (pilot rollout) is in progress; Phases 7–9 are forward-looking.
 - [x] Packaging: product relabelled **v2.0.0.0**, rebuilt as
       `RBLclass-2.0.0.0.msi` (`installer\Build-Installer.ps1`), validated by
       install/uninstall on the dev machine.
-- [ ] **Open `develop` → `main` PR (#2)** — gating merge on re-running the
+- [x] **Open `develop` → `main` PR (#2)** — gating merge on re-running the
       [docs/parity-and-regression.md](docs/parity-and-regression.md) matrix on
       the real 32-bit target, then tagging `v2.0.0.0` on `main` and packaging
       with `/make-release`.
-- [ ] Deploy to 5–10 pilot users.
-- [ ] Telemetry (opt-in): performance metrics, error reports.
-- [ ] Feedback loop, bug fixes.
+- [x] Deploy to 5–10 pilot users.
+- [x] Telemetry (opt-in): performance metrics, error reports.
+- [x] Feedback loop, bug fixes.
 
 ## Phase 7 — General availability
 
 - [ ] Communication plan.
-- [ ] Self-service install page (link to the per-user MSI on the internal HTTPS
+- [x] Self-service install page (link to the per-user MSI on the internal HTTPS
       share).
-- [ ] Support process.
+- [x] Support process.
 - [ ] Monitoring of error logs across the fleet.
 
 ## Phase 8 — Continuous maintenance (ongoing)
