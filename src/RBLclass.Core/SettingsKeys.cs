@@ -147,5 +147,8 @@ namespace RBLclass.Core
         /// Default: 90. Stored as a positive integer string.
         /// </summary>
         public const string AutoClassHistoryDays = "AutoClassHistoryDays";
+
+        /// <summary>When true, MeetingItem objects in the explorer selection are classified alongside MailItems (v2.6.0.0 C1, default off).</summary>
+        public const string ClassifyMeetingItems = "ClassifyMeetingItems";
     }
 }

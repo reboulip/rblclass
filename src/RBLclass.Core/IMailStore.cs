@@ -36,10 +36,12 @@ namespace RBLclass.Core
         void NavigateTo(string storeId, string entryId, bool newWindow);
 
         /// <summary>
-        /// The mail items currently selected in the active explorer (non-mail
-        /// items - meetings, reports - are skipped). Empty if no explorer.
+        /// The items currently selected in the active explorer. When
+        /// <paramref name="includeMeetingItems"/> is true, MeetingItem objects are
+        /// included (with <see cref="MailItemRef.IsMeetingItem"/> set) alongside MailItems;
+        /// otherwise they are skipped. Empty if no explorer.
         /// </summary>
-        IReadOnlyList<MailItemRef> GetSelectedItems();
+        IReadOnlyList<MailItemRef> GetSelectedItems(bool includeMeetingItems = false);
 
         /// <summary>
         /// Place a copy of <paramref name="item"/> into <paramref name="destination"/>

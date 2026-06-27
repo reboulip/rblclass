@@ -60,6 +60,7 @@ namespace RBLclass.Core
         public AttachmentLabelLocation AttachmentLabelLocation { get; set; }
         public bool AutoExpandResults { get; set; }
         public int AutoClassHistoryDays { get; set; }
+        public bool ClassifyMeetingItems { get; set; }
         public string PreferredUiLanguage { get; set; }
 
         /// <summary>Read every key, falling back to the same defaults the individual call sites use today.</summary>
@@ -97,6 +98,7 @@ namespace RBLclass.Core
                 AutoExpandResults = store.GetBool(SettingsKeys.AutoExpandResults, false),
                 AutoClassHistoryDays = ParseClampedInt(store.Get(SettingsKeys.AutoClassHistoryDays, null),
                     DefaultAutoClassHistoryDays, 1, MaxAutoClassHistoryDays),
+                ClassifyMeetingItems = store.GetBool(SettingsKeys.ClassifyMeetingItems, false),
                 PreferredUiLanguage = ParseUiLanguage(store.Get(SettingsKeys.PreferredUiLanguage, null))
             };
         }
@@ -129,6 +131,7 @@ namespace RBLclass.Core
             store.SetBool(SettingsKeys.AutoExpandResults, AutoExpandResults);
             store.Set(SettingsKeys.AutoClassHistoryDays,
                 AutoClassHistoryDays.ToString(CultureInfo.InvariantCulture));
+            store.SetBool(SettingsKeys.ClassifyMeetingItems, ClassifyMeetingItems);
             store.Set(SettingsKeys.PreferredUiLanguage, PreferredUiLanguage);
         }
 

@@ -157,7 +157,7 @@ namespace RBLclass.Outlook.Adapter
             }
         }
 
-        public IReadOnlyList<MailItemRef> GetSelectedItems()
+        public IReadOnlyList<MailItemRef> GetSelectedItems(bool includeMeetingItems = false)
         {
             var list = new List<MailItemRef>();
 
@@ -186,24 +186,39 @@ namespace RBLclass.Outlook.Adapter
 
                         using (var comItem = new ComRef<object>(raw))
                         {
-                            // Selection can hold MeetingItem/ReportItem/... - skip non-mail.
                             var mail = comItem.Value as OutlookOM.MailItem;
-                            if (mail == null) continue;
+                            if (mail != null)
+                            {
+                                string entryId = Safe(() => mail.EntryID, null);
+                                if (entryId == null) continue;
+                                string storeId = GetItemStoreId(mail);
+                                if (storeId == null) continue;
+                                list.Add(new MailItemRef(storeId, entryId,
+                                                         Safe(() => mail.Subject, string.Empty)));
+                                continue;
+                            }
 
-                            string entryId = Safe(() => mail.EntryID, null);
-                            if (entryId == null) continue;
-
-                            string storeId = GetItemStoreId(mail);
-                            if (storeId == null) continue;
-
-                            list.Add(new MailItemRef(storeId, entryId,
-                                                     Safe(() => mail.Subject, string.Empty)));
+                            if (includeMeetingItems)
+                            {
+                                var meeting = comItem.Value as OutlookOM.MeetingItem;
+                                if (meeting != null)
+                                {
+                                    string entryId = Safe(() => meeting.EntryID, null);
+                                    if (entryId == null) continue;
+                                    string storeId = GetMeetingItemStoreId(meeting);
+                                    if (storeId == null) continue;
+                                    list.Add(new MailItemRef(storeId, entryId,
+                                                             Safe(() => meeting.Subject, string.Empty),
+                                                             isMeetingItem: true));
+                                }
+                            }
+                            // ReportItem and other non-mail types are always skipped.
                         }
                     }
 
                     Log.Information(
-                        "GetSelectedItems: Selection.Count={Count}, mail items returned={Returned}.",
-                        count, list.Count);
+                        "GetSelectedItems: Selection.Count={Count}, items returned={Returned} (meetingItems={IncludeMeeting}).",
+                        count, list.Count, includeMeetingItems);
                 }
             }
 
@@ -253,6 +268,18 @@ namespace RBLclass.Outlook.Adapter
             finally { parent?.Dispose(); }
         }
 
+        private static string GetMeetingItemStoreId(OutlookOM.MeetingItem meeting)
+        {
+            ComRef<OutlookOM.Folder> parent = null;
+            try
+            {
+                parent = new ComRef<OutlookOM.Folder>((OutlookOM.Folder)meeting.Parent);
+                return Safe(() => parent.Value.StoreID, null);
+            }
+            catch { return null; }
+            finally { parent?.Dispose(); }
+        }
+
         public MailItemRef CopyItemToFolder(MailItemRef item, FolderNode destination)
         {
             if (item == null || destination == null) return null;
@@ -271,7 +298,10 @@ namespace RBLclass.Outlook.Adapter
                 using (var comItem = new ComRef<object>(rawItem))
                 {
                     var mail = comItem.Value as OutlookOM.MailItem;
-                    if (mail == null) return null;
+                    var meeting = mail == null && item.IsMeetingItem
+                                  ? comItem.Value as OutlookOM.MeetingItem
+                                  : null;
+                    if (mail == null && meeting == null) return null;
 
                     OutlookOM.Folder rawDest;
                     try { rawDest = (OutlookOM.Folder)session.Value.GetFolderFromID(
@@ -282,25 +312,33 @@ namespace RBLclass.Outlook.Adapter
                     {
                         try
                         {
-                            using (var comCopy = new ComRef<object>(mail.Copy()))
+                            object copyRaw = mail != null ? mail.Copy() : meeting.Copy();
+                            using (var comCopy = new ComRef<object>(copyRaw))
                             {
-                                var copy = comCopy.Value as OutlookOM.MailItem;
-                                if (copy == null) return null;
+                                var copyMail    = comCopy.Value as OutlookOM.MailItem;
+                                var copyMeeting = copyMail == null ? comCopy.Value as OutlookOM.MeetingItem : null;
+                                if (copyMail == null && copyMeeting == null) return null;
 
                                 // Move returns the moved item; the copy reference is now
                                 // invalid (CLAUDE.md). Read the moved item's id for the
                                 // returned ref, then release it.
-                                using (var comMoved = new ComRef<object>(copy.Move(destFolder.Value)))
+                                object movedRaw = copyMail != null
+                                    ? copyMail.Move(destFolder.Value)
+                                    : copyMeeting.Move(destFolder.Value);
+                                using (var comMoved = new ComRef<object>(movedRaw))
                                 {
-                                    var moved = comMoved.Value as OutlookOM.MailItem;
-                                    if (moved == null) return null;
-                                    string movedEntryId = Safe(() => moved.EntryID, null);
+                                    var movedMail    = comMoved.Value as OutlookOM.MailItem;
+                                    var movedMeeting = movedMail == null ? comMoved.Value as OutlookOM.MeetingItem : null;
+                                    string movedEntryId =
+                                        movedMail    != null ? Safe(() => movedMail.EntryID, null) :
+                                        movedMeeting != null ? Safe(() => movedMeeting.EntryID, null) : null;
                                     if (movedEntryId == null) return null;
                                     swPerf.Stop();
                                     Log.Information(
                                         "PERF CopyItemToFolder {Ms} ms: item {EntryId} -> {Path}",
                                         swPerf.ElapsedMilliseconds, item.EntryId, destination.FullPath);
-                                    return new MailItemRef(destination.StoreId, movedEntryId, item.Subject);
+                                    return new MailItemRef(destination.StoreId, movedEntryId,
+                                                           item.Subject, item.IsMeetingItem);
                                 }
                             }
                         }
@@ -338,7 +376,10 @@ namespace RBLclass.Outlook.Adapter
                 using (var comItem = new ComRef<object>(rawItem))
                 {
                     var mail = comItem.Value as OutlookOM.MailItem;
-                    if (mail == null) return null;
+                    var meeting = mail == null && item.IsMeetingItem
+                                  ? comItem.Value as OutlookOM.MeetingItem
+                                  : null;
+                    if (mail == null && meeting == null) return null;
 
                     OutlookOM.Folder rawDest;
                     try { rawDest = (OutlookOM.Folder)session.Value.GetFolderFromID(
@@ -366,11 +407,16 @@ namespace RBLclass.Outlook.Adapter
                             // point of the v2.2 move-based classify (Stormshield
                             // chased the old transient copies into
                             // MAPI_E_NOT_FOUND).
-                            using (var comMoved = new ComRef<object>(mail.Move(destFolder.Value)))
+                            object movedRaw = mail != null
+                                ? mail.Move(destFolder.Value)
+                                : meeting.Move(destFolder.Value);
+                            using (var comMoved = new ComRef<object>(movedRaw))
                             {
-                                var movedItem = comMoved.Value as OutlookOM.MailItem;
-                                if (movedItem == null) return null;
-                                string movedEntryId = Safe(() => movedItem.EntryID, null);
+                                var movedMail    = comMoved.Value as OutlookOM.MailItem;
+                                var movedMeeting = movedMail == null ? comMoved.Value as OutlookOM.MeetingItem : null;
+                                string movedEntryId =
+                                    movedMail    != null ? Safe(() => movedMail.EntryID, null) :
+                                    movedMeeting != null ? Safe(() => movedMeeting.EntryID, null) : null;
                                 if (movedEntryId == null) return null;
                                 sw.Stop();
                                 swPerf.Stop();
@@ -381,7 +427,8 @@ namespace RBLclass.Outlook.Adapter
                                     "PERF MoveItemToFolder {Ms} ms (move-only {MoveMs} ms): item {EntryId} -> {Path}",
                                     swPerf.ElapsedMilliseconds, sw.ElapsedMilliseconds,
                                     item.EntryId, destination.FullPath);
-                                return new MailItemRef(destination.StoreId, movedEntryId, item.Subject);
+                                return new MailItemRef(destination.StoreId, movedEntryId,
+                                                       item.Subject, item.IsMeetingItem);
                             }
                         }
                         catch (Exception ex)
@@ -416,6 +463,11 @@ namespace RBLclass.Outlook.Adapter
                     {
                         try { mail.Delete(); } catch { }
                     }
+                    else
+                    {
+                        var meeting = comItem.Value as OutlookOM.MeetingItem;
+                        if (meeting != null) { try { meeting.Delete(); } catch { } }
+                    }
                 }
             }
         }
@@ -437,12 +489,18 @@ namespace RBLclass.Outlook.Adapter
                 using (var comItem = new ComRef<object>(rawItem))
                 {
                     var mail = comItem.Value as OutlookOM.MailItem;
-                    if (mail == null) return null;
+                    var meeting = mail == null && item.IsMeetingItem
+                                  ? comItem.Value as OutlookOM.MeetingItem
+                                  : null;
+                    if (mail == null && meeting == null) return null;
 
                     ComRef<OutlookOM.Folder> parent = null;
                     try
                     {
-                        parent = new ComRef<OutlookOM.Folder>((OutlookOM.Folder)mail.Parent);
+                        parent = new ComRef<OutlookOM.Folder>(
+                            mail != null
+                                ? (OutlookOM.Folder)mail.Parent
+                                : (OutlookOM.Folder)meeting.Parent);
                         string storeId = Safe(() => parent.Value.StoreID, null);
                         string entryId = Safe(() => parent.Value.EntryID, null);
                         if (storeId == null || entryId == null) return null;

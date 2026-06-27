@@ -288,6 +288,12 @@ namespace RBLclass.AddIn.ViewModels
             set => Apply(_settings.WidenConversation, value, v => _settings.WidenConversation = v);
         }
 
+        public bool ClassifyMeetingItems
+        {
+            get => _settings.ClassifyMeetingItems;
+            set => Apply(_settings.ClassifyMeetingItems, value, v => _settings.ClassifyMeetingItems = v);
+        }
+
         public bool SendExternalWarning
         {
             get => _settings.SendExternalWarning;

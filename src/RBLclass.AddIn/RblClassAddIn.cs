@@ -179,7 +179,9 @@ namespace RBLclass.AddIn
                 TaskPaneServices.Search = _folderSearch;
                 TaskPaneServices.Settings = _settingsStore;
                 TaskPaneServices.Classifier = _classifier;
-                TaskPaneServices.GetSelection = () => _mailStore.GetSelectedItems();
+                TaskPaneServices.GetSelection = () =>
+                    _mailStore.GetSelectedItems(
+                        _settingsStore.GetBool(SettingsKeys.ClassifyMeetingItems, false));
                 TaskPaneServices.GetAllFolders = () => _folderTree.GetAll();
                 TaskPaneServices.FolderIndex = _folderTree;
                 TaskPaneServices.CreateSubfolder = (parent, name) =>

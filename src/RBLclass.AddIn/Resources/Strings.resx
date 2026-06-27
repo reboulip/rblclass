@@ -272,6 +272,9 @@
   <data name="Settings_AutoClassHistoryDays_Label" xml:space="preserve">
     <value>Auto-class history window (days):</value>
   </data>
+  <data name="Settings_ClassifyMeetingItems_CheckBox" xml:space="preserve">
+    <value>Classify meeting requests and responses</value>
+  </data>
   <data name="Settings_Banner_Header" xml:space="preserve">
     <value>External-sender banner</value>
   </data>
