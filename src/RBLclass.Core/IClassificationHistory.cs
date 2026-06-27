@@ -39,10 +39,13 @@ namespace RBLclass.Core
 
         /// <summary>
         /// The destination set of the most recent recorded classify for a
-        /// conversation, or an empty list when the conversation was never
-        /// classified.
+        /// conversation that is not older than <paramref name="notOlderThan"/> (UTC),
+        /// or an empty list when the conversation was never classified or all
+        /// history is outside the retention window. Pass <see cref="DateTime.MinValue"/>
+        /// to disable the window (no filter).
         /// </summary>
-        IReadOnlyList<HistoryDestination> GetLatestDestinations(string conversationKey);
+        IReadOnlyList<HistoryDestination> GetLatestDestinations(
+            string conversationKey, DateTime notOlderThan);
 
         /// <summary>Remove every row of the given batches (Undo rolling back what a classify learned).</summary>
         void DeleteBatches(IEnumerable<string> batchIds);

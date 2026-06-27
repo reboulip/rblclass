@@ -448,8 +448,10 @@ namespace RBLclass.AddIn.ViewModels
                 }
 
                 var swCore = System.Diagnostics.Stopwatch.StartNew();
+                int retentionDays = s?.AutoClassHistoryDays ?? Settings.DefaultAutoClassHistoryDays;
                 var result = _classifier.AutoClassify(items, resolve, keepCopy, removeAttachments, safetyCopy,
-                                                       attachmentDispositions, labelOptions);
+                                                       attachmentDispositions, labelOptions,
+                                                       historyRetentionDays: retentionDays);
                 swCore.Stop();
                 Log.Information(
                     "PERF AutoClass core {Ms} ms: filed={Filed}, noHistory={NoHistory}, stale={Stale}, errors={Errors}",

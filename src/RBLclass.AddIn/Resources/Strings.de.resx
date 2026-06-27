@@ -266,6 +266,9 @@
   <data name="Settings_WidenConversation_CheckBox" xml:space="preserve">
     <value>Standardmäßig auf die gesamte Unterhaltung anwenden</value>
   </data>
+  <data name="Settings_AutoClassHistoryDays_Label" xml:space="preserve">
+    <value>Verlaufsfenster für Auto-Klassierung (Tage):</value>
+  </data>
   <data name="Settings_Banner_Header" xml:space="preserve">
     <value>Banner für externe Absender</value>
   </data>

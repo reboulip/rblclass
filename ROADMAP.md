@@ -68,7 +68,7 @@ Phase 6 (pilot rollout) is in progress; Phases 7–9 are forward-looking.
 - [x] **A3.** Add an auto-expand toggle and a visual row separator to search results. [#13]
 
 ### B — Classify & attachments
-- [ ] **B1.** Extend the auto-classify conversation-history retention window and expose it as a configurable setting. [#16]
+- [x] **B1.** Extend the auto-classify conversation-history retention window and expose it as a configurable setting. [#16]
 - [ ] **B2.** Add a "use the same save directory" checkbox (checked by default) to the multi-mail attachment disposition UI. [#18]
 - [ ] **B3.** Add diagnostics for external-sender banner detection, improve reliability, and add fine-grained configuration; closes the open carried-over verification item. [#19]
 

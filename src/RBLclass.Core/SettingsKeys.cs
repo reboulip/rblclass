@@ -137,5 +137,12 @@ namespace RBLclass.Core
 
         /// <summary>Automatically expand every result row (show full path) after each search (v2.6.0.0 A3).</summary>
         public const string AutoExpandResults = "AutoExpandResults";
+
+        /// <summary>
+        /// Number of days of classification history that auto-classify considers.
+        /// Filings older than this many days are ignored by auto-class.
+        /// Default: 90. Stored as a positive integer string.
+        /// </summary>
+        public const string AutoClassHistoryDays = "AutoClassHistoryDays";
     }
 }

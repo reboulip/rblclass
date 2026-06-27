@@ -91,6 +91,12 @@
                         </CheckBox>
                         <CheckBox Margin="0,3" IsChecked="{Binding WidenConversation}"
                                   Content="{loc:Loc Key=Settings_WidenConversation_CheckBox}" />
+                        <DockPanel Margin="0,8,0,2" LastChildFill="False">
+                            <TextBlock Text="{loc:Loc Key=Settings_AutoClassHistoryDays_Label}"
+                                       VerticalAlignment="Center" />
+                            <TextBox DockPanel.Dock="Right" Width="60" Margin="6,0,0,0"
+                                     Text="{Binding AutoClassHistoryDaysText, UpdateSourceTrigger=LostFocus}" />
+                        </DockPanel>
                     </StackPanel>
                 </GroupBox>
 

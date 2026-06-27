@@ -27,6 +27,7 @@ namespace RBLclass.AddIn.ViewModels
         private string _maxResultsText;
         private string _minSearchLengthText;
         private string _searchDebounceMsText;
+        private string _autoClassHistoryDaysText;
         private string _bannerStatus;
 
         /// <param name="captureSelectedHtml">
@@ -42,6 +43,7 @@ namespace RBLclass.AddIn.ViewModels
             _maxResultsText = _settings.MaxResults.ToString(CultureInfo.InvariantCulture);
             _minSearchLengthText = _settings.MinSearchLength.ToString(CultureInfo.InvariantCulture);
             _searchDebounceMsText = _settings.SearchDebounceMs.ToString(CultureInfo.InvariantCulture);
+            _autoClassHistoryDaysText = _settings.AutoClassHistoryDays.ToString(CultureInfo.InvariantCulture);
             _bannerStatus = DescribeBanner(_settings.ExternalBannerSignature);
 
             TriageModes = new[]
@@ -234,6 +236,23 @@ namespace RBLclass.AddIn.ViewModels
                     && parsed >= 0 && parsed <= Settings.MaxSearchDebounceMs)
                 {
                     _settings.SearchDebounceMs = parsed;
+                    _settings.Save(_store);
+                }
+            }
+        }
+
+        public string AutoClassHistoryDaysText
+        {
+            get => _autoClassHistoryDaysText;
+            set
+            {
+                if (!SetProperty(ref _autoClassHistoryDaysText, value)) return;
+
+                int parsed;
+                if (int.TryParse(value, NumberStyles.Integer, CultureInfo.InvariantCulture, out parsed)
+                    && parsed >= 1 && parsed <= Settings.MaxAutoClassHistoryDays)
+                {
+                    _settings.AutoClassHistoryDays = parsed;
                     _settings.Save(_store);
                 }
             }

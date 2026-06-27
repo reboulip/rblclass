@@ -414,7 +414,8 @@ namespace RBLclass.Core
                                                Func<string, string, FolderNode> resolveLiveFolder,
                                                bool keepCopy, bool removeAttachments, bool safetyCopy,
                                                IReadOnlyList<AttachmentDisposition> attachmentDispositions = null,
-                                               AttachmentLabelOptions labelOptions = null)
+                                               AttachmentLabelOptions labelOptions = null,
+                                               int historyRetentionDays = 0)
         {
             if (items == null) throw new ArgumentNullException(nameof(items));
             if (resolveLiveFolder == null) throw new ArgumentNullException(nameof(resolveLiveFolder));
@@ -422,6 +423,10 @@ namespace RBLclass.Core
                 throw new InvalidOperationException("Auto-class requires a classification history store.");
 
             int filed = 0, noHistory = 0, staleFolders = 0, errors = 0;
+
+            DateTime cutoff = (historyRetentionDays > 0)
+                ? DateTime.UtcNow.AddDays(-historyRetentionDays)
+                : DateTime.MinValue;
 
             // One combined undo plan over every per-item filing this run does.
             var allMoves = new List<UndoableMove>();
@@ -442,7 +447,7 @@ namespace RBLclass.Core
 
                 if (string.IsNullOrEmpty(key)) { noHistory++; continue; }
 
-                var recorded = _history.GetLatestDestinations(key);
+                var recorded = _history.GetLatestDestinations(key, cutoff);
                 if (recorded.Count == 0) { noHistory++; continue; }
 
                 // Validate each remembered destination against the live index;

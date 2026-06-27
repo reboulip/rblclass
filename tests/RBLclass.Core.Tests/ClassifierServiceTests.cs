@@ -503,7 +503,7 @@ namespace RBLclass.Core.Tests
             var item = Item("e1");
             store.GetConversationKey(item).Returns("conv-1");
             store.GetParentFolder(Arg.Any<MailItemRef>()).Returns(Dest("src", "Inbox"));
-            history.GetLatestDestinations("conv-1")
+            history.GetLatestDestinations("conv-1", Arg.Any<DateTime>())
                    .Returns(new[] { new HistoryDestination("s1", "d1") });
             var sut = new ClassifierService(store, history);
 
@@ -527,7 +527,7 @@ namespace RBLclass.Core.Tests
             var store = StoreWithWorkingMove();
             var history = Substitute.For<IClassificationHistory>();
             store.GetConversationKey(Arg.Any<MailItemRef>()).Returns("conv-x");
-            history.GetLatestDestinations("conv-x").Returns(new HistoryDestination[0]);
+            history.GetLatestDestinations("conv-x", Arg.Any<DateTime>()).Returns(new HistoryDestination[0]);
             var sut = new ClassifierService(store, history);
 
             var result = sut.AutoClassify(new[] { Item("e1") }, (s, e) => D1,
@@ -544,7 +544,7 @@ namespace RBLclass.Core.Tests
             var store = StoreWithWorkingMove();
             var history = Substitute.For<IClassificationHistory>();
             store.GetConversationKey(Arg.Any<MailItemRef>()).Returns("conv-1");
-            history.GetLatestDestinations("conv-1")
+            history.GetLatestDestinations("conv-1", Arg.Any<DateTime>())
                    .Returns(new[] { new HistoryDestination("s1", "deleted-folder") });
             var sut = new ClassifierService(store, history);
 
@@ -575,7 +575,7 @@ namespace RBLclass.Core.Tests
             var history = Substitute.For<IClassificationHistory>();
             var item = Item("e1");
             store.GetConversationKey(item).Returns("conv-1");
-            history.GetLatestDestinations("conv-1")
+            history.GetLatestDestinations("conv-1", Arg.Any<DateTime>())
                    .Returns(new[] { new HistoryDestination("s1", "d1") });
             var sut = new ClassifierService(store, history);
 
@@ -604,7 +604,7 @@ namespace RBLclass.Core.Tests
             var history = Substitute.For<IClassificationHistory>();
             var item = Item("e1");
             store.GetConversationKey(item).Returns("conv-1");
-            history.GetLatestDestinations("conv-1")
+            history.GetLatestDestinations("conv-1", Arg.Any<DateTime>())
                    .Returns(new[] { new HistoryDestination("s1", "d1") });
             var sut = new ClassifierService(store, history);
 
@@ -624,7 +624,7 @@ namespace RBLclass.Core.Tests
             var history = Substitute.For<IClassificationHistory>();
             var item = Item("e1");
             store.GetConversationKey(item).Returns("conv-1");
-            history.GetLatestDestinations("conv-1")
+            history.GetLatestDestinations("conv-1", Arg.Any<DateTime>())
                    .Returns(new[] { new HistoryDestination("s1", "d1") });
             var sut = new ClassifierService(store, history);
 

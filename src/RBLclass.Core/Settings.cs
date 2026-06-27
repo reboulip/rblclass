@@ -30,6 +30,12 @@ namespace RBLclass.Core
         /// <summary>Upper clamp for <see cref="MinSearchLength"/>.</summary>
         public const int MaxMinSearchLength = 10;
 
+        /// <summary>Default retention window for the auto-classify conversation history (days).</summary>
+        public const int DefaultAutoClassHistoryDays = 90;
+
+        /// <summary>Upper clamp — 3650 days (≈10 years) is functionally "unlimited".</summary>
+        public const int MaxAutoClassHistoryDays = 3650;
+
         public bool OpenInNewWindow { get; set; }
         public bool AllResults { get; set; }
         public FolderMatchMode FolderMatchMode { get; set; }
@@ -52,6 +58,7 @@ namespace RBLclass.Core
         public AttachmentRemovalMode AttachmentRemovalMode { get; set; }
         public AttachmentLabelLocation AttachmentLabelLocation { get; set; }
         public bool AutoExpandResults { get; set; }
+        public int AutoClassHistoryDays { get; set; }
         public string PreferredUiLanguage { get; set; }
 
         /// <summary>Read every key, falling back to the same defaults the individual call sites use today.</summary>
@@ -86,6 +93,8 @@ namespace RBLclass.Core
                 AttachmentRemovalMode = ParseAttachmentRemovalMode(store.Get(SettingsKeys.AttachmentRemovalMode, null)),
                 AttachmentLabelLocation = ParseAttachmentLabelLocation(store.Get(SettingsKeys.AttachmentLabelLocation, null)),
                 AutoExpandResults = store.GetBool(SettingsKeys.AutoExpandResults, false),
+                AutoClassHistoryDays = ParseClampedInt(store.Get(SettingsKeys.AutoClassHistoryDays, null),
+                    DefaultAutoClassHistoryDays, 1, MaxAutoClassHistoryDays),
                 PreferredUiLanguage = ParseUiLanguage(store.Get(SettingsKeys.PreferredUiLanguage, null))
             };
         }
@@ -115,6 +124,8 @@ namespace RBLclass.Core
             store.Set(SettingsKeys.AttachmentRemovalMode, AttachmentRemovalMode.ToString());
             store.Set(SettingsKeys.AttachmentLabelLocation, AttachmentLabelLocation.ToString());
             store.SetBool(SettingsKeys.AutoExpandResults, AutoExpandResults);
+            store.Set(SettingsKeys.AutoClassHistoryDays,
+                AutoClassHistoryDays.ToString(CultureInfo.InvariantCulture));
             store.Set(SettingsKeys.PreferredUiLanguage, PreferredUiLanguage);
         }
 

@@ -56,6 +56,7 @@ namespace RBLclass.Core.Tests
             settings.SearchDebounceMs.Should().Be(Settings.DefaultSearchDebounceMs);
             settings.PreferredUiLanguage.Should().Be("Auto");
             settings.AutoExpandResults.Should().BeFalse();
+            settings.AutoClassHistoryDays.Should().Be(Settings.DefaultAutoClassHistoryDays);
         }
 
         [Fact]
@@ -84,6 +85,7 @@ namespace RBLclass.Core.Tests
                 MinSearchLength = 3,
                 SearchDebounceMs = 450,
                 AutoExpandResults = true,
+                AutoClassHistoryDays = 180,
                 PreferredUiLanguage = "fr"
             };
 
@@ -111,6 +113,7 @@ namespace RBLclass.Core.Tests
             reloaded.MinSearchLength.Should().Be(3);
             reloaded.SearchDebounceMs.Should().Be(450);
             reloaded.AutoExpandResults.Should().BeTrue();
+            reloaded.AutoClassHistoryDays.Should().Be(180);
             reloaded.PreferredUiLanguage.Should().Be("fr");
         }
 
@@ -219,6 +222,17 @@ namespace RBLclass.Core.Tests
         {
             _store.Set(SettingsKeys.FolderMatchMode, "Fuzzy");
             Settings.Load(_store).FolderMatchMode.Should().Be(FolderMatchMode.Substring);
+        }
+
+        [Theory]
+        [InlineData("not-a-number", Settings.DefaultAutoClassHistoryDays)]
+        [InlineData("0", 1)]
+        [InlineData("99999", Settings.MaxAutoClassHistoryDays)]
+        [InlineData("365", 365)]
+        public void Load_clamps_or_defaults_AutoClassHistoryDays(string stored, int expected)
+        {
+            _store.Set(SettingsKeys.AutoClassHistoryDays, stored);
+            Settings.Load(_store).AutoClassHistoryDays.Should().Be(expected);
         }
     }
 }

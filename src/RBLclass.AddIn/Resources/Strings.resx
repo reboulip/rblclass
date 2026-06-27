@@ -266,6 +266,9 @@
   <data name="Settings_WidenConversation_CheckBox" xml:space="preserve">
     <value>Apply to the whole conversation by default</value>
   </data>
+  <data name="Settings_AutoClassHistoryDays_Label" xml:space="preserve">
+    <value>Auto-class history window (days):</value>
+  </data>
   <data name="Settings_Banner_Header" xml:space="preserve">
     <value>External-sender banner</value>
   </data>
