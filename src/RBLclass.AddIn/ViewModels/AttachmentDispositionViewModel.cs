@@ -40,6 +40,7 @@ namespace RBLclass.AddIn.ViewModels
                     if (att.IsInline) { inlineExcluded++; continue; }
                     var row = new AttachmentRowViewModel(g.Item, att, g.Item.Subject);
                     row.PropertyChanged += OnRowChanged;
+                    row.DirectoryChosen = dir => ApplySameDirectory(dir, row);
                     Rows.Add(row);
                 }
             }
@@ -64,6 +65,13 @@ namespace RBLclass.AddIn.ViewModels
         public bool HasInlineNotice => !string.IsNullOrEmpty(InlineNotice);
         public bool HasRows => Rows.Count > 0;
 
+        private bool _useSameDirectory = true;
+        public bool UseSameDirectory
+        {
+            get => _useSameDirectory;
+            set { SetProperty(ref _useSameDirectory, value); }
+        }
+
         /// <summary>True when every Save-to row has a destination directory (gates Confirm).</summary>
         public bool CanConfirm =>
             Rows.All(r => r.Action != AttachmentDispositionAction.SaveTo
@@ -73,6 +81,16 @@ namespace RBLclass.AddIn.ViewModels
         public void DeleteAll()
         {
             foreach (var r in Rows) r.Action = AttachmentDispositionAction.Delete;
+        }
+
+        private void ApplySameDirectory(string directory, AttachmentRowViewModel source)
+        {
+            if (!_useSameDirectory) return;
+            foreach (var r in Rows)
+            {
+                if (ReferenceEquals(r, source)) continue;
+                r.SetDirectorySilent(directory);
+            }
         }
 
         public IReadOnlyList<AttachmentDisposition> BuildDispositions() =>

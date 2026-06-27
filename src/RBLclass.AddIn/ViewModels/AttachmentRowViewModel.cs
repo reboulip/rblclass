@@ -23,6 +23,18 @@ namespace RBLclass.AddIn.ViewModels
             MailSubject = mailSubject;
         }
 
+        internal System.Action<string> DirectoryChosen;
+
+        internal void SetDirectorySilent(string directory)
+        {
+            if (string.IsNullOrWhiteSpace(directory)) return;
+            TargetDirectory = directory;
+            Action = AttachmentDispositionAction.SaveTo;
+            _favoriteQuery = string.Empty;
+            OnPropertyChanged(nameof(FavoriteQuery));
+            FavoriteResults.Clear();
+        }
+
         public MailItemRef Item { get; }
         public AttachmentInfo Info { get; }
         public string MailSubject { get; }
@@ -104,6 +116,7 @@ namespace RBLclass.AddIn.ViewModels
             _favoriteQuery = string.Empty;
             OnPropertyChanged(nameof(FavoriteQuery));
             FavoriteResults.Clear();
+            DirectoryChosen?.Invoke(directory);
         }
 
         public void Browse()

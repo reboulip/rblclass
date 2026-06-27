@@ -69,7 +69,7 @@ Phase 6 (pilot rollout) is in progress; Phases 7–9 are forward-looking.
 
 ### B — Classify & attachments
 - [x] **B1.** Extend the auto-classify conversation-history retention window and expose it as a configurable setting. [#16]
-- [ ] **B2.** Add a "use the same save directory" checkbox (checked by default) to the multi-mail attachment disposition UI. [#18]
+- [x] **B2.** Add a "use the same save directory" checkbox (checked by default) to the multi-mail attachment disposition UI. [#18]
 - [ ] **B3.** Add diagnostics for external-sender banner detection, improve reliability, and add fine-grained configuration; closes the open carried-over verification item. [#19]
 
 ### C — Meeting items
