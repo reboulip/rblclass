@@ -179,7 +179,9 @@ namespace RBLclass.AddIn
                 TaskPaneServices.Search = _folderSearch;
                 TaskPaneServices.Settings = _settingsStore;
                 TaskPaneServices.Classifier = _classifier;
-                TaskPaneServices.GetSelection = () => _mailStore.GetSelectedItems();
+                TaskPaneServices.GetSelection = () =>
+                    _mailStore.GetSelectedItems(
+                        _settingsStore.GetBool(SettingsKeys.ClassifyMeetingItems, false));
                 TaskPaneServices.GetAllFolders = () => _folderTree.GetAll();
                 TaskPaneServices.FolderIndex = _folderTree;
                 TaskPaneServices.CreateSubfolder = (parent, name) =>
@@ -273,6 +275,8 @@ namespace RBLclass.AddIn
                         return dlg.ShowDialog() == DialogResult.OK ? dlg.SelectedPath : null;
                     }
                 };
+                TaskPaneServices.ActivateEasterEgg = () =>
+                    TaskPaneServices.Host?.ActivatePigEasterEgg();
 
                 // F2: gather attachments and show the per-attachment disposition modal.
                 TaskPaneServices.GatherAttachments = items =>
@@ -454,57 +458,6 @@ namespace RBLclass.AddIn
         }
 
         /// <summary>
-        /// Ribbon "Remove attachments": strip attachments from the current mail
-        /// selection (legacy 5e standalone entry point), with confirmation.
-        /// </summary>
-        public void OnRemoveAttachmentsClick(Office.IRibbonControl control)
-        {
-            try
-            {
-                var loc = TaskPaneServices.Localization;
-                var items = _mailStore.GetSelectedItems();
-                if (items.Count == 0)
-                {
-                    MessageBox.Show(loc.GetString("MsgBox_RemoveAttachments_SelectFirst"),
-                                    loc.GetString("MsgBox_Info_Title"),
-                                    MessageBoxButtons.OK, MessageBoxIcon.Information);
-                    return;
-                }
-
-                var confirm = MessageBox.Show(
-                    loc.GetString("MsgBox_RemoveAttachments_Confirm", items.Count),
-                    loc.GetString("MsgBox_RemoveAttachments_Title"),
-                    MessageBoxButtons.YesNo, MessageBoxIcon.Warning);
-                if (confirm != DialogResult.Yes) return;
-
-                int done = 0, skippedEncrypted = 0;
-                foreach (var item in items)
-                {
-                    try
-                    {
-                        if (_mailStore.RemoveAttachments(item)) done++;
-                        else skippedEncrypted++; // encrypted/signed - never stripped
-                    }
-                    catch (Exception ex) { Log.Error(ex, "RemoveAttachments failed for an item."); }
-                }
-
-                Log.Information("Removed attachments from {Count} mail(s) ({Skipped} encrypted skipped).",
-                                done, skippedEncrypted);
-                string summary = loc.GetString("MsgBox_RemoveAttachments_Summary", done);
-                if (skippedEncrypted > 0)
-                    summary += loc.Plural(skippedEncrypted,
-                        "MsgBox_RemoveAttachments_SkippedEncrypted_One",
-                        "MsgBox_RemoveAttachments_SkippedEncrypted_Other");
-                MessageBox.Show(summary, loc.GetString("MsgBox_Info_Title"),
-                                MessageBoxButtons.OK, MessageBoxIcon.Information);
-            }
-            catch (Exception ex)
-            {
-                ShowError("Remove attachments failed", ex);
-            }
-        }
-
-        /// <summary>
         /// Reply/forward banner strip (v2.2): when the toggle is on and a banner
         /// has been learned, strip it from the new draft so it isn't quoted back.
         /// The draft (reply/reply-all/forward) quotes the original including its
@@ -513,7 +466,6 @@ namespace RBLclass.AddIn
         /// </summary>
         private void OnNewInspector(OutlookOM.Inspector inspector)
         {
-            object item = null;
             try
             {
                 var settings = Settings.Load(_settingsStore);
@@ -521,21 +473,35 @@ namespace RBLclass.AddIn
                     string.IsNullOrWhiteSpace(settings.ExternalBannerSignature))
                     return;
 
-                try { item = inspector.CurrentItem; } catch { item = null; }
-                if (item == null) return;
+                // NewInspector fires before Outlook populates the quoted body in
+                // a reply/forward draft. Deferring to Inspector.Activate ensures
+                // the full body (including quoted original with its banner) is
+                // present. One-shot: unsubscribe after the first Activate.
+                var inspectorEvents = inspector as OutlookOM.InspectorEvents_10_Event;
+                if (inspectorEvents == null) return;
 
-                _mailStore.StripBannerFromDraft(item, settings.ExternalBannerSignature);
+                string sig = settings.ExternalBannerSignature;
+                OutlookOM.InspectorEvents_10_ActivateEventHandler handler = null;
+                handler = () =>
+                {
+                    try
+                    {
+                        inspectorEvents.Activate -= handler;
+                        object item = null;
+                        try { item = inspector.CurrentItem; } catch { }
+                        if (item != null)
+                        {
+                            try { _mailStore.StripBannerFromDraft(item, sig); }
+                            finally { try { Marshal.ReleaseComObject(item); } catch { } }
+                        }
+                    }
+                    catch (Exception ex) { TryLog("Inspector.Activate banner strip failed", ex); }
+                };
+                inspectorEvents.Activate += handler;
             }
             catch (Exception ex)
             {
-                TryLog("NewInspector banner strip failed", ex);
-            }
-            finally
-            {
-                if (item != null)
-                {
-                    try { Marshal.ReleaseComObject(item); } catch { }
-                }
+                TryLog("NewInspector banner strip setup failed", ex);
             }
         }
 
@@ -768,46 +734,6 @@ namespace RBLclass.AddIn
         }
 
         /// <summary>
-        /// Step 1 diagnostic: report the folder-index status so the increment
-        /// can be verified on the dev machine before the search UI exists
-        /// (Step 3). Replaced by the real actions in later steps.
-        /// </summary>
-        public void OnIndexStatusClick(Office.IRibbonControl control)
-        {
-            try
-            {
-                var loc = TaskPaneServices.Localization;
-                var r = _lastIndexResult;
-                int cached = _folderTree != null ? _folderTree.GetAll().Count : 0;
-
-                string status;
-                if (r == null)
-                {
-                    status = loc.GetString("MsgBox_IndexStatus_NotStarted");
-                }
-                else if (r.Source == IndexSource.NeedsWalk)
-                {
-                    status = loc.GetString("MsgBox_IndexStatus_WalkScheduled");
-                }
-                else
-                {
-                    status = loc.GetString("MsgBox_IndexStatus_Summary",
-                        r.Source, r.StoreCount, r.FolderCount, cached);
-                }
-
-                string message = status + Environment.NewLine + Environment.NewLine +
-                    loc.GetString("MsgBox_IndexStatus_Footer", _dbPath, _logDirectory);
-
-                MessageBox.Show(message, loc.GetString("MsgBox_IndexStatus_Title"),
-                                MessageBoxButtons.OK, MessageBoxIcon.Information);
-            }
-            catch (Exception ex)
-            {
-                ShowError("Index status failed", ex);
-            }
-        }
-
-        /// <summary>
         /// Ribbon "Refresh folders": re-walk the live stores on demand so folders
         /// created or renamed directly in Outlook (not via our own "New subfolder"
         /// action) surface in search. Fires and forgets an async walk that yields
@@ -896,6 +822,20 @@ namespace RBLclass.AddIn
             catch (Exception ex)
             {
                 ShowError("Settings failed", ex);
+            }
+        }
+
+        /// <summary>Ribbon "About": modal dialog with version, author and tech info.</summary>
+        public void OnAboutClick(Office.IRibbonControl control)
+        {
+            try
+            {
+                var version = System.Reflection.Assembly.GetExecutingAssembly().GetName().Version;
+                new Views.AboutWindow(version).ShowDialog();
+            }
+            catch (Exception ex)
+            {
+                ShowError("About failed", ex);
             }
         }
 

@@ -84,6 +84,9 @@
   <data name="MainPane_StripBanner_CheckBox" xml:space="preserve">
     <value>Strip the external-sender banner</value>
   </data>
+  <data name="Settings_AutoExpand_CheckBox" xml:space="preserve">
+    <value>Auto-expand results (show full paths)</value>
+  </data>
   <data name="MainPane_OpenFolder_ToolTip" xml:space="preserve">
     <value>Open this folder in Outlook</value>
   </data>
@@ -170,6 +173,9 @@
   </data>
   <data name="AttachDisp_DeleteAll_Button" xml:space="preserve">
     <value>Delete all</value>
+  </data>
+  <data name="AttachDisp_UseSameDirectory_CheckBox" xml:space="preserve">
+    <value>Use the same save directory for all attachments</value>
   </data>
   <data name="AttachDisp_Delete_Radio" xml:space="preserve">
     <value>Delete</value>
@@ -263,6 +269,12 @@
   <data name="Settings_WidenConversation_CheckBox" xml:space="preserve">
     <value>Apply to the whole conversation by default</value>
   </data>
+  <data name="Settings_AutoClassHistoryDays_Label" xml:space="preserve">
+    <value>Auto-class history window (days):</value>
+  </data>
+  <data name="Settings_ClassifyMeetingItems_CheckBox" xml:space="preserve">
+    <value>Classify meeting requests and responses</value>
+  </data>
   <data name="Settings_Banner_Header" xml:space="preserve">
     <value>External-sender banner</value>
   </data>
@@ -280,6 +292,30 @@
   </data>
   <data name="Settings_StripBannerOnClassify_CheckBox" xml:space="preserve">
     <value>Strip the banner from the filed copy by default when classifying</value>
+  </data>
+  <data name="Settings_StripBannerOnAutoClassify_CheckBox" xml:space="preserve">
+    <value>Strip the banner from auto-classified filed copies</value>
+  </data>
+  <data name="Settings_DiagnoseBanner_Button" xml:space="preserve">
+    <value>Diagnose selected mail</value>
+  </data>
+  <data name="Settings_Banner_Diag_NoSignature" xml:space="preserve">
+    <value>No banner signature configured — learn one first.</value>
+  </data>
+  <data name="Settings_Banner_Diag_NoSelection" xml:space="preserve">
+    <value>No mail selected. Select a mail and try again.</value>
+  </data>
+  <data name="Settings_Banner_Diag_FoundExact" xml:space="preserve">
+    <value>Banner found (exact match, {0} characters).</value>
+  </data>
+  <data name="Settings_Banner_Diag_FoundTolerant" xml:space="preserve">
+    <value>Banner found (whitespace-tolerant match, {0} characters).</value>
+  </data>
+  <data name="Settings_Banner_Diag_NotFound" xml:space="preserve">
+    <value>Banner not found in this mail (signature: {0} characters).</value>
+  </data>
+  <data name="Settings_Banner_Diag_Unavailable" xml:space="preserve">
+    <value>Diagnostics unavailable (no selection source).</value>
   </data>
   <data name="Settings_SendingGuards_Header" xml:space="preserve">
     <value>Sending guards</value>
@@ -586,48 +622,6 @@ Send anyway?</value>
   <data name="MsgBox_Info_Title" xml:space="preserve">
     <value>RBLclass</value>
   </data>
-  <data name="MsgBox_RemoveAttachments_Title" xml:space="preserve">
-    <value>RBLclass - Remove attachments</value>
-  </data>
-  <data name="MsgBox_RemoveAttachments_SelectFirst" xml:space="preserve">
-    <value>Select one or more mails first.</value>
-  </data>
-  <data name="MsgBox_RemoveAttachments_Confirm" xml:space="preserve">
-    <value>Remove all attachments from {0} mail(s)? This cannot be undone.</value>
-  </data>
-  <data name="MsgBox_RemoveAttachments_Summary" xml:space="preserve">
-    <value>Removed attachments from {0} mail(s).</value>
-  </data>
-  <data name="MsgBox_RemoveAttachments_SkippedEncrypted_One" xml:space="preserve">
-    <value>
-
-{0} encrypted mail was skipped - its attachments are the message itself.</value>
-  </data>
-  <data name="MsgBox_RemoveAttachments_SkippedEncrypted_Other" xml:space="preserve">
-    <value>
-
-{0} encrypted mails were skipped - their attachments are the message itself.</value>
-  </data>
-  <data name="MsgBox_IndexStatus_Title" xml:space="preserve">
-    <value>RBLclass - Folder index</value>
-  </data>
-  <data name="MsgBox_IndexStatus_NotStarted" xml:space="preserve">
-    <value>Indexing has not started yet.</value>
-  </data>
-  <data name="MsgBox_IndexStatus_WalkScheduled" xml:space="preserve">
-    <value>First-run folder walk is scheduled / in progress.
-Reopen this dialog in a moment to see the counts.</value>
-  </data>
-  <data name="MsgBox_IndexStatus_Summary" xml:space="preserve">
-    <value>Index source : {0}
-Stores       : {1}
-Folders      : {2}
-Cached now   : {3}</value>
-  </data>
-  <data name="MsgBox_IndexStatus_Footer" xml:space="preserve">
-    <value>Database : {0}
-Logs     : {1}</value>
-  </data>
   <data name="MsgBox_RefreshFolders_Title" xml:space="preserve">
     <value>RBLclass - Refresh folders</value>
   </data>
@@ -659,5 +653,29 @@ Re-run your search to see newly created or renamed folders.</value>
   </data>
   <data name="Pane_Options" xml:space="preserve">
     <value>▶ Options</value>
+  </data>
+  <data name="About_Title" xml:space="preserve">
+    <value>RBLclass - About</value>
+  </data>
+  <data name="About_Version_Label" xml:space="preserve">
+    <value>Version:</value>
+  </data>
+  <data name="About_Author_Label" xml:space="preserve">
+    <value>Author:</value>
+  </data>
+  <data name="About_Author_Text" xml:space="preserve">
+    <value>Romain Reboulleau</value>
+  </data>
+  <data name="About_Tech_Label" xml:space="preserve">
+    <value>Technology:</value>
+  </data>
+  <data name="About_Tech_Text" xml:space="preserve">
+    <value>C# / .NET Framework 4.8 · WPF · SQLite · Outlook COM add-in</value>
+  </data>
+  <data name="About_Close_Button" xml:space="preserve">
+    <value>Close</value>
+  </data>
+  <data name="MainPane_AutoClass_EasterEgg" xml:space="preserve">
+    <value>🐷</value>
   </data>
 </root>

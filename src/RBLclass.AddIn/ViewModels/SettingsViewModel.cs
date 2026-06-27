@@ -27,7 +27,9 @@ namespace RBLclass.AddIn.ViewModels
         private string _maxResultsText;
         private string _minSearchLengthText;
         private string _searchDebounceMsText;
+        private string _autoClassHistoryDaysText;
         private string _bannerStatus;
+        private string _bannerDiagnosticStatus = string.Empty;
 
         /// <param name="captureSelectedHtml">
         /// Returns the HTML body of the currently selected mail, for the "learn
@@ -42,6 +44,7 @@ namespace RBLclass.AddIn.ViewModels
             _maxResultsText = _settings.MaxResults.ToString(CultureInfo.InvariantCulture);
             _minSearchLengthText = _settings.MinSearchLength.ToString(CultureInfo.InvariantCulture);
             _searchDebounceMsText = _settings.SearchDebounceMs.ToString(CultureInfo.InvariantCulture);
+            _autoClassHistoryDaysText = _settings.AutoClassHistoryDays.ToString(CultureInfo.InvariantCulture);
             _bannerStatus = DescribeBanner(_settings.ExternalBannerSignature);
 
             TriageModes = new[]
@@ -157,6 +160,12 @@ namespace RBLclass.AddIn.ViewModels
             set => Apply(_settings.AllResults, value, v => _settings.AllResults = v);
         }
 
+        public bool AutoExpandResults
+        {
+            get => _settings.AutoExpandResults;
+            set => Apply(_settings.AutoExpandResults, value, v => _settings.AutoExpandResults = v);
+        }
+
         /// <summary>
         /// Word-prefix is the opt-in stricter mode; the default is the broader
         /// "contains" (substring) search. Bound to a single checkbox that is
@@ -233,6 +242,23 @@ namespace RBLclass.AddIn.ViewModels
             }
         }
 
+        public string AutoClassHistoryDaysText
+        {
+            get => _autoClassHistoryDaysText;
+            set
+            {
+                if (!SetProperty(ref _autoClassHistoryDaysText, value)) return;
+
+                int parsed;
+                if (int.TryParse(value, NumberStyles.Integer, CultureInfo.InvariantCulture, out parsed)
+                    && parsed >= 1 && parsed <= Settings.MaxAutoClassHistoryDays)
+                {
+                    _settings.AutoClassHistoryDays = parsed;
+                    _settings.Save(_store);
+                }
+            }
+        }
+
         public bool KeepCopy
         {
             get => _settings.KeepCopy;
@@ -262,6 +288,12 @@ namespace RBLclass.AddIn.ViewModels
             set => Apply(_settings.WidenConversation, value, v => _settings.WidenConversation = v);
         }
 
+        public bool ClassifyMeetingItems
+        {
+            get => _settings.ClassifyMeetingItems;
+            set => Apply(_settings.ClassifyMeetingItems, value, v => _settings.ClassifyMeetingItems = v);
+        }
+
         public bool SendExternalWarning
         {
             get => _settings.SendExternalWarning;
@@ -280,6 +312,18 @@ namespace RBLclass.AddIn.ViewModels
         {
             get => _settings.StripBannerOnClassify;
             set => Apply(_settings.StripBannerOnClassify, value, v => _settings.StripBannerOnClassify = v);
+        }
+
+        public bool StripBannerOnAutoClassify
+        {
+            get => _settings.StripBannerOnAutoClassify;
+            set => Apply(_settings.StripBannerOnAutoClassify, value, v => _settings.StripBannerOnAutoClassify = v);
+        }
+
+        public string BannerDiagnosticStatus
+        {
+            get => _bannerDiagnosticStatus;
+            private set => SetProperty(ref _bannerDiagnosticStatus, value);
         }
 
         /// <summary>True when a banner has been learned (gates the strip toggles in the view).</summary>
@@ -324,17 +368,54 @@ namespace RBLclass.AddIn.ViewModels
             OnPropertyChanged(nameof(HasBanner));
         }
 
+        public void DiagnoseSelectedMail()
+        {
+            if (_captureSelectedHtml == null)
+            {
+                BannerDiagnosticStatus = _loc.GetString("Settings_Banner_Diag_Unavailable");
+                return;
+            }
+
+            string html = _captureSelectedHtml();
+            string sig = _settings.ExternalBannerSignature;
+            var result = ExternalBannerStripper.Diagnose(html, sig);
+
+            switch (result.Outcome)
+            {
+                case BannerDiagnosticOutcome.NoSignature:
+                    BannerDiagnosticStatus = _loc.GetString("Settings_Banner_Diag_NoSignature");
+                    break;
+                case BannerDiagnosticOutcome.NoSelection:
+                    BannerDiagnosticStatus = _loc.GetString("Settings_Banner_Diag_NoSelection");
+                    break;
+                case BannerDiagnosticOutcome.Found:
+                    BannerDiagnosticStatus = result.MatchedExact
+                        ? _loc.GetString("Settings_Banner_Diag_FoundExact", result.SignatureLength)
+                        : _loc.GetString("Settings_Banner_Diag_FoundTolerant", result.SignatureLength);
+                    break;
+                case BannerDiagnosticOutcome.NotFound:
+                    BannerDiagnosticStatus = _loc.GetString("Settings_Banner_Diag_NotFound", result.SignatureLength);
+                    break;
+                default:
+                    BannerDiagnosticStatus = string.Empty;
+                    break;
+            }
+        }
+
         /// <summary>Forget the learned banner (and turn the strip options off, since they'd be inert).</summary>
         public void ClearBanner()
         {
             _settings.ExternalBannerSignature = string.Empty;
             _settings.StripBannerOnReply = false;
             _settings.StripBannerOnClassify = false;
+            _settings.StripBannerOnAutoClassify = false;
             _settings.Save(_store);
             BannerStatus = DescribeBanner(string.Empty);
+            BannerDiagnosticStatus = string.Empty;
             OnPropertyChanged(nameof(HasBanner));
             OnPropertyChanged(nameof(StripBannerOnReply));
             OnPropertyChanged(nameof(StripBannerOnClassify));
+            OnPropertyChanged(nameof(StripBannerOnAutoClassify));
         }
 
         private string DescribeBanner(string signature) =>

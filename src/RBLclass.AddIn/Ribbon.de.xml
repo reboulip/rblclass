@@ -11,13 +11,6 @@
                   onAction="OnTogglePaneClick"
                   screentip="RBLclass-Bereich anzeigen oder ausblenden"
                   supertip="Den RBLclass-Bereich öffnen: in der Ordnerstruktur suchen, zu einem Ordner wechseln (Öffnen-Schaltfläche) und die ausgewählte E-Mail ablegen - ein Klick auf einen Ordner fügt ihn als Ziel hinzu, ein Doppelklick legt die E-Mail direkt darin ab." />
-          <button id="RemoveAttachmentsButton"
-                  label="Anhänge entfernen"
-                  size="large"
-                  imageMso="AttachmentRemove"
-                  onAction="OnRemoveAttachmentsClick"
-                  screentip="Anhänge entfernen"
-                  supertip="Entfernt nach Bestätigung alle Anhänge aus der/den ausgewählten E-Mail(s)." />
           <button id="RefreshFoldersButton"
                   label="Ordner aktualisieren"
                   size="large"
@@ -25,20 +18,20 @@
                   onAction="OnRefreshFoldersClick"
                   screentip="Ordnerindex aktualisieren"
                   supertip="Durchsucht Ihre PST-Speicher erneut, damit Ordner, die direkt in Outlook erstellt oder umbenannt wurden, in der Suche erscheinen. Nach dem manuellen Anlegen von Ordnern ausführen." />
-          <button id="IndexStatusButton"
-                  label="Indexstatus"
-                  size="large"
-                  imageMso="Info"
-                  onAction="OnIndexStatusClick"
-                  screentip="Status des Ordnerindex"
-                  supertip="Zeigt, ob der Ordnerindex aus dem Cache geladen oder neu erstellt wurde, mit Anzahl der Speicher/Ordner. Diagnose aus Schritt 1 - die Suchoberfläche kommt in Schritt 3." />
           <button id="SettingsButton"
                   label="Einstellungen"
                   size="large"
-                  imageMso="ToolsOptions"
+                  imageMso="PropertySheet"
                   onAction="OnSettingsClick"
                   screentip="RBLclass-Einstellungen"
                   supertip="Konfigurieren Sie Ordnersuche, Klassieren, Sende-Sicherungen und die Triage gesendeter Objekte. Jede Änderung wird sofort angewendet und gespeichert." />
+          <button id="AboutButton"
+                  label="Info"
+                  size="large"
+                  imageMso="About"
+                  onAction="OnAboutClick"
+                  screentip="Info zu RBLclass"
+                  supertip="Version, Autor und technische Informationen zu RBLclass." />
         </group>
       </tab>
     </tabs>

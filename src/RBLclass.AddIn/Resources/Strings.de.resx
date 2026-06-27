@@ -84,6 +84,9 @@
   <data name="MainPane_StripBanner_CheckBox" xml:space="preserve">
     <value>Banner für externe Absender entfernen</value>
   </data>
+  <data name="Settings_AutoExpand_CheckBox" xml:space="preserve">
+    <value>Ergebnisse automatisch aufklappen (vollständige Pfade anzeigen)</value>
+  </data>
   <data name="MainPane_OpenFolder_ToolTip" xml:space="preserve">
     <value>Diesen Ordner in Outlook öffnen</value>
   </data>
@@ -170,6 +173,9 @@
   </data>
   <data name="AttachDisp_DeleteAll_Button" xml:space="preserve">
     <value>Alle löschen</value>
+  </data>
+  <data name="AttachDisp_UseSameDirectory_CheckBox" xml:space="preserve">
+    <value>Dasselbe Speicherverzeichnis für alle Anlagen verwenden</value>
   </data>
   <data name="AttachDisp_Delete_Radio" xml:space="preserve">
     <value>Löschen</value>
@@ -263,6 +269,12 @@
   <data name="Settings_WidenConversation_CheckBox" xml:space="preserve">
     <value>Standardmäßig auf die gesamte Unterhaltung anwenden</value>
   </data>
+  <data name="Settings_AutoClassHistoryDays_Label" xml:space="preserve">
+    <value>Verlaufsfenster für Auto-Klassierung (Tage):</value>
+  </data>
+  <data name="Settings_ClassifyMeetingItems_CheckBox" xml:space="preserve">
+    <value>Besprechungsanfragen und -antworten ablegen</value>
+  </data>
   <data name="Settings_Banner_Header" xml:space="preserve">
     <value>Banner für externe Absender</value>
   </data>
@@ -280,6 +292,30 @@
   </data>
   <data name="Settings_StripBannerOnClassify_CheckBox" xml:space="preserve">
     <value>Banner standardmäßig beim Klassieren aus der abgelegten Kopie entfernen</value>
+  </data>
+  <data name="Settings_StripBannerOnAutoClassify_CheckBox" xml:space="preserve">
+    <value>Banner aus automatisch abgelegten Kopien entfernen</value>
+  </data>
+  <data name="Settings_DiagnoseBanner_Button" xml:space="preserve">
+    <value>Ausgewählte E-Mail diagnostizieren</value>
+  </data>
+  <data name="Settings_Banner_Diag_NoSignature" xml:space="preserve">
+    <value>Keine Banner-Signatur konfiguriert — zuerst eine lernen.</value>
+  </data>
+  <data name="Settings_Banner_Diag_NoSelection" xml:space="preserve">
+    <value>Keine E-Mail ausgewählt. Wählen Sie eine E-Mail aus und versuchen Sie es erneut.</value>
+  </data>
+  <data name="Settings_Banner_Diag_FoundExact" xml:space="preserve">
+    <value>Banner gefunden (exakte Übereinstimmung, {0} Zeichen).</value>
+  </data>
+  <data name="Settings_Banner_Diag_FoundTolerant" xml:space="preserve">
+    <value>Banner gefunden (leerraumtolerante Übereinstimmung, {0} Zeichen).</value>
+  </data>
+  <data name="Settings_Banner_Diag_NotFound" xml:space="preserve">
+    <value>Banner in dieser E-Mail nicht gefunden (Signatur: {0} Zeichen).</value>
+  </data>
+  <data name="Settings_Banner_Diag_Unavailable" xml:space="preserve">
+    <value>Diagnose nicht verfügbar (keine Auswahlquelle).</value>
   </data>
   <data name="Settings_SendingGuards_Header" xml:space="preserve">
     <value>Sende-Sicherungen</value>
@@ -586,48 +622,6 @@ Trotzdem senden?</value>
   <data name="MsgBox_Info_Title" xml:space="preserve">
     <value>RBLclass</value>
   </data>
-  <data name="MsgBox_RemoveAttachments_Title" xml:space="preserve">
-    <value>RBLclass - Anhänge entfernen</value>
-  </data>
-  <data name="MsgBox_RemoveAttachments_SelectFirst" xml:space="preserve">
-    <value>Wählen Sie zuerst eine oder mehrere E-Mails aus.</value>
-  </data>
-  <data name="MsgBox_RemoveAttachments_Confirm" xml:space="preserve">
-    <value>Alle Anhänge aus {0} E-Mail(s) entfernen? Dies kann nicht rückgängig gemacht werden.</value>
-  </data>
-  <data name="MsgBox_RemoveAttachments_Summary" xml:space="preserve">
-    <value>Anhänge aus {0} E-Mail(s) entfernt.</value>
-  </data>
-  <data name="MsgBox_RemoveAttachments_SkippedEncrypted_One" xml:space="preserve">
-    <value>
-
-{0} verschlüsselte E-Mail wurde übersprungen - ihre Anhänge sind die Nachricht selbst.</value>
-  </data>
-  <data name="MsgBox_RemoveAttachments_SkippedEncrypted_Other" xml:space="preserve">
-    <value>
-
-{0} verschlüsselte E-Mails wurden übersprungen - ihre Anhänge sind die Nachricht selbst.</value>
-  </data>
-  <data name="MsgBox_IndexStatus_Title" xml:space="preserve">
-    <value>RBLclass - Ordnerindex</value>
-  </data>
-  <data name="MsgBox_IndexStatus_NotStarted" xml:space="preserve">
-    <value>Die Indizierung hat noch nicht begonnen.</value>
-  </data>
-  <data name="MsgBox_IndexStatus_WalkScheduled" xml:space="preserve">
-    <value>Der erste Ordnerdurchlauf ist geplant / läuft.
-Öffnen Sie dieses Fenster gleich erneut, um die Zahlen zu sehen.</value>
-  </data>
-  <data name="MsgBox_IndexStatus_Summary" xml:space="preserve">
-    <value>Indexquelle : {0}
-Speicher    : {1}
-Ordner      : {2}
-Im Cache    : {3}</value>
-  </data>
-  <data name="MsgBox_IndexStatus_Footer" xml:space="preserve">
-    <value>Datenbank : {0}
-Protokolle: {1}</value>
-  </data>
   <data name="MsgBox_RefreshFolders_Title" xml:space="preserve">
     <value>RBLclass - Ordner aktualisieren</value>
   </data>
@@ -659,5 +653,29 @@ Führen Sie Ihre Suche erneut aus, um neu erstellte oder umbenannte Ordner zu se
   </data>
   <data name="Pane_Options" xml:space="preserve">
     <value>▶ Optionen</value>
+  </data>
+  <data name="About_Title" xml:space="preserve">
+    <value>RBLclass - Info</value>
+  </data>
+  <data name="About_Version_Label" xml:space="preserve">
+    <value>Version:</value>
+  </data>
+  <data name="About_Author_Label" xml:space="preserve">
+    <value>Autor:</value>
+  </data>
+  <data name="About_Author_Text" xml:space="preserve">
+    <value>Romain Reboulleau</value>
+  </data>
+  <data name="About_Tech_Label" xml:space="preserve">
+    <value>Technologie:</value>
+  </data>
+  <data name="About_Tech_Text" xml:space="preserve">
+    <value>C# / .NET Framework 4.8 · WPF · SQLite · Outlook-COM-Add-in</value>
+  </data>
+  <data name="About_Close_Button" xml:space="preserve">
+    <value>Schließen</value>
+  </data>
+  <data name="MainPane_AutoClass_EasterEgg" xml:space="preserve">
+    <value>🐷</value>
   </data>
 </root>

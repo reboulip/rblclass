@@ -33,6 +33,9 @@ namespace RBLclass.Core
         /// <summary>Auto-strip the learned banner from reply/forward drafts (v2.2, default off).</summary>
         public const string StripBannerOnReply = "StripBannerOnReply";
 
+        /// <summary>Auto-strip the learned banner from auto-classified filed copies (v2.6.0.0 B3, default off).</summary>
+        public const string StripBannerOnAutoClassify = "StripBannerOnAutoClassify";
+
         /// <summary>Default state of the classify-time "strip banner from the filed copy" tickbox (v2.2).</summary>
         public const string StripBannerOnClassify = "StripBannerOnClassify";
 
@@ -131,5 +134,21 @@ namespace RBLclass.Core
         /// InfoBar deferred, falls back to Body).
         /// </summary>
         public const string AttachmentLabelLocation = "AttachmentLabelLocation";
+
+        /// <summary>Whether the Auto-class button easter egg (pig icon) is active (v2.6.0.0).</summary>
+        public const string EasterEggActive = "EasterEggActive";
+
+        /// <summary>Automatically expand every result row (show full path) after each search (v2.6.0.0 A3).</summary>
+        public const string AutoExpandResults = "AutoExpandResults";
+
+        /// <summary>
+        /// Number of days of classification history that auto-classify considers.
+        /// Filings older than this many days are ignored by auto-class.
+        /// Default: 90. Stored as a positive integer string.
+        /// </summary>
+        public const string AutoClassHistoryDays = "AutoClassHistoryDays";
+
+        /// <summary>When true, MeetingItem objects in the explorer selection are classified alongside MailItems (v2.6.0.0 C1, default off).</summary>
+        public const string ClassifyMeetingItems = "ClassifyMeetingItems";
     }
 }

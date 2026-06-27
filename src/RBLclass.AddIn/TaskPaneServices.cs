@@ -132,6 +132,12 @@ namespace RBLclass.AddIn
         public static Func<string> BrowseForFolder;
 
         /// <summary>
+        /// Activate the pig easter egg in the main pane's Auto-Class button label.
+        /// Wired at startup; null until then.
+        /// </summary>
+        public static Action ActivateEasterEgg;
+
+        /// <summary>
         /// Gather each item's attachments (and whether it is encrypted) for the
         /// F2 disposition modal. Touches COM - invoked on the UI thread.
         /// </summary>

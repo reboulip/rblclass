@@ -1,6 +1,6 @@
 ---
 name: dev-sprint
-description: Runs the full active sprint for the RBLclass add-in. Reads ROADMAP.md to find the highest vX.X.X section with unchecked items, then implements all items in document order using the feature-prep subagent and /feature-impl skill. Preparation for item N+1 starts in the background while item N is being implemented, so the brief is ready as soon as the next item begins.
+description: Runs the full active sprint for the RBLclass add-in. Reads ROADMAP.md to find the highest vX.X.X section with unchecked items, then implements all items in document order using the feature-prep subagent and /feature-impl skill. Preparation for item N+1 starts in parallel with N's implementation (same dispatch message); the brief is read and reconciled with actual changes once N's commit lands.
 ---
 
 # /dev-sprint — run the current sprint
@@ -15,8 +15,9 @@ completion. Each item goes through:
 2. **Implementation** (`/feature-impl` skill) — implements, verifies, and
    commits the item (including the ROADMAP.md checkbox update).
 
-Preparation for item N+1 runs **in the background** while item N is being
-implemented, so the brief is ready as soon as the next item begins.
+Preparation for item N+1 is dispatched **in the same message** as `/feature-impl`
+for item N, so both run in parallel. The brief lands while implementation is in
+progress and is read right after N's commit, before N+1 starts.
 
 ---
 
@@ -120,45 +121,46 @@ Agent({
 
 ---
 
-## Step 3 — Pre-fetch item[1] in the background
+## Step 3 — Implement item[0] and prepare item[1] in parallel
 
-Immediately after receiving the brief for item[0], if item[1] exists, start
-its preparation without waiting for the result:
+With item[0]'s brief in context, dispatch both in the **same message** so they
+run concurrently:
 
-```
-Agent({
-  subagent_type: "feature-prep",
-  run_in_background: true,
-  description: "Prepare brief for [sprint] [next label]",
-  prompt: "Sprint: [sprint version]\nItem: [next label] — [next title]\n\n[full next roadmap item text, verbatim from ROADMAP.md]"
-})
-```
-
----
-
-## Step 4 — Implement item[0]
-
-The brief for item[0] is in context. Invoke the implementation skill:
-
-```
-Skill("feature-impl")
-```
+1. Invoke the implementation skill (foreground — this call blocks until N is
+   committed):
+   ```
+   Skill("feature-impl")
+   ```
+2. If item[1] exists, simultaneously spawn its preparation in the background:
+   ```
+   Agent({
+     subagent_type: "feature-prep",
+     run_in_background: true,
+     description: "Prepare brief for [sprint] [next label]",
+     prompt: "Sprint: [sprint version]\nItem: [next label] — [next title]\n\n[full next roadmap item text, verbatim from ROADMAP.md]"
+   })
+   ```
 
 `/feature-impl` handles build, tests, reload, user verification, commit, and
-the ROADMAP.md checkbox. Wait for it to complete successfully (all
-verification questions passed and commit made) before advancing.
+the ROADMAP.md checkbox.
 
 ---
 
-## Step 5 — Advance to the next item
+## Step 4 — Reconcile item[1]'s brief and advance
 
-After item[0] is committed:
+After item[0]'s commit lands:
 1. Wait for the background notification confirming item[1]'s brief is ready
    (if not already received).
-2. If item[2] exists and has not yet been pre-fetched, start it in the
-   background now (same pattern as Step 3).
-3. The brief for item[1] is in context. Invoke `Skill("feature-impl")`.
-4. Repeat until all items in the sprint are implemented and committed.
+2. Review the brief against the codebase as it now stands after item[0]'s
+   commit. Note any discrepancies — the brief was prepared against the
+   pre-N codebase; item[0]'s changes may affect the context or affected
+   files described in the brief. Carry those notes into `/feature-impl`.
+3. Dispatch both in the **same message** (parallel):
+   - Invoke `/feature-impl` for item[1] (foreground)
+   - If item[2] exists and has not yet been pre-fetched, spawn item[2] prep
+     in the background (same pattern as Step 3.2)
+4. Repeat steps 4.1–4.3 for each subsequent item until all items are
+   implemented and committed.
 
 ---
 
@@ -174,8 +176,9 @@ When the last item commits, report:
 
 ## Rules
 
-- **Never start item N+1 until item N is committed** (verification passed
-  and commit made).
+- **Never implement item N+1 until item N is committed** (verification passed
+  and commit made). Background preparation of N+1 may run while N is being
+  implemented, but `/feature-impl` for N+1 only starts after N's commit lands.
 - **Never commit without passing verification** — enforced inside
   `/feature-impl`, honoured here too.
 - If `/feature-impl` halts after 3 failed fix attempts, the sprint **pauses**.

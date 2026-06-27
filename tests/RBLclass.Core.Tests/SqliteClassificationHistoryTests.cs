@@ -35,7 +35,7 @@ namespace RBLclass.Core.Tests
         [Fact]
         public void Unknown_conversation_has_no_destinations()
         {
-            _history.GetLatestDestinations("never-seen").Should().BeEmpty();
+            _history.GetLatestDestinations("never-seen", DateTime.MinValue).Should().BeEmpty();
         }
 
         [Fact]
@@ -44,7 +44,7 @@ namespace RBLclass.Core.Tests
             _history.Record("b1", "conv-1",
                 new[] { Dest("s1", "d1"), Dest("s1", "d2") }, DateTime.UtcNow);
 
-            var latest = _history.GetLatestDestinations("conv-1");
+            var latest = _history.GetLatestDestinations("conv-1", DateTime.MinValue);
 
             latest.Should().HaveCount(2);
             latest.Should().Contain(d => d.StoreId == "s1" && d.EntryId == "d1");
@@ -58,7 +58,7 @@ namespace RBLclass.Core.Tests
             _history.Record("b2", "conv-1", new[] { Dest("s1", "new1"), Dest("s1", "new2") },
                 DateTime.UtcNow);
 
-            var latest = _history.GetLatestDestinations("conv-1");
+            var latest = _history.GetLatestDestinations("conv-1", DateTime.MinValue);
 
             // Only the most recent classify's destinations, not a union.
             latest.Should().HaveCount(2);
@@ -71,9 +71,9 @@ namespace RBLclass.Core.Tests
             _history.Record("b1", "conv-1", new[] { Dest("s1", "a") }, DateTime.UtcNow);
             _history.Record("b2", "conv-2", new[] { Dest("s1", "b") }, DateTime.UtcNow);
 
-            _history.GetLatestDestinations("conv-1").Should().ContainSingle()
+            _history.GetLatestDestinations("conv-1", DateTime.MinValue).Should().ContainSingle()
                     .Which.EntryId.Should().Be("a");
-            _history.GetLatestDestinations("conv-2").Should().ContainSingle()
+            _history.GetLatestDestinations("conv-2", DateTime.MinValue).Should().ContainSingle()
                     .Which.EntryId.Should().Be("b");
         }
 
@@ -86,7 +86,7 @@ namespace RBLclass.Core.Tests
             _history.DeleteBatches(new[] { "b2" });
 
             // With the latest batch gone, the earlier one surfaces again.
-            _history.GetLatestDestinations("conv-1").Should().ContainSingle()
+            _history.GetLatestDestinations("conv-1", DateTime.MinValue).Should().ContainSingle()
                     .Which.EntryId.Should().Be("old");
         }
 
@@ -97,7 +97,53 @@ namespace RBLclass.Core.Tests
 
             _history.DeleteBatches(new[] { "b1" });
 
-            _history.GetLatestDestinations("conv-1").Should().BeEmpty();
+            _history.GetLatestDestinations("conv-1", DateTime.MinValue).Should().BeEmpty();
+        }
+
+        [Fact]
+        public void GetLatestDestinations_within_retention_window_returns_destinations()
+        {
+            _history.Record("b1", "conv-1", new[] { Dest("s1", "d1") },
+                DateTime.UtcNow.AddDays(-10));
+
+            var result = _history.GetLatestDestinations("conv-1", DateTime.UtcNow.AddDays(-30));
+
+            result.Should().ContainSingle().Which.EntryId.Should().Be("d1");
+        }
+
+        [Fact]
+        public void GetLatestDestinations_outside_retention_window_returns_empty()
+        {
+            _history.Record("b1", "conv-1", new[] { Dest("s1", "d1") },
+                DateTime.UtcNow.AddDays(-60));
+
+            var result = _history.GetLatestDestinations("conv-1", DateTime.UtcNow.AddDays(-30));
+
+            result.Should().BeEmpty();
+        }
+
+        [Fact]
+        public void GetLatestDestinations_with_MinValue_cutoff_ignores_age()
+        {
+            _history.Record("b1", "conv-1", new[] { Dest("s1", "d1") },
+                DateTime.UtcNow.AddDays(-3650));
+
+            var result = _history.GetLatestDestinations("conv-1", DateTime.MinValue);
+
+            result.Should().ContainSingle().Which.EntryId.Should().Be("d1");
+        }
+
+        [Fact]
+        public void GetLatestDestinations_latest_batch_within_window_wins()
+        {
+            _history.Record("b1", "conv-1", new[] { Dest("s1", "old") },
+                DateTime.UtcNow.AddDays(-60));
+            _history.Record("b2", "conv-1", new[] { Dest("s1", "recent") },
+                DateTime.UtcNow.AddDays(-10));
+
+            var result = _history.GetLatestDestinations("conv-1", DateTime.UtcNow.AddDays(-30));
+
+            result.Should().ContainSingle().Which.EntryId.Should().Be("recent");
         }
     }
 }

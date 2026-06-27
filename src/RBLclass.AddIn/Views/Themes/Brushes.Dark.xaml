@@ -18,4 +18,9 @@
 
     <SolidColorBrush x:Key="Theme.DisabledForeground" Color="#FF7A7A7A" />
 
+    <SolidColorBrush x:Key="Theme.AccentBackground" Color="#FF2899F5" />
+    <SolidColorBrush x:Key="Theme.AccentForeground" Color="#FFFFFFFF" />
+    <SolidColorBrush x:Key="Theme.AccentHover"      Color="#FF1A82D9" />
+    <SolidColorBrush x:Key="Theme.AccentPressed"    Color="#FF1168B3" />
+
 </ResourceDictionary>

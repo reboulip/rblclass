@@ -28,6 +28,8 @@
                         </CheckBox>
                         <CheckBox Margin="0,3" IsChecked="{Binding OpenInNewWindow}"
                                   Content="{loc:Loc Key=Settings_OpenInNewWindow_CheckBox}" />
+                        <CheckBox Margin="0,3" IsChecked="{Binding AutoExpandResults}"
+                                  Content="{loc:Loc Key=Settings_AutoExpand_CheckBox}" />
                         <DockPanel Margin="0,8,0,2" LastChildFill="False">
                             <TextBlock Text="{loc:Loc Key=Settings_MaxResults_Label}" VerticalAlignment="Center" />
                             <TextBox DockPanel.Dock="Right" Width="60" Margin="6,0,0,0"
@@ -89,6 +91,16 @@
                         </CheckBox>
                         <CheckBox Margin="0,3" IsChecked="{Binding WidenConversation}"
                                   Content="{loc:Loc Key=Settings_WidenConversation_CheckBox}" />
+                        <CheckBox Margin="0,3" IsChecked="{Binding ClassifyMeetingItems}">
+                            <TextBlock TextWrapping="Wrap" MaxWidth="400"
+                                       Text="{loc:Loc Key=Settings_ClassifyMeetingItems_CheckBox}" />
+                        </CheckBox>
+                        <DockPanel Margin="0,8,0,2" LastChildFill="False">
+                            <TextBlock Text="{loc:Loc Key=Settings_AutoClassHistoryDays_Label}"
+                                       VerticalAlignment="Center" />
+                            <TextBox DockPanel.Dock="Right" Width="60" Margin="6,0,0,0"
+                                     Text="{Binding AutoClassHistoryDaysText, UpdateSourceTrigger=LostFocus}" />
+                        </DockPanel>
                     </StackPanel>
                 </GroupBox>
 
@@ -101,9 +113,13 @@
                                     IsEnabled="{Binding CanLearnBanner}" Click="LearnBanner_Click" />
                             <Button DockPanel.Dock="Left" Content="{loc:Loc Key=Settings_ForgetBanner_Button}" Padding="8,2" Margin="6,0,0,0"
                                     IsEnabled="{Binding HasBanner}" Click="ClearBanner_Click" />
+                            <Button DockPanel.Dock="Left" Content="{loc:Loc Key=Settings_DiagnoseBanner_Button}" Padding="8,2" Margin="6,0,0,0"
+                                    IsEnabled="{Binding CanLearnBanner}" Click="DiagnoseBanner_Click" />
                         </DockPanel>
-                        <TextBlock Margin="0,2,0,4" TextWrapping="Wrap"
+                        <TextBlock Margin="0,2,0,0" TextWrapping="Wrap"
                                    Style="{DynamicResource MutedText}" Text="{Binding BannerStatus}" />
+                        <TextBlock Margin="0,0,0,4" TextWrapping="Wrap"
+                                   Style="{DynamicResource MutedText}" Text="{Binding BannerDiagnosticStatus}" />
                         <CheckBox Margin="0,3" IsChecked="{Binding StripBannerOnReply}"
                                   IsEnabled="{Binding HasBanner}"
                                   Content="{loc:Loc Key=Settings_StripBannerOnReply_CheckBox}" />
@@ -111,6 +127,11 @@
                                   IsEnabled="{Binding HasBanner}">
                             <TextBlock TextWrapping="Wrap" MaxWidth="400"
                                        Text="{loc:Loc Key=Settings_StripBannerOnClassify_CheckBox}" />
+                        </CheckBox>
+                        <CheckBox Margin="0,3" IsChecked="{Binding StripBannerOnAutoClassify}"
+                                  IsEnabled="{Binding HasBanner}">
+                            <TextBlock TextWrapping="Wrap" MaxWidth="400"
+                                       Text="{loc:Loc Key=Settings_StripBannerOnAutoClassify_CheckBox}" />
                         </CheckBox>
                     </StackPanel>
                 </GroupBox>

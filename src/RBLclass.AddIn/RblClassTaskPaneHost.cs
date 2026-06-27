@@ -93,6 +93,12 @@ namespace RBLclass.AddIn
             (_view?.DataContext as MainPaneViewModel)?.SetSelectionCount(count);
         }
 
+        /// <summary>Easter egg: replace the Auto-Class button label with a pig.</summary>
+        public void ActivatePigEasterEgg()
+        {
+            (_view?.DataContext as MainPaneViewModel)?.ActivatePigEasterEgg();
+        }
+
         private void ApplyThemeAndSelection()
         {
             (_view?.DataContext as MainPaneViewModel)?.RefreshSelection();

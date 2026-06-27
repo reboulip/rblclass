@@ -30,6 +30,12 @@ namespace RBLclass.Core
         /// <summary>Upper clamp for <see cref="MinSearchLength"/>.</summary>
         public const int MaxMinSearchLength = 10;
 
+        /// <summary>Default retention window for the auto-classify conversation history (days).</summary>
+        public const int DefaultAutoClassHistoryDays = 90;
+
+        /// <summary>Upper clamp — 3650 days (≈10 years) is functionally "unlimited".</summary>
+        public const int MaxAutoClassHistoryDays = 3650;
+
         public bool OpenInNewWindow { get; set; }
         public bool AllResults { get; set; }
         public FolderMatchMode FolderMatchMode { get; set; }
@@ -42,6 +48,7 @@ namespace RBLclass.Core
         public string ExternalBannerSignature { get; set; }
         public bool StripBannerOnReply { get; set; }
         public bool StripBannerOnClassify { get; set; }
+        public bool StripBannerOnAutoClassify { get; set; }
         public bool WidenConversation { get; set; }
         public bool SendExternalWarning { get; set; }
         public IReadOnlyList<string> InternalDomains { get; set; }
@@ -51,6 +58,9 @@ namespace RBLclass.Core
         public IReadOnlyList<string> AttachmentFavoriteFolders { get; set; }
         public AttachmentRemovalMode AttachmentRemovalMode { get; set; }
         public AttachmentLabelLocation AttachmentLabelLocation { get; set; }
+        public bool AutoExpandResults { get; set; }
+        public int AutoClassHistoryDays { get; set; }
+        public bool ClassifyMeetingItems { get; set; }
         public string PreferredUiLanguage { get; set; }
 
         /// <summary>Read every key, falling back to the same defaults the individual call sites use today.</summary>
@@ -72,6 +82,7 @@ namespace RBLclass.Core
                 ExternalBannerSignature = store.Get(SettingsKeys.ExternalBannerSignature, string.Empty),
                 StripBannerOnReply = store.GetBool(SettingsKeys.StripBannerOnReply, false),
                 StripBannerOnClassify = store.GetBool(SettingsKeys.StripBannerOnClassify, false),
+                StripBannerOnAutoClassify = store.GetBool(SettingsKeys.StripBannerOnAutoClassify, false),
                 WidenConversation = store.GetBool(SettingsKeys.WidenConversation, false),
                 SendExternalWarning = store.GetBool(SettingsKeys.SendExternalWarning, true),
                 InternalDomains = ParseList(store.Get(SettingsKeys.InternalDomains, string.Empty)),
@@ -84,6 +95,10 @@ namespace RBLclass.Core
                 AttachmentFavoriteFolders = ParseList(store.Get(SettingsKeys.AttachmentFavoriteFolders, string.Empty)),
                 AttachmentRemovalMode = ParseAttachmentRemovalMode(store.Get(SettingsKeys.AttachmentRemovalMode, null)),
                 AttachmentLabelLocation = ParseAttachmentLabelLocation(store.Get(SettingsKeys.AttachmentLabelLocation, null)),
+                AutoExpandResults = store.GetBool(SettingsKeys.AutoExpandResults, false),
+                AutoClassHistoryDays = ParseClampedInt(store.Get(SettingsKeys.AutoClassHistoryDays, null),
+                    DefaultAutoClassHistoryDays, 1, MaxAutoClassHistoryDays),
+                ClassifyMeetingItems = store.GetBool(SettingsKeys.ClassifyMeetingItems, false),
                 PreferredUiLanguage = ParseUiLanguage(store.Get(SettingsKeys.PreferredUiLanguage, null))
             };
         }
@@ -103,6 +118,7 @@ namespace RBLclass.Core
             store.Set(SettingsKeys.ExternalBannerSignature, ExternalBannerSignature ?? string.Empty);
             store.SetBool(SettingsKeys.StripBannerOnReply, StripBannerOnReply);
             store.SetBool(SettingsKeys.StripBannerOnClassify, StripBannerOnClassify);
+            store.SetBool(SettingsKeys.StripBannerOnAutoClassify, StripBannerOnAutoClassify);
             store.SetBool(SettingsKeys.WidenConversation, WidenConversation);
             store.SetBool(SettingsKeys.SendExternalWarning, SendExternalWarning);
             store.Set(SettingsKeys.InternalDomains, FormatList(InternalDomains));
@@ -112,6 +128,10 @@ namespace RBLclass.Core
             store.Set(SettingsKeys.AttachmentFavoriteFolders, FormatList(AttachmentFavoriteFolders));
             store.Set(SettingsKeys.AttachmentRemovalMode, AttachmentRemovalMode.ToString());
             store.Set(SettingsKeys.AttachmentLabelLocation, AttachmentLabelLocation.ToString());
+            store.SetBool(SettingsKeys.AutoExpandResults, AutoExpandResults);
+            store.Set(SettingsKeys.AutoClassHistoryDays,
+                AutoClassHistoryDays.ToString(CultureInfo.InvariantCulture));
+            store.SetBool(SettingsKeys.ClassifyMeetingItems, ClassifyMeetingItems);
             store.Set(SettingsKeys.PreferredUiLanguage, PreferredUiLanguage);
         }
 

@@ -84,7 +84,8 @@ namespace RBLclass.Core.Persistence
             }
         }
 
-        public IReadOnlyList<HistoryDestination> GetLatestDestinations(string conversationKey)
+        public IReadOnlyList<HistoryDestination> GetLatestDestinations(
+            string conversationKey, DateTime notOlderThan)
         {
             var result = new List<HistoryDestination>();
             if (string.IsNullOrEmpty(conversationKey)) return result;
@@ -92,15 +93,20 @@ namespace RBLclass.Core.Persistence
             using (var conn = Open())
             using (var cmd = conn.CreateCommand())
             {
-                // The latest classify action for this conversation is the batch
-                // of its highest row id; return that whole destination set.
+                // The inner subquery restricts by WhenUtc so batches outside
+                // the retention window are invisible. DateTime.MinValue means
+                // "no filter" — its ISO-8601 representation is always <= any
+                // stored timestamp, so the condition is always true.
                 cmd.CommandText =
                     "SELECT DestStoreId, DestEntryId FROM ClassificationHistory " +
                     "WHERE ConversationKey = $key AND BatchId = (" +
                     "  SELECT BatchId FROM ClassificationHistory " +
-                    "  WHERE ConversationKey = $key ORDER BY Id DESC LIMIT 1" +
+                    "  WHERE ConversationKey = $key AND WhenUtc >= $since " +
+                    "  ORDER BY Id DESC LIMIT 1" +
                     ") ORDER BY Id;";
                 cmd.Parameters.AddWithValue("$key", conversationKey);
+                cmd.Parameters.AddWithValue("$since",
+                    notOlderThan.ToString("o", CultureInfo.InvariantCulture));
 
                 using (var reader = cmd.ExecuteReader())
                 {
