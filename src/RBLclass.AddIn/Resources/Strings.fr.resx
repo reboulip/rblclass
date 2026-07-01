@@ -347,6 +347,24 @@
   <data name="Settings_TriageMode_Leave" xml:space="preserve">
     <value>Laisser dans Éléments envoyés</value>
   </data>
+  <data name="Settings_TriageMode_MoveToArchive" xml:space="preserve">
+    <value>Déplacer vers le dossier d'archivage</value>
+  </data>
+  <data name="Settings_TriageArchiveFolder_Label" xml:space="preserve">
+    <value>Dossier d'archivage (utilisé par « Déplacer vers le dossier d'archivage ») :</value>
+  </data>
+  <data name="Settings_TriageArchiveFolder_Pick_Button" xml:space="preserve">
+    <value>Choisir un dossier…</value>
+  </data>
+  <data name="Settings_TriageArchiveFolder_Clear_Button" xml:space="preserve">
+    <value>Effacer</value>
+  </data>
+  <data name="Settings_TriageArchiveFolder_NotSet" xml:space="preserve">
+    <value>Non configuré</value>
+  </data>
+  <data name="Settings_TriageArchiveFolder_Stale" xml:space="preserve">
+    <value>Dossier introuvable</value>
+  </data>
   <data name="Settings_Banner_NoneLearned" xml:space="preserve">
     <value>Aucune bannière apprise pour le moment.</value>
   </data>
@@ -415,6 +433,12 @@
   </data>
   <data name="SentTriage_Leave_Button" xml:space="preserve">
     <value>Laisser dans les éléments envoyés</value>
+  </data>
+  <data name="SentTriage_MoveToArchive_Button" xml:space="preserve">
+    <value>Déplacer vers l'archive : {0}</value>
+  </data>
+  <data name="SentTriage_MoveToArchive_Button_NoFolder" xml:space="preserve">
+    <value>Déplacer vers l'archive (non configuré)</value>
   </data>
   <data name="SentTriage_NoSubject" xml:space="preserve">
     <value>(sans objet)</value>

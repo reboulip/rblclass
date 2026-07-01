@@ -141,6 +141,13 @@ namespace RBLclass.AddIn
         public static Func<string> BrowseForFolder;
 
         /// <summary>
+        /// Show the Outlook folder-picker dialog and return the chosen folder, or
+        /// null when cancelled (v2.7.0.0 B2, the sent-item archive destination).
+        /// Backed by NameSpace.PickFolder; call on the Outlook UI thread.
+        /// </summary>
+        public static Func<FolderNode> PickOutlookFolder;
+
+        /// <summary>
         /// Activate the pig easter egg in the main pane's Auto-Class button label.
         /// Wired at startup; null until then.
         /// </summary>

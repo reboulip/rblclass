@@ -79,17 +79,18 @@ Phase 6 (pilot rollout) is in progress; Phases 7–9 are forward-looking.
 
 ### A — Keyboard shortcuts
 - [x] **A1.** Add Ctrl+Z as a keyboard shortcut for the Undo action. [#30]
-- [x] **A2.** Add keyboard shortcuts to open the RBLclass pane, focus the search field when the pane is open, and open the searched folder (distinct from Enter, which classifies); specific bindings chosen with the user. [#22]
+- [x] **A2.** Add keyboard shortcuts to open the RBLclass pane, focus the search field when the pane is open, and open the searched folder (distinct from Enter, which classifies); specific bindings chosen with the user; add a startup option to auto-show the pane when Outlook opens. [#22] [#31]
 
 ### B — Sent-items handling
 - [x] **B1.** Clarify the post-send classify dialog labels and lay the buttons out vertically so long labels render clearly in every language. [#24]
-- [ ] **B2.** Add a configurable default archive folder into which sent messages are moved automatically. [#23]
+- [x] **B2.** Add a configurable default archive folder into which sent messages are moved automatically. [#23]
 
 ### C — Search result display
 - [ ] **C1.** Add a Settings option for the expanded search-result path display, letting the user choose between the current one-line-per-folder layout and a multi-line full-path layout; default stays the one-liner. [#26]
 
 ### D — Classify
 - [ ] **D1.** Add an opt-in (off by default) to keep only the latest message of a conversation in the target folder on classify — deleting older ones but never those with attachments; use Outlook's built-in conversation clean-up if suitable. [#27]
+- [ ] **D2.** Add an opt-in setting (off by default) to mark classified mails as read automatically on classify. [#32]
 
 ### E — Update notification (investigation)
 - [ ] **E1.** Investigate a startup check that detects a newer RBLclass release and surfaces an orange in-pane update banner; account for corporate-proxy constraints and the no-network-by-default posture — defer or drop if it proves too complex. [#25]

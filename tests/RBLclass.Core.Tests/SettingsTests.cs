@@ -50,6 +50,9 @@ namespace RBLclass.Core.Tests
             settings.ForgottenAttachmentKeywords.Should().Equal("attach", "enclos", "joint", "PJ");
             settings.SentItemTriageMode.Should().Be(SentItemTriageMode.AskEveryTime);
             settings.ClassifyAfterMoveToInbox.Should().BeTrue();
+            settings.SentItemTriageArchiveStoreId.Should().BeEmpty();
+            settings.SentItemTriageArchiveEntryId.Should().BeEmpty();
+            settings.SentItemTriageArchivePath.Should().BeEmpty();
             settings.AttachmentRemovalMode.Should().Be(AttachmentRemovalMode.Modal);
             settings.AttachmentLabelLocation.Should().Be(AttachmentLabelLocation.Body);
             settings.MinSearchLength.Should().Be(FolderSearchOptions.DefaultMinQueryLength);
@@ -82,6 +85,9 @@ namespace RBLclass.Core.Tests
                 ForgottenAttachmentKeywords = new[] { "pièce jointe", "ci-joint" },
                 SentItemTriageMode = SentItemTriageMode.Delete,
                 ClassifyAfterMoveToInbox = false,
+                SentItemTriageArchiveStoreId = "STORE123",
+                SentItemTriageArchiveEntryId = "ENTRY456",
+                SentItemTriageArchivePath = "Archive / 2024",
                 AttachmentRemovalMode = AttachmentRemovalMode.DeleteSilently,
                 AttachmentLabelLocation = AttachmentLabelLocation.InfoBar,
                 MinSearchLength = 3,
@@ -112,6 +118,9 @@ namespace RBLclass.Core.Tests
             reloaded.ForgottenAttachmentKeywords.Should().Equal("pièce jointe", "ci-joint");
             reloaded.SentItemTriageMode.Should().Be(SentItemTriageMode.Delete);
             reloaded.ClassifyAfterMoveToInbox.Should().BeFalse();
+            reloaded.SentItemTriageArchiveStoreId.Should().Be("STORE123");
+            reloaded.SentItemTriageArchiveEntryId.Should().Be("ENTRY456");
+            reloaded.SentItemTriageArchivePath.Should().Be("Archive / 2024");
             reloaded.AttachmentRemovalMode.Should().Be(AttachmentRemovalMode.DeleteSilently);
             reloaded.AttachmentLabelLocation.Should().Be(AttachmentLabelLocation.InfoBar);
             reloaded.MinSearchLength.Should().Be(3);

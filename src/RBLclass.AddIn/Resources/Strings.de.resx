@@ -347,6 +347,24 @@
   <data name="Settings_TriageMode_Leave" xml:space="preserve">
     <value>In Gesendeten Objekten lassen</value>
   </data>
+  <data name="Settings_TriageMode_MoveToArchive" xml:space="preserve">
+    <value>In Archivordner verschieben</value>
+  </data>
+  <data name="Settings_TriageArchiveFolder_Label" xml:space="preserve">
+    <value>Archivordner (verwendet von „In Archivordner verschieben“):</value>
+  </data>
+  <data name="Settings_TriageArchiveFolder_Pick_Button" xml:space="preserve">
+    <value>Ordner wählen…</value>
+  </data>
+  <data name="Settings_TriageArchiveFolder_Clear_Button" xml:space="preserve">
+    <value>Löschen</value>
+  </data>
+  <data name="Settings_TriageArchiveFolder_NotSet" xml:space="preserve">
+    <value>Nicht konfiguriert</value>
+  </data>
+  <data name="Settings_TriageArchiveFolder_Stale" xml:space="preserve">
+    <value>Ordner nicht mehr gefunden</value>
+  </data>
   <data name="Settings_Banner_NoneLearned" xml:space="preserve">
     <value>Noch kein Banner gelernt.</value>
   </data>
@@ -415,6 +433,12 @@
   </data>
   <data name="SentTriage_Leave_Button" xml:space="preserve">
     <value>In gesendeten Elementen belassen</value>
+  </data>
+  <data name="SentTriage_MoveToArchive_Button" xml:space="preserve">
+    <value>In Archiv verschieben: {0}</value>
+  </data>
+  <data name="SentTriage_MoveToArchive_Button_NoFolder" xml:space="preserve">
+    <value>In Archiv verschieben (nicht konfiguriert)</value>
   </data>
   <data name="SentTriage_NoSubject" xml:space="preserve">
     <value>(kein Betreff)</value>

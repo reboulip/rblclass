@@ -1390,6 +1390,50 @@ namespace RBLclass.Outlook.Adapter
             return new MailItemRef(storeId, entryId, Safe(() => mail.Subject, string.Empty));
         }
 
+        public FolderNode GetFolderByEntryId(string storeId, string entryId)
+        {
+            if (string.IsNullOrEmpty(storeId) || string.IsNullOrEmpty(entryId)) return null;
+
+            using (var session = new ComRef<OutlookOM.NameSpace>(_app.Session))
+            {
+                OutlookOM.Folder rawFolder;
+                try { rawFolder = (OutlookOM.Folder)session.Value.GetFolderFromID(entryId, storeId); }
+                catch { return null; } // no longer resolves - tolerate the miss
+
+                using (var folder = new ComRef<OutlookOM.Folder>(rawFolder))
+                    return DescribeFolder(folder.Value);
+            }
+        }
+
+        public FolderNode PickFolder()
+        {
+            using (var session = new ComRef<OutlookOM.NameSpace>(_app.Session))
+            {
+                OutlookOM.Folder rawFolder;
+                try { rawFolder = (OutlookOM.Folder)session.Value.PickFolder(); }
+                catch { return null; }
+
+                if (rawFolder == null) return null; // user cancelled
+
+                using (var folder = new ComRef<OutlookOM.Folder>(rawFolder))
+                    return DescribeFolder(folder.Value);
+            }
+        }
+
+        /// <summary>Build a FolderNode from a live folder (v2.7.0.0 B2 archive picker/resolve).</summary>
+        private FolderNode DescribeFolder(OutlookOM.Folder folder)
+        {
+            string storeId = Safe(() => folder.StoreID, null);
+            string entryId = Safe(() => folder.EntryID, null);
+            if (storeId == null || entryId == null) return null;
+
+            string name = Safe(() => folder.Name, string.Empty);
+            string fullPath = Safe(() => folder.FolderPath, name);
+            int subCount = SafeSubfolderCount(folder);
+            return new FolderNode(storeId, entryId, parentEntryId: null,
+                                  name: name, fullPath: fullPath ?? name, isLeaf: subCount == 0);
+        }
+
         public FolderNode GetInboxFolder()
         {
             using (var session = new ComRef<OutlookOM.NameSpace>(_app.Session))

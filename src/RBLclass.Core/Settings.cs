@@ -55,6 +55,9 @@ namespace RBLclass.Core
         public IReadOnlyList<string> ForgottenAttachmentKeywords { get; set; }
         public SentItemTriageMode SentItemTriageMode { get; set; }
         public bool ClassifyAfterMoveToInbox { get; set; }
+        public string SentItemTriageArchiveStoreId { get; set; }
+        public string SentItemTriageArchiveEntryId { get; set; }
+        public string SentItemTriageArchivePath { get; set; }
         public IReadOnlyList<string> AttachmentFavoriteFolders { get; set; }
         public AttachmentRemovalMode AttachmentRemovalMode { get; set; }
         public AttachmentLabelLocation AttachmentLabelLocation { get; set; }
@@ -92,6 +95,9 @@ namespace RBLclass.Core
                     store.Get(SettingsKeys.SentItemTriageMode, null),
                     store.GetBool(SettingsKeys.SentItemTriagePrompt, true)),
                 ClassifyAfterMoveToInbox = store.GetBool(SettingsKeys.ClassifyAfterMoveToInbox, true),
+                SentItemTriageArchiveStoreId = store.Get(SettingsKeys.SentItemTriageArchiveStoreId, string.Empty),
+                SentItemTriageArchiveEntryId = store.Get(SettingsKeys.SentItemTriageArchiveEntryId, string.Empty),
+                SentItemTriageArchivePath = store.Get(SettingsKeys.SentItemTriageArchivePath, string.Empty),
                 AttachmentFavoriteFolders = ParseList(store.Get(SettingsKeys.AttachmentFavoriteFolders, string.Empty)),
                 AttachmentRemovalMode = ParseAttachmentRemovalMode(store.Get(SettingsKeys.AttachmentRemovalMode, null)),
                 AttachmentLabelLocation = ParseAttachmentLabelLocation(store.Get(SettingsKeys.AttachmentLabelLocation, null)),
@@ -125,6 +131,9 @@ namespace RBLclass.Core
             store.Set(SettingsKeys.ForgottenAttachmentKeywords, FormatList(ForgottenAttachmentKeywords));
             store.Set(SettingsKeys.SentItemTriageMode, SentItemTriageMode.ToString());
             store.SetBool(SettingsKeys.ClassifyAfterMoveToInbox, ClassifyAfterMoveToInbox);
+            store.Set(SettingsKeys.SentItemTriageArchiveStoreId, SentItemTriageArchiveStoreId ?? string.Empty);
+            store.Set(SettingsKeys.SentItemTriageArchiveEntryId, SentItemTriageArchiveEntryId ?? string.Empty);
+            store.Set(SettingsKeys.SentItemTriageArchivePath, SentItemTriageArchivePath ?? string.Empty);
             store.Set(SettingsKeys.AttachmentFavoriteFolders, FormatList(AttachmentFavoriteFolders));
             store.Set(SettingsKeys.AttachmentRemovalMode, AttachmentRemovalMode.ToString());
             store.Set(SettingsKeys.AttachmentLabelLocation, AttachmentLabelLocation.ToString());

@@ -14,15 +14,21 @@ namespace RBLclass.AddIn.ViewModels
     /// </summary>
     public sealed class SentItemTriageViewModel : ObservableObject
     {
-        public SentItemTriageViewModel(string subject)
+        public SentItemTriageViewModel(string subject, string archiveFolderPath = null)
         {
             Subject = string.IsNullOrEmpty(subject)
                 ? TaskPaneServices.Localization.GetString("SentTriage_NoSubject")
                 : subject;
 
+            HasArchiveFolder = !string.IsNullOrEmpty(archiveFolderPath);
+            MoveToArchiveButtonLabel = HasArchiveFolder
+                ? TaskPaneServices.Localization.GetString("SentTriage_MoveToArchive_Button", archiveFolderPath)
+                : TaskPaneServices.Localization.GetString("SentTriage_MoveToArchive_Button_NoFolder");
+
             MoveToInboxCommand = new RelayCommand(_ => Choose(SentItemTriageAction.MoveToInbox));
             DeleteCommand = new RelayCommand(_ => Choose(SentItemTriageAction.Delete));
             LeaveCommand = new RelayCommand(_ => Choose(SentItemTriageAction.Leave));
+            MoveToArchiveCommand = new RelayCommand(_ => Choose(SentItemTriageAction.MoveToArchive));
         }
 
         /// <summary>Subject of the mail that just landed in Sent Items.</summary>
@@ -31,9 +37,16 @@ namespace RBLclass.AddIn.ViewModels
         /// <summary>The user's choice, or null until one of the buttons is clicked.</summary>
         public SentItemTriageAction? SelectedAction { get; private set; }
 
+        /// <summary>True when an archive folder is configured, so its button is enabled (v2.7.0.0 B2).</summary>
+        public bool HasArchiveFolder { get; }
+
+        /// <summary>Label for the archive button, naming the configured folder (v2.7.0.0 B2).</summary>
+        public string MoveToArchiveButtonLabel { get; }
+
         public ICommand MoveToInboxCommand { get; }
         public ICommand DeleteCommand { get; }
         public ICommand LeaveCommand { get; }
+        public ICommand MoveToArchiveCommand { get; }
 
         /// <summary>Raised once a choice is made, so the hosting window can close.</summary>
         public event EventHandler ChoiceMade;

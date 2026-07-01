@@ -37,5 +37,11 @@ namespace RBLclass.AddIn.Views
             if (FavoriteFoldersList.SelectedItem is string path)
                 (DataContext as SettingsViewModel)?.RemoveFavoriteFolder(path);
         }
+
+        private void PickArchiveFolder_Click(object sender, RoutedEventArgs e) =>
+            (DataContext as SettingsViewModel)?.PickArchiveFolder();
+
+        private void ClearArchiveFolder_Click(object sender, RoutedEventArgs e) =>
+            (DataContext as SettingsViewModel)?.ClearArchiveFolder();
     }
 }

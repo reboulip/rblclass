@@ -51,6 +51,7 @@ namespace RBLclass.AddIn.ViewModels
             {
                 new TriageModeOption(SentItemTriageMode.AskEveryTime, _loc.GetString("Settings_TriageMode_AskEveryTime")),
                 new TriageModeOption(SentItemTriageMode.MoveToInbox, _loc.GetString("Settings_TriageMode_MoveToInbox")),
+                new TriageModeOption(SentItemTriageMode.MoveToArchive, _loc.GetString("Settings_TriageMode_MoveToArchive")),
                 new TriageModeOption(SentItemTriageMode.Delete, _loc.GetString("Settings_TriageMode_Delete")),
                 new TriageModeOption(SentItemTriageMode.Leave, _loc.GetString("Settings_TriageMode_Leave")),
             };
@@ -456,6 +457,40 @@ namespace RBLclass.AddIn.ViewModels
         {
             get => _settings.ClassifyAfterMoveToInbox;
             set => Apply(_settings.ClassifyAfterMoveToInbox, value, v => _settings.ClassifyAfterMoveToInbox = v);
+        }
+
+        /// <summary>
+        /// Display path of the archive folder used by the "Move to archive folder"
+        /// triage mode (v2.7.0.0 B2), or a "not configured"/"stale" placeholder.
+        /// </summary>
+        public string SentItemTriageArchiveFolderPath =>
+            string.IsNullOrEmpty(_settings.SentItemTriageArchiveEntryId)
+                ? _loc.GetString("Settings_TriageArchiveFolder_NotSet")
+                : string.IsNullOrEmpty(_settings.SentItemTriageArchivePath)
+                    ? _loc.GetString("Settings_TriageArchiveFolder_Stale")
+                    : _settings.SentItemTriageArchivePath;
+
+        /// <summary>Show the Outlook folder picker and persist the chosen archive folder (v2.7.0.0 B2).</summary>
+        public void PickArchiveFolder()
+        {
+            var folder = TaskPaneServices.PickOutlookFolder?.Invoke();
+            if (folder == null) return; // cancelled
+
+            _settings.SentItemTriageArchiveStoreId = folder.StoreId;
+            _settings.SentItemTriageArchiveEntryId = folder.EntryId;
+            _settings.SentItemTriageArchivePath = folder.FullPath;
+            _settings.Save(_store);
+            OnPropertyChanged(nameof(SentItemTriageArchiveFolderPath));
+        }
+
+        /// <summary>Clear the configured archive folder (v2.7.0.0 B2).</summary>
+        public void ClearArchiveFolder()
+        {
+            _settings.SentItemTriageArchiveStoreId = string.Empty;
+            _settings.SentItemTriageArchiveEntryId = string.Empty;
+            _settings.SentItemTriageArchivePath = string.Empty;
+            _settings.Save(_store);
+            OnPropertyChanged(nameof(SentItemTriageArchiveFolderPath));
         }
 
         /// <summary>Options for the language dropdown (Auto/English/Français/Deutsch), Phase E.</summary>

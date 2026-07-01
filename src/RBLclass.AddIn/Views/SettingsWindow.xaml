@@ -162,6 +162,19 @@
                                 </DataTemplate>
                             </ComboBox.ItemTemplate>
                         </ComboBox>
+                        <TextBlock Margin="0,8,0,2" TextWrapping="Wrap"
+                                   Text="{loc:Loc Key=Settings_TriageArchiveFolder_Label}" />
+                        <DockPanel LastChildFill="True">
+                            <Button DockPanel.Dock="Right" Padding="8,2" Margin="6,0,0,0"
+                                    Content="{loc:Loc Key=Settings_TriageArchiveFolder_Clear_Button}"
+                                    Click="ClearArchiveFolder_Click" />
+                            <Button DockPanel.Dock="Right" Padding="8,2" Margin="6,0,0,0"
+                                    Content="{loc:Loc Key=Settings_TriageArchiveFolder_Pick_Button}"
+                                    Click="PickArchiveFolder_Click" />
+                            <TextBlock VerticalAlignment="Center" TextTrimming="CharacterEllipsis"
+                                       Style="{DynamicResource MutedText}"
+                                       Text="{Binding SentItemTriageArchiveFolderPath}" />
+                        </DockPanel>
                         <CheckBox Margin="0,8,0,0" IsChecked="{Binding ClassifyAfterMoveToInbox}">
                             <TextBlock TextWrapping="Wrap" MaxWidth="400"
                                        Text="{loc:Loc Key=Settings_ClassifyAfterMoveToInbox_CheckBox}" />

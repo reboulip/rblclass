@@ -221,6 +221,15 @@ namespace RBLclass.AddIn
                         Log.Error(ex, "SelectItemsInFolder failed for {Store}/{Entry}", storeId, entryId);
                     }
                 };
+                TaskPaneServices.PickOutlookFolder = () =>
+                {
+                    try { return _mailStore.PickFolder(); }
+                    catch (Exception ex)
+                    {
+                        TryLog("PickOutlookFolder failed", ex);
+                        return null;
+                    }
+                };
                 TaskPaneServices.PromptForName = parentFolderName =>
                 {
                     var prompt = new NamePromptWindow(parentFolderName);
@@ -613,7 +622,8 @@ namespace RBLclass.AddIn
             {
                 if (_suppressSentItemTriage) return;
 
-                var mode = Settings.Load(_settingsStore).SentItemTriageMode;
+                var settings = Settings.Load(_settingsStore);
+                var mode = settings.SentItemTriageMode;
                 if (mode == SentItemTriageMode.Leave) return;
 
                 var reference = _mailStore.ResolveMailItem(item);
@@ -622,17 +632,25 @@ namespace RBLclass.AddIn
                 SentItemTriageAction action;
                 if (mode == SentItemTriageMode.AskEveryTime)
                 {
-                    var triageVm = new SentItemTriageViewModel(reference.Subject);
+                    string archivePath = string.IsNullOrEmpty(settings.SentItemTriageArchiveEntryId)
+                        ? null : settings.SentItemTriageArchivePath;
+                    var triageVm = new SentItemTriageViewModel(reference.Subject, archivePath);
                     new SentItemTriageWindow { DataContext = triageVm }.ShowDialog();
                     if (triageVm.SelectedAction == null || triageVm.SelectedAction == SentItemTriageAction.Leave)
                         return;
                     action = triageVm.SelectedAction.Value;
                 }
+                else if (mode == SentItemTriageMode.Delete)
+                {
+                    action = SentItemTriageAction.Delete;
+                }
+                else if (mode == SentItemTriageMode.MoveToArchive)
+                {
+                    action = SentItemTriageAction.MoveToArchive;
+                }
                 else
                 {
-                    action = mode == SentItemTriageMode.Delete
-                        ? SentItemTriageAction.Delete
-                        : SentItemTriageAction.MoveToInbox;
+                    action = SentItemTriageAction.MoveToInbox;
                 }
 
                 _suppressSentItemTriage = true;
@@ -656,6 +674,29 @@ namespace RBLclass.AddIn
                 case SentItemTriageAction.Delete:
                     _mailStore.DeleteItem(item);
                     Log.Information("Sent-item triage deleted the sent mail.");
+                    break;
+
+                case SentItemTriageAction.MoveToArchive:
+                    var archiveSettings = Settings.Load(_settingsStore);
+                    var archiveFolder = string.IsNullOrEmpty(archiveSettings.SentItemTriageArchiveEntryId)
+                        ? null
+                        : _mailStore.GetFolderByEntryId(
+                            archiveSettings.SentItemTriageArchiveStoreId,
+                            archiveSettings.SentItemTriageArchiveEntryId);
+                    if (archiveFolder == null)
+                    {
+                        Log.Warning("Sent-item triage: archive folder not configured or no longer resolves; leaving mail in Sent Items.");
+                        return;
+                    }
+                    var archiveResult = _classifier.Classify(
+                        new ClassifyRequest(new[] { item }, new[] { archiveFolder },
+                                            keepCopy: false, removeAttachments: false,
+                                            markTasksComplete: false,
+                                            safetyCopy: _settingsStore.GetBool(
+                                                SettingsKeys.ClassifySafetyCopy, false)));
+                    Log.Information(
+                        "Sent-item triage moved {Processed} mail(s) to archive folder '{Path}' ({Errors} failed).",
+                        archiveResult.ItemsProcessed, archiveFolder.FullPath, archiveResult.Errors);
                     break;
 
                 case SentItemTriageAction.MoveToInbox:

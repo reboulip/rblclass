@@ -347,6 +347,24 @@
   <data name="Settings_TriageMode_Leave" xml:space="preserve">
     <value>Leave in Sent Items</value>
   </data>
+  <data name="Settings_TriageMode_MoveToArchive" xml:space="preserve">
+    <value>Move to archive folder</value>
+  </data>
+  <data name="Settings_TriageArchiveFolder_Label" xml:space="preserve">
+    <value>Archive folder (used by "Move to archive folder"):</value>
+  </data>
+  <data name="Settings_TriageArchiveFolder_Pick_Button" xml:space="preserve">
+    <value>Pick folder…</value>
+  </data>
+  <data name="Settings_TriageArchiveFolder_Clear_Button" xml:space="preserve">
+    <value>Clear</value>
+  </data>
+  <data name="Settings_TriageArchiveFolder_NotSet" xml:space="preserve">
+    <value>Not configured</value>
+  </data>
+  <data name="Settings_TriageArchiveFolder_Stale" xml:space="preserve">
+    <value>Folder no longer found</value>
+  </data>
   <data name="Settings_Banner_NoneLearned" xml:space="preserve">
     <value>No banner learned yet.</value>
   </data>
@@ -415,6 +433,12 @@
   </data>
   <data name="SentTriage_Leave_Button" xml:space="preserve">
     <value>Leave in Sent Items</value>
+  </data>
+  <data name="SentTriage_MoveToArchive_Button" xml:space="preserve">
+    <value>Move to archive: {0}</value>
+  </data>
+  <data name="SentTriage_MoveToArchive_Button_NoFolder" xml:space="preserve">
+    <value>Move to archive (not configured)</value>
   </data>
   <data name="SentTriage_NoSubject" xml:space="preserve">
     <value>(no subject)</value>

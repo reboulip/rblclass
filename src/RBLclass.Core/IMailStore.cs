@@ -78,6 +78,21 @@ namespace RBLclass.Core
         void DeleteItem(MailItemRef item);
 
         /// <summary>
+        /// Resolve a folder by its stable (storeId, entryId) pair, or null when it
+        /// no longer resolves (store closed, entry gone). Used to resolve the
+        /// persisted sent-item archive folder (v2.7.0.0 B2). Touches COM - call on
+        /// the Outlook UI thread.
+        /// </summary>
+        FolderNode GetFolderByEntryId(string storeId, string entryId);
+
+        /// <summary>
+        /// Show the Outlook native folder-picker dialog (NameSpace.PickFolder) and
+        /// return the chosen folder as a FolderNode, or null when the user cancels
+        /// (v2.7.0.0 B2). Touches COM - call on the Outlook UI thread.
+        /// </summary>
+        FolderNode PickFolder();
+
+        /// <summary>
         /// Resolve a store's Deleted Items folder as a filing destination (the
         /// v2.2 opt-in classify safety copy), or null when the store has none /
         /// no longer resolves. Touches COM - call on the Outlook UI thread.

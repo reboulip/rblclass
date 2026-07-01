@@ -114,6 +114,24 @@ namespace RBLclass.Core
         public const string ClassifyAfterMoveToInbox = "ClassifyAfterMoveToInbox";
 
         /// <summary>
+        /// StoreId of the folder sent mail is moved to when SentItemTriageMode is
+        /// MoveToArchive (v2.7.0.0 B2). Empty when not configured.
+        /// </summary>
+        public const string SentItemTriageArchiveStoreId = "SentItemTriageArchiveStoreId";
+
+        /// <summary>
+        /// EntryId of the archive folder for MoveToArchive triage (v2.7.0.0 B2).
+        /// Empty when not configured.
+        /// </summary>
+        public const string SentItemTriageArchiveEntryId = "SentItemTriageArchiveEntryId";
+
+        /// <summary>
+        /// Display path of the archive folder (v2.7.0.0 B2), stored so the Settings
+        /// dialog can show it without a COM round-trip. Empty when not configured.
+        /// </summary>
+        public const string SentItemTriageArchivePath = "SentItemTriageArchivePath";
+
+        /// <summary>
         /// Semicolon-separated Windows directory paths the user has marked as
         /// favourites for saving attachments (v2.4.0.0 F1). The expanded
         /// sub-directory index lives separately in SQLite; this holds only the
