@@ -405,16 +405,16 @@
     <value>RBLclass - Gesendete E-Mail</value>
   </data>
   <data name="SentTriage_Question" xml:space="preserve">
-    <value>Was soll RBLclass mit dieser E-Mail tun?</value>
+    <value>Eine E-Mail wurde gesendet. Was soll RBLclass mit der Kopie in den gesendeten Elementen tun?</value>
   </data>
   <data name="SentTriage_MoveToInbox_Button" xml:space="preserve">
     <value>In den Posteingang verschieben</value>
   </data>
   <data name="SentTriage_Delete_Button" xml:space="preserve">
-    <value>Löschen</value>
+    <value>Aus gesendeten Elementen löschen</value>
   </data>
   <data name="SentTriage_Leave_Button" xml:space="preserve">
-    <value>Belassen</value>
+    <value>In gesendeten Elementen belassen</value>
   </data>
   <data name="SentTriage_NoSubject" xml:space="preserve">
     <value>(kein Betreff)</value>

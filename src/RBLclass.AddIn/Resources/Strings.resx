@@ -405,16 +405,16 @@
     <value>RBLclass - Sent mail</value>
   </data>
   <data name="SentTriage_Question" xml:space="preserve">
-    <value>What should RBLclass do with this mail?</value>
+    <value>A mail was sent. What should RBLclass do with the copy in Sent Items?</value>
   </data>
   <data name="SentTriage_MoveToInbox_Button" xml:space="preserve">
     <value>Move to Inbox</value>
   </data>
   <data name="SentTriage_Delete_Button" xml:space="preserve">
-    <value>Delete</value>
+    <value>Delete from Sent Items</value>
   </data>
   <data name="SentTriage_Leave_Button" xml:space="preserve">
-    <value>Leave</value>
+    <value>Leave in Sent Items</value>
   </data>
   <data name="SentTriage_NoSubject" xml:space="preserve">
     <value>(no subject)</value>

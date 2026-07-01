@@ -405,16 +405,16 @@
     <value>RBLclass - Message envoyé</value>
   </data>
   <data name="SentTriage_Question" xml:space="preserve">
-    <value>Que doit faire RBLclass avec ce message ?</value>
+    <value>Un message vient d'être envoyé. Que faire de la copie dans les éléments envoyés ?</value>
   </data>
   <data name="SentTriage_MoveToInbox_Button" xml:space="preserve">
     <value>Déplacer vers la boîte de réception</value>
   </data>
   <data name="SentTriage_Delete_Button" xml:space="preserve">
-    <value>Supprimer</value>
+    <value>Supprimer des éléments envoyés</value>
   </data>
   <data name="SentTriage_Leave_Button" xml:space="preserve">
-    <value>Laisser</value>
+    <value>Laisser dans les éléments envoyés</value>
   </data>
   <data name="SentTriage_NoSubject" xml:space="preserve">
     <value>(sans objet)</value>
