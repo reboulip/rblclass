@@ -680,6 +680,18 @@ namespace RBLclass.AddIn.ViewModels
             _navigate?.Invoke(folder, newWindow);
         }
 
+        /// <summary>
+        /// Open the highlighted (or first) folder in Outlook - Ctrl+Enter in the
+        /// search box (v2.7.0.0 A2), distinct from Enter which files into it.
+        /// </summary>
+        public void OpenHighlighted()
+        {
+            FlushPendingSearch(); // never open based on stale, pre-debounce results
+            var folder = (SelectedResult ?? (Results.Count > 0 ? Results[0] : null))?.Folder;
+            if (folder == null) { PushStatus(_loc.GetString("Status_NoMatchingFolderToFile")); return; }
+            OpenFolder(folder);
+        }
+
         /// <summary>File into the highlighted (or first) folder - Enter in the search box.</summary>
         public async Task FileToHighlighted()
         {

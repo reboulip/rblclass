@@ -67,7 +67,7 @@
     <value>Classer le(s) message(s) sélectionné(s) dans le(s) dossier(s) où leur conversation a été classée la dernière fois</value>
   </data>
   <data name="MainPane_QueryBox_ToolTip" xml:space="preserve">
-    <value>Appuyez sur Ctrl seul pour activer/désactiver « Lister tous les dossiers correspondants »</value>
+    <value>Entrée classe dans le dossier en surbrillance ; Ctrl+Entrée l'ouvre. Appuyez sur Ctrl seul pour activer/désactiver « Lister tous les dossiers correspondants »</value>
   </data>
   <data name="MainPane_ListEveryFolder_CheckBox" xml:space="preserve">
     <value>Lister tous les dossiers correspondants</value>

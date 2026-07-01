@@ -362,6 +362,15 @@ namespace RBLclass.AddIn
                 // First run only: schedule the live walk just after startup.
                 if (_lastIndexResult.Source == IndexSource.NeedsWalk)
                     ScheduleFirstRunWalk();
+
+                // Show the pane at its registered dock position on startup so it is
+                // ready to use without a click (v2.7.0.0 A2 / #31).
+                EnsureTaskPane();
+                if (_taskPane != null)
+                {
+                    _taskPane.Visible = true;
+                    TaskPaneServices.Host?.RefreshOnShow();
+                }
             }
             catch (Exception ex)
             {

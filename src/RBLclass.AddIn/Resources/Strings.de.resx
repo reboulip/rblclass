@@ -67,7 +67,7 @@
     <value>Die ausgewählte(n) E-Mail(s) in den Ordner(n) ablegen, in dem ihre Unterhaltung zuletzt klassiert wurde</value>
   </data>
   <data name="MainPane_QueryBox_ToolTip" xml:space="preserve">
-    <value>Strg allein drücken, um „Alle passenden Ordner anzeigen“ umzuschalten</value>
+    <value>Eingabe legt in den markierten Ordner ab; Strg+Eingabe öffnet ihn. Strg allein drücken, um „Alle passenden Ordner anzeigen“ umzuschalten</value>
   </data>
   <data name="MainPane_ListEveryFolder_CheckBox" xml:space="preserve">
     <value>Alle passenden Ordner anzeigen</value>

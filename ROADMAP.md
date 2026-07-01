@@ -79,7 +79,7 @@ Phase 6 (pilot rollout) is in progress; Phases 7–9 are forward-looking.
 
 ### A — Keyboard shortcuts
 - [x] **A1.** Add Ctrl+Z as a keyboard shortcut for the Undo action. [#30]
-- [ ] **A2.** Add keyboard shortcuts to open the RBLclass pane, focus the search field when the pane is open, and open the searched folder (distinct from Enter, which classifies); specific bindings chosen with the user. [#22]
+- [x] **A2.** Add keyboard shortcuts to open the RBLclass pane, focus the search field when the pane is open, and open the searched folder (distinct from Enter, which classifies); specific bindings chosen with the user. [#22]
 
 ### B — Sent-items handling
 - [ ] **B1.** Clarify the post-send classify dialog labels and lay the buttons out vertically so long labels render clearly in every language. [#24]

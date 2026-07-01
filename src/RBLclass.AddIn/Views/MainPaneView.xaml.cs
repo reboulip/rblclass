@@ -22,12 +22,39 @@ namespace RBLclass.AddIn.Views
 
         private MainPaneViewModel Vm => DataContext as MainPaneViewModel;
 
+        /// <summary>
+        /// Put keyboard focus in the search box (v2.7.0.0 A2), called whenever the
+        /// pane is shown so the user can type a query straight away. Deferred to
+        /// Input priority because on a fresh show the TextBox may not be realized
+        /// yet, and selects existing text so a new query overwrites it.
+        /// </summary>
+        public void FocusSearch()
+        {
+            Dispatcher.BeginInvoke(
+                new Action(() =>
+                {
+                    QueryBox.Focus();
+                    Keyboard.Focus(QueryBox);
+                    QueryBox.SelectAll();
+                }),
+                System.Windows.Threading.DispatcherPriority.Input);
+        }
+
         // True when Ctrl was used as a modifier (Ctrl+A, Ctrl+C...) since it was
         // pressed - releasing it must then NOT toggle "List every matching folder".
         private bool _ctrlComboUsed;
 
         private async void QueryBox_KeyDown(object sender, KeyEventArgs e)
         {
+            if (e.Key == Key.Enter && (Keyboard.Modifiers & ModifierKeys.Control) != 0)
+            {
+                // Ctrl+Enter opens the highlighted folder (v2.7.0.0 A2), distinct
+                // from plain Enter which files into it.
+                e.Handled = true;
+                Vm?.OpenHighlighted();
+                return;
+            }
+
             if (e.Key == Key.Enter)
             {
                 e.Handled = true;

@@ -85,6 +85,7 @@ namespace RBLclass.AddIn
         public void RefreshOnShow()
         {
             EnsureView();
+            _view?.FocusSearch();
         }
 
         /// <summary>Push a live selection count into the pane view model.</summary>

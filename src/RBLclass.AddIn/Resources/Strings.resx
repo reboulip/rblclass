@@ -67,7 +67,7 @@
     <value>File the selected mail(s) to the folder(s) their conversation was last classified into</value>
   </data>
   <data name="MainPane_QueryBox_ToolTip" xml:space="preserve">
-    <value>Press Ctrl alone to toggle 'List every matching folder'</value>
+    <value>Enter files into the highlighted folder; Ctrl+Enter opens it. Press Ctrl alone to toggle 'List every matching folder'</value>
   </data>
   <data name="MainPane_ListEveryFolder_CheckBox" xml:space="preserve">
     <value>List every matching folder</value>
