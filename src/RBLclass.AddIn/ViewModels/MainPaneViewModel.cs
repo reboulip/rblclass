@@ -39,6 +39,7 @@ namespace RBLclass.AddIn.ViewModels
         private bool _canStripBanner;
         private bool _isOptionsExpanded;
         private SelectableFolder _selectedResult;
+        private SearchPathDisplayMode _pathDisplayMode = SearchPathDisplayMode.OneLine;
         private string _selectionSummary;
         private string _searchFeedback = string.Empty;
         private string _busyStatus = string.Empty;
@@ -1047,9 +1048,26 @@ namespace RBLclass.AddIn.ViewModels
         }
 
         /// <summary>Add one result row, re-checking it if it is in the accumulated selection and tracking its checkbox.</summary>
+        /// <summary>
+        /// The default row display mode (v2.7.0.0 C1): the stored
+        /// SearchPathDisplayMode, or the legacy AutoExpandResults flag migrated
+        /// (on → PerSegment) when the new setting has never been written.
+        /// </summary>
+        private SearchPathDisplayMode ResolvePathDisplayMode()
+        {
+            if (_settings == null) return SearchPathDisplayMode.OneLine;
+            SearchPathDisplayMode mode;
+            if (Enum.TryParse(_settings.Get(SettingsKeys.SearchPathDisplayMode, null), out mode)
+                && Enum.IsDefined(typeof(SearchPathDisplayMode), mode))
+                return mode;
+            return _settings.GetBool(SettingsKeys.AutoExpandResults, false)
+                ? SearchPathDisplayMode.PerSegment
+                : SearchPathDisplayMode.OneLine;
+        }
+
         private void AddResultRow(FolderSearchResult r)
         {
-            var row = new SelectableFolder(r);
+            var row = new SelectableFolder(r, _pathDisplayMode);
             row.IsSelected = _selectedKeys.Contains(KeyOf(row.Folder));
             row.PropertyChanged += (s, e) =>
             {
@@ -1075,12 +1093,10 @@ namespace RBLclass.AddIn.ViewModels
             var outcome = _search.Search(_query,
                 new FolderSearchOptions(matchMode, _allResults, maxResults, minLength));
 
+            _pathDisplayMode = ResolvePathDisplayMode();
             Results.Clear();
             foreach (var r in outcome.Results)
                 AddResultRow(r);
-            if (_settings != null && _settings.GetBool(SettingsKeys.AutoExpandResults, false))
-                foreach (var row in Results)
-                    row.IsExpanded = true;
 
             string trimmed = (_query ?? string.Empty).Trim();
             if (outcome.TotalMatchCount == 0)

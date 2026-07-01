@@ -84,8 +84,17 @@
   <data name="MainPane_StripBanner_CheckBox" xml:space="preserve">
     <value>Strip the external-sender banner</value>
   </data>
-  <data name="Settings_AutoExpand_CheckBox" xml:space="preserve">
-    <value>Auto-expand results (show full paths)</value>
+  <data name="Settings_PathDisplay_Label" xml:space="preserve">
+    <value>Search result path display:</value>
+  </data>
+  <data name="Settings_PathDisplay_OneLine" xml:space="preserve">
+    <value>Single line (trimmed from the left)</value>
+  </data>
+  <data name="Settings_PathDisplay_Wrapped" xml:space="preserve">
+    <value>Full path, wrapped to the pane width</value>
+  </data>
+  <data name="Settings_PathDisplay_PerSegment" xml:space="preserve">
+    <value>Full path, one sub-folder per line</value>
   </data>
   <data name="MainPane_OpenFolder_ToolTip" xml:space="preserve">
     <value>Open this folder in Outlook</value>

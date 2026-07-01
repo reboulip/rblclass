@@ -134,13 +134,16 @@
                             <CheckBox IsChecked="{Binding IsSelected}"
                                       HorizontalContentAlignment="Stretch" VerticalContentAlignment="Center">
                                 <Grid>
-                                    <!-- Collapsed: single left-trimmed line. -->
+                                    <!-- Mode 1 (OneLine): single left-trimmed line. -->
                                     <TextBlock v:PathTrim.FullPath="{Binding DisplayPath}"
                                                v:PathTrim.RightReserve="52"
-                                               Visibility="{Binding IsExpanded, Converter={StaticResource InverseBoolToVis}}" />
-                                    <!-- Expanded: full path, one segment per line, no indentation. -->
+                                               Visibility="{Binding IsOneLine, Converter={StaticResource BoolToVis}}" />
+                                    <!-- Mode 2 (Wrapped): full path on one line, wrapping on pane width. -->
+                                    <TextBlock Text="{Binding DisplayPath}" TextWrapping="Wrap"
+                                               Visibility="{Binding IsWrapped, Converter={StaticResource BoolToVis}}" />
+                                    <!-- Mode 3 (PerSegment): full path, one segment per line, no indentation. -->
                                     <ItemsControl ItemsSource="{Binding PathSegments}"
-                                                  Visibility="{Binding IsExpanded, Converter={StaticResource BoolToVis}}">
+                                                  Visibility="{Binding IsPerSegment, Converter={StaticResource BoolToVis}}">
                                         <ItemsControl.ItemTemplate>
                                             <DataTemplate>
                                                 <TextBlock Text="{Binding}" TextWrapping="Wrap" />

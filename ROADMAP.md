@@ -86,7 +86,7 @@ Phase 6 (pilot rollout) is in progress; Phases 7–9 are forward-looking.
 - [x] **B2.** Add a configurable default archive folder into which sent messages are moved automatically. [#23]
 
 ### C — Search result display
-- [ ] **C1.** Add a Settings option for the expanded search-result path display, letting the user choose between the current one-line-per-folder layout and a multi-line full-path layout; default stays the one-liner. [#26]
+- [x] **C1.** Add a Settings option for the expanded search-result path display, letting the user choose between the current one-line-per-folder layout and a multi-line full-path layout; default stays the one-liner. [#26]
 
 ### D — Classify
 - [ ] **D1.** Add an opt-in (off by default) to keep only the latest message of a conversation in the target folder on classify — deleting older ones but never those with attachments; use Outlook's built-in conversation clean-up if suitable. [#27]

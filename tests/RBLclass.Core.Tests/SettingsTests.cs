@@ -58,7 +58,7 @@ namespace RBLclass.Core.Tests
             settings.MinSearchLength.Should().Be(FolderSearchOptions.DefaultMinQueryLength);
             settings.SearchDebounceMs.Should().Be(Settings.DefaultSearchDebounceMs);
             settings.PreferredUiLanguage.Should().Be("Auto");
-            settings.AutoExpandResults.Should().BeFalse();
+            settings.SearchPathDisplayMode.Should().Be(SearchPathDisplayMode.OneLine);
             settings.AutoClassHistoryDays.Should().Be(Settings.DefaultAutoClassHistoryDays);
             settings.StripBannerOnAutoClassify.Should().BeFalse();
             settings.ClassifyMeetingItems.Should().BeFalse();
@@ -92,7 +92,7 @@ namespace RBLclass.Core.Tests
                 AttachmentLabelLocation = AttachmentLabelLocation.InfoBar,
                 MinSearchLength = 3,
                 SearchDebounceMs = 450,
-                AutoExpandResults = true,
+                SearchPathDisplayMode = SearchPathDisplayMode.PerSegment,
                 AutoClassHistoryDays = 180,
                 StripBannerOnAutoClassify = true,
                 ClassifyMeetingItems = true,
@@ -125,7 +125,7 @@ namespace RBLclass.Core.Tests
             reloaded.AttachmentLabelLocation.Should().Be(AttachmentLabelLocation.InfoBar);
             reloaded.MinSearchLength.Should().Be(3);
             reloaded.SearchDebounceMs.Should().Be(450);
-            reloaded.AutoExpandResults.Should().BeTrue();
+            reloaded.SearchPathDisplayMode.Should().Be(SearchPathDisplayMode.PerSegment);
             reloaded.AutoClassHistoryDays.Should().Be(180);
             reloaded.StripBannerOnAutoClassify.Should().BeTrue();
             reloaded.ClassifyMeetingItems.Should().BeTrue();
@@ -171,6 +171,26 @@ namespace RBLclass.Core.Tests
         {
             _store.Set(SettingsKeys.SearchDebounceMs, stored);
             Settings.Load(_store).SearchDebounceMs.Should().Be(expected);
+        }
+
+        [Theory]
+        [InlineData(true, SearchPathDisplayMode.PerSegment)]
+        [InlineData(false, SearchPathDisplayMode.OneLine)]
+        public void Load_migrates_the_legacy_auto_expand_flag_when_no_path_mode_is_stored(
+            bool legacyAutoExpand, SearchPathDisplayMode expected)
+        {
+            _store.SetBool(SettingsKeys.AutoExpandResults, legacyAutoExpand);
+
+            Settings.Load(_store).SearchPathDisplayMode.Should().Be(expected);
+        }
+
+        [Fact]
+        public void Load_prefers_a_stored_path_display_mode_over_the_legacy_auto_expand_flag()
+        {
+            _store.SetBool(SettingsKeys.AutoExpandResults, true); // legacy would map to PerSegment
+            _store.Set(SettingsKeys.SearchPathDisplayMode, SearchPathDisplayMode.Wrapped.ToString());
+
+            Settings.Load(_store).SearchPathDisplayMode.Should().Be(SearchPathDisplayMode.Wrapped);
         }
 
         [Theory]

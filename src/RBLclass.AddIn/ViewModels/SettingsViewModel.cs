@@ -161,10 +161,38 @@ namespace RBLclass.AddIn.ViewModels
             set => Apply(_settings.AllResults, value, v => _settings.AllResults = v);
         }
 
-        public bool AutoExpandResults
+        /// <summary>
+        /// Default rendering of search-result rows (v2.7.0.0 C1): a single
+        /// left-trimmed line, the full path wrapped on pane width, or one
+        /// sub-folder per line. The per-row ⤢ button cycles through the three
+        /// starting from this default.
+        /// </summary>
+        public bool PathDisplayIsOneLine
         {
-            get => _settings.AutoExpandResults;
-            set => Apply(_settings.AutoExpandResults, value, v => _settings.AutoExpandResults = v);
+            get => _settings.SearchPathDisplayMode == SearchPathDisplayMode.OneLine;
+            set { if (value) UpdatePathDisplayMode(SearchPathDisplayMode.OneLine); }
+        }
+
+        public bool PathDisplayIsWrapped
+        {
+            get => _settings.SearchPathDisplayMode == SearchPathDisplayMode.Wrapped;
+            set { if (value) UpdatePathDisplayMode(SearchPathDisplayMode.Wrapped); }
+        }
+
+        public bool PathDisplayIsPerSegment
+        {
+            get => _settings.SearchPathDisplayMode == SearchPathDisplayMode.PerSegment;
+            set { if (value) UpdatePathDisplayMode(SearchPathDisplayMode.PerSegment); }
+        }
+
+        private void UpdatePathDisplayMode(SearchPathDisplayMode mode)
+        {
+            if (_settings.SearchPathDisplayMode == mode) return;
+            _settings.SearchPathDisplayMode = mode;
+            _settings.Save(_store);
+            OnPropertyChanged(nameof(PathDisplayIsOneLine));
+            OnPropertyChanged(nameof(PathDisplayIsWrapped));
+            OnPropertyChanged(nameof(PathDisplayIsPerSegment));
         }
 
         /// <summary>

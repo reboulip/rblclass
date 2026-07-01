@@ -84,8 +84,17 @@
   <data name="MainPane_StripBanner_CheckBox" xml:space="preserve">
     <value>Banner für externe Absender entfernen</value>
   </data>
-  <data name="Settings_AutoExpand_CheckBox" xml:space="preserve">
-    <value>Ergebnisse automatisch aufklappen (vollständige Pfade anzeigen)</value>
+  <data name="Settings_PathDisplay_Label" xml:space="preserve">
+    <value>Pfadanzeige der Suchergebnisse:</value>
+  </data>
+  <data name="Settings_PathDisplay_OneLine" xml:space="preserve">
+    <value>Einzelne Zeile (links abgeschnitten)</value>
+  </data>
+  <data name="Settings_PathDisplay_Wrapped" xml:space="preserve">
+    <value>Vollständiger Pfad, an die Bereichsbreite umgebrochen</value>
+  </data>
+  <data name="Settings_PathDisplay_PerSegment" xml:space="preserve">
+    <value>Vollständiger Pfad, ein Unterordner pro Zeile</value>
   </data>
   <data name="MainPane_OpenFolder_ToolTip" xml:space="preserve">
     <value>Diesen Ordner in Outlook öffnen</value>

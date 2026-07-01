@@ -61,7 +61,7 @@ namespace RBLclass.Core
         public IReadOnlyList<string> AttachmentFavoriteFolders { get; set; }
         public AttachmentRemovalMode AttachmentRemovalMode { get; set; }
         public AttachmentLabelLocation AttachmentLabelLocation { get; set; }
-        public bool AutoExpandResults { get; set; }
+        public SearchPathDisplayMode SearchPathDisplayMode { get; set; }
         public int AutoClassHistoryDays { get; set; }
         public bool ClassifyMeetingItems { get; set; }
         public string PreferredUiLanguage { get; set; }
@@ -101,7 +101,9 @@ namespace RBLclass.Core
                 AttachmentFavoriteFolders = ParseList(store.Get(SettingsKeys.AttachmentFavoriteFolders, string.Empty)),
                 AttachmentRemovalMode = ParseAttachmentRemovalMode(store.Get(SettingsKeys.AttachmentRemovalMode, null)),
                 AttachmentLabelLocation = ParseAttachmentLabelLocation(store.Get(SettingsKeys.AttachmentLabelLocation, null)),
-                AutoExpandResults = store.GetBool(SettingsKeys.AutoExpandResults, false),
+                SearchPathDisplayMode = ParsePathDisplayMode(
+                    store.Get(SettingsKeys.SearchPathDisplayMode, null),
+                    store.GetBool(SettingsKeys.AutoExpandResults, false)),
                 AutoClassHistoryDays = ParseClampedInt(store.Get(SettingsKeys.AutoClassHistoryDays, null),
                     DefaultAutoClassHistoryDays, 1, MaxAutoClassHistoryDays),
                 ClassifyMeetingItems = store.GetBool(SettingsKeys.ClassifyMeetingItems, false),
@@ -137,7 +139,7 @@ namespace RBLclass.Core
             store.Set(SettingsKeys.AttachmentFavoriteFolders, FormatList(AttachmentFavoriteFolders));
             store.Set(SettingsKeys.AttachmentRemovalMode, AttachmentRemovalMode.ToString());
             store.Set(SettingsKeys.AttachmentLabelLocation, AttachmentLabelLocation.ToString());
-            store.SetBool(SettingsKeys.AutoExpandResults, AutoExpandResults);
+            store.Set(SettingsKeys.SearchPathDisplayMode, SearchPathDisplayMode.ToString());
             store.Set(SettingsKeys.AutoClassHistoryDays,
                 AutoClassHistoryDays.ToString(CultureInfo.InvariantCulture));
             store.SetBool(SettingsKeys.ClassifyMeetingItems, ClassifyMeetingItems);
@@ -162,6 +164,19 @@ namespace RBLclass.Core
             return Enum.TryParse(raw, out mode)
                    && Enum.IsDefined(typeof(AttachmentRemovalMode), mode)
                 ? mode : AttachmentRemovalMode.Modal;
+        }
+
+        /// <summary>
+        /// Parse the stored path-display mode; when absent, migrate the legacy
+        /// AutoExpandResults flag (on → PerSegment, off → OneLine). Unrecognised
+        /// values fall back to OneLine (v2.7.0.0 C1).
+        /// </summary>
+        private static SearchPathDisplayMode ParsePathDisplayMode(string raw, bool legacyAutoExpand)
+        {
+            SearchPathDisplayMode mode;
+            if (Enum.TryParse(raw, out mode) && Enum.IsDefined(typeof(SearchPathDisplayMode), mode))
+                return mode;
+            return legacyAutoExpand ? SearchPathDisplayMode.PerSegment : SearchPathDisplayMode.OneLine;
         }
 
         /// <summary>Unrecognised or missing values fall back to Body (the reliable label location).</summary>

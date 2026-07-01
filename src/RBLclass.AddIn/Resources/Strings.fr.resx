@@ -84,8 +84,17 @@
   <data name="MainPane_StripBanner_CheckBox" xml:space="preserve">
     <value>Supprimer la bannière d'expéditeur externe</value>
   </data>
-  <data name="Settings_AutoExpand_CheckBox" xml:space="preserve">
-    <value>Développer automatiquement les résultats (afficher les chemins complets)</value>
+  <data name="Settings_PathDisplay_Label" xml:space="preserve">
+    <value>Affichage du chemin des résultats :</value>
+  </data>
+  <data name="Settings_PathDisplay_OneLine" xml:space="preserve">
+    <value>Une seule ligne (tronquée à gauche)</value>
+  </data>
+  <data name="Settings_PathDisplay_Wrapped" xml:space="preserve">
+    <value>Chemin complet, replié selon la largeur du volet</value>
+  </data>
+  <data name="Settings_PathDisplay_PerSegment" xml:space="preserve">
+    <value>Chemin complet, un sous-dossier par ligne</value>
   </data>
   <data name="MainPane_OpenFolder_ToolTip" xml:space="preserve">
     <value>Ouvrir ce dossier dans Outlook</value>

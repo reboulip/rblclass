@@ -168,5 +168,13 @@ namespace RBLclass.Core
 
         /// <summary>When true, MeetingItem objects in the explorer selection are classified alongside MailItems (v2.6.0.0 C1, default off).</summary>
         public const string ClassifyMeetingItems = "ClassifyMeetingItems";
+
+        /// <summary>
+        /// Default rendering of search-result rows (v2.7.0.0 C1): the string form
+        /// of <see cref="SearchPathDisplayMode"/> (OneLine / Wrapped / PerSegment).
+        /// Absent value migrates from the legacy <see cref="AutoExpandResults"/>
+        /// flag. Default is OneLine.
+        /// </summary>
+        public const string SearchPathDisplayMode = "SearchPathDisplayMode";
     }
 }

@@ -199,7 +199,7 @@ namespace RBLclass.AddIn.Views
         private void ExpandPath_Click(object sender, RoutedEventArgs e)
         {
             var folder = (sender as FrameworkElement)?.DataContext as SelectableFolder;
-            if (folder != null) folder.IsExpanded = !folder.IsExpanded;
+            folder?.CycleDisplayMode();
         }
 
         private static bool IsWithinButton(DependencyObject node)
