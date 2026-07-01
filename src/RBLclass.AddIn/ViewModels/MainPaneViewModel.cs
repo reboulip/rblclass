@@ -539,6 +539,7 @@ namespace RBLclass.AddIn.ViewModels
                     undoStatus += _loc.GetString("Status_Undo_AttachmentsNotRestored");
                 PushStatus(undoStatus);
 
+                ScheduleRestoreSelection(undone);
                 ScheduleSelectionRefresh("Undo");
             }
             finally
@@ -642,6 +643,29 @@ namespace RBLclass.AddIn.ViewModels
                         context, swWait.ElapsedMilliseconds, swRun.ElapsedMilliseconds);
                 }
             }), DispatcherPriority.Background);
+        }
+
+        /// <summary>
+        /// After an Undo, select the moved-back mail in its source folder so the
+        /// user can immediately re-file it elsewhere (v2.7.0.0 A1). Deferred to
+        /// <see cref="DispatcherPriority.ApplicationIdle"/>: the moves have just
+        /// re-added the items to the source folder and Outlook must first repaint
+        /// that folder's view before <c>AddToSelection</c> can find them -
+        /// selecting synchronously here silently no-ops.
+        /// </summary>
+        private void ScheduleRestoreSelection(UndoResult undone)
+        {
+            if (TaskPaneServices.SelectItemsInFolder == null
+                || undone.RestoredFolder == null || undone.RestoredItems.Count == 0)
+                return;
+
+            var folder = undone.RestoredFolder;
+            var items = undone.RestoredItems;
+            Dispatcher.CurrentDispatcher.BeginInvoke(new Action(() =>
+            {
+                try { TaskPaneServices.SelectItemsInFolder(folder.StoreId, folder.EntryId, items); }
+                catch (Exception ex) { Log.Warning(ex, "Deferred restore-selection failed"); }
+            }), DispatcherPriority.ApplicationIdle);
         }
 
         /// <summary>

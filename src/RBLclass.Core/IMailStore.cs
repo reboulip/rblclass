@@ -36,6 +36,17 @@ namespace RBLclass.Core
         void NavigateTo(string storeId, string entryId, bool newWindow);
 
         /// <summary>
+        /// Navigate the active explorer to the folder (storeId, entryId) and make
+        /// <paramref name="items"/> its current selection, so the user sees them
+        /// selected and ready to act on (v2.7.0.0 A1: after Undo the moved-back
+        /// mail is shown selected in its source folder, ready to re-file
+        /// elsewhere). Best-effort - items that no longer resolve are skipped, and
+        /// it is a no-op when there is no active explorer. Touches COM - call on
+        /// the Outlook UI thread.
+        /// </summary>
+        void SelectItemsInFolder(string storeId, string entryId, IReadOnlyList<MailItemRef> items);
+
+        /// <summary>
         /// The items currently selected in the active explorer. When
         /// <paramref name="includeMeetingItems"/> is true, MeetingItem objects are
         /// included (with <see cref="MailItemRef.IsMeetingItem"/> set) alongside MailItems;

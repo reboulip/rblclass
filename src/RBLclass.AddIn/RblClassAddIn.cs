@@ -210,6 +210,17 @@ namespace RBLclass.AddIn
                         Log.Error(ex, "NavigateTo failed for {Path}", folder.FullPath);
                     }
                 };
+                TaskPaneServices.SelectItemsInFolder = (storeId, entryId, items) =>
+                {
+                    try
+                    {
+                        _mailStore.SelectItemsInFolder(storeId, entryId, items);
+                    }
+                    catch (Exception ex)
+                    {
+                        Log.Error(ex, "SelectItemsInFolder failed for {Store}/{Entry}", storeId, entryId);
+                    }
+                };
                 TaskPaneServices.PromptForName = parentFolderName =>
                 {
                     var prompt = new NamePromptWindow(parentFolderName);

@@ -157,6 +157,50 @@ namespace RBLclass.Outlook.Adapter
             }
         }
 
+        public void SelectItemsInFolder(string storeId, string entryId, IReadOnlyList<MailItemRef> items)
+        {
+            if (storeId == null || entryId == null || items == null || items.Count == 0) return;
+
+            OutlookOM.Explorer rawExplorer;
+            try { rawExplorer = _app.ActiveExplorer(); }
+            catch { rawExplorer = null; }
+            if (rawExplorer == null) return;
+
+            using (var session = new ComRef<OutlookOM.NameSpace>(_app.Session))
+            using (var explorer = new ComRef<OutlookOM.Explorer>(rawExplorer))
+            {
+                OutlookOM.Folder rawFolder;
+                try { rawFolder = (OutlookOM.Folder)session.Value.GetFolderFromID(entryId, storeId); }
+                catch { return; } // source folder no longer resolves - tolerate the miss
+
+                using (var folder = new ComRef<OutlookOM.Folder>(rawFolder))
+                {
+                    try { explorer.Value.CurrentFolder = folder.Value; }
+                    catch { return; }
+                }
+
+                // Replace whatever was selected with the moved-back items. Both
+                // ClearSelection and AddToSelection require the item to live in the
+                // now-current folder; a per-item catch tolerates any that don't.
+                try { explorer.Value.ClearSelection(); } catch { }
+
+                for (int i = 0; i < items.Count; i++)
+                {
+                    var item = items[i];
+                    if (item == null) continue;
+
+                    object rawItem;
+                    try { rawItem = session.Value.GetItemFromID(item.EntryId, item.StoreId); }
+                    catch { continue; }
+
+                    using (var comItem = new ComRef<object>(rawItem))
+                    {
+                        try { explorer.Value.AddToSelection(comItem.Value); } catch { }
+                    }
+                }
+            }
+        }
+
         public IReadOnlyList<MailItemRef> GetSelectedItems(bool includeMeetingItems = false)
         {
             var list = new List<MailItemRef>();

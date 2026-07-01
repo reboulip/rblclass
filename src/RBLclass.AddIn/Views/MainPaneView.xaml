@@ -7,7 +7,8 @@
              xmlns:v="clr-namespace:RBLclass.AddIn.Views"
              xmlns:loc="clr-namespace:RBLclass.AddIn.Localization"
              xmlns:core="clr-namespace:RBLclass.Core;assembly=RBLclass.Core"
-             d:DesignHeight="520" d:DesignWidth="320">
+             d:DesignHeight="520" d:DesignWidth="320"
+             PreviewKeyDown="MainPane_PreviewKeyDown">
     <UserControl.Resources>
         <!-- Side-profile pink pig (like 🐖) — easter egg button image (v2.6.0.0 A1).
              WPF .NET FW 4.8 renders emoji monochrome via GDI; DrawingImage is the

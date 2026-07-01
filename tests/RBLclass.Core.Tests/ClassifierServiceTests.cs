@@ -255,6 +255,43 @@ namespace RBLclass.Core.Tests
         }
 
         [Fact]
+        public void Undo_reports_the_moved_back_items_in_their_source_folder()
+        {
+            var store = StoreWithWorkingMove();
+            var source = Dest("src", "Inbox");
+            var m1 = new MailItemRef("s1", "m1", "x");
+            var m2 = new MailItemRef("s1", "m2", "x");
+            var sut = new ClassifierService(store);
+
+            var result = sut.Undo(new ClassifyUndoPlan(
+                new[] { new UndoableMove(m1, source), new UndoableMove(m2, source) },
+                new MailItemRef[0],
+                new MailItemRef[0],
+                attachmentStrips: 0));
+
+            // The moved-back items (as returned by MoveItemToFolder) are reported
+            // against their common source folder so the caller can re-select them
+            // in the explorer (v2.7.0.0 A1).
+            result.RestoredFolder.Should().BeSameAs(source);
+            result.RestoredItems.Select(r => r.EntryId)
+                .Should().BeEquivalentTo(new[] { "moved-m1", "moved-m2" });
+        }
+
+        [Fact]
+        public void Undo_with_no_restored_moves_reports_no_folder_to_reselect()
+        {
+            var store = StoreWithWorkingMove();
+            var copy = new MailItemRef("s1", "c1", "x");
+            var sut = new ClassifierService(store);
+
+            var result = sut.Undo(new ClassifyUndoPlan(
+                new UndoableMove[0], new[] { copy }, new MailItemRef[0], attachmentStrips: 0));
+
+            result.RestoredFolder.Should().BeNull();
+            result.RestoredItems.Should().BeEmpty();
+        }
+
+        [Fact]
         public void Keep_copy_classify_yields_a_copies_only_undo_plan()
         {
             var store = Substitute.For<IMailStore>();

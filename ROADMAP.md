@@ -78,7 +78,7 @@ Phase 6 (pilot rollout) is in progress; Phases 7–9 are forward-looking.
 ## v2.7.0.0 — feedback wave: shortcuts, sent-items, docs
 
 ### A — Keyboard shortcuts
-- [ ] **A1.** Add Ctrl+Z as a keyboard shortcut for the Undo action. [#30]
+- [x] **A1.** Add Ctrl+Z as a keyboard shortcut for the Undo action. [#30]
 - [ ] **A2.** Add keyboard shortcuts to open the RBLclass pane, focus the search field when the pane is open, and open the searched folder (distinct from Enter, which classifies); specific bindings chosen with the user. [#22]
 
 ### B — Sent-items handling
