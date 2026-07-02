@@ -67,6 +67,9 @@ namespace RBLclass.AddIn
         private Office.ICTPFactory _ctpFactory;
         private Office.CustomTaskPane _taskPane;
 
+        // Opt-in update check (v2.7.0.0 E1); null until startup wires it.
+        private IUpdateCheckService _updateCheckService;
+
         // Kept in a field so the SelectionChange handler keeps firing (GC would
         // otherwise collect the event source - CLAUDE.md Outlook-events rule).
         private OutlookOM.Explorer _activeExplorer;
@@ -380,12 +383,63 @@ namespace RBLclass.AddIn
                     _taskPane.Visible = true;
                     TaskPaneServices.Host?.RefreshOnShow();
                 }
+
+                // Opt-in update check (v2.7.0.0 E1): off by default, runs on the
+                // thread pool so it never delays startup or blocks the STA.
+                _updateCheckService = new HttpUpdateCheckService();
+                ScheduleUpdateCheck();
             }
             catch (Exception ex)
             {
                 TryLog("OnStartupComplete failed", ex);
                 ShowError("OnStartupComplete failed", ex);
             }
+        }
+
+        /// <summary>
+        /// Opt-in update check (v2.7.0.0 E1). Off unless the user enabled it and set
+        /// a URL. Fetches a plain-text version marker on the thread pool with a short
+        /// timeout, and — only if it names a newer, not-yet-dismissed version —
+        /// marshals back to the WPF dispatcher to show the in-pane banner. Any
+        /// failure (disabled, no URL, network down, timeout, parse) is silent.
+        /// </summary>
+        private void ScheduleUpdateCheck()
+        {
+            var settings = Settings.Load(_settingsStore);
+            if (!settings.UpdateCheckEnabled || string.IsNullOrWhiteSpace(settings.UpdateCheckUrl))
+                return;
+
+            var url = settings.UpdateCheckUrl;
+            var lastSeen = settings.UpdateCheckLastSeenVersion;
+            DateTime? dismissedUtc = null;
+            if (DateTime.TryParse(settings.UpdateCheckDismissedUtc,
+                    System.Globalization.CultureInfo.InvariantCulture,
+                    System.Globalization.DateTimeStyles.RoundtripKind, out var parsedDismissed))
+                dismissedUtc = parsedDismissed;
+            var current = Assembly.GetExecutingAssembly().GetName().Version;
+            var service = _updateCheckService;
+            var uiDispatcher = System.Windows.Threading.Dispatcher.CurrentDispatcher;
+
+            _ = System.Threading.Tasks.Task.Run(async () =>
+            {
+                try
+                {
+                    using (var cts = new System.Threading.CancellationTokenSource(TimeSpan.FromSeconds(5)))
+                    {
+                        string raw = await service.GetLatestVersionAsync(url, cts.Token);
+                        if (!UpdateCheck.ShouldNotify(current, raw, lastSeen, dismissedUtc,
+                                DateTime.UtcNow, UpdateCheck.DismissWindow, out Version remote))
+                            return;
+
+                        _ = uiDispatcher.BeginInvoke(new Action(() =>
+                            TaskPaneServices.Host?.ShowUpdateBanner(remote.ToString())));
+                    }
+                }
+                catch (Exception ex)
+                {
+                    TryLog("Update check failed", ex);
+                }
+            });
         }
 
         public void OnBeginShutdown(ref Array custom)

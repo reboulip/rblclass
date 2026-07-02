@@ -178,6 +178,8 @@ namespace RBLclass.AddIn.Views
 
         private void Undo_Click(object sender, RoutedEventArgs e) => Vm?.UndoLast();
 
+        private void DismissUpdate_Click(object sender, RoutedEventArgs e) => Vm?.DismissUpdateBanner();
+
         private void AutoClass_Click(object sender, RoutedEventArgs e)
         {
             Vm?.AutoClassSelected();

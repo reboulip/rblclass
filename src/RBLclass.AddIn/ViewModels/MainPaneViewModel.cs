@@ -597,6 +597,51 @@ namespace RBLclass.AddIn.ViewModels
             OnPropertyChanged(nameof(PinnedItemSubject));
         }
 
+        // v2.7.0.0 E1: opt-in "a newer version is available" banner. Set from the
+        // background startup check (marshalled to this thread); dismissed by the
+        // user, which persists the version so it does not return.
+        private bool _hasUpdateAvailable;
+        private string _updateBannerText = string.Empty;
+        private string _updateVersion = string.Empty;
+
+        /// <summary>True while the update banner is shown (v2.7.0.0 E1).</summary>
+        public bool HasUpdateAvailable
+        {
+            get => _hasUpdateAvailable;
+            private set => SetProperty(ref _hasUpdateAvailable, value);
+        }
+
+        /// <summary>The update banner message, naming the available version (v2.7.0.0 E1).</summary>
+        public string UpdateBannerText
+        {
+            get => _updateBannerText;
+            private set => SetProperty(ref _updateBannerText, value);
+        }
+
+        /// <summary>Show the "newer version available" banner for <paramref name="version"/> (v2.7.0.0 E1).</summary>
+        public void ShowUpdateBanner(string version)
+        {
+            _updateVersion = version ?? string.Empty;
+            UpdateBannerText = _loc.GetString("MainPane_UpdateAvailable_Banner", _updateVersion);
+            HasUpdateAvailable = true;
+        }
+
+        /// <summary>
+        /// Dismiss the update banner and snooze it for this version (v2.7.0.0 E1):
+        /// record the version and the dismissal time, so it stays hidden until the
+        /// snooze window elapses, then re-appears.
+        /// </summary>
+        public void DismissUpdateBanner()
+        {
+            HasUpdateAvailable = false;
+            if (_settings != null && !string.IsNullOrEmpty(_updateVersion))
+            {
+                _settings.Set(SettingsKeys.UpdateCheckLastSeenVersion, _updateVersion);
+                _settings.Set(SettingsKeys.UpdateCheckDismissedUtc,
+                    DateTime.UtcNow.ToString("o", System.Globalization.CultureInfo.InvariantCulture));
+            }
+        }
+
         public void RefreshSelection()
         {
             // While a sent mail is pinned, keep the pin indicator - the show/theme

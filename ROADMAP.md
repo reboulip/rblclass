@@ -93,7 +93,7 @@ Phase 6 (pilot rollout) is in progress; Phases 7–9 are forward-looking.
 - [x] **D2.** Add an opt-in setting (off by default) to mark classified mails as read automatically on classify. [#32]
 
 ### E — Update notification (investigation)
-- [ ] **E1.** Investigate a startup check that detects a newer RBLclass release and surfaces an orange in-pane update banner; account for corporate-proxy constraints and the no-network-by-default posture — defer or drop if it proves too complex. [#25]
+- [x] **E1.** Investigate a startup check that detects a newer RBLclass release and surfaces an orange in-pane update banner; account for corporate-proxy constraints and the no-network-by-default posture — defer or drop if it proves too complex. [#25] **Implemented** as an opt-in (off by default), no default URL: a single startup GET to a user-configured HTTPS version marker via `HttpClient` (honours the system proxy), showing an orange in-pane banner when a newer version is available; dismissal snoozes it for 7 days. **NOTE:** this introduces the first outbound network call — the Phase 9 "no outbound network calls" audit finding must be updated in `docs/security.md` (opt-in, off by default, no data sent beyond the GET).
 
 ### F — Documentation
 - [ ] **F1.** Produce a simplified end-user usage guide (features, per-setting behaviour, how to suggest improvements) in both multi-language HTML and MediaWiki format (one .txt file per supported language). [#21]

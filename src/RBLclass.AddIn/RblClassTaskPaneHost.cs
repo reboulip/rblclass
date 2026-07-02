@@ -100,6 +100,12 @@ namespace RBLclass.AddIn
             (_view?.DataContext as MainPaneViewModel)?.ActivatePigEasterEgg();
         }
 
+        /// <summary>Show the opt-in "newer version available" banner (v2.7.0.0 E1).</summary>
+        public void ShowUpdateBanner(string version)
+        {
+            (_view?.DataContext as MainPaneViewModel)?.ShowUpdateBanner(version);
+        }
+
         private void ApplyThemeAndSelection()
         {
             (_view?.DataContext as MainPaneViewModel)?.RefreshSelection();

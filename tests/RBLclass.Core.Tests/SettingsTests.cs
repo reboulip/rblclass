@@ -63,6 +63,10 @@ namespace RBLclass.Core.Tests
             settings.StripBannerOnAutoClassify.Should().BeFalse();
             settings.ClassifyMeetingItems.Should().BeFalse();
             settings.MarkAsReadOnClassify.Should().BeFalse();
+            settings.UpdateCheckEnabled.Should().BeFalse();
+            settings.UpdateCheckUrl.Should().BeEmpty();
+            settings.UpdateCheckLastSeenVersion.Should().BeEmpty();
+            settings.UpdateCheckDismissedUtc.Should().BeEmpty();
         }
 
         [Fact]
@@ -98,6 +102,10 @@ namespace RBLclass.Core.Tests
                 StripBannerOnAutoClassify = true,
                 ClassifyMeetingItems = true,
                 MarkAsReadOnClassify = true,
+                UpdateCheckEnabled = true,
+                UpdateCheckUrl = "https://intranet/rblclass/version.txt",
+                UpdateCheckLastSeenVersion = "2.9.0.0",
+                UpdateCheckDismissedUtc = "2026-07-02T10:00:00.0000000Z",
                 PreferredUiLanguage = "fr"
             };
 
@@ -132,6 +140,10 @@ namespace RBLclass.Core.Tests
             reloaded.StripBannerOnAutoClassify.Should().BeTrue();
             reloaded.ClassifyMeetingItems.Should().BeTrue();
             reloaded.MarkAsReadOnClassify.Should().BeTrue();
+            reloaded.UpdateCheckEnabled.Should().BeTrue();
+            reloaded.UpdateCheckUrl.Should().Be("https://intranet/rblclass/version.txt");
+            reloaded.UpdateCheckLastSeenVersion.Should().Be("2.9.0.0");
+            reloaded.UpdateCheckDismissedUtc.Should().Be("2026-07-02T10:00:00.0000000Z");
             reloaded.PreferredUiLanguage.Should().Be("fr");
         }
 

@@ -38,6 +38,9 @@
     <!-- System.Windows.Forms / System.Drawing come from UseWindowsForms.
          WindowsFormsIntegration provides ElementHost (WPF-in-WinForms bridge). -->
     <Reference Include="WindowsFormsIntegration" />
+    <!-- Update check (v2.7.0.0 E1): HttpClient. Part of the .NET FW 4.8 BCL but
+         needs an explicit reference in an SDK-style net48 project. -->
+    <Reference Include="System.Net.Http" />
     <!-- Canonical Office PIAs from the GAC. Using the canonical PIAs (rather
          than hand-rolled [ComImport] interfaces) avoids the auto-generated
          IL-stub marshalling AVs that crashed Outlook in the POC. See

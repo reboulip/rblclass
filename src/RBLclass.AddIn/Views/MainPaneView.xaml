@@ -49,6 +49,17 @@
             </Grid.RowDefinitions>
 
             <StackPanel Grid.Row="0" Margin="0,0,0,6">
+                <!-- v2.7.0.0 E1: opt-in "a newer version is available" banner. -->
+                <Border Background="#FF8C00" CornerRadius="4" Padding="8,6" Margin="0,0,0,6"
+                        Visibility="{Binding HasUpdateAvailable, Converter={StaticResource BoolToVis}}">
+                    <DockPanel LastChildFill="True">
+                        <Button DockPanel.Dock="Right" Content="{loc:Loc Key=MainPane_UpdateAvailable_Dismiss}"
+                                Background="Transparent" BorderThickness="0" Foreground="White"
+                                Padding="4,0" VerticalAlignment="Top" Click="DismissUpdate_Click" />
+                        <TextBlock Foreground="White" FontWeight="Bold" TextWrapping="Wrap"
+                                   VerticalAlignment="Center" Text="{Binding UpdateBannerText}" />
+                    </DockPanel>
+                </Border>
                 <!-- E1: prominent, width-adapting banner for a pinned just-sent mail. -->
                 <Border Background="#0078D4" CornerRadius="4" Padding="8,6" Margin="0,0,0,6"
                         Visibility="{Binding HasPinnedItem, Converter={StaticResource BoolToVis}}">

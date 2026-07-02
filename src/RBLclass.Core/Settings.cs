@@ -65,6 +65,10 @@ namespace RBLclass.Core
         public int AutoClassHistoryDays { get; set; }
         public bool ClassifyMeetingItems { get; set; }
         public bool MarkAsReadOnClassify { get; set; }
+        public bool UpdateCheckEnabled { get; set; }
+        public string UpdateCheckUrl { get; set; }
+        public string UpdateCheckLastSeenVersion { get; set; }
+        public string UpdateCheckDismissedUtc { get; set; }
         public string PreferredUiLanguage { get; set; }
 
         /// <summary>Read every key, falling back to the same defaults the individual call sites use today.</summary>
@@ -109,6 +113,10 @@ namespace RBLclass.Core
                     DefaultAutoClassHistoryDays, 1, MaxAutoClassHistoryDays),
                 ClassifyMeetingItems = store.GetBool(SettingsKeys.ClassifyMeetingItems, false),
                 MarkAsReadOnClassify = store.GetBool(SettingsKeys.MarkAsReadOnClassify, false),
+                UpdateCheckEnabled = store.GetBool(SettingsKeys.UpdateCheckEnabled, false),
+                UpdateCheckUrl = store.Get(SettingsKeys.UpdateCheckUrl, string.Empty),
+                UpdateCheckLastSeenVersion = store.Get(SettingsKeys.UpdateCheckLastSeenVersion, string.Empty),
+                UpdateCheckDismissedUtc = store.Get(SettingsKeys.UpdateCheckDismissedUtc, string.Empty),
                 PreferredUiLanguage = ParseUiLanguage(store.Get(SettingsKeys.PreferredUiLanguage, null))
             };
         }
@@ -146,6 +154,10 @@ namespace RBLclass.Core
                 AutoClassHistoryDays.ToString(CultureInfo.InvariantCulture));
             store.SetBool(SettingsKeys.ClassifyMeetingItems, ClassifyMeetingItems);
             store.SetBool(SettingsKeys.MarkAsReadOnClassify, MarkAsReadOnClassify);
+            store.SetBool(SettingsKeys.UpdateCheckEnabled, UpdateCheckEnabled);
+            store.Set(SettingsKeys.UpdateCheckUrl, UpdateCheckUrl ?? string.Empty);
+            store.Set(SettingsKeys.UpdateCheckLastSeenVersion, UpdateCheckLastSeenVersion ?? string.Empty);
+            store.Set(SettingsKeys.UpdateCheckDismissedUtc, UpdateCheckDismissedUtc ?? string.Empty);
             store.Set(SettingsKeys.PreferredUiLanguage, PreferredUiLanguage);
         }
 
