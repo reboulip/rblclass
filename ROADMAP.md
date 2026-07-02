@@ -93,7 +93,7 @@ Phase 6 (pilot rollout) is in progress; Phases 7–9 are forward-looking.
 - [x] **D2.** Add an opt-in setting (off by default) to mark classified mails as read automatically on classify. [#32]
 
 ### E — Update notification (investigation)
-- [x] **E1.** Investigate a startup check that detects a newer RBLclass release and surfaces an orange in-pane update banner; account for corporate-proxy constraints and the no-network-by-default posture — defer or drop if it proves too complex. [#25] **Implemented** as an opt-in (off by default), no default URL: a single startup GET to a user-configured HTTPS version marker via `HttpClient` (honours the system proxy), showing an orange in-pane banner when a newer version is available; dismissal snoozes it for 7 days. **NOTE:** this introduces the first outbound network call — the Phase 9 "no outbound network calls" audit finding must be updated in `docs/security.md` (opt-in, off by default, no data sent beyond the GET).
+- [x] **E1.** Investigate a startup check that detects a newer RBLclass release and surfaces an orange in-pane update banner; account for corporate-proxy constraints and the no-network-by-default posture — defer or drop if it proves too complex. [#25] **Implemented** as an opt-in (off by default), no default URL: a single startup GET to a user-configured HTTPS version marker via `HttpClient` (honours the system proxy), showing an orange in-pane banner when a newer version is available; dismissal snoozes it for 7 days. This introduces the first outbound network call; the Phase 9 "no outbound network calls" posture is documented accordingly in `docs/security.md` (opt-in, off by default, no data sent beyond the GET).
 
 ### F — Documentation
 - [x] **F1.** Produce a simplified end-user usage guide (features, per-setting behaviour, how to suggest improvements) in both multi-language HTML and MediaWiki format (one .txt file per supported language). [#21]
@@ -148,11 +148,13 @@ review — several will be dropped on risk/benefit for a per-user, no-network,
 single-machine add-in, but are recorded so the review trail is explicit.
 
 ### Evidence & process (highest value for sign-off)
-- [ ] **Threat-model / security architecture doc** (`docs/security.md`): trust
+- [x] **Threat-model / security architecture doc** (`docs/security.md`): trust
       boundaries, data handled (folder names/paths + transient send-time
       metadata; **no mail bodies persisted**), data-at-rest location
       (`%LocalAppData%\RBLclass\`, per-user ACL), "no telemetry / no network by
-      default", HKCU-only / no-admin posture.
+      default", HKCU-only / no-admin posture. **Created (v2.7.0.0)**; the
+      network-posture section documents the E1 opt-in update check as the single
+      outbound call (off by default, no data sent beyond the GET).
 - [ ] **Authenticode-sign the DLL + MSI** with the internal-PKI Code Signing
       cert (OID 1.3.6.1.5.5.7.3.3), timestamped — promoting today's optional
       signing to the GA default.
@@ -179,9 +181,10 @@ single-machine add-in, but are recorded so the review trail is explicit.
       Outlook). A security team may want the external-recipient guard to **fail
       safe**. Narrow the catch so a guard *evaluation* error still prompts while
       genuine COM faults stay contained; document the stance.
-- [ ] **Confirm & document log hygiene:** assert no recipient addresses or
+- [x] **Confirm & document log hygiene:** assert no recipient addresses or
       mail-body text reach the Serilog sink. Capture the redaction policy in
-      `docs/security.md`.
+      `docs/security.md`. **Documented (v2.7.0.0)** in the "Log hygiene" section
+      of `docs/security.md`.
 
 ### Policy & tamper resistance
 - [ ] **Admin-lockable security settings.** The security-relevant toggles
