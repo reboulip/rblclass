@@ -330,6 +330,20 @@ namespace RBLclass.AddIn.ViewModels
             set => Apply(_settings.MarkAsReadOnClassify, value, v => _settings.MarkAsReadOnClassify = v);
         }
 
+        /// <summary>Opt-in: check the configured URL for a newer version at startup (v2.7.0.0 E1, default off).</summary>
+        public bool UpdateCheckEnabled
+        {
+            get => _settings.UpdateCheckEnabled;
+            set => Apply(_settings.UpdateCheckEnabled, value, v => _settings.UpdateCheckEnabled = v);
+        }
+
+        /// <summary>URL of the plain-text version marker checked at startup (v2.7.0.0 E1).</summary>
+        public string UpdateCheckUrl
+        {
+            get => _settings.UpdateCheckUrl;
+            set => Apply(_settings.UpdateCheckUrl, value ?? string.Empty, v => _settings.UpdateCheckUrl = v);
+        }
+
         public bool SendExternalWarning
         {
             get => _settings.SendExternalWarning;
@@ -540,6 +554,11 @@ namespace RBLclass.AddIn.ViewModels
             get => _settings.PreferredUiLanguage;
             set => Apply(_settings.PreferredUiLanguage, value, v => _settings.PreferredUiLanguage = v);
         }
+
+        /// <summary>Read-only "RBLclass version X.Y.Z.B" line shown in the General tab's About section.</summary>
+        public string AboutVersion =>
+            _loc.GetString("Settings_About_Version",
+                System.Reflection.Assembly.GetExecutingAssembly().GetName().Version);
 
         /// <summary>
         /// Change-detect, mutate the snapshot, notify and persist as a unit -

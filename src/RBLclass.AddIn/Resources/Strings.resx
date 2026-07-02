@@ -132,6 +132,12 @@
   <data name="MainPane_PinnedSentMail_Indicator" xml:space="preserve">
     <value>Filing the mail you just sent — search a folder and file it:</value>
   </data>
+  <data name="MainPane_UpdateAvailable_Banner" xml:space="preserve">
+    <value>A newer version of RBLclass is available ({0}). Visit the install page to update.</value>
+  </data>
+  <data name="MainPane_UpdateAvailable_Dismiss" xml:space="preserve">
+    <value>Dismiss</value>
+  </data>
   <data name="Settings_ClassifyAfterMoveToInbox_CheckBox" xml:space="preserve">
     <value>After moving a sent mail to the Inbox, open the classify pane to file it</value>
   </data>
@@ -411,6 +417,78 @@
   </data>
   <data name="Settings_Language_RestartNote" xml:space="preserve">
     <value>Changing this requires restarting Outlook.</value>
+  </data>
+  <data name="Settings_Updates_Header" xml:space="preserve">
+    <value>Updates</value>
+  </data>
+  <data name="Settings_UpdateCheck_Enable_CheckBox" xml:space="preserve">
+    <value>Check for a newer version at startup</value>
+  </data>
+  <data name="Settings_UpdateCheck_Url_Label" xml:space="preserve">
+    <value>Version-check URL (internal HTTPS share):</value>
+  </data>
+  <data name="Settings_UpdateCheck_Note" xml:space="preserve">
+    <value>Off by default. When enabled, RBLclass makes one request to this URL at startup to read the latest version number. No other data is sent.</value>
+  </data>
+  <data name="Settings_Nav_Search" xml:space="preserve">
+    <value>Search</value>
+  </data>
+  <data name="Settings_Nav_Classify" xml:space="preserve">
+    <value>Classify</value>
+  </data>
+  <data name="Settings_Nav_Attachments" xml:space="preserve">
+    <value>Attachments</value>
+  </data>
+  <data name="Settings_Nav_Sending" xml:space="preserve">
+    <value>Sending</value>
+  </data>
+  <data name="Settings_Nav_Banner" xml:space="preserve">
+    <value>External banner</value>
+  </data>
+  <data name="Settings_Nav_SentItems" xml:space="preserve">
+    <value>Sent items</value>
+  </data>
+  <data name="Settings_Nav_General" xml:space="preserve">
+    <value>General</value>
+  </data>
+  <data name="Settings_About_Version" xml:space="preserve">
+    <value>RBLclass version {0}</value>
+  </data>
+  <data name="Settings_WordPrefixMatch_Info" xml:space="preserve">
+    <value>By default the search matches your text anywhere inside a folder name. Turn this on to match only where a word begins.</value>
+  </data>
+  <data name="Settings_ListEveryFolder_Info" xml:space="preserve">
+    <value>Show every matching folder on its own row, including nested folders under a parent that already matches.</value>
+  </data>
+  <data name="Settings_PathDisplay_Info" xml:space="preserve">
+    <value>Sets how each result's folder path is shown by default. The ⤢ button on a result cycles through the three styles.</value>
+  </data>
+  <data name="Settings_KeepCopy_Info" xml:space="preserve">
+    <value>Leaves a copy in the original folder instead of moving the mail out of it when you file.</value>
+  </data>
+  <data name="Settings_ClassifySafetyCopy_Info" xml:space="preserve">
+    <value>When you are not keeping the original, a backup copy is placed in Deleted Items so nothing is lost.</value>
+  </data>
+  <data name="Settings_WidenConversation_Info" xml:space="preserve">
+    <value>Also files the other messages in the same conversation found in your Inbox and Sent Items.</value>
+  </data>
+  <data name="Settings_ClassifyMeetingItems_Info" xml:space="preserve">
+    <value>Includes meeting requests and responses in the selection so they are filed alongside your mail.</value>
+  </data>
+  <data name="Settings_RemoveAttachments_Info" xml:space="preserve">
+    <value>Strips attachments from the filed copy only. The original mail always keeps its attachments.</value>
+  </data>
+  <data name="Settings_AutoClassHistoryDays_Info" xml:space="preserve">
+    <value>Auto-classify only learns from mail you filed within this many days; older filings are ignored.</value>
+  </data>
+  <data name="Settings_SendExternalWarning_Info" xml:space="preserve">
+    <value>Warns you before sending when a recipient's domain is not in your internal-domains list.</value>
+  </data>
+  <data name="Settings_SentItemsTriage_Info" xml:space="preserve">
+    <value>Chooses what happens to a message that ends up in Sent Items after you send it.</value>
+  </data>
+  <data name="Settings_ClassifyAfterMoveToInbox_Info" xml:space="preserve">
+    <value>After the triage rule moves a sent mail back to the Inbox, the classify pane opens with it ready to file.</value>
   </data>
 
   <!-- NamePromptWindow -->

@@ -132,6 +132,12 @@
   <data name="MainPane_PinnedSentMail_Indicator" xml:space="preserve">
     <value>Classement du message que vous venez d'envoyer — recherchez un dossier et classez-le :</value>
   </data>
+  <data name="MainPane_UpdateAvailable_Banner" xml:space="preserve">
+    <value>Une nouvelle version de RBLclass est disponible ({0}). Consultez la page d'installation pour mettre à jour.</value>
+  </data>
+  <data name="MainPane_UpdateAvailable_Dismiss" xml:space="preserve">
+    <value>Ignorer</value>
+  </data>
   <data name="Settings_ClassifyAfterMoveToInbox_CheckBox" xml:space="preserve">
     <value>Après le déplacement d'un message envoyé vers la boîte de réception, ouvrir le volet de classement pour le classer</value>
   </data>
@@ -411,6 +417,78 @@
   </data>
   <data name="Settings_Language_RestartNote" xml:space="preserve">
     <value>Ce changement nécessite de redémarrer Outlook.</value>
+  </data>
+  <data name="Settings_Updates_Header" xml:space="preserve">
+    <value>Mises à jour</value>
+  </data>
+  <data name="Settings_UpdateCheck_Enable_CheckBox" xml:space="preserve">
+    <value>Vérifier la présence d'une nouvelle version au démarrage</value>
+  </data>
+  <data name="Settings_UpdateCheck_Url_Label" xml:space="preserve">
+    <value>URL de vérification de version (partage HTTPS interne) :</value>
+  </data>
+  <data name="Settings_UpdateCheck_Note" xml:space="preserve">
+    <value>Désactivé par défaut. Une fois activé, RBLclass effectue une seule requête vers cette URL au démarrage pour lire le dernier numéro de version. Aucune autre donnée n'est envoyée.</value>
+  </data>
+  <data name="Settings_Nav_Search" xml:space="preserve">
+    <value>Recherche</value>
+  </data>
+  <data name="Settings_Nav_Classify" xml:space="preserve">
+    <value>Classer</value>
+  </data>
+  <data name="Settings_Nav_Attachments" xml:space="preserve">
+    <value>Pièces jointes</value>
+  </data>
+  <data name="Settings_Nav_Sending" xml:space="preserve">
+    <value>Envoi</value>
+  </data>
+  <data name="Settings_Nav_Banner" xml:space="preserve">
+    <value>Bannière externe</value>
+  </data>
+  <data name="Settings_Nav_SentItems" xml:space="preserve">
+    <value>Éléments envoyés</value>
+  </data>
+  <data name="Settings_Nav_General" xml:space="preserve">
+    <value>Général</value>
+  </data>
+  <data name="Settings_About_Version" xml:space="preserve">
+    <value>RBLclass version {0}</value>
+  </data>
+  <data name="Settings_WordPrefixMatch_Info" xml:space="preserve">
+    <value>Par défaut, la recherche trouve votre texte n'importe où dans le nom d'un dossier. Activez cette option pour ne correspondre qu'au début d'un mot.</value>
+  </data>
+  <data name="Settings_ListEveryFolder_Info" xml:space="preserve">
+    <value>Affiche chaque dossier correspondant sur sa propre ligne, y compris les sous-dossiers d'un dossier parent déjà trouvé.</value>
+  </data>
+  <data name="Settings_PathDisplay_Info" xml:space="preserve">
+    <value>Définit l'affichage par défaut du chemin de chaque résultat. Le bouton ⤢ d'un résultat fait défiler les trois styles.</value>
+  </data>
+  <data name="Settings_KeepCopy_Info" xml:space="preserve">
+    <value>Conserve une copie dans le dossier d'origine au lieu d'en retirer le message lors du classement.</value>
+  </data>
+  <data name="Settings_ClassifySafetyCopy_Info" xml:space="preserve">
+    <value>Lorsque l'original n'est pas conservé, une copie de sauvegarde est placée dans les Éléments supprimés afin de ne rien perdre.</value>
+  </data>
+  <data name="Settings_WidenConversation_Info" xml:space="preserve">
+    <value>Classe également les autres messages de la même conversation présents dans votre Boîte de réception et vos Éléments envoyés.</value>
+  </data>
+  <data name="Settings_ClassifyMeetingItems_Info" xml:space="preserve">
+    <value>Inclut les demandes et réponses de réunion dans la sélection afin qu'elles soient classées avec vos messages.</value>
+  </data>
+  <data name="Settings_RemoveAttachments_Info" xml:space="preserve">
+    <value>Supprime les pièces jointes uniquement de la copie classée. Le message d'origine conserve toujours ses pièces jointes.</value>
+  </data>
+  <data name="Settings_AutoClassHistoryDays_Info" xml:space="preserve">
+    <value>Le classement automatique n'apprend que des messages classés au cours de ce nombre de jours ; les classements plus anciens sont ignorés.</value>
+  </data>
+  <data name="Settings_SendExternalWarning_Info" xml:space="preserve">
+    <value>Vous avertit avant l'envoi lorsque le domaine d'un destinataire ne figure pas dans votre liste de domaines internes.</value>
+  </data>
+  <data name="Settings_SentItemsTriage_Info" xml:space="preserve">
+    <value>Choisit ce qu'il advient d'un message qui se retrouve dans les Éléments envoyés après l'envoi.</value>
+  </data>
+  <data name="Settings_ClassifyAfterMoveToInbox_Info" xml:space="preserve">
+    <value>Après que la règle de tri a replacé un message envoyé dans la Boîte de réception, le volet de classement s'ouvre avec ce message prêt à être classé.</value>
   </data>
 
   <!-- NamePromptWindow -->

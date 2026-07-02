@@ -132,6 +132,12 @@
   <data name="MainPane_PinnedSentMail_Indicator" xml:space="preserve">
     <value>Ablage der soeben gesendeten E-Mail — suchen Sie einen Ordner und legen Sie sie ab:</value>
   </data>
+  <data name="MainPane_UpdateAvailable_Banner" xml:space="preserve">
+    <value>Eine neuere Version von RBLclass ist verfügbar ({0}). Besuchen Sie die Installationsseite zum Aktualisieren.</value>
+  </data>
+  <data name="MainPane_UpdateAvailable_Dismiss" xml:space="preserve">
+    <value>Verwerfen</value>
+  </data>
   <data name="Settings_ClassifyAfterMoveToInbox_CheckBox" xml:space="preserve">
     <value>Nach dem Verschieben einer gesendeten E-Mail in den Posteingang den Ablagebereich zum Ablegen öffnen</value>
   </data>
@@ -411,6 +417,78 @@
   </data>
   <data name="Settings_Language_RestartNote" xml:space="preserve">
     <value>Diese Änderung erfordert einen Neustart von Outlook.</value>
+  </data>
+  <data name="Settings_Updates_Header" xml:space="preserve">
+    <value>Aktualisierungen</value>
+  </data>
+  <data name="Settings_UpdateCheck_Enable_CheckBox" xml:space="preserve">
+    <value>Beim Start nach einer neueren Version suchen</value>
+  </data>
+  <data name="Settings_UpdateCheck_Url_Label" xml:space="preserve">
+    <value>URL für die Versionsprüfung (internes HTTPS-Share):</value>
+  </data>
+  <data name="Settings_UpdateCheck_Note" xml:space="preserve">
+    <value>Standardmäßig deaktiviert. Wenn aktiviert, sendet RBLclass beim Start eine einzige Anfrage an diese URL, um die neueste Versionsnummer zu lesen. Es werden keine weiteren Daten gesendet.</value>
+  </data>
+  <data name="Settings_Nav_Search" xml:space="preserve">
+    <value>Suche</value>
+  </data>
+  <data name="Settings_Nav_Classify" xml:space="preserve">
+    <value>Klassifizieren</value>
+  </data>
+  <data name="Settings_Nav_Attachments" xml:space="preserve">
+    <value>Anhänge</value>
+  </data>
+  <data name="Settings_Nav_Sending" xml:space="preserve">
+    <value>Senden</value>
+  </data>
+  <data name="Settings_Nav_Banner" xml:space="preserve">
+    <value>Externes Banner</value>
+  </data>
+  <data name="Settings_Nav_SentItems" xml:space="preserve">
+    <value>Gesendete Objekte</value>
+  </data>
+  <data name="Settings_Nav_General" xml:space="preserve">
+    <value>Allgemein</value>
+  </data>
+  <data name="Settings_About_Version" xml:space="preserve">
+    <value>RBLclass Version {0}</value>
+  </data>
+  <data name="Settings_WordPrefixMatch_Info" xml:space="preserve">
+    <value>Standardmäßig findet die Suche Ihren Text an beliebiger Stelle in einem Ordnernamen. Aktivieren Sie diese Option, um nur den Wortanfang abzugleichen.</value>
+  </data>
+  <data name="Settings_ListEveryFolder_Info" xml:space="preserve">
+    <value>Zeigt jeden übereinstimmenden Ordner in einer eigenen Zeile an, einschließlich Unterordnern eines bereits übereinstimmenden Ordners.</value>
+  </data>
+  <data name="Settings_PathDisplay_Info" xml:space="preserve">
+    <value>Legt fest, wie der Ordnerpfad jedes Ergebnisses standardmäßig angezeigt wird. Die Schaltfläche ⤢ an einem Ergebnis wechselt zwischen den drei Stilen.</value>
+  </data>
+  <data name="Settings_KeepCopy_Info" xml:space="preserve">
+    <value>Belässt beim Ablegen eine Kopie im ursprünglichen Ordner, anstatt die E-Mail daraus zu entfernen.</value>
+  </data>
+  <data name="Settings_ClassifySafetyCopy_Info" xml:space="preserve">
+    <value>Wenn das Original nicht behalten wird, wird eine Sicherungskopie in „Gelöschte Objekte“ abgelegt, damit nichts verloren geht.</value>
+  </data>
+  <data name="Settings_WidenConversation_Info" xml:space="preserve">
+    <value>Legt auch die anderen Nachrichten derselben Unterhaltung ab, die sich in Ihrem Posteingang und in „Gesendete Objekte“ befinden.</value>
+  </data>
+  <data name="Settings_ClassifyMeetingItems_Info" xml:space="preserve">
+    <value>Bezieht Besprechungsanfragen und -antworten in die Auswahl ein, damit sie zusammen mit Ihren E-Mails abgelegt werden.</value>
+  </data>
+  <data name="Settings_RemoveAttachments_Info" xml:space="preserve">
+    <value>Entfernt Anhänge nur aus der abgelegten Kopie. Die ursprüngliche E-Mail behält ihre Anhänge immer.</value>
+  </data>
+  <data name="Settings_AutoClassHistoryDays_Info" xml:space="preserve">
+    <value>Die automatische Klassifizierung lernt nur aus E-Mails, die Sie innerhalb dieser Anzahl von Tagen abgelegt haben; ältere Ablagen werden ignoriert.</value>
+  </data>
+  <data name="Settings_SendExternalWarning_Info" xml:space="preserve">
+    <value>Warnt Sie vor dem Senden, wenn die Domäne eines Empfängers nicht in Ihrer Liste interner Domänen enthalten ist.</value>
+  </data>
+  <data name="Settings_SentItemsTriage_Info" xml:space="preserve">
+    <value>Legt fest, was mit einer Nachricht geschieht, die nach dem Senden in „Gesendete Objekte“ landet.</value>
+  </data>
+  <data name="Settings_ClassifyAfterMoveToInbox_Info" xml:space="preserve">
+    <value>Nachdem die Triage-Regel eine gesendete E-Mail zurück in den Posteingang verschoben hat, öffnet sich der Klassifizierungsbereich mit dieser E-Mail zum Ablegen.</value>
   </data>
 
   <!-- NamePromptWindow -->
