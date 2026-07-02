@@ -1,0 +1,173 @@
+= RBLclass — Guide d'utilisation =
+
+RBLclass est un complément Outlook qui aide à classer rapidement les e-mails dans des dossiers, à travers vos boîtes aux lettres et archives PST, avec une recherche par mots-clés sur toute l'arborescence. Il ajoute un volet à droite d'Outlook et un onglet '''RBLclass''' sur le ruban.
+
+== Premiers pas ==
+
+Le volet RBLclass s'ouvre automatiquement au démarrage d'Outlook. Si vous le fermez, l'onglet '''RBLclass''' du ruban propose quatre boutons :
+
+* '''Volet RBLclass''' — afficher ou masquer le volet.
+* '''Actualiser les dossiers''' — réanalyser les boîtes pour que les dossiers créés ou renommés directement dans Outlook apparaissent.
+* '''Paramètres''' — toutes les options (voir plus bas).
+* '''À propos''' — version, auteur et informations techniques.
+
+Accès clavier au volet : '''Alt''', puis '''R''' (onglet RBLclass), puis '''R''' à nouveau (bouton du volet).
+
+== Fonctionnalités ==
+
+=== Recherche de dossiers ===
+
+Saisissez des mots-clés dans le champ de recherche en haut du volet. Les résultats apparaissent après une courte pause. Pour chaque ligne :
+
+* '''Clic simple''' sur la ligne pour la cocher comme destination (cochez-en plusieurs pour classer dans toutes à la fois).
+* '''Entrée''' classe le message sélectionné dans le dossier en surbrillance.
+* '''Ctrl+Entrée''' ''ouvre'' le dossier en surbrillance dans Outlook au lieu de classer.
+* '''Double-clic''' sur une ligne pour classer immédiatement dans ce dossier.
+* Le bouton '''↗''' ouvre ce dossier dans Outlook.
+* Clic droit → '''Ajouter un sous-dossier…''' crée un sous-dossier.
+* Le bouton '''⤢''' fait défiler le mode d'affichage du chemin de cette ligne (voir « Affichage du chemin des résultats » dans les paramètres).
+
+Une brève pression sur '''Ctrl''' seul (appuyer puis relâcher) bascule ''« Lister tous les dossiers correspondants »''.
+
+=== Classer ===
+
+Sélectionnez un ou plusieurs messages dans Outlook, cochez le(s) dossier(s) de destination dans le volet, puis cliquez sur '''Classer''' (ou '''Entrée''' / double-clic pour un seul dossier). La zone '''Options''' propose cinq réglages ponctuels, initialisés depuis vos paramètres et réinitialisés après chaque classement : conserver une copie, supprimer les pièces jointes de la copie classée, inclure toute la conversation, supprimer la bannière d'expéditeur externe et marquer comme lu.
+
+'''Classement auto''' classe le(s) message(s) là où leur conversation a été classée la dernière fois, sans choisir de dossier à la main.
+
+=== Annuler ===
+
+Le bouton '''Annuler''' — ou '''Ctrl+Z''' n'importe où dans le volet — annule le dernier classement : les messages déplacés reviennent dans leur dossier source (et y sont resélectionnés pour les reclasser ailleurs) et les copies classées sont supprimées. Seul le dernier classement est annulable ; les pièces jointes supprimées ne sont pas restaurées.
+
+=== Gestion des pièces jointes ===
+
+Lorsque ''« Supprimer les pièces jointes »'' est activé, la copie classée perd ses pièces jointes ; l'original (ou la copie conservée) n'est jamais touché. Dans le mode par défaut ''« Demander pour chaque pièce jointe »'', une boîte de dialogue permet de Supprimer, Enregistrer sous… ou Conserver chaque pièce jointe ; une case ''« utiliser le même dossier »'' applique votre choix à toutes. Les messages chiffrés (S/MIME) ne sont jamais modifiés.
+
+=== Gestion des envois ===
+
+Chaque fois qu'un message arrive dans les '''Éléments envoyés''', RBLclass peut agir automatiquement ou vous demander. Les choix sont : '''Déplacer vers la boîte de réception''', '''Déplacer vers le dossier d'archivage''' (un dossier que vous configurez), '''Supprimer des éléments envoyés''' ou '''Laisser dans les éléments envoyés'''. Quand un message envoyé est déplacé vers la boîte de réception, le volet peut s'ouvrir avec ce message épinglé comme prochain à classer.
+
+=== Contrôles à l'envoi ===
+
+* '''Pièce jointe oubliée''' : si le corps du message mentionne une pièce jointe (via les mots-clés configurés) mais qu'aucune n'est jointe, une confirmation apparaît avant l'envoi.
+* '''Destinataire externe''' : avant l'envoi, une confirmation liste tout destinataire dont le domaine n'est pas dans votre liste interne.
+
+=== Suppression de la bannière d'expéditeur externe ===
+
+Beaucoup d'organisations ajoutent aux messages entrants une bannière « cet e-mail vient de l'extérieur ». Apprenez cette bannière à RBLclass une fois (Paramètres → Bannière d'expéditeur externe → ''Apprendre depuis le message sélectionné''), et il pourra la retirer automatiquement de vos réponses et transferts, ainsi que des copies classées.
+
+== Référence des paramètres ==
+
+Ouvrez les paramètres depuis le groupe RBLclass du ruban. Chaque changement s'applique et persiste immédiatement — il n'y a pas de bouton « Appliquer », et fermer est toujours sans risque.
+
+=== Recherche de dossiers ===
+
+{| class="wikitable"
+! Paramètre !! Défaut !! Effet
+|-
+| Lister tous les dossiers correspondants || Désactivé || Désactivé : les branches en double sont regroupées ; activé : chaque dossier correspondant est listé séparément.
+|-
+| Ne correspondre qu'au début des mots || Désactivé || Correspondance plus stricte : « proj » correspond à « Projects » mais « security » ne correspond ''pas'' à « Cybersecurity ». Le défaut (désactivé) est la recherche « contient » plus large.
+|-
+| Ouvrir les dossiers dans une nouvelle fenêtre || Désactivé || Activé : « ouvrir le dossier » ouvre une nouvelle fenêtre au lieu de rediriger la fenêtre actuelle.
+|-
+| Affichage du chemin des résultats || Une seule ligne || Comment chaque ligne affiche son chemin : une seule ligne tronquée à gauche ; le chemin complet replié selon la largeur du volet ; ou le chemin complet avec un sous-dossier par ligne. Le bouton ⤢ fait défiler les trois pour cette ligne.
+|-
+| Nombre maximal de résultats || 50 || Limite du nombre de lignes affichées.
+|-
+| Rechercher à partir de N caractères || 2 || Évite de rechercher sur une seule lettre. Plage 1–10.
+|-
+| Pause avant la recherche (ms) || 200 || La recherche se déclenche ce nombre de millisecondes après la dernière frappe. Plage 0–2000.
+|}
+
+=== Classer ===
+
+{| class="wikitable"
+! Paramètre !! Défaut !! Effet
+|-
+| Conserver l'original après classement || Désactivé || Copie le message vers la destination et laisse l'original en place (« Conserver une copie »).
+|-
+| Supprimer les pièces jointes de la copie classée || Désactivé || Retire les pièces jointes de la copie de destination ; l'original n'est pas touché. Sous-options : demander pour chaque pièce jointe (défaut) ou tout supprimer sans demander ; et s'il faut noter une mention « anciennes pièces jointes » dans le corps.
+|-
+| Copie de sécurité dans Éléments supprimés || Désactivé || Quand l'original n'est pas conservé, place aussi une copie dans Éléments supprimés par sécurité.
+|-
+| Inclure toute la conversation par défaut || Désactivé || Précoche l'option « Inclure toute la conversation » du volet.
+|-
+| Classer les demandes et réponses de réunion || Désactivé || Permet de classer les éléments de réunion sélectionnés dans Outlook.
+|-
+| Marquer les messages classés comme lus || Désactivé || Marque chaque message classé comme lu (y compris le Classement auto).
+|-
+| Fenêtre d'historique du Classement auto (jours) || 90 || Jusqu'où le Classement auto remonte. Plage 1–3650.
+|}
+
+=== Bannière d'expéditeur externe ===
+
+''Apprendre depuis le message sélectionné'' capture la bannière du message sélectionné ; ''Oublier'' l'efface ; ''Diagnostiquer'' indique si le message actuel correspond. Puis trois options (toutes désactivées par défaut, utiles seulement une fois une bannière apprise) : retirer à la réponse/au transfert, retirer au classement, et retirer lors du Classement auto.
+
+=== Contrôles à l'envoi ===
+
+{| class="wikitable"
+! Paramètre !! Défaut !! Effet
+|-
+| Avertir avant l'envoi hors de l'organisation || Activé || Confirmation si le domaine d'un destinataire n'est pas dans la liste interne.
+|-
+| Domaines considérés comme internes || (vide) || Domaines séparés par des points-virgules exemptés de l'avertissement, p. ex. <code>contoso.com;subsidiary.fr</code>.
+|-
+| Mots-clés de pièce jointe oubliée || attach;enclos;joint;PJ || Si l'un de ces mots figure dans le corps mais qu'aucune pièce jointe n'est présente, un avertissement apparaît avant l'envoi. Videz le champ pour désactiver le contrôle.
+|}
+
+=== Éléments envoyés ===
+
+{| class="wikitable"
+! Paramètre !! Défaut !! Effet
+|-
+| Quand un message arrive dans les Éléments envoyés || Demander à chaque fois || Demander, ou automatiquement : Déplacer vers la boîte de réception, Déplacer vers le dossier d'archivage, Supprimer ou Laisser.
+|-
+| Dossier d'archivage || (non configuré) || Le dossier vers lequel les messages envoyés sont déplacés avec « Déplacer vers le dossier d'archivage ». ''Choisir un dossier…'' / ''Effacer''.
+|-
+| Ouvrir le volet après déplacement vers la boîte de réception || Activé || Affiche le volet avec le message envoyé épinglé comme prochaine destination.
+|}
+
+=== Mises à jour ===
+
+{| class="wikitable"
+! Paramètre !! Défaut !! Effet
+|-
+| Vérifier une nouvelle version au démarrage || Désactivé || Activé ''et'' avec une URL renseignée : RBLclass effectue une requête vers cette URL au démarrage pour lire le dernier numéro de version, et affiche une bannière orange si une version plus récente est disponible. Aucune autre donnée n'est envoyée ; rien ne se passe si l'URL est vide.
+|-
+| URL de vérification de version || (vide) || Adresse d'un fichier texte de version sur votre partage HTTPS interne. Demandez cette valeur à votre équipe de déploiement.
+|}
+
+=== Dossiers de pièces jointes favoris ===
+
+Pré-indexez des répertoires Windows pour que le sélecteur « Enregistrer sous… » (dans la boîte de dialogue des pièces jointes) trouve un emplacement aussi vite qu'un dossier Outlook. Les sous-dossiers sont indexés jusqu'à une profondeur de 4.
+
+=== Langue ===
+
+RBLclass suit la langue d'Outlook par défaut (avec repli sur l'anglais). Vous pouvez la forcer à English, Français ou Deutsch. Le changement prend effet après le redémarrage d'Outlook.
+
+== Raccourcis clavier ==
+
+{| class="wikitable"
+! Raccourci !! Action
+|-
+| Ctrl+Z || Annuler le dernier classement (n'importe où dans le volet).
+|-
+| Entrée || Classer le message sélectionné dans le dossier en surbrillance.
+|-
+| Ctrl+Entrée || Ouvrir le dossier en surbrillance dans Outlook.
+|-
+| Ctrl (bref) || Basculer « Lister tous les dossiers correspondants ».
+|-
+| Alt, R, R || Ouvrir / basculer le volet RBLclass depuis le ruban.
+|-
+| Tab (depuis le champ de recherche) || Ouvrir les Options et placer le focus sur la première case.
+|}
+
+== Actualiser l'index des dossiers ==
+
+L'index des dossiers est construit automatiquement en arrière-plan au démarrage d'Outlook. Si vous créez ou renommez un dossier directement dans Outlook et qu'il n'apparaît pas dans la recherche, cliquez sur '''Actualiser les dossiers''' sur le ruban.
+
+== Suggestions et signalement de problèmes ==
+
+RBLclass est maintenu sur GitHub : [https://github.com/reboulip/rblclass/issues GitHub Issues]. Ouvrez-y un ticket pour signaler un bogue ou proposer une fonctionnalité. Si vous ne pouvez pas accéder à GitHub depuis votre poste, utilisez le canal de contact du guide d'installation. Pour aider au diagnostic, joignez le dernier fichier journal depuis <code>%LocalAppData%\RBLclass\logs\</code>.
