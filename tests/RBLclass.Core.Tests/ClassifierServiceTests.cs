@@ -23,7 +23,7 @@ namespace RBLclass.Core.Tests
         private static IMailStore StoreWithWorkingMove()
         {
             var store = Substitute.For<IMailStore>();
-            store.MoveItemToFolder(Arg.Any<MailItemRef>(), Arg.Any<FolderNode>())
+            store.MoveItemToFolder(Arg.Any<MailItemRef>(), Arg.Any<FolderNode>(), Arg.Any<bool>())
                  .Returns(ci => new MailItemRef(
                      ((FolderNode)ci[1]).StoreId,
                      "moved-" + ((MailItemRef)ci[0]).EntryId,
@@ -289,6 +289,48 @@ namespace RBLclass.Core.Tests
 
             result.RestoredFolder.Should().BeNull();
             result.RestoredItems.Should().BeEmpty();
+        }
+
+        [Fact]
+        public void MarkAsRead_flag_is_passed_to_the_move_when_set()
+        {
+            var store = StoreWithWorkingMove();
+            var sut = new ClassifierService(store);
+
+            sut.Classify(new ClassifyRequest(new[] { Item("e1") }, new[] { D1 },
+                keepCopy: false, removeAttachments: false, markAsRead: true));
+
+            store.Received(1).MoveItemToFolder(Arg.Is<MailItemRef>(m => m.EntryId == "e1"), D1, true);
+        }
+
+        [Fact]
+        public void MarkAsRead_flag_is_false_on_the_move_when_off()
+        {
+            var store = StoreWithWorkingMove();
+            var sut = new ClassifierService(store);
+
+            sut.Classify(new ClassifyRequest(new[] { Item("e1") }, new[] { D1 },
+                keepCopy: false, removeAttachments: false));
+
+            store.Received(1).MoveItemToFolder(Arg.Any<MailItemRef>(), D1, false);
+            store.DidNotReceive().MoveItemToFolder(Arg.Any<MailItemRef>(), Arg.Any<FolderNode>(), true);
+        }
+
+        [Fact]
+        public void MarkAsRead_flag_is_passed_to_the_copy_when_keep_copy_is_on()
+        {
+            var store = StoreWithWorkingMove();
+            store.CopyItemToFolder(Arg.Any<MailItemRef>(), Arg.Any<FolderNode>(), Arg.Any<bool>())
+                 .Returns(ci => new MailItemRef(
+                     ((FolderNode)ci[1]).StoreId,
+                     "copy-" + ((MailItemRef)ci[0]).EntryId,
+                     ((MailItemRef)ci[0]).Subject));
+            var sut = new ClassifierService(store);
+
+            sut.Classify(new ClassifyRequest(new[] { Item("e1") }, new[] { D1 },
+                keepCopy: true, removeAttachments: false, markAsRead: true));
+
+            store.Received(1).CopyItemToFolder(Arg.Is<MailItemRef>(m => m.EntryId == "e1"), D1, true);
         }
 
         [Fact]

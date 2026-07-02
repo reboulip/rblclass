@@ -284,6 +284,9 @@
   <data name="Settings_ClassifyMeetingItems_CheckBox" xml:space="preserve">
     <value>Classer les demandes et réponses de réunion</value>
   </data>
+  <data name="Settings_MarkAsReadOnClassify_CheckBox" xml:space="preserve">
+    <value>Marquer automatiquement les messages classés comme lus</value>
+  </data>
   <data name="Settings_Banner_Header" xml:space="preserve">
     <value>Bannière d'expéditeur externe</value>
   </data>

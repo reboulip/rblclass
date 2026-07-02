@@ -58,9 +58,11 @@ namespace RBLclass.Core
         /// Place a copy of <paramref name="item"/> into <paramref name="destination"/>
         /// (Outlook Copy-then-Move; the original is untouched) and return a
         /// reference to the filed copy, or null on failure. Honour the rule that
-        /// Move invalidates the moved reference.
+        /// Move invalidates the moved reference. When <paramref name="markAsRead"/>
+        /// is true, the filed copy is marked read as part of filing - set on the
+        /// copy before it is placed, so it is race-free (v2.7.0.0 D2).
         /// </summary>
-        MailItemRef CopyItemToFolder(MailItemRef item, FolderNode destination);
+        MailItemRef CopyItemToFolder(MailItemRef item, FolderNode destination, bool markAsRead = false);
 
         /// <summary>
         /// Move <paramref name="item"/> into <paramref name="destination"/> and
@@ -70,9 +72,10 @@ namespace RBLclass.Core
         /// is how classify files the original when "keep a copy" is off (the
         /// old copy-then-delete dance made the Stormshield add-in chase
         /// vanishing items and throw MAPI_E_NOT_FOUND). Honour the rule that
-        /// Move invalidates the moved reference.
+        /// Move invalidates the moved reference. When <paramref name="markAsRead"/>
+        /// is true, the item is marked read as part of filing (v2.7.0.0 D2).
         /// </summary>
-        MailItemRef MoveItemToFolder(MailItemRef item, FolderNode destination);
+        MailItemRef MoveItemToFolder(MailItemRef item, FolderNode destination, bool markAsRead = false);
 
         /// <summary>Delete a mail item (sent-item triage "Delete"; classify no longer deletes).</summary>
         void DeleteItem(MailItemRef item);

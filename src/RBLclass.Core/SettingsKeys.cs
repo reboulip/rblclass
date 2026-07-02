@@ -169,6 +169,9 @@ namespace RBLclass.Core
         /// <summary>When true, MeetingItem objects in the explorer selection are classified alongside MailItems (v2.6.0.0 C1, default off).</summary>
         public const string ClassifyMeetingItems = "ClassifyMeetingItems";
 
+        /// <summary>When true, each classified mail is marked as read on the filed copy (v2.7.0.0 D2, default off).</summary>
+        public const string MarkAsReadOnClassify = "MarkAsReadOnClassify";
+
         /// <summary>
         /// Default rendering of search-result rows (v2.7.0.0 C1): the string form
         /// of <see cref="SearchPathDisplayMode"/> (OneLine / Wrapped / PerSegment).

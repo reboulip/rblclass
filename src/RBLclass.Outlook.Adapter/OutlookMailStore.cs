@@ -324,7 +324,7 @@ namespace RBLclass.Outlook.Adapter
             finally { parent?.Dispose(); }
         }
 
-        public MailItemRef CopyItemToFolder(MailItemRef item, FolderNode destination)
+        public MailItemRef CopyItemToFolder(MailItemRef item, FolderNode destination, bool markAsRead = false)
         {
             if (item == null || destination == null) return null;
 
@@ -362,6 +362,16 @@ namespace RBLclass.Outlook.Adapter
                                 var copyMail    = comCopy.Value as OutlookOM.MailItem;
                                 var copyMeeting = copyMail == null ? comCopy.Value as OutlookOM.MeetingItem : null;
                                 if (copyMail == null && copyMeeting == null) return null;
+
+                                // Mark the copy read before it is placed (v2.7.0.0 D2):
+                                // setting UnRead on the not-yet-arrived copy is race-free,
+                                // unlike a re-fetch after Move which Outlook's arrival
+                                // handling can clobber.
+                                if (markAsRead && copyMail != null)
+                                {
+                                    try { copyMail.UnRead = false; copyMail.Save(); }
+                                    catch { }
+                                }
 
                                 // Move returns the moved item; the copy reference is now
                                 // invalid (CLAUDE.md). Read the moved item's id for the
@@ -401,7 +411,7 @@ namespace RBLclass.Outlook.Adapter
             }
         }
 
-        public MailItemRef MoveItemToFolder(MailItemRef item, FolderNode destination)
+        public MailItemRef MoveItemToFolder(MailItemRef item, FolderNode destination, bool markAsRead = false)
         {
             if (item == null || destination == null) return null;
 
@@ -444,6 +454,14 @@ namespace RBLclass.Outlook.Adapter
                             Log.Information(
                                 "Classify move BEGIN (D1): item {EntryId} -> {Path}",
                                 item.EntryId, destination.FullPath);
+
+                            // Mark read before the move (v2.7.0.0 D2): the moved item
+                            // keeps its read state, so this is race-free.
+                            if (markAsRead && mail != null)
+                            {
+                                try { mail.UnRead = false; mail.Save(); }
+                                catch { }
+                            }
 
                             // Move returns the moved item; the original reference
                             // is now invalid (CLAUDE.md). No transient copy is

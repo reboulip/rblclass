@@ -64,6 +64,7 @@ namespace RBLclass.Core
         public SearchPathDisplayMode SearchPathDisplayMode { get; set; }
         public int AutoClassHistoryDays { get; set; }
         public bool ClassifyMeetingItems { get; set; }
+        public bool MarkAsReadOnClassify { get; set; }
         public string PreferredUiLanguage { get; set; }
 
         /// <summary>Read every key, falling back to the same defaults the individual call sites use today.</summary>
@@ -107,6 +108,7 @@ namespace RBLclass.Core
                 AutoClassHistoryDays = ParseClampedInt(store.Get(SettingsKeys.AutoClassHistoryDays, null),
                     DefaultAutoClassHistoryDays, 1, MaxAutoClassHistoryDays),
                 ClassifyMeetingItems = store.GetBool(SettingsKeys.ClassifyMeetingItems, false),
+                MarkAsReadOnClassify = store.GetBool(SettingsKeys.MarkAsReadOnClassify, false),
                 PreferredUiLanguage = ParseUiLanguage(store.Get(SettingsKeys.PreferredUiLanguage, null))
             };
         }
@@ -143,6 +145,7 @@ namespace RBLclass.Core
             store.Set(SettingsKeys.AutoClassHistoryDays,
                 AutoClassHistoryDays.ToString(CultureInfo.InvariantCulture));
             store.SetBool(SettingsKeys.ClassifyMeetingItems, ClassifyMeetingItems);
+            store.SetBool(SettingsKeys.MarkAsReadOnClassify, MarkAsReadOnClassify);
             store.Set(SettingsKeys.PreferredUiLanguage, PreferredUiLanguage);
         }
 

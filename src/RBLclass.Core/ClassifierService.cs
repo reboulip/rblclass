@@ -139,7 +139,7 @@ namespace RBLclass.Core
                         MailItemRef filedRef;
                         if (moveSlot)
                         {
-                            filedRef = _store.MoveItemToFolder(item, destination);
+                            filedRef = _store.MoveItemToFolder(item, destination, request.MarkAsRead);
                             if (filedRef == null)
                             {
                                 // The item no longer resolves - the original
@@ -174,7 +174,7 @@ namespace RBLclass.Core
                         }
                         else
                         {
-                            filedRef = _store.CopyItemToFolder(item, destination);
+                            filedRef = _store.CopyItemToFolder(item, destination, request.MarkAsRead);
                             acc.Copies++;
                             if (filedRef != null) acc.CreatedCopies.Add(filedRef);
                         }
@@ -441,7 +441,8 @@ namespace RBLclass.Core
                                                IReadOnlyList<AttachmentDisposition> attachmentDispositions = null,
                                                AttachmentLabelOptions labelOptions = null,
                                                int historyRetentionDays = 0,
-                                               string bannerSignature = null)
+                                               string bannerSignature = null,
+                                               bool markAsRead = false)
         {
             if (items == null) throw new ArgumentNullException(nameof(items));
             if (resolveLiveFolder == null) throw new ArgumentNullException(nameof(resolveLiveFolder));
@@ -496,7 +497,8 @@ namespace RBLclass.Core
                     markTasksComplete: false, safetyCopy: safetyCopy,
                     bannerSignature: bannerSignature,
                     attachmentDispositions: attachmentDispositions,
-                    labelOptions: labelOptions));
+                    labelOptions: labelOptions,
+                    markAsRead: markAsRead));
 
                 if (result.ItemsProcessed > 0)
                 {

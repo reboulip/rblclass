@@ -36,6 +36,7 @@ namespace RBLclass.AddIn.ViewModels
 
         private string _query = string.Empty;
         private bool _allResults, _keepCopy, _removeAttachments, _widenConversation, _stripBanner;
+        private bool _markAsRead;
         private bool _canStripBanner;
         private bool _isOptionsExpanded;
         private SelectableFolder _selectedResult;
@@ -92,6 +93,7 @@ namespace RBLclass.AddIn.ViewModels
                 _removeAttachments = _settings.GetBool(SettingsKeys.RemoveAttachments, false);
                 _widenConversation = _settings.GetBool(SettingsKeys.WidenConversation, false);
                 _stripBanner = _settings.GetBool(SettingsKeys.StripBannerOnClassify, false);
+                _markAsRead = _settings.GetBool(SettingsKeys.MarkAsReadOnClassify, false);
                 _canStripBanner = !string.IsNullOrWhiteSpace(
                     _settings.Get(SettingsKeys.ExternalBannerSignature, string.Empty));
                 _easterEggActive = _settings.GetBool(SettingsKeys.EasterEggActive, false);
@@ -456,7 +458,8 @@ namespace RBLclass.AddIn.ViewModels
                 var result = _classifier.AutoClassify(items, resolve, keepCopy, removeAttachments, safetyCopy,
                                                        attachmentDispositions, labelOptions,
                                                        historyRetentionDays: retentionDays,
-                                                       bannerSignature: autoClassBannerSig);
+                                                       bannerSignature: autoClassBannerSig,
+                                                       markAsRead: s != null && s.MarkAsReadOnClassify);
                 swCore.Stop();
                 Log.Information(
                     "PERF AutoClass core {Ms} ms: filed={Filed}, noHistory={NoHistory}, stale={Stale}, errors={Errors}",
@@ -894,7 +897,8 @@ namespace RBLclass.AddIn.ViewModels
                 var result = await _classifier.ClassifyAsync(
                     new ClassifyRequest(preflight.Items, destinations, _keepCopy,
                                         _removeAttachments, markTasksComplete, safetyCopy,
-                                        bannerSignature, attachmentDispositions, labelOptions),
+                                        bannerSignature, attachmentDispositions, labelOptions,
+                                        markAsRead: _markAsRead),
                     progress,
                     YieldToPump);
                 swCore.Stop();
@@ -1005,6 +1009,7 @@ namespace RBLclass.AddIn.ViewModels
                 _removeAttachments = _settings.GetBool(SettingsKeys.RemoveAttachments, false);
                 _widenConversation = _settings.GetBool(SettingsKeys.WidenConversation, false);
                 _stripBanner = _settings.GetBool(SettingsKeys.StripBannerOnClassify, false);
+                _markAsRead = _settings.GetBool(SettingsKeys.MarkAsReadOnClassify, false);
                 OnPropertyChanged(nameof(AllResults));
                 OnPropertyChanged(nameof(KeepCopy));
                 OnPropertyChanged(nameof(RemoveAttachments));

@@ -323,6 +323,13 @@ namespace RBLclass.AddIn.ViewModels
             set => Apply(_settings.ClassifyMeetingItems, value, v => _settings.ClassifyMeetingItems = v);
         }
 
+        /// <summary>When true, the filed copy of each classified mail is marked as read (v2.7.0.0 D2, default off).</summary>
+        public bool MarkAsReadOnClassify
+        {
+            get => _settings.MarkAsReadOnClassify;
+            set => Apply(_settings.MarkAsReadOnClassify, value, v => _settings.MarkAsReadOnClassify = v);
+        }
+
         public bool SendExternalWarning
         {
             get => _settings.SendExternalWarning;

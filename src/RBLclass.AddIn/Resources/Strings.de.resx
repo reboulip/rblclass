@@ -284,6 +284,9 @@
   <data name="Settings_ClassifyMeetingItems_CheckBox" xml:space="preserve">
     <value>Besprechungsanfragen und -antworten ablegen</value>
   </data>
+  <data name="Settings_MarkAsReadOnClassify_CheckBox" xml:space="preserve">
+    <value>Abgelegte Nachrichten automatisch als gelesen markieren</value>
+  </data>
   <data name="Settings_Banner_Header" xml:space="preserve">
     <value>Banner für externe Absender</value>
   </data>

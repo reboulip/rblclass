@@ -110,6 +110,10 @@
                             <TextBlock TextWrapping="Wrap" MaxWidth="400"
                                        Text="{loc:Loc Key=Settings_ClassifyMeetingItems_CheckBox}" />
                         </CheckBox>
+                        <CheckBox Margin="0,3" IsChecked="{Binding MarkAsReadOnClassify}">
+                            <TextBlock TextWrapping="Wrap" MaxWidth="400"
+                                       Text="{loc:Loc Key=Settings_MarkAsReadOnClassify_CheckBox}" />
+                        </CheckBox>
                         <DockPanel Margin="0,8,0,2" LastChildFill="False">
                             <TextBlock Text="{loc:Loc Key=Settings_AutoClassHistoryDays_Label}"
                                        VerticalAlignment="Center" />

@@ -62,6 +62,7 @@ namespace RBLclass.Core.Tests
             settings.AutoClassHistoryDays.Should().Be(Settings.DefaultAutoClassHistoryDays);
             settings.StripBannerOnAutoClassify.Should().BeFalse();
             settings.ClassifyMeetingItems.Should().BeFalse();
+            settings.MarkAsReadOnClassify.Should().BeFalse();
         }
 
         [Fact]
@@ -96,6 +97,7 @@ namespace RBLclass.Core.Tests
                 AutoClassHistoryDays = 180,
                 StripBannerOnAutoClassify = true,
                 ClassifyMeetingItems = true,
+                MarkAsReadOnClassify = true,
                 PreferredUiLanguage = "fr"
             };
 
@@ -129,6 +131,7 @@ namespace RBLclass.Core.Tests
             reloaded.AutoClassHistoryDays.Should().Be(180);
             reloaded.StripBannerOnAutoClassify.Should().BeTrue();
             reloaded.ClassifyMeetingItems.Should().BeTrue();
+            reloaded.MarkAsReadOnClassify.Should().BeTrue();
             reloaded.PreferredUiLanguage.Should().Be("fr");
         }
 
