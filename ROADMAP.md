@@ -54,9 +54,7 @@ Phase 6 (pilot rollout) is in progress; Phases 7–9 are forward-looking.
 ## Open carried-over items
 
 - [ ] **Strip the external-sender banner on reply and on classify** —
-      implemented in the v2.1.0.0 scope; **not verified live** (no
-      external-banner mail on the dev machine). Re-verify on a workstation that
-      receives the company banner before closing.
+      implemented in the v2.1.0.0 scope; didn't work, so was re-implemented in v2.6.0.0 - pending tests
 
 ---
 
@@ -70,10 +68,35 @@ Phase 6 (pilot rollout) is in progress; Phases 7–9 are forward-looking.
 ### B — Classify & attachments
 - [x] **B1.** Extend the auto-classify conversation-history retention window and expose it as a configurable setting. [#16]
 - [x] **B2.** Add a "use the same save directory" checkbox (checked by default) to the multi-mail attachment disposition UI. [#18]
-- [ ] **B3.** Add diagnostics for external-sender banner detection, improve reliability, and add fine-grained configuration; closes the open carried-over verification item. [#19]
+- [ ] **B3.** Add diagnostics for external-sender banner detection, improve reliability, and add fine-grained configuration; closes the open carried-over verification item. [#19] - shipped, pending tests
 
 ### C — Meeting items
-- [ ] **C1.** Support classifying MeetingItem objects from the selection, enabled via an opt-in toggle in Settings. [#12]
+- [ ] **C1.** Support classifying MeetingItem objects from the selection, enabled via an opt-in toggle in Settings. [#12] - shipped,pending tests
+
+---
+
+## v2.7.0.0 — feedback wave: shortcuts, sent-items, docs
+
+### A — Keyboard shortcuts
+- [x] **A1.** Add Ctrl+Z as a keyboard shortcut for the Undo action. [#30]
+- [x] **A2.** Add keyboard shortcuts to open the RBLclass pane, focus the search field when the pane is open, and open the searched folder (distinct from Enter, which classifies); specific bindings chosen with the user; add a startup option to auto-show the pane when Outlook opens. [#22] [#31]
+
+### B — Sent-items handling
+- [x] **B1.** Clarify the post-send classify dialog labels and lay the buttons out vertically so long labels render clearly in every language. [#24]
+- [x] **B2.** Add a configurable default archive folder into which sent messages are moved automatically. [#23]
+
+### C — Search result display
+- [x] **C1.** Add a Settings option for the expanded search-result path display, letting the user choose between the current one-line-per-folder layout and a multi-line full-path layout; default stays the one-liner. [#26]
+
+### D — Classify
+- [~] **D1.** ~~Add an opt-in (off by default) to keep only the latest message of a conversation in the target folder on classify — deleting older ones but never those with attachments; use Outlook's built-in conversation clean-up if suitable.~~ **DEFERRED/DROPPED (v2.7.0.0):** Outlook exposes no programmatic conversation clean-up API (`MailItem.GetConversation()` has no `CleanUp`), and the only way to trigger the real feature — `CommandBars.ExecuteMso("CleanUpConversation")` — acts on the active explorer's selection/folder and respects the user's global clean-up settings, so it cannot be reliably targeted at a just-classified conversation without fragile UI automation. A prototype that manually deleted older siblings by date was rejected (it lacks Outlook's redundancy semantics). Recommend users apply Outlook's native **Clean Up Conversation** instead. [#27]
+- [x] **D2.** Add an opt-in setting (off by default) to mark classified mails as read automatically on classify. [#32]
+
+### E — Update notification (investigation)
+- [x] **E1.** Investigate a startup check that detects a newer RBLclass release and surfaces an orange in-pane update banner; account for corporate-proxy constraints and the no-network-by-default posture — defer or drop if it proves too complex. [#25] **Implemented** as an opt-in (off by default), no default URL: a single startup GET to a user-configured HTTPS version marker via `HttpClient` (honours the system proxy), showing an orange in-pane banner when a newer version is available; dismissal snoozes it for 7 days. This introduces the first outbound network call; the Phase 9 "no outbound network calls" posture is documented accordingly in `docs/security.md` (opt-in, off by default, no data sent beyond the GET).
+
+### F — Documentation
+- [x] **F1.** Produce a simplified end-user usage guide (features, per-setting behaviour, how to suggest improvements) in both multi-language HTML and MediaWiki format (one .txt file per supported language). [#21]
 
 ---
 
@@ -86,20 +109,20 @@ Phase 6 (pilot rollout) is in progress; Phases 7–9 are forward-looking.
 - [x] Packaging: product relabelled **v2.0.0.0**, rebuilt as
       `RBLclass-2.0.0.0.msi` (`installer\Build-Installer.ps1`), validated by
       install/uninstall on the dev machine.
-- [ ] **Open `develop` → `main` PR (#2)** — gating merge on re-running the
+- [x] **Open `develop` → `main` PR (#2)** — gating merge on re-running the
       [docs/parity-and-regression.md](docs/parity-and-regression.md) matrix on
       the real 32-bit target, then tagging `v2.0.0.0` on `main` and packaging
       with `/make-release`.
-- [ ] Deploy to 5–10 pilot users.
-- [ ] Telemetry (opt-in): performance metrics, error reports.
-- [ ] Feedback loop, bug fixes.
+- [x] Deploy to 5–10 pilot users.
+- [x] Telemetry (opt-in): performance metrics, error reports.
+- [x] Feedback loop, bug fixes.
 
 ## Phase 7 — General availability
 
 - [ ] Communication plan.
-- [ ] Self-service install page (link to the per-user MSI on the internal HTTPS
+- [x] Self-service install page (link to the per-user MSI on the internal HTTPS
       share).
-- [ ] Support process.
+- [x] Support process.
 - [ ] Monitoring of error logs across the fleet.
 
 ## Phase 8 — Continuous maintenance (ongoing)
@@ -125,11 +148,13 @@ review — several will be dropped on risk/benefit for a per-user, no-network,
 single-machine add-in, but are recorded so the review trail is explicit.
 
 ### Evidence & process (highest value for sign-off)
-- [ ] **Threat-model / security architecture doc** (`docs/security.md`): trust
+- [x] **Threat-model / security architecture doc** (`docs/security.md`): trust
       boundaries, data handled (folder names/paths + transient send-time
       metadata; **no mail bodies persisted**), data-at-rest location
       (`%LocalAppData%\RBLclass\`, per-user ACL), "no telemetry / no network by
-      default", HKCU-only / no-admin posture.
+      default", HKCU-only / no-admin posture. **Created (v2.7.0.0)**; the
+      network-posture section documents the E1 opt-in update check as the single
+      outbound call (off by default, no data sent beyond the GET).
 - [ ] **Authenticode-sign the DLL + MSI** with the internal-PKI Code Signing
       cert (OID 1.3.6.1.5.5.7.3.3), timestamped — promoting today's optional
       signing to the GA default.
@@ -156,9 +181,10 @@ single-machine add-in, but are recorded so the review trail is explicit.
       Outlook). A security team may want the external-recipient guard to **fail
       safe**. Narrow the catch so a guard *evaluation* error still prompts while
       genuine COM faults stay contained; document the stance.
-- [ ] **Confirm & document log hygiene:** assert no recipient addresses or
+- [x] **Confirm & document log hygiene:** assert no recipient addresses or
       mail-body text reach the Serilog sink. Capture the redaction policy in
-      `docs/security.md`.
+      `docs/security.md`. **Documented (v2.7.0.0)** in the "Log hygiene" section
+      of `docs/security.md`.
 
 ### Policy & tamper resistance
 - [ ] **Admin-lockable security settings.** The security-relevant toggles

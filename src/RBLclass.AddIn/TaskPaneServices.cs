@@ -73,6 +73,15 @@ namespace RBLclass.AddIn
         public static Action<FolderNode, bool> Navigate;
 
         /// <summary>
+        /// Navigate the active explorer to a folder and select the given items in
+        /// it (v2.7.0.0 A1: after Undo, the moved-back mail is shown selected,
+        /// ready to re-file). Args: (storeId, entryId, items). Runs on the Outlook
+        /// UI thread; the pane defers the call until Outlook has repainted the
+        /// restored items into the view.
+        /// </summary>
+        public static Action<string, string, IReadOnlyList<MailItemRef>> SelectItemsInFolder;
+
+        /// <summary>
         /// Ask the user whether to mark flagged-incomplete items complete in
         /// the destination before filing (legacy 5b step 3 task-completion
         /// guard). Arg: how many items qualify. Returns true = mark them
@@ -130,6 +139,13 @@ namespace RBLclass.AddIn
         /// hood; call on the UI thread.
         /// </summary>
         public static Func<string> BrowseForFolder;
+
+        /// <summary>
+        /// Show the Outlook folder-picker dialog and return the chosen folder, or
+        /// null when cancelled (v2.7.0.0 B2, the sent-item archive destination).
+        /// Backed by NameSpace.PickFolder; call on the Outlook UI thread.
+        /// </summary>
+        public static Func<FolderNode> PickOutlookFolder;
 
         /// <summary>
         /// Activate the pig easter egg in the main pane's Auto-Class button label.

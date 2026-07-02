@@ -67,7 +67,7 @@
     <value>Die ausgewählte(n) E-Mail(s) in den Ordner(n) ablegen, in dem ihre Unterhaltung zuletzt klassiert wurde</value>
   </data>
   <data name="MainPane_QueryBox_ToolTip" xml:space="preserve">
-    <value>Strg allein drücken, um „Alle passenden Ordner anzeigen“ umzuschalten</value>
+    <value>Eingabe legt in den markierten Ordner ab; Strg+Eingabe öffnet ihn. Strg allein drücken, um „Alle passenden Ordner anzeigen“ umzuschalten</value>
   </data>
   <data name="MainPane_ListEveryFolder_CheckBox" xml:space="preserve">
     <value>Alle passenden Ordner anzeigen</value>
@@ -84,8 +84,17 @@
   <data name="MainPane_StripBanner_CheckBox" xml:space="preserve">
     <value>Banner für externe Absender entfernen</value>
   </data>
-  <data name="Settings_AutoExpand_CheckBox" xml:space="preserve">
-    <value>Ergebnisse automatisch aufklappen (vollständige Pfade anzeigen)</value>
+  <data name="Settings_PathDisplay_Label" xml:space="preserve">
+    <value>Pfadanzeige der Suchergebnisse:</value>
+  </data>
+  <data name="Settings_PathDisplay_OneLine" xml:space="preserve">
+    <value>Einzelne Zeile (links abgeschnitten)</value>
+  </data>
+  <data name="Settings_PathDisplay_Wrapped" xml:space="preserve">
+    <value>Vollständiger Pfad, an die Bereichsbreite umgebrochen</value>
+  </data>
+  <data name="Settings_PathDisplay_PerSegment" xml:space="preserve">
+    <value>Vollständiger Pfad, ein Unterordner pro Zeile</value>
   </data>
   <data name="MainPane_OpenFolder_ToolTip" xml:space="preserve">
     <value>Diesen Ordner in Outlook öffnen</value>
@@ -122,6 +131,12 @@
   </data>
   <data name="MainPane_PinnedSentMail_Indicator" xml:space="preserve">
     <value>Ablage der soeben gesendeten E-Mail — suchen Sie einen Ordner und legen Sie sie ab:</value>
+  </data>
+  <data name="MainPane_UpdateAvailable_Banner" xml:space="preserve">
+    <value>Eine neuere Version von RBLclass ist verfügbar ({0}). Besuchen Sie die Installationsseite zum Aktualisieren.</value>
+  </data>
+  <data name="MainPane_UpdateAvailable_Dismiss" xml:space="preserve">
+    <value>Verwerfen</value>
   </data>
   <data name="Settings_ClassifyAfterMoveToInbox_CheckBox" xml:space="preserve">
     <value>Nach dem Verschieben einer gesendeten E-Mail in den Posteingang den Ablagebereich zum Ablegen öffnen</value>
@@ -275,6 +290,9 @@
   <data name="Settings_ClassifyMeetingItems_CheckBox" xml:space="preserve">
     <value>Besprechungsanfragen und -antworten ablegen</value>
   </data>
+  <data name="Settings_MarkAsReadOnClassify_CheckBox" xml:space="preserve">
+    <value>Abgelegte Nachrichten automatisch als gelesen markieren</value>
+  </data>
   <data name="Settings_Banner_Header" xml:space="preserve">
     <value>Banner für externe Absender</value>
   </data>
@@ -347,6 +365,24 @@
   <data name="Settings_TriageMode_Leave" xml:space="preserve">
     <value>In Gesendeten Objekten lassen</value>
   </data>
+  <data name="Settings_TriageMode_MoveToArchive" xml:space="preserve">
+    <value>In Archivordner verschieben</value>
+  </data>
+  <data name="Settings_TriageArchiveFolder_Label" xml:space="preserve">
+    <value>Archivordner (verwendet von „In Archivordner verschieben“):</value>
+  </data>
+  <data name="Settings_TriageArchiveFolder_Pick_Button" xml:space="preserve">
+    <value>Ordner wählen…</value>
+  </data>
+  <data name="Settings_TriageArchiveFolder_Clear_Button" xml:space="preserve">
+    <value>Löschen</value>
+  </data>
+  <data name="Settings_TriageArchiveFolder_NotSet" xml:space="preserve">
+    <value>Nicht konfiguriert</value>
+  </data>
+  <data name="Settings_TriageArchiveFolder_Stale" xml:space="preserve">
+    <value>Ordner nicht mehr gefunden</value>
+  </data>
   <data name="Settings_Banner_NoneLearned" xml:space="preserve">
     <value>Noch kein Banner gelernt.</value>
   </data>
@@ -382,6 +418,78 @@
   <data name="Settings_Language_RestartNote" xml:space="preserve">
     <value>Diese Änderung erfordert einen Neustart von Outlook.</value>
   </data>
+  <data name="Settings_Updates_Header" xml:space="preserve">
+    <value>Aktualisierungen</value>
+  </data>
+  <data name="Settings_UpdateCheck_Enable_CheckBox" xml:space="preserve">
+    <value>Beim Start nach einer neueren Version suchen</value>
+  </data>
+  <data name="Settings_UpdateCheck_Url_Label" xml:space="preserve">
+    <value>URL für die Versionsprüfung (internes HTTPS-Share):</value>
+  </data>
+  <data name="Settings_UpdateCheck_Note" xml:space="preserve">
+    <value>Standardmäßig deaktiviert. Wenn aktiviert, sendet RBLclass beim Start eine einzige Anfrage an diese URL, um die neueste Versionsnummer zu lesen. Es werden keine weiteren Daten gesendet.</value>
+  </data>
+  <data name="Settings_Nav_Search" xml:space="preserve">
+    <value>Suche</value>
+  </data>
+  <data name="Settings_Nav_Classify" xml:space="preserve">
+    <value>Klassifizieren</value>
+  </data>
+  <data name="Settings_Nav_Attachments" xml:space="preserve">
+    <value>Anhänge</value>
+  </data>
+  <data name="Settings_Nav_Sending" xml:space="preserve">
+    <value>Senden</value>
+  </data>
+  <data name="Settings_Nav_Banner" xml:space="preserve">
+    <value>Externes Banner</value>
+  </data>
+  <data name="Settings_Nav_SentItems" xml:space="preserve">
+    <value>Gesendete Objekte</value>
+  </data>
+  <data name="Settings_Nav_General" xml:space="preserve">
+    <value>Allgemein</value>
+  </data>
+  <data name="Settings_About_Version" xml:space="preserve">
+    <value>RBLclass Version {0}</value>
+  </data>
+  <data name="Settings_WordPrefixMatch_Info" xml:space="preserve">
+    <value>Standardmäßig findet die Suche Ihren Text an beliebiger Stelle in einem Ordnernamen. Aktivieren Sie diese Option, um nur den Wortanfang abzugleichen.</value>
+  </data>
+  <data name="Settings_ListEveryFolder_Info" xml:space="preserve">
+    <value>Zeigt jeden übereinstimmenden Ordner in einer eigenen Zeile an, einschließlich Unterordnern eines bereits übereinstimmenden Ordners.</value>
+  </data>
+  <data name="Settings_PathDisplay_Info" xml:space="preserve">
+    <value>Legt fest, wie der Ordnerpfad jedes Ergebnisses standardmäßig angezeigt wird. Die Schaltfläche ⤢ an einem Ergebnis wechselt zwischen den drei Stilen.</value>
+  </data>
+  <data name="Settings_KeepCopy_Info" xml:space="preserve">
+    <value>Belässt beim Ablegen eine Kopie im ursprünglichen Ordner, anstatt die E-Mail daraus zu entfernen.</value>
+  </data>
+  <data name="Settings_ClassifySafetyCopy_Info" xml:space="preserve">
+    <value>Wenn das Original nicht behalten wird, wird eine Sicherungskopie in „Gelöschte Objekte“ abgelegt, damit nichts verloren geht.</value>
+  </data>
+  <data name="Settings_WidenConversation_Info" xml:space="preserve">
+    <value>Legt auch die anderen Nachrichten derselben Unterhaltung ab, die sich in Ihrem Posteingang und in „Gesendete Objekte“ befinden.</value>
+  </data>
+  <data name="Settings_ClassifyMeetingItems_Info" xml:space="preserve">
+    <value>Bezieht Besprechungsanfragen und -antworten in die Auswahl ein, damit sie zusammen mit Ihren E-Mails abgelegt werden.</value>
+  </data>
+  <data name="Settings_RemoveAttachments_Info" xml:space="preserve">
+    <value>Entfernt Anhänge nur aus der abgelegten Kopie. Die ursprüngliche E-Mail behält ihre Anhänge immer.</value>
+  </data>
+  <data name="Settings_AutoClassHistoryDays_Info" xml:space="preserve">
+    <value>Die automatische Klassifizierung lernt nur aus E-Mails, die Sie innerhalb dieser Anzahl von Tagen abgelegt haben; ältere Ablagen werden ignoriert.</value>
+  </data>
+  <data name="Settings_SendExternalWarning_Info" xml:space="preserve">
+    <value>Warnt Sie vor dem Senden, wenn die Domäne eines Empfängers nicht in Ihrer Liste interner Domänen enthalten ist.</value>
+  </data>
+  <data name="Settings_SentItemsTriage_Info" xml:space="preserve">
+    <value>Legt fest, was mit einer Nachricht geschieht, die nach dem Senden in „Gesendete Objekte“ landet.</value>
+  </data>
+  <data name="Settings_ClassifyAfterMoveToInbox_Info" xml:space="preserve">
+    <value>Nachdem die Triage-Regel eine gesendete E-Mail zurück in den Posteingang verschoben hat, öffnet sich der Klassifizierungsbereich mit dieser E-Mail zum Ablegen.</value>
+  </data>
 
   <!-- NamePromptWindow -->
   <data name="NamePrompt_Title" xml:space="preserve">
@@ -405,16 +513,22 @@
     <value>RBLclass - Gesendete E-Mail</value>
   </data>
   <data name="SentTriage_Question" xml:space="preserve">
-    <value>Was soll RBLclass mit dieser E-Mail tun?</value>
+    <value>Eine E-Mail wurde gesendet. Was soll RBLclass mit der Kopie in den gesendeten Elementen tun?</value>
   </data>
   <data name="SentTriage_MoveToInbox_Button" xml:space="preserve">
     <value>In den Posteingang verschieben</value>
   </data>
   <data name="SentTriage_Delete_Button" xml:space="preserve">
-    <value>Löschen</value>
+    <value>Aus gesendeten Elementen löschen</value>
   </data>
   <data name="SentTriage_Leave_Button" xml:space="preserve">
-    <value>Belassen</value>
+    <value>In gesendeten Elementen belassen</value>
+  </data>
+  <data name="SentTriage_MoveToArchive_Button" xml:space="preserve">
+    <value>In Archiv verschieben: {0}</value>
+  </data>
+  <data name="SentTriage_MoveToArchive_Button_NoFolder" xml:space="preserve">
+    <value>In Archiv verschieben (nicht konfiguriert)</value>
   </data>
   <data name="SentTriage_NoSubject" xml:space="preserve">
     <value>(kein Betreff)</value>

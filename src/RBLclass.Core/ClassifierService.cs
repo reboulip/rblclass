@@ -139,7 +139,7 @@ namespace RBLclass.Core
                         MailItemRef filedRef;
                         if (moveSlot)
                         {
-                            filedRef = _store.MoveItemToFolder(item, destination);
+                            filedRef = _store.MoveItemToFolder(item, destination, request.MarkAsRead);
                             if (filedRef == null)
                             {
                                 // The item no longer resolves - the original
@@ -174,7 +174,7 @@ namespace RBLclass.Core
                         }
                         else
                         {
-                            filedRef = _store.CopyItemToFolder(item, destination);
+                            filedRef = _store.CopyItemToFolder(item, destination, request.MarkAsRead);
                             acc.Copies++;
                             if (filedRef != null) acc.CreatedCopies.Add(filedRef);
                         }
@@ -386,13 +386,20 @@ namespace RBLclass.Core
                 catch { errors++; }
             }
 
-            // Finally put each moved original back where it came from.
+            // Finally put each moved original back where it came from, keeping the
+            // post-move reference paired with its folder so the moved-back mail can
+            // be re-selected in the explorer below (v2.7.0.0 A1).
+            var restored = new List<KeyValuePair<FolderNode, MailItemRef>>();
             foreach (var move in plan.Moves)
             {
                 try
                 {
-                    if (_store.MoveItemToFolder(move.Current, move.SourceFolder) != null)
+                    var back = _store.MoveItemToFolder(move.Current, move.SourceFolder);
+                    if (back != null)
+                    {
                         movesRestored++;
+                        restored.Add(new KeyValuePair<FolderNode, MailItemRef>(move.SourceFolder, back));
+                    }
                     else
                         errors++;
                 }
@@ -407,7 +414,25 @@ namespace RBLclass.Core
                 catch { /* leave the history rows; they can be re-classified over */ }
             }
 
-            return new UndoResult(movesRestored, copiesDeleted, flagsRestored, errors);
+            // Report the moved-back mail so the caller can re-select it in Outlook,
+            // ready to re-file elsewhere (v2.7.0.0 A1). The explorer displays one
+            // folder at a time, so report the items sharing the first restored
+            // item's source folder (the common case: one classify of a
+            // multi-selection restores every item to the same folder). The caller
+            // defers the actual selection until Outlook's view has refreshed.
+            FolderNode restoredFolder = null;
+            IReadOnlyList<MailItemRef> restoredItems = new MailItemRef[0];
+            if (restored.Count > 0)
+            {
+                restoredFolder = restored[0].Key;
+                restoredItems = restored
+                    .Where(p => p.Key.StoreId == restoredFolder.StoreId && p.Key.EntryId == restoredFolder.EntryId)
+                    .Select(p => p.Value)
+                    .ToList();
+            }
+
+            return new UndoResult(movesRestored, copiesDeleted, flagsRestored, errors,
+                                  restoredFolder, restoredItems);
         }
 
         public AutoClassifyResult AutoClassify(IReadOnlyList<MailItemRef> items,
@@ -416,7 +441,8 @@ namespace RBLclass.Core
                                                IReadOnlyList<AttachmentDisposition> attachmentDispositions = null,
                                                AttachmentLabelOptions labelOptions = null,
                                                int historyRetentionDays = 0,
-                                               string bannerSignature = null)
+                                               string bannerSignature = null,
+                                               bool markAsRead = false)
         {
             if (items == null) throw new ArgumentNullException(nameof(items));
             if (resolveLiveFolder == null) throw new ArgumentNullException(nameof(resolveLiveFolder));
@@ -471,7 +497,8 @@ namespace RBLclass.Core
                     markTasksComplete: false, safetyCopy: safetyCopy,
                     bannerSignature: bannerSignature,
                     attachmentDispositions: attachmentDispositions,
-                    labelOptions: labelOptions));
+                    labelOptions: labelOptions,
+                    markAsRead: markAsRead));
 
                 if (result.ItemsProcessed > 0)
                 {

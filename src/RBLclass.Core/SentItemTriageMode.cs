@@ -19,6 +19,9 @@ namespace RBLclass.Core
         Delete = 2,
 
         /// <summary>Show the prompt so the user picks each time.</summary>
-        AskEveryTime = 3
+        AskEveryTime = 3,
+
+        /// <summary>Move the sent item to the user-configured archive folder automatically (v2.7.0.0 B2).</summary>
+        MoveToArchive = 4
     }
 }

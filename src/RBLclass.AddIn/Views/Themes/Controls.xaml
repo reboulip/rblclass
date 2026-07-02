@@ -262,4 +262,85 @@
         </Setter>
     </Style>
 
+    <!-- Small circled-i help affordance. Appearance is shared here; each use sets
+         its own localized ToolTip. Replaces the implicit TextBlock style entirely,
+         so it defines its own muted foreground. -->
+    <Style x:Key="InfoGlyph" TargetType="{x:Type TextBlock}">
+        <Setter Property="Text" Value="&#x24D8;" />
+        <Setter Property="Foreground" Value="{DynamicResource Theme.MutedForeground}" />
+        <Setter Property="FontWeight" Value="Bold" />
+        <Setter Property="Cursor" Value="Help" />
+        <Setter Property="VerticalAlignment" Value="Center" />
+        <Setter Property="Margin" Value="5,0,0,0" />
+        <Setter Property="ToolTipService.InitialShowDelay" Value="200" />
+        <Setter Property="ToolTipService.ShowDuration" Value="30000" />
+    </Style>
+
+    <!-- Left-navigation TabItem: a full-width nav row, styled like the ListBoxItem
+         above (hover = ControlBackgroundHover, selected = SelectionBackground). The
+         header text keeps the inherited Theme.Foreground so it stays readable on
+         the selection brush in both themes, and turns semibold when selected. -->
+    <Style TargetType="{x:Type TabItem}">
+        <Setter Property="Foreground" Value="{DynamicResource Theme.Foreground}" />
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="Padding" Value="10,7" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="{x:Type TabItem}">
+                    <Border x:Name="Bd"
+                            Background="{TemplateBinding Background}"
+                            CornerRadius="3" Margin="0,1"
+                            Padding="{TemplateBinding Padding}"
+                            SnapsToDevicePixels="True">
+                        <ContentPresenter ContentSource="Header"
+                                          VerticalAlignment="Center"
+                                          HorizontalAlignment="Left" />
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="Bd" Property="Background"
+                                    Value="{DynamicResource Theme.ControlBackgroundHover}" />
+                        </Trigger>
+                        <Trigger Property="IsSelected" Value="True">
+                            <Setter TargetName="Bd" Property="Background"
+                                    Value="{DynamicResource Theme.SelectionBackground}" />
+                            <Setter Property="FontWeight" Value="SemiBold" />
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!-- Left-navigation TabControl: vertical nav column on the left (items hosted
+         in a StackPanel so they stack top-to-bottom), scrollable content on the
+         right. Themed to match the rest of the dialog. -->
+    <Style TargetType="{x:Type TabControl}">
+        <Setter Property="Background" Value="{DynamicResource Theme.Background}" />
+        <Setter Property="Foreground" Value="{DynamicResource Theme.Foreground}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource Theme.ControlBorder}" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="{x:Type TabControl}">
+                    <Grid Background="{TemplateBinding Background}">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto" MinWidth="130" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <Border Grid.Column="0"
+                                Background="{DynamicResource Theme.ControlBackground}"
+                                BorderBrush="{DynamicResource Theme.ControlBorder}"
+                                BorderThickness="0,0,1,0">
+                            <StackPanel IsItemsHost="True" Margin="4" />
+                        </Border>
+                        <ContentPresenter Grid.Column="1"
+                                          ContentSource="SelectedContent"
+                                          Margin="0"
+                                          SnapsToDevicePixels="True" />
+                    </Grid>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
 </ResourceDictionary>

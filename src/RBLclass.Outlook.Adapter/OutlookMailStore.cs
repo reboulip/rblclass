@@ -157,6 +157,50 @@ namespace RBLclass.Outlook.Adapter
             }
         }
 
+        public void SelectItemsInFolder(string storeId, string entryId, IReadOnlyList<MailItemRef> items)
+        {
+            if (storeId == null || entryId == null || items == null || items.Count == 0) return;
+
+            OutlookOM.Explorer rawExplorer;
+            try { rawExplorer = _app.ActiveExplorer(); }
+            catch { rawExplorer = null; }
+            if (rawExplorer == null) return;
+
+            using (var session = new ComRef<OutlookOM.NameSpace>(_app.Session))
+            using (var explorer = new ComRef<OutlookOM.Explorer>(rawExplorer))
+            {
+                OutlookOM.Folder rawFolder;
+                try { rawFolder = (OutlookOM.Folder)session.Value.GetFolderFromID(entryId, storeId); }
+                catch { return; } // source folder no longer resolves - tolerate the miss
+
+                using (var folder = new ComRef<OutlookOM.Folder>(rawFolder))
+                {
+                    try { explorer.Value.CurrentFolder = folder.Value; }
+                    catch { return; }
+                }
+
+                // Replace whatever was selected with the moved-back items. Both
+                // ClearSelection and AddToSelection require the item to live in the
+                // now-current folder; a per-item catch tolerates any that don't.
+                try { explorer.Value.ClearSelection(); } catch { }
+
+                for (int i = 0; i < items.Count; i++)
+                {
+                    var item = items[i];
+                    if (item == null) continue;
+
+                    object rawItem;
+                    try { rawItem = session.Value.GetItemFromID(item.EntryId, item.StoreId); }
+                    catch { continue; }
+
+                    using (var comItem = new ComRef<object>(rawItem))
+                    {
+                        try { explorer.Value.AddToSelection(comItem.Value); } catch { }
+                    }
+                }
+            }
+        }
+
         public IReadOnlyList<MailItemRef> GetSelectedItems(bool includeMeetingItems = false)
         {
             var list = new List<MailItemRef>();
@@ -280,7 +324,7 @@ namespace RBLclass.Outlook.Adapter
             finally { parent?.Dispose(); }
         }
 
-        public MailItemRef CopyItemToFolder(MailItemRef item, FolderNode destination)
+        public MailItemRef CopyItemToFolder(MailItemRef item, FolderNode destination, bool markAsRead = false)
         {
             if (item == null || destination == null) return null;
 
@@ -318,6 +362,16 @@ namespace RBLclass.Outlook.Adapter
                                 var copyMail    = comCopy.Value as OutlookOM.MailItem;
                                 var copyMeeting = copyMail == null ? comCopy.Value as OutlookOM.MeetingItem : null;
                                 if (copyMail == null && copyMeeting == null) return null;
+
+                                // Mark the copy read before it is placed (v2.7.0.0 D2):
+                                // setting UnRead on the not-yet-arrived copy is race-free,
+                                // unlike a re-fetch after Move which Outlook's arrival
+                                // handling can clobber.
+                                if (markAsRead && copyMail != null)
+                                {
+                                    try { copyMail.UnRead = false; copyMail.Save(); }
+                                    catch { }
+                                }
 
                                 // Move returns the moved item; the copy reference is now
                                 // invalid (CLAUDE.md). Read the moved item's id for the
@@ -357,7 +411,7 @@ namespace RBLclass.Outlook.Adapter
             }
         }
 
-        public MailItemRef MoveItemToFolder(MailItemRef item, FolderNode destination)
+        public MailItemRef MoveItemToFolder(MailItemRef item, FolderNode destination, bool markAsRead = false)
         {
             if (item == null || destination == null) return null;
 
@@ -400,6 +454,14 @@ namespace RBLclass.Outlook.Adapter
                             Log.Information(
                                 "Classify move BEGIN (D1): item {EntryId} -> {Path}",
                                 item.EntryId, destination.FullPath);
+
+                            // Mark read before the move (v2.7.0.0 D2): the moved item
+                            // keeps its read state, so this is race-free.
+                            if (markAsRead && mail != null)
+                            {
+                                try { mail.UnRead = false; mail.Save(); }
+                                catch { }
+                            }
 
                             // Move returns the moved item; the original reference
                             // is now invalid (CLAUDE.md). No transient copy is
@@ -1344,6 +1406,50 @@ namespace RBLclass.Outlook.Adapter
             if (!TryGetFolderInfo(mail, out string storeId, out _)) return null;
 
             return new MailItemRef(storeId, entryId, Safe(() => mail.Subject, string.Empty));
+        }
+
+        public FolderNode GetFolderByEntryId(string storeId, string entryId)
+        {
+            if (string.IsNullOrEmpty(storeId) || string.IsNullOrEmpty(entryId)) return null;
+
+            using (var session = new ComRef<OutlookOM.NameSpace>(_app.Session))
+            {
+                OutlookOM.Folder rawFolder;
+                try { rawFolder = (OutlookOM.Folder)session.Value.GetFolderFromID(entryId, storeId); }
+                catch { return null; } // no longer resolves - tolerate the miss
+
+                using (var folder = new ComRef<OutlookOM.Folder>(rawFolder))
+                    return DescribeFolder(folder.Value);
+            }
+        }
+
+        public FolderNode PickFolder()
+        {
+            using (var session = new ComRef<OutlookOM.NameSpace>(_app.Session))
+            {
+                OutlookOM.Folder rawFolder;
+                try { rawFolder = (OutlookOM.Folder)session.Value.PickFolder(); }
+                catch { return null; }
+
+                if (rawFolder == null) return null; // user cancelled
+
+                using (var folder = new ComRef<OutlookOM.Folder>(rawFolder))
+                    return DescribeFolder(folder.Value);
+            }
+        }
+
+        /// <summary>Build a FolderNode from a live folder (v2.7.0.0 B2 archive picker/resolve).</summary>
+        private FolderNode DescribeFolder(OutlookOM.Folder folder)
+        {
+            string storeId = Safe(() => folder.StoreID, null);
+            string entryId = Safe(() => folder.EntryID, null);
+            if (storeId == null || entryId == null) return null;
+
+            string name = Safe(() => folder.Name, string.Empty);
+            string fullPath = Safe(() => folder.FolderPath, name);
+            int subCount = SafeSubfolderCount(folder);
+            return new FolderNode(storeId, entryId, parentEntryId: null,
+                                  name: name, fullPath: fullPath ?? name, isLeaf: subCount == 0);
         }
 
         public FolderNode GetInboxFolder()

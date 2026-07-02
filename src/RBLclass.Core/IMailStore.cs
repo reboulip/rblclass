@@ -36,6 +36,17 @@ namespace RBLclass.Core
         void NavigateTo(string storeId, string entryId, bool newWindow);
 
         /// <summary>
+        /// Navigate the active explorer to the folder (storeId, entryId) and make
+        /// <paramref name="items"/> its current selection, so the user sees them
+        /// selected and ready to act on (v2.7.0.0 A1: after Undo the moved-back
+        /// mail is shown selected in its source folder, ready to re-file
+        /// elsewhere). Best-effort - items that no longer resolve are skipped, and
+        /// it is a no-op when there is no active explorer. Touches COM - call on
+        /// the Outlook UI thread.
+        /// </summary>
+        void SelectItemsInFolder(string storeId, string entryId, IReadOnlyList<MailItemRef> items);
+
+        /// <summary>
         /// The items currently selected in the active explorer. When
         /// <paramref name="includeMeetingItems"/> is true, MeetingItem objects are
         /// included (with <see cref="MailItemRef.IsMeetingItem"/> set) alongside MailItems;
@@ -47,9 +58,11 @@ namespace RBLclass.Core
         /// Place a copy of <paramref name="item"/> into <paramref name="destination"/>
         /// (Outlook Copy-then-Move; the original is untouched) and return a
         /// reference to the filed copy, or null on failure. Honour the rule that
-        /// Move invalidates the moved reference.
+        /// Move invalidates the moved reference. When <paramref name="markAsRead"/>
+        /// is true, the filed copy is marked read as part of filing - set on the
+        /// copy before it is placed, so it is race-free (v2.7.0.0 D2).
         /// </summary>
-        MailItemRef CopyItemToFolder(MailItemRef item, FolderNode destination);
+        MailItemRef CopyItemToFolder(MailItemRef item, FolderNode destination, bool markAsRead = false);
 
         /// <summary>
         /// Move <paramref name="item"/> into <paramref name="destination"/> and
@@ -59,12 +72,28 @@ namespace RBLclass.Core
         /// is how classify files the original when "keep a copy" is off (the
         /// old copy-then-delete dance made the Stormshield add-in chase
         /// vanishing items and throw MAPI_E_NOT_FOUND). Honour the rule that
-        /// Move invalidates the moved reference.
+        /// Move invalidates the moved reference. When <paramref name="markAsRead"/>
+        /// is true, the item is marked read as part of filing (v2.7.0.0 D2).
         /// </summary>
-        MailItemRef MoveItemToFolder(MailItemRef item, FolderNode destination);
+        MailItemRef MoveItemToFolder(MailItemRef item, FolderNode destination, bool markAsRead = false);
 
         /// <summary>Delete a mail item (sent-item triage "Delete"; classify no longer deletes).</summary>
         void DeleteItem(MailItemRef item);
+
+        /// <summary>
+        /// Resolve a folder by its stable (storeId, entryId) pair, or null when it
+        /// no longer resolves (store closed, entry gone). Used to resolve the
+        /// persisted sent-item archive folder (v2.7.0.0 B2). Touches COM - call on
+        /// the Outlook UI thread.
+        /// </summary>
+        FolderNode GetFolderByEntryId(string storeId, string entryId);
+
+        /// <summary>
+        /// Show the Outlook native folder-picker dialog (NameSpace.PickFolder) and
+        /// return the chosen folder as a FolderNode, or null when the user cancels
+        /// (v2.7.0.0 B2). Touches COM - call on the Outlook UI thread.
+        /// </summary>
+        FolderNode PickFolder();
 
         /// <summary>
         /// Resolve a store's Deleted Items folder as a filing destination (the

@@ -51,6 +51,7 @@ namespace RBLclass.AddIn.ViewModels
             {
                 new TriageModeOption(SentItemTriageMode.AskEveryTime, _loc.GetString("Settings_TriageMode_AskEveryTime")),
                 new TriageModeOption(SentItemTriageMode.MoveToInbox, _loc.GetString("Settings_TriageMode_MoveToInbox")),
+                new TriageModeOption(SentItemTriageMode.MoveToArchive, _loc.GetString("Settings_TriageMode_MoveToArchive")),
                 new TriageModeOption(SentItemTriageMode.Delete, _loc.GetString("Settings_TriageMode_Delete")),
                 new TriageModeOption(SentItemTriageMode.Leave, _loc.GetString("Settings_TriageMode_Leave")),
             };
@@ -160,10 +161,38 @@ namespace RBLclass.AddIn.ViewModels
             set => Apply(_settings.AllResults, value, v => _settings.AllResults = v);
         }
 
-        public bool AutoExpandResults
+        /// <summary>
+        /// Default rendering of search-result rows (v2.7.0.0 C1): a single
+        /// left-trimmed line, the full path wrapped on pane width, or one
+        /// sub-folder per line. The per-row ⤢ button cycles through the three
+        /// starting from this default.
+        /// </summary>
+        public bool PathDisplayIsOneLine
         {
-            get => _settings.AutoExpandResults;
-            set => Apply(_settings.AutoExpandResults, value, v => _settings.AutoExpandResults = v);
+            get => _settings.SearchPathDisplayMode == SearchPathDisplayMode.OneLine;
+            set { if (value) UpdatePathDisplayMode(SearchPathDisplayMode.OneLine); }
+        }
+
+        public bool PathDisplayIsWrapped
+        {
+            get => _settings.SearchPathDisplayMode == SearchPathDisplayMode.Wrapped;
+            set { if (value) UpdatePathDisplayMode(SearchPathDisplayMode.Wrapped); }
+        }
+
+        public bool PathDisplayIsPerSegment
+        {
+            get => _settings.SearchPathDisplayMode == SearchPathDisplayMode.PerSegment;
+            set { if (value) UpdatePathDisplayMode(SearchPathDisplayMode.PerSegment); }
+        }
+
+        private void UpdatePathDisplayMode(SearchPathDisplayMode mode)
+        {
+            if (_settings.SearchPathDisplayMode == mode) return;
+            _settings.SearchPathDisplayMode = mode;
+            _settings.Save(_store);
+            OnPropertyChanged(nameof(PathDisplayIsOneLine));
+            OnPropertyChanged(nameof(PathDisplayIsWrapped));
+            OnPropertyChanged(nameof(PathDisplayIsPerSegment));
         }
 
         /// <summary>
@@ -292,6 +321,27 @@ namespace RBLclass.AddIn.ViewModels
         {
             get => _settings.ClassifyMeetingItems;
             set => Apply(_settings.ClassifyMeetingItems, value, v => _settings.ClassifyMeetingItems = v);
+        }
+
+        /// <summary>When true, the filed copy of each classified mail is marked as read (v2.7.0.0 D2, default off).</summary>
+        public bool MarkAsReadOnClassify
+        {
+            get => _settings.MarkAsReadOnClassify;
+            set => Apply(_settings.MarkAsReadOnClassify, value, v => _settings.MarkAsReadOnClassify = v);
+        }
+
+        /// <summary>Opt-in: check the configured URL for a newer version at startup (v2.7.0.0 E1, default off).</summary>
+        public bool UpdateCheckEnabled
+        {
+            get => _settings.UpdateCheckEnabled;
+            set => Apply(_settings.UpdateCheckEnabled, value, v => _settings.UpdateCheckEnabled = v);
+        }
+
+        /// <summary>URL of the plain-text version marker checked at startup (v2.7.0.0 E1).</summary>
+        public string UpdateCheckUrl
+        {
+            get => _settings.UpdateCheckUrl;
+            set => Apply(_settings.UpdateCheckUrl, value ?? string.Empty, v => _settings.UpdateCheckUrl = v);
         }
 
         public bool SendExternalWarning
@@ -458,6 +508,40 @@ namespace RBLclass.AddIn.ViewModels
             set => Apply(_settings.ClassifyAfterMoveToInbox, value, v => _settings.ClassifyAfterMoveToInbox = v);
         }
 
+        /// <summary>
+        /// Display path of the archive folder used by the "Move to archive folder"
+        /// triage mode (v2.7.0.0 B2), or a "not configured"/"stale" placeholder.
+        /// </summary>
+        public string SentItemTriageArchiveFolderPath =>
+            string.IsNullOrEmpty(_settings.SentItemTriageArchiveEntryId)
+                ? _loc.GetString("Settings_TriageArchiveFolder_NotSet")
+                : string.IsNullOrEmpty(_settings.SentItemTriageArchivePath)
+                    ? _loc.GetString("Settings_TriageArchiveFolder_Stale")
+                    : _settings.SentItemTriageArchivePath;
+
+        /// <summary>Show the Outlook folder picker and persist the chosen archive folder (v2.7.0.0 B2).</summary>
+        public void PickArchiveFolder()
+        {
+            var folder = TaskPaneServices.PickOutlookFolder?.Invoke();
+            if (folder == null) return; // cancelled
+
+            _settings.SentItemTriageArchiveStoreId = folder.StoreId;
+            _settings.SentItemTriageArchiveEntryId = folder.EntryId;
+            _settings.SentItemTriageArchivePath = folder.FullPath;
+            _settings.Save(_store);
+            OnPropertyChanged(nameof(SentItemTriageArchiveFolderPath));
+        }
+
+        /// <summary>Clear the configured archive folder (v2.7.0.0 B2).</summary>
+        public void ClearArchiveFolder()
+        {
+            _settings.SentItemTriageArchiveStoreId = string.Empty;
+            _settings.SentItemTriageArchiveEntryId = string.Empty;
+            _settings.SentItemTriageArchivePath = string.Empty;
+            _settings.Save(_store);
+            OnPropertyChanged(nameof(SentItemTriageArchiveFolderPath));
+        }
+
         /// <summary>Options for the language dropdown (Auto/English/Français/Deutsch), Phase E.</summary>
         public IReadOnlyList<UiLanguageOption> UiLanguages { get; }
 
@@ -470,6 +554,11 @@ namespace RBLclass.AddIn.ViewModels
             get => _settings.PreferredUiLanguage;
             set => Apply(_settings.PreferredUiLanguage, value, v => _settings.PreferredUiLanguage = v);
         }
+
+        /// <summary>Read-only "RBLclass version X.Y.Z.B" line shown in the General tab's About section.</summary>
+        public string AboutVersion =>
+            _loc.GetString("Settings_About_Version",
+                System.Reflection.Assembly.GetExecutingAssembly().GetName().Version);
 
         /// <summary>
         /// Change-detect, mutate the snapshot, notify and persist as a unit -

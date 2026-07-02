@@ -50,15 +50,23 @@ namespace RBLclass.Core.Tests
             settings.ForgottenAttachmentKeywords.Should().Equal("attach", "enclos", "joint", "PJ");
             settings.SentItemTriageMode.Should().Be(SentItemTriageMode.AskEveryTime);
             settings.ClassifyAfterMoveToInbox.Should().BeTrue();
+            settings.SentItemTriageArchiveStoreId.Should().BeEmpty();
+            settings.SentItemTriageArchiveEntryId.Should().BeEmpty();
+            settings.SentItemTriageArchivePath.Should().BeEmpty();
             settings.AttachmentRemovalMode.Should().Be(AttachmentRemovalMode.Modal);
             settings.AttachmentLabelLocation.Should().Be(AttachmentLabelLocation.Body);
             settings.MinSearchLength.Should().Be(FolderSearchOptions.DefaultMinQueryLength);
             settings.SearchDebounceMs.Should().Be(Settings.DefaultSearchDebounceMs);
             settings.PreferredUiLanguage.Should().Be("Auto");
-            settings.AutoExpandResults.Should().BeFalse();
+            settings.SearchPathDisplayMode.Should().Be(SearchPathDisplayMode.OneLine);
             settings.AutoClassHistoryDays.Should().Be(Settings.DefaultAutoClassHistoryDays);
             settings.StripBannerOnAutoClassify.Should().BeFalse();
             settings.ClassifyMeetingItems.Should().BeFalse();
+            settings.MarkAsReadOnClassify.Should().BeFalse();
+            settings.UpdateCheckEnabled.Should().BeFalse();
+            settings.UpdateCheckUrl.Should().BeEmpty();
+            settings.UpdateCheckLastSeenVersion.Should().BeEmpty();
+            settings.UpdateCheckDismissedUtc.Should().BeEmpty();
         }
 
         [Fact]
@@ -82,14 +90,22 @@ namespace RBLclass.Core.Tests
                 ForgottenAttachmentKeywords = new[] { "pièce jointe", "ci-joint" },
                 SentItemTriageMode = SentItemTriageMode.Delete,
                 ClassifyAfterMoveToInbox = false,
+                SentItemTriageArchiveStoreId = "STORE123",
+                SentItemTriageArchiveEntryId = "ENTRY456",
+                SentItemTriageArchivePath = "Archive / 2024",
                 AttachmentRemovalMode = AttachmentRemovalMode.DeleteSilently,
                 AttachmentLabelLocation = AttachmentLabelLocation.InfoBar,
                 MinSearchLength = 3,
                 SearchDebounceMs = 450,
-                AutoExpandResults = true,
+                SearchPathDisplayMode = SearchPathDisplayMode.PerSegment,
                 AutoClassHistoryDays = 180,
                 StripBannerOnAutoClassify = true,
                 ClassifyMeetingItems = true,
+                MarkAsReadOnClassify = true,
+                UpdateCheckEnabled = true,
+                UpdateCheckUrl = "https://intranet/rblclass/version.txt",
+                UpdateCheckLastSeenVersion = "2.9.0.0",
+                UpdateCheckDismissedUtc = "2026-07-02T10:00:00.0000000Z",
                 PreferredUiLanguage = "fr"
             };
 
@@ -112,14 +128,22 @@ namespace RBLclass.Core.Tests
             reloaded.ForgottenAttachmentKeywords.Should().Equal("pièce jointe", "ci-joint");
             reloaded.SentItemTriageMode.Should().Be(SentItemTriageMode.Delete);
             reloaded.ClassifyAfterMoveToInbox.Should().BeFalse();
+            reloaded.SentItemTriageArchiveStoreId.Should().Be("STORE123");
+            reloaded.SentItemTriageArchiveEntryId.Should().Be("ENTRY456");
+            reloaded.SentItemTriageArchivePath.Should().Be("Archive / 2024");
             reloaded.AttachmentRemovalMode.Should().Be(AttachmentRemovalMode.DeleteSilently);
             reloaded.AttachmentLabelLocation.Should().Be(AttachmentLabelLocation.InfoBar);
             reloaded.MinSearchLength.Should().Be(3);
             reloaded.SearchDebounceMs.Should().Be(450);
-            reloaded.AutoExpandResults.Should().BeTrue();
+            reloaded.SearchPathDisplayMode.Should().Be(SearchPathDisplayMode.PerSegment);
             reloaded.AutoClassHistoryDays.Should().Be(180);
             reloaded.StripBannerOnAutoClassify.Should().BeTrue();
             reloaded.ClassifyMeetingItems.Should().BeTrue();
+            reloaded.MarkAsReadOnClassify.Should().BeTrue();
+            reloaded.UpdateCheckEnabled.Should().BeTrue();
+            reloaded.UpdateCheckUrl.Should().Be("https://intranet/rblclass/version.txt");
+            reloaded.UpdateCheckLastSeenVersion.Should().Be("2.9.0.0");
+            reloaded.UpdateCheckDismissedUtc.Should().Be("2026-07-02T10:00:00.0000000Z");
             reloaded.PreferredUiLanguage.Should().Be("fr");
         }
 
@@ -162,6 +186,26 @@ namespace RBLclass.Core.Tests
         {
             _store.Set(SettingsKeys.SearchDebounceMs, stored);
             Settings.Load(_store).SearchDebounceMs.Should().Be(expected);
+        }
+
+        [Theory]
+        [InlineData(true, SearchPathDisplayMode.PerSegment)]
+        [InlineData(false, SearchPathDisplayMode.OneLine)]
+        public void Load_migrates_the_legacy_auto_expand_flag_when_no_path_mode_is_stored(
+            bool legacyAutoExpand, SearchPathDisplayMode expected)
+        {
+            _store.SetBool(SettingsKeys.AutoExpandResults, legacyAutoExpand);
+
+            Settings.Load(_store).SearchPathDisplayMode.Should().Be(expected);
+        }
+
+        [Fact]
+        public void Load_prefers_a_stored_path_display_mode_over_the_legacy_auto_expand_flag()
+        {
+            _store.SetBool(SettingsKeys.AutoExpandResults, true); // legacy would map to PerSegment
+            _store.Set(SettingsKeys.SearchPathDisplayMode, SearchPathDisplayMode.Wrapped.ToString());
+
+            Settings.Load(_store).SearchPathDisplayMode.Should().Be(SearchPathDisplayMode.Wrapped);
         }
 
         [Theory]

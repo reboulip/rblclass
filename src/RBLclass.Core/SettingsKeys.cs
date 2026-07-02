@@ -114,6 +114,24 @@ namespace RBLclass.Core
         public const string ClassifyAfterMoveToInbox = "ClassifyAfterMoveToInbox";
 
         /// <summary>
+        /// StoreId of the folder sent mail is moved to when SentItemTriageMode is
+        /// MoveToArchive (v2.7.0.0 B2). Empty when not configured.
+        /// </summary>
+        public const string SentItemTriageArchiveStoreId = "SentItemTriageArchiveStoreId";
+
+        /// <summary>
+        /// EntryId of the archive folder for MoveToArchive triage (v2.7.0.0 B2).
+        /// Empty when not configured.
+        /// </summary>
+        public const string SentItemTriageArchiveEntryId = "SentItemTriageArchiveEntryId";
+
+        /// <summary>
+        /// Display path of the archive folder (v2.7.0.0 B2), stored so the Settings
+        /// dialog can show it without a COM round-trip. Empty when not configured.
+        /// </summary>
+        public const string SentItemTriageArchivePath = "SentItemTriageArchivePath";
+
+        /// <summary>
         /// Semicolon-separated Windows directory paths the user has marked as
         /// favourites for saving attachments (v2.4.0.0 F1). The expanded
         /// sub-directory index lives separately in SQLite; this holds only the
@@ -150,5 +168,28 @@ namespace RBLclass.Core
 
         /// <summary>When true, MeetingItem objects in the explorer selection are classified alongside MailItems (v2.6.0.0 C1, default off).</summary>
         public const string ClassifyMeetingItems = "ClassifyMeetingItems";
+
+        /// <summary>When true, each classified mail is marked as read on the filed copy (v2.7.0.0 D2, default off).</summary>
+        public const string MarkAsReadOnClassify = "MarkAsReadOnClassify";
+
+        /// <summary>Opt-in: check an HTTPS URL for a newer version at startup (v2.7.0.0 E1, default off — no network calls without consent).</summary>
+        public const string UpdateCheckEnabled = "UpdateCheckEnabled";
+
+        /// <summary>URL of the plain-text version marker on the internal HTTPS share (v2.7.0.0 E1). Empty disables the check.</summary>
+        public const string UpdateCheckUrl = "UpdateCheckUrl";
+
+        /// <summary>The latest version already shown and dismissed (v2.7.0.0 E1); suppression is time-limited, see <see cref="UpdateCheckDismissedUtc"/>.</summary>
+        public const string UpdateCheckLastSeenVersion = "UpdateCheckLastSeenVersion";
+
+        /// <summary>UTC timestamp (round-trip "o") of the last banner dismissal (v2.7.0.0 E1). The same version is re-shown once the snooze window elapses.</summary>
+        public const string UpdateCheckDismissedUtc = "UpdateCheckDismissedUtc";
+
+        /// <summary>
+        /// Default rendering of search-result rows (v2.7.0.0 C1): the string form
+        /// of <see cref="SearchPathDisplayMode"/> (OneLine / Wrapped / PerSegment).
+        /// Absent value migrates from the legacy <see cref="AutoExpandResults"/>
+        /// flag. Default is OneLine.
+        /// </summary>
+        public const string SearchPathDisplayMode = "SearchPathDisplayMode";
     }
 }

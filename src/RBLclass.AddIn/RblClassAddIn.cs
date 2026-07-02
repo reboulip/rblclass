@@ -67,6 +67,9 @@ namespace RBLclass.AddIn
         private Office.ICTPFactory _ctpFactory;
         private Office.CustomTaskPane _taskPane;
 
+        // Opt-in update check (v2.7.0.0 E1); null until startup wires it.
+        private IUpdateCheckService _updateCheckService;
+
         // Kept in a field so the SelectionChange handler keeps firing (GC would
         // otherwise collect the event source - CLAUDE.md Outlook-events rule).
         private OutlookOM.Explorer _activeExplorer;
@@ -210,6 +213,26 @@ namespace RBLclass.AddIn
                         Log.Error(ex, "NavigateTo failed for {Path}", folder.FullPath);
                     }
                 };
+                TaskPaneServices.SelectItemsInFolder = (storeId, entryId, items) =>
+                {
+                    try
+                    {
+                        _mailStore.SelectItemsInFolder(storeId, entryId, items);
+                    }
+                    catch (Exception ex)
+                    {
+                        Log.Error(ex, "SelectItemsInFolder failed for {Store}/{Entry}", storeId, entryId);
+                    }
+                };
+                TaskPaneServices.PickOutlookFolder = () =>
+                {
+                    try { return _mailStore.PickFolder(); }
+                    catch (Exception ex)
+                    {
+                        TryLog("PickOutlookFolder failed", ex);
+                        return null;
+                    }
+                };
                 TaskPaneServices.PromptForName = parentFolderName =>
                 {
                     var prompt = new NamePromptWindow(parentFolderName);
@@ -351,12 +374,72 @@ namespace RBLclass.AddIn
                 // First run only: schedule the live walk just after startup.
                 if (_lastIndexResult.Source == IndexSource.NeedsWalk)
                     ScheduleFirstRunWalk();
+
+                // Show the pane at its registered dock position on startup so it is
+                // ready to use without a click (v2.7.0.0 A2 / #31).
+                EnsureTaskPane();
+                if (_taskPane != null)
+                {
+                    _taskPane.Visible = true;
+                    TaskPaneServices.Host?.RefreshOnShow();
+                }
+
+                // Opt-in update check (v2.7.0.0 E1): off by default, runs on the
+                // thread pool so it never delays startup or blocks the STA.
+                _updateCheckService = new HttpUpdateCheckService();
+                ScheduleUpdateCheck();
             }
             catch (Exception ex)
             {
                 TryLog("OnStartupComplete failed", ex);
                 ShowError("OnStartupComplete failed", ex);
             }
+        }
+
+        /// <summary>
+        /// Opt-in update check (v2.7.0.0 E1). Off unless the user enabled it and set
+        /// a URL. Fetches a plain-text version marker on the thread pool with a short
+        /// timeout, and — only if it names a newer, not-yet-dismissed version —
+        /// marshals back to the WPF dispatcher to show the in-pane banner. Any
+        /// failure (disabled, no URL, network down, timeout, parse) is silent.
+        /// </summary>
+        private void ScheduleUpdateCheck()
+        {
+            var settings = Settings.Load(_settingsStore);
+            if (!settings.UpdateCheckEnabled || string.IsNullOrWhiteSpace(settings.UpdateCheckUrl))
+                return;
+
+            var url = settings.UpdateCheckUrl;
+            var lastSeen = settings.UpdateCheckLastSeenVersion;
+            DateTime? dismissedUtc = null;
+            if (DateTime.TryParse(settings.UpdateCheckDismissedUtc,
+                    System.Globalization.CultureInfo.InvariantCulture,
+                    System.Globalization.DateTimeStyles.RoundtripKind, out var parsedDismissed))
+                dismissedUtc = parsedDismissed;
+            var current = Assembly.GetExecutingAssembly().GetName().Version;
+            var service = _updateCheckService;
+            var uiDispatcher = System.Windows.Threading.Dispatcher.CurrentDispatcher;
+
+            _ = System.Threading.Tasks.Task.Run(async () =>
+            {
+                try
+                {
+                    using (var cts = new System.Threading.CancellationTokenSource(TimeSpan.FromSeconds(5)))
+                    {
+                        string raw = await service.GetLatestVersionAsync(url, cts.Token);
+                        if (!UpdateCheck.ShouldNotify(current, raw, lastSeen, dismissedUtc,
+                                DateTime.UtcNow, UpdateCheck.DismissWindow, out Version remote))
+                            return;
+
+                        _ = uiDispatcher.BeginInvoke(new Action(() =>
+                            TaskPaneServices.Host?.ShowUpdateBanner(remote.ToString())));
+                    }
+                }
+                catch (Exception ex)
+                {
+                    TryLog("Update check failed", ex);
+                }
+            });
         }
 
         public void OnBeginShutdown(ref Array custom)
@@ -593,7 +676,8 @@ namespace RBLclass.AddIn
             {
                 if (_suppressSentItemTriage) return;
 
-                var mode = Settings.Load(_settingsStore).SentItemTriageMode;
+                var settings = Settings.Load(_settingsStore);
+                var mode = settings.SentItemTriageMode;
                 if (mode == SentItemTriageMode.Leave) return;
 
                 var reference = _mailStore.ResolveMailItem(item);
@@ -602,17 +686,25 @@ namespace RBLclass.AddIn
                 SentItemTriageAction action;
                 if (mode == SentItemTriageMode.AskEveryTime)
                 {
-                    var triageVm = new SentItemTriageViewModel(reference.Subject);
+                    string archivePath = string.IsNullOrEmpty(settings.SentItemTriageArchiveEntryId)
+                        ? null : settings.SentItemTriageArchivePath;
+                    var triageVm = new SentItemTriageViewModel(reference.Subject, archivePath);
                     new SentItemTriageWindow { DataContext = triageVm }.ShowDialog();
                     if (triageVm.SelectedAction == null || triageVm.SelectedAction == SentItemTriageAction.Leave)
                         return;
                     action = triageVm.SelectedAction.Value;
                 }
+                else if (mode == SentItemTriageMode.Delete)
+                {
+                    action = SentItemTriageAction.Delete;
+                }
+                else if (mode == SentItemTriageMode.MoveToArchive)
+                {
+                    action = SentItemTriageAction.MoveToArchive;
+                }
                 else
                 {
-                    action = mode == SentItemTriageMode.Delete
-                        ? SentItemTriageAction.Delete
-                        : SentItemTriageAction.MoveToInbox;
+                    action = SentItemTriageAction.MoveToInbox;
                 }
 
                 _suppressSentItemTriage = true;
@@ -636,6 +728,29 @@ namespace RBLclass.AddIn
                 case SentItemTriageAction.Delete:
                     _mailStore.DeleteItem(item);
                     Log.Information("Sent-item triage deleted the sent mail.");
+                    break;
+
+                case SentItemTriageAction.MoveToArchive:
+                    var archiveSettings = Settings.Load(_settingsStore);
+                    var archiveFolder = string.IsNullOrEmpty(archiveSettings.SentItemTriageArchiveEntryId)
+                        ? null
+                        : _mailStore.GetFolderByEntryId(
+                            archiveSettings.SentItemTriageArchiveStoreId,
+                            archiveSettings.SentItemTriageArchiveEntryId);
+                    if (archiveFolder == null)
+                    {
+                        Log.Warning("Sent-item triage: archive folder not configured or no longer resolves; leaving mail in Sent Items.");
+                        return;
+                    }
+                    var archiveResult = _classifier.Classify(
+                        new ClassifyRequest(new[] { item }, new[] { archiveFolder },
+                                            keepCopy: false, removeAttachments: false,
+                                            markTasksComplete: false,
+                                            safetyCopy: _settingsStore.GetBool(
+                                                SettingsKeys.ClassifySafetyCopy, false)));
+                    Log.Information(
+                        "Sent-item triage moved {Processed} mail(s) to archive folder '{Path}' ({Errors} failed).",
+                        archiveResult.ItemsProcessed, archiveFolder.FullPath, archiveResult.Errors);
                     break;
 
                 case SentItemTriageAction.MoveToInbox:

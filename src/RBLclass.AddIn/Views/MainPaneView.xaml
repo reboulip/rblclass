@@ -7,7 +7,8 @@
              xmlns:v="clr-namespace:RBLclass.AddIn.Views"
              xmlns:loc="clr-namespace:RBLclass.AddIn.Localization"
              xmlns:core="clr-namespace:RBLclass.Core;assembly=RBLclass.Core"
-             d:DesignHeight="520" d:DesignWidth="320">
+             d:DesignHeight="520" d:DesignWidth="320"
+             PreviewKeyDown="MainPane_PreviewKeyDown">
     <UserControl.Resources>
         <!-- Side-profile pink pig (like 🐖) — easter egg button image (v2.6.0.0 A1).
              WPF .NET FW 4.8 renders emoji monochrome via GDI; DrawingImage is the
@@ -48,6 +49,17 @@
             </Grid.RowDefinitions>
 
             <StackPanel Grid.Row="0" Margin="0,0,0,6">
+                <!-- v2.7.0.0 E1: opt-in "a newer version is available" banner. -->
+                <Border Background="#FF8C00" CornerRadius="4" Padding="8,6" Margin="0,0,0,6"
+                        Visibility="{Binding HasUpdateAvailable, Converter={StaticResource BoolToVis}}">
+                    <DockPanel LastChildFill="True">
+                        <Button DockPanel.Dock="Right" Content="{loc:Loc Key=MainPane_UpdateAvailable_Dismiss}"
+                                Background="Transparent" BorderThickness="0" Foreground="White"
+                                Padding="4,0" VerticalAlignment="Top" Click="DismissUpdate_Click" />
+                        <TextBlock Foreground="White" FontWeight="Bold" TextWrapping="Wrap"
+                                   VerticalAlignment="Center" Text="{Binding UpdateBannerText}" />
+                    </DockPanel>
+                </Border>
                 <!-- E1: prominent, width-adapting banner for a pinned just-sent mail. -->
                 <Border Background="#0078D4" CornerRadius="4" Padding="8,6" Margin="0,0,0,6"
                         Visibility="{Binding HasPinnedItem, Converter={StaticResource BoolToVis}}">
@@ -133,13 +145,16 @@
                             <CheckBox IsChecked="{Binding IsSelected}"
                                       HorizontalContentAlignment="Stretch" VerticalContentAlignment="Center">
                                 <Grid>
-                                    <!-- Collapsed: single left-trimmed line. -->
+                                    <!-- Mode 1 (OneLine): single left-trimmed line. -->
                                     <TextBlock v:PathTrim.FullPath="{Binding DisplayPath}"
                                                v:PathTrim.RightReserve="52"
-                                               Visibility="{Binding IsExpanded, Converter={StaticResource InverseBoolToVis}}" />
-                                    <!-- Expanded: full path, one segment per line, no indentation. -->
+                                               Visibility="{Binding IsOneLine, Converter={StaticResource BoolToVis}}" />
+                                    <!-- Mode 2 (Wrapped): full path on one line, wrapping on pane width. -->
+                                    <TextBlock Text="{Binding DisplayPath}" TextWrapping="Wrap"
+                                               Visibility="{Binding IsWrapped, Converter={StaticResource BoolToVis}}" />
+                                    <!-- Mode 3 (PerSegment): full path, one segment per line, no indentation. -->
                                     <ItemsControl ItemsSource="{Binding PathSegments}"
-                                                  Visibility="{Binding IsExpanded, Converter={StaticResource BoolToVis}}">
+                                                  Visibility="{Binding IsPerSegment, Converter={StaticResource BoolToVis}}">
                                         <ItemsControl.ItemTemplate>
                                             <DataTemplate>
                                                 <TextBlock Text="{Binding}" TextWrapping="Wrap" />

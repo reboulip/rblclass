@@ -5,9 +5,9 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:loc="clr-namespace:RBLclass.AddIn.Localization"
-        Title="{loc:Loc Key=SentTriage_Title}" Height="180" Width="380"
+        Title="{loc:Loc Key=SentTriage_Title}" Height="290" Width="380"
         WindowStartupLocation="CenterOwner" ResizeMode="NoResize"
-        d:DesignHeight="180" d:DesignWidth="380">
+        d:DesignHeight="290" d:DesignWidth="380">
     <Grid Margin="12">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />
@@ -20,10 +20,16 @@
         <TextBlock Grid.Row="1" Margin="0,4,0,8" Style="{DynamicResource MutedText}"
                    Text="{Binding Subject}" TextTrimming="CharacterEllipsis" />
 
-        <UniformGrid Grid.Row="2" Columns="3" Rows="1" VerticalAlignment="Top">
-            <Button Margin="4" Padding="8,6" Content="{loc:Loc Key=SentTriage_MoveToInbox_Button}" Command="{Binding MoveToInboxCommand}" />
-            <Button Margin="4" Padding="8,6" Content="{loc:Loc Key=SentTriage_Delete_Button}" Command="{Binding DeleteCommand}" />
-            <Button Margin="4" Padding="8,6" Content="{loc:Loc Key=SentTriage_Leave_Button}" Command="{Binding LeaveCommand}" />
-        </UniformGrid>
+        <StackPanel Grid.Row="2" VerticalAlignment="Top">
+            <Button Margin="0,0,0,4" Padding="8,6" HorizontalAlignment="Stretch"
+                    Content="{loc:Loc Key=SentTriage_MoveToInbox_Button}" Command="{Binding MoveToInboxCommand}" />
+            <Button Margin="0,0,0,4" Padding="8,6" HorizontalAlignment="Stretch"
+                    Content="{loc:Loc Key=SentTriage_Delete_Button}" Command="{Binding DeleteCommand}" />
+            <Button Margin="0,0,0,4" Padding="8,6" HorizontalAlignment="Stretch"
+                    Content="{loc:Loc Key=SentTriage_Leave_Button}" Command="{Binding LeaveCommand}" />
+            <Button Margin="0" Padding="8,6" HorizontalAlignment="Stretch"
+                    IsEnabled="{Binding HasArchiveFolder}"
+                    Content="{Binding MoveToArchiveButtonLabel}" Command="{Binding MoveToArchiveCommand}" />
+        </StackPanel>
     </Grid>
 </Window>

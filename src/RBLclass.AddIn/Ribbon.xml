@@ -2,10 +2,11 @@
 <customUI xmlns="http://schemas.microsoft.com/office/2009/07/customui">
   <ribbon>
     <tabs>
-      <tab id="RBLclassTab" label="RBLclass">
+      <tab id="RBLclassTab" label="RBLclass" keytip="R">
         <group id="RBLclassGroup" label="RBLclass">
           <button id="TogglePaneButton"
                   label="RBLclass pane"
+                  keytip="R"
                   size="large"
                   imageMso="MoveToFolder"
                   onAction="OnTogglePaneClick"

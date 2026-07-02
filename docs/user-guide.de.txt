@@ -1,0 +1,173 @@
+= RBLclass — Benutzerhandbuch =
+
+RBLclass ist ein Outlook-Add-in, das E-Mails schnell in Ordner über Ihre Postfächer und PST-Archive hinweg ablegt (klassifiziert), mit einer schnellen Stichwortsuche über den gesamten Ordnerbaum. Es fügt rechts in Outlook einen Aufgabenbereich und ein Menüband-Register '''RBLclass''' hinzu.
+
+== Erste Schritte ==
+
+Der RBLclass-Bereich öffnet sich automatisch beim Start von Outlook. Wenn Sie ihn schließen, bietet das Menüband-Register '''RBLclass''' vier Schaltflächen:
+
+* '''RBLclass-Bereich''' — den Bereich ein-/ausblenden.
+* '''Ordner aktualisieren''' — Postfächer neu einlesen, damit direkt in Outlook erstellte oder umbenannte Ordner in der Suche erscheinen.
+* '''Einstellungen''' — alle Optionen (siehe unten).
+* '''Info''' — Version, Autor und technische Angaben.
+
+Tastaturzugriff auf den Bereich: '''Alt''', dann '''R''' (Register RBLclass), dann erneut '''R''' (Bereichsschaltfläche).
+
+== Funktionen ==
+
+=== Ordnersuche ===
+
+Geben Sie Stichwörter in das Suchfeld oben im Bereich ein. Die Ergebnisse erscheinen nach einer kurzen Pause. Pro Ergebniszeile:
+
+* '''Einfachklick''' auf die Zeile markiert sie als Ablageziel (mehrere markieren, um in alle gleichzeitig abzulegen).
+* '''Eingabe''' legt die ausgewählte E-Mail in den markierten Ordner ab.
+* '''Strg+Eingabe''' ''öffnet'' den markierten Ordner in Outlook, statt abzulegen.
+* '''Doppelklick''' auf eine Zeile legt sofort in diesen Ordner ab.
+* Die Schaltfläche '''↗''' öffnet diesen Ordner in Outlook.
+* Rechtsklick → '''Unterordner hinzufügen…''' erstellt einen Unterordner darunter.
+* Die Schaltfläche '''⤢''' wechselt die Pfadanzeige dieser Zeile (siehe „Pfadanzeige der Suchergebnisse" in den Einstellungen).
+
+Ein kurzes Antippen von '''Strg''' allein (drücken und loslassen) schaltet ''„Alle passenden Ordner anzeigen"'' um.
+
+=== Klassifizieren ===
+
+Wählen Sie in Outlook eine oder mehrere E-Mails aus, markieren Sie im Bereich die Zielordner und klicken Sie auf '''Klassifizieren''' (oder '''Eingabe''' / Doppelklick für einen einzelnen Ordner). Der Bereich '''Optionen''' bietet fünf Überschreibungen pro Aktion, aus Ihren Einstellungen vorbelegt und nach jeder Ablage zurückgesetzt: Kopie behalten, Anhänge aus der abgelegten Kopie entfernen, gesamte Unterhaltung einbeziehen, Externe-Absender-Banner entfernen und als gelesen markieren.
+
+'''Auto-Klassierung''' legt die ausgewählte(n) E-Mail(s) dorthin ab, wo ihre Unterhaltung zuletzt abgelegt wurde, ohne Ordnerauswahl von Hand.
+
+=== Rückgängig ===
+
+Die Schaltfläche '''Rückgängig''' — oder '''Strg+Z''' irgendwo im Bereich — macht die letzte Ablage rückgängig: verschobene E-Mails kehren in ihren Quellordner zurück (und werden dort erneut ausgewählt, damit Sie sie anderswo ablegen können) und abgelegte Kopien werden entfernt. Nur die letzte Ablage kann rückgängig gemacht werden; entfernte Anhänge nicht.
+
+=== Anhangsverwaltung ===
+
+Ist ''„Anhänge entfernen"'' aktiv, verliert die abgelegte Kopie ihre Anhänge; das Original (oder die behaltene Kopie) bleibt unberührt. Im Standardmodus ''„Bei jedem Anhang nachfragen"'' können Sie jeden Anhang löschen, unter … speichern oder behalten; ein Kontrollkästchen ''„denselben Speicherort verwenden"'' wendet die Wahl auf alle an. Verschlüsselte (S/MIME) E-Mails werden nie bereinigt.
+
+=== Postausgang-Verwaltung ===
+
+Jedes Mal, wenn eine E-Mail in '''Gesendete Elemente''' gelangt, kann RBLclass automatisch handeln oder nachfragen. Die Optionen sind: '''In den Posteingang verschieben''', '''In Archivordner verschieben''' (ein von Ihnen konfigurierter Ordner), '''Aus gesendeten Elementen löschen''' oder '''In gesendeten Elementen belassen'''. Wird eine gesendete E-Mail in den Posteingang verschoben, kann sich der Bereich öffnen und diese E-Mail als nächstes Ablageziel anheften.
+
+=== Sendeprüfungen ===
+
+* '''Vergessener Anhang''': Erwähnt Ihr Text einen Anhang (über die konfigurierten Stichwörter), ist aber keiner beigefügt, erscheint vor dem Senden eine Rückfrage.
+* '''Externer Empfänger''': Vor dem Senden werden Empfänger aufgelistet, deren Domäne nicht in Ihrer internen Liste steht.
+
+=== Externe-Absender-Banner entfernen ===
+
+Viele Organisationen fügen eingehenden E-Mails ein „Diese E-Mail kam von außen"-Banner hinzu. Bringen Sie RBLclass dieses Banner einmal bei (Einstellungen → Externe-Absender-Banner → ''Aus ausgewählter E-Mail lernen''), und es kann es automatisch aus Antworten und Weiterleitungen sowie aus abgelegten Kopien entfernen.
+
+== Einstellungsreferenz ==
+
+Öffnen Sie die Einstellungen über die RBLclass-Menübandgruppe. Jede Änderung wird sofort übernommen und gespeichert — es gibt keine „Übernehmen"-Schaltfläche, und Schließen ist immer sicher.
+
+=== Ordnersuche ===
+
+{| class="wikitable"
+! Einstellung !! Standard !! Wirkung
+|-
+| Alle passenden Ordner anzeigen || Aus || Aus: doppelte Zweige werden zusammengefasst; ein: jeder passende Ordner wird einzeln aufgeführt.
+|-
+| Nur Wortanfänge abgleichen || Aus || Strengerer Abgleich: „proj" trifft auf „Projects", aber „security" trifft ''nicht'' auf „Cybersecurity". Standard (aus) ist die breitere „enthält"-Suche.
+|-
+| Ordner in neuem Outlook-Fenster öffnen || Aus || Ein: „Ordner öffnen" öffnet ein neues Fenster statt das aktuelle umzuleiten.
+|-
+| Pfadanzeige der Suchergebnisse || Einzelne Zeile || Wie jede Ergebniszeile den Pfad zeigt: einzelne, links abgeschnittene Zeile; vollständiger, auf die Bereichsbreite umgebrochener Pfad; oder vollständiger Pfad mit einem Unterordner pro Zeile. Die ⤢-Schaltfläche wechselt alle drei pro Zeile.
+|-
+| Maximale Ergebnisanzahl || 50 || Obergrenze der angezeigten Zeilen.
+|-
+| Suchen ab mindestens N Zeichen || 2 || Verhindert die Suche bei einem einzelnen Buchstaben. Bereich 1–10.
+|-
+| Pause vor der Suche (ms) || 200 || Die Suche startet so viele Millisekunden nach dem letzten Tastendruck. Bereich 0–2000.
+|}
+
+=== Klassifizieren ===
+
+{| class="wikitable"
+! Einstellung !! Standard !! Wirkung
+|-
+| Original nach dem Klassifizieren behalten || Aus || Kopiert die E-Mail ins Ziel und belässt das Original („Kopie behalten").
+|-
+| Anhänge aus der abgelegten Kopie entfernen || Aus || Entfernt Anhänge aus der Zielkopie; das Original bleibt unberührt. Unteroptionen: pro Anhang nachfragen (Standard) oder alle ohne Nachfrage löschen; und ob ein „Ehemalige Anhänge"-Hinweis im Text vermerkt wird.
+|-
+| Sicherheitskopie in Gelöschte Elemente || Aus || Wenn das Original nicht behalten wird, wird zusätzlich eine Kopie in Gelöschte Elemente als Sicherung abgelegt.
+|-
+| Standardmäßig die gesamte Unterhaltung || Aus || Aktiviert die Option „Gesamte Unterhaltung einbeziehen" im Bereich vor.
+|-
+| Besprechungsanfragen und -antworten ablegen || Aus || Erlaubt, in Outlook ausgewählte Besprechungselemente mit abzulegen.
+|-
+| Abgelegte E-Mails als gelesen markieren || Aus || Markiert jede abgelegte E-Mail beim Klassifizieren als gelesen (auch Auto-Klassierung).
+|-
+| Verlaufsfenster der Auto-Klassierung (Tage) || 90 || Wie weit die Auto-Klassierung zurückblickt. Bereich 1–3650.
+|}
+
+=== Externe-Absender-Banner ===
+
+''Aus ausgewählter E-Mail lernen'' erfasst das Banner der aktuell gewählten E-Mail; ''Vergessen'' löscht es; ''Diagnose'' meldet, ob die aktuelle E-Mail passt. Danach drei Schalter (alle standardmäßig aus, nur nach dem Lernen sinnvoll): beim Antworten/Weiterleiten entfernen, beim Klassifizieren entfernen und bei der Auto-Klassierung entfernen.
+
+=== Sendeprüfungen ===
+
+{| class="wikitable"
+! Einstellung !! Standard !! Wirkung
+|-
+| Vor dem Senden nach außerhalb warnen || Ein || Rückfrage, wenn die Domäne eines Empfängers nicht in der internen Liste steht.
+|-
+| Als intern geltende Domänen || (leer) || Durch Semikolon getrennte Domänen, die von der Warnung ausgenommen sind, z. B. <code>contoso.com;subsidiary.fr</code>.
+|-
+| Stichwörter für vergessene Anhänge || attach;enclos;joint;PJ || Kommt eines dieser Wörter im Text vor, ist aber kein Anhang beigefügt, erscheint vor dem Senden eine Warnung. Feld leeren, um die Prüfung zu deaktivieren.
+|}
+
+=== Gesendete Elemente ===
+
+{| class="wikitable"
+! Einstellung !! Standard !! Wirkung
+|-
+| Wenn eine E-Mail in Gesendete Elemente gelangt || Jedes Mal fragen || Jedes Mal fragen, oder automatisch: In den Posteingang, In Archivordner, Löschen oder Belassen.
+|-
+| Archivordner || (nicht konfiguriert) || Der Ordner, in den gesendete E-Mails bei „In Archivordner verschieben" gelegt werden. ''Ordner wählen…'' / ''Löschen''.
+|-
+| Ablagebereich nach Verschieben in Posteingang öffnen || Ein || Zeigt den Bereich mit der gesendeten E-Mail als nächstem Ablageziel.
+|}
+
+=== Aktualisierungen ===
+
+{| class="wikitable"
+! Einstellung !! Standard !! Wirkung
+|-
+| Beim Start nach einer neueren Version suchen || Aus || Ein ''und'' mit gesetzter URL: RBLclass sendet beim Start eine Anfrage an diese URL, um die neueste Versionsnummer zu lesen, und zeigt ein orangefarbenes Banner, wenn eine neuere Version verfügbar ist. Es werden keine weiteren Daten gesendet; bei leerer URL geschieht nichts.
+|-
+| URL für die Versionsprüfung || (leer) || Adresse einer Textdatei mit der Versionsnummer auf Ihrem internen HTTPS-Share. Fragen Sie Ihr Bereitstellungsteam nach diesem Wert.
+|}
+
+=== Bevorzugte Anlagenordner ===
+
+Indizieren Sie Windows-Verzeichnisse vor, damit die „Speichern unter…"-Auswahl (im Anhang-Dialog) einen Speicherort so schnell findet wie einen Outlook-Ordner. Unterordner werden bis zu einer Tiefe von 4 indiziert.
+
+=== Sprache ===
+
+RBLclass folgt standardmäßig der Sprache von Outlook (mit Rückfall auf Englisch). Sie können auf English, Français oder Deutsch umstellen. Die Änderung wird nach einem Neustart von Outlook wirksam.
+
+== Tastaturkürzel ==
+
+{| class="wikitable"
+! Kürzel !! Aktion
+|-
+| Strg+Z || Letzte Ablage rückgängig machen (irgendwo im Bereich).
+|-
+| Eingabe || Ausgewählte E-Mail in den markierten Ordner ablegen.
+|-
+| Strg+Eingabe || Markierten Ordner in Outlook öffnen.
+|-
+| Strg (antippen) || „Alle passenden Ordner anzeigen" umschalten.
+|-
+| Alt, R, R || RBLclass-Bereich über das Menüband öffnen/umschalten.
+|-
+| Tab (aus dem Suchfeld) || Optionen öffnen und Fokus auf das erste Kontrollkästchen setzen.
+|}
+
+== Ordnerindex aktualisieren ==
+
+Der Ordnerindex wird beim Start von Outlook automatisch im Hintergrund aufgebaut. Wenn Sie einen Ordner direkt in Outlook erstellen oder umbenennen und er nicht in der Suche erscheint, klicken Sie im Menüband auf '''Ordner aktualisieren'''.
+
+== Verbesserungsvorschläge / Problemmeldungen ==
+
+RBLclass wird auf GitHub gepflegt: [https://github.com/reboulip/rblclass/issues GitHub Issues]. Öffnen Sie dort ein Issue, um einen Fehler zu melden oder eine Funktion vorzuschlagen. Falls Sie GitHub von Ihrem Arbeitsplatz nicht erreichen, nutzen Sie den Kontaktkanal aus der Installationsanleitung. Zur Fehlerdiagnose fügen Sie die neueste Protokolldatei aus <code>%LocalAppData%\RBLclass\logs\</code> bei.

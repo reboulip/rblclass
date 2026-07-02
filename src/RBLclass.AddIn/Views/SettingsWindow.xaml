@@ -5,9 +5,10 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:loc="clr-namespace:RBLclass.AddIn.Localization"
-        Title="{loc:Loc Key=Settings_Title}" Height="640" Width="480"
-        WindowStartupLocation="CenterOwner" ResizeMode="NoResize"
-        d:DesignHeight="640" d:DesignWidth="480">
+        Title="{loc:Loc Key=Settings_Title}" Height="560" Width="620"
+        WindowStartupLocation="CenterOwner" ResizeMode="CanResize"
+        MinHeight="540" MinWidth="580"
+        d:DesignHeight="560" d:DesignWidth="620">
     <Window.Resources>
         <BooleanToVisibilityConverter x:Key="BoolToVis" />
     </Window.Resources>
@@ -16,199 +17,332 @@
                 HorizontalAlignment="Right" Margin="0,12,0,0"
                 Padding="18,4" IsCancel="True" IsDefault="True" />
 
-        <ScrollViewer VerticalScrollBarVisibility="Auto">
-            <StackPanel>
-                <GroupBox Header="{loc:Loc Key=Settings_FolderSearch_Header}" Margin="0,0,0,8">
-                    <StackPanel Margin="6">
-                        <CheckBox Margin="0,3" IsChecked="{Binding AllResults}"
-                                  Content="{loc:Loc Key=Settings_ListEveryFolder_CheckBox}" />
-                        <CheckBox Margin="0,3" IsChecked="{Binding UseWordPrefixMatch}">
-                            <TextBlock TextWrapping="Wrap" MaxWidth="400"
-                                       Text="{loc:Loc Key=Settings_WordPrefixMatch_CheckBox}" />
-                        </CheckBox>
-                        <CheckBox Margin="0,3" IsChecked="{Binding OpenInNewWindow}"
-                                  Content="{loc:Loc Key=Settings_OpenInNewWindow_CheckBox}" />
-                        <CheckBox Margin="0,3" IsChecked="{Binding AutoExpandResults}"
-                                  Content="{loc:Loc Key=Settings_AutoExpand_CheckBox}" />
-                        <DockPanel Margin="0,8,0,2" LastChildFill="False">
-                            <TextBlock Text="{loc:Loc Key=Settings_MaxResults_Label}" VerticalAlignment="Center" />
-                            <TextBox DockPanel.Dock="Right" Width="60" Margin="6,0,0,0"
-                                     Text="{Binding MaxResultsText, UpdateSourceTrigger=LostFocus}" />
-                        </DockPanel>
-                        <DockPanel Margin="0,4,0,2" LastChildFill="False">
-                            <TextBlock Text="{loc:Loc Key=Settings_MinSearchLength_Label}" VerticalAlignment="Center" />
-                            <TextBox DockPanel.Dock="Right" Width="60" Margin="6,0,0,0"
-                                     Text="{Binding MinSearchLengthText, UpdateSourceTrigger=LostFocus}" />
-                        </DockPanel>
-                        <DockPanel Margin="0,4,0,2" LastChildFill="False">
-                            <TextBlock Text="{loc:Loc Key=Settings_SearchDebounce_Label}" VerticalAlignment="Center" />
-                            <TextBox DockPanel.Dock="Right" Width="60" Margin="6,0,0,0"
-                                     Text="{Binding SearchDebounceMsText, UpdateSourceTrigger=LostFocus}" />
-                        </DockPanel>
-                    </StackPanel>
-                </GroupBox>
-
-                <GroupBox Header="{loc:Loc Key=Settings_Classify_Header}" Margin="0,0,0,8">
-                    <StackPanel Margin="6">
-                        <CheckBox Margin="0,3" IsChecked="{Binding KeepCopy}"
-                                  Content="{loc:Loc Key=Settings_KeepCopy_CheckBox}" />
-                        <CheckBox Margin="0,3" IsChecked="{Binding RemoveAttachments}"
-                                  Content="{loc:Loc Key=Settings_RemoveAttachments_CheckBox}" />
-                        <StackPanel Margin="18,0,0,3">
-                            <TextBlock Margin="0,2,0,0" FontStyle="Italic" Foreground="#777"
-                                       Text="{loc:Loc Key=Settings_AttachmentRemovalMode_Label}" />
-                            <RadioButton Margin="0,2" GroupName="AttachMode"
-                                         IsChecked="{Binding AttachmentRemovalModeIsModal}">
+        <TabControl>
+            <!-- ===================== Search ===================== -->
+            <TabItem Header="{loc:Loc Key=Settings_Nav_Search}">
+                <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="12">
+                    <GroupBox Header="{loc:Loc Key=Settings_FolderSearch_Header}">
+                        <StackPanel Margin="6">
+                            <DockPanel Margin="0,3">
+                                <TextBlock DockPanel.Dock="Right" Style="{DynamicResource InfoGlyph}"
+                                           ToolTip="{loc:Loc Key=Settings_ListEveryFolder_Info}" />
+                                <CheckBox IsChecked="{Binding AllResults}"
+                                          Content="{loc:Loc Key=Settings_ListEveryFolder_CheckBox}" />
+                            </DockPanel>
+                            <DockPanel Margin="0,3">
+                                <TextBlock DockPanel.Dock="Right" Style="{DynamicResource InfoGlyph}"
+                                           ToolTip="{loc:Loc Key=Settings_WordPrefixMatch_Info}" />
+                                <CheckBox IsChecked="{Binding UseWordPrefixMatch}">
+                                    <TextBlock TextWrapping="Wrap" MaxWidth="360"
+                                               Text="{loc:Loc Key=Settings_WordPrefixMatch_CheckBox}" />
+                                </CheckBox>
+                            </DockPanel>
+                            <CheckBox Margin="0,3" IsChecked="{Binding OpenInNewWindow}"
+                                      Content="{loc:Loc Key=Settings_OpenInNewWindow_CheckBox}" />
+                            <StackPanel Orientation="Horizontal" Margin="0,8,0,2">
+                                <TextBlock Text="{loc:Loc Key=Settings_PathDisplay_Label}" VerticalAlignment="Center" />
+                                <TextBlock Style="{DynamicResource InfoGlyph}"
+                                           ToolTip="{loc:Loc Key=Settings_PathDisplay_Info}" />
+                            </StackPanel>
+                            <RadioButton Margin="0,2" GroupName="PathDisplay"
+                                         IsChecked="{Binding PathDisplayIsOneLine}">
                                 <TextBlock TextWrapping="Wrap" MaxWidth="380"
-                                           Text="{loc:Loc Key=Settings_AttachmentRemovalMode_Modal}" />
+                                           Text="{loc:Loc Key=Settings_PathDisplay_OneLine}" />
                             </RadioButton>
-                            <RadioButton Margin="0,2" GroupName="AttachMode"
-                                         IsChecked="{Binding AttachmentRemovalModeIsDeleteSilently}">
+                            <RadioButton Margin="0,2" GroupName="PathDisplay"
+                                         IsChecked="{Binding PathDisplayIsWrapped}">
                                 <TextBlock TextWrapping="Wrap" MaxWidth="380"
-                                           Text="{loc:Loc Key=Settings_AttachmentRemovalMode_DeleteSilently}" />
+                                           Text="{loc:Loc Key=Settings_PathDisplay_Wrapped}" />
                             </RadioButton>
-                            <TextBlock Margin="0,6,0,0" FontStyle="Italic" Foreground="#777"
-                                       Text="{loc:Loc Key=Settings_AttachmentLabelLocation_Label}" />
-                            <RadioButton Margin="0,2" GroupName="AttachLabelLoc"
-                                         IsChecked="{Binding AttachmentLabelLocationIsBody}">
+                            <RadioButton Margin="0,2" GroupName="PathDisplay"
+                                         IsChecked="{Binding PathDisplayIsPerSegment}">
                                 <TextBlock TextWrapping="Wrap" MaxWidth="380"
-                                           Text="{loc:Loc Key=Settings_AttachmentLabelLocation_Body}" />
+                                           Text="{loc:Loc Key=Settings_PathDisplay_PerSegment}" />
                             </RadioButton>
-                            <RadioButton Margin="0,2" GroupName="AttachLabelLoc"
-                                         IsChecked="{Binding AttachmentLabelLocationIsInfoBar}">
-                                <TextBlock TextWrapping="Wrap" MaxWidth="380"
-                                           Text="{loc:Loc Key=Settings_AttachmentLabelLocation_InfoBar}" />
-                            </RadioButton>
-                            <RadioButton Margin="0,2" GroupName="AttachLabelLoc"
-                                         IsChecked="{Binding AttachmentLabelLocationIsNone}">
-                                <TextBlock TextWrapping="Wrap" MaxWidth="380"
-                                           Text="{loc:Loc Key=Settings_AttachmentLabelLocation_None}" />
-                            </RadioButton>
+                            <DockPanel Margin="0,8,0,2" LastChildFill="False">
+                                <TextBlock Text="{loc:Loc Key=Settings_MaxResults_Label}" VerticalAlignment="Center" />
+                                <TextBox DockPanel.Dock="Right" Width="60" Margin="6,0,0,0"
+                                         Text="{Binding MaxResultsText, UpdateSourceTrigger=LostFocus}" />
+                            </DockPanel>
+                            <DockPanel Margin="0,4,0,2" LastChildFill="False">
+                                <TextBlock Text="{loc:Loc Key=Settings_MinSearchLength_Label}" VerticalAlignment="Center" />
+                                <TextBox DockPanel.Dock="Right" Width="60" Margin="6,0,0,0"
+                                         Text="{Binding MinSearchLengthText, UpdateSourceTrigger=LostFocus}" />
+                            </DockPanel>
+                            <DockPanel Margin="0,4,0,2" LastChildFill="False">
+                                <TextBlock Text="{loc:Loc Key=Settings_SearchDebounce_Label}" VerticalAlignment="Center" />
+                                <TextBox DockPanel.Dock="Right" Width="60" Margin="6,0,0,0"
+                                         Text="{Binding SearchDebounceMsText, UpdateSourceTrigger=LostFocus}" />
+                            </DockPanel>
                         </StackPanel>
-                        <CheckBox Margin="0,3" IsChecked="{Binding ClassifySafetyCopy}">
-                            <TextBlock TextWrapping="Wrap" MaxWidth="400"
-                                       Text="{loc:Loc Key=Settings_ClassifySafetyCopy_CheckBox}" />
-                        </CheckBox>
-                        <CheckBox Margin="0,3" IsChecked="{Binding WidenConversation}"
-                                  Content="{loc:Loc Key=Settings_WidenConversation_CheckBox}" />
-                        <CheckBox Margin="0,3" IsChecked="{Binding ClassifyMeetingItems}">
-                            <TextBlock TextWrapping="Wrap" MaxWidth="400"
-                                       Text="{loc:Loc Key=Settings_ClassifyMeetingItems_CheckBox}" />
-                        </CheckBox>
-                        <DockPanel Margin="0,8,0,2" LastChildFill="False">
-                            <TextBlock Text="{loc:Loc Key=Settings_AutoClassHistoryDays_Label}"
-                                       VerticalAlignment="Center" />
-                            <TextBox DockPanel.Dock="Right" Width="60" Margin="6,0,0,0"
-                                     Text="{Binding AutoClassHistoryDaysText, UpdateSourceTrigger=LostFocus}" />
-                        </DockPanel>
-                    </StackPanel>
-                </GroupBox>
+                    </GroupBox>
+                </ScrollViewer>
+            </TabItem>
 
-                <GroupBox Header="{loc:Loc Key=Settings_Banner_Header}" Margin="0,0,0,8">
-                    <StackPanel Margin="6">
-                        <TextBlock TextWrapping="Wrap" Style="{DynamicResource MutedText}"
-                                   Text="{loc:Loc Key=Settings_Banner_Description}" />
-                        <DockPanel Margin="0,6,0,2" LastChildFill="False">
-                            <Button DockPanel.Dock="Left" Content="{loc:Loc Key=Settings_LearnBanner_Button}" Padding="8,2"
-                                    IsEnabled="{Binding CanLearnBanner}" Click="LearnBanner_Click" />
-                            <Button DockPanel.Dock="Left" Content="{loc:Loc Key=Settings_ForgetBanner_Button}" Padding="8,2" Margin="6,0,0,0"
-                                    IsEnabled="{Binding HasBanner}" Click="ClearBanner_Click" />
-                            <Button DockPanel.Dock="Left" Content="{loc:Loc Key=Settings_DiagnoseBanner_Button}" Padding="8,2" Margin="6,0,0,0"
-                                    IsEnabled="{Binding CanLearnBanner}" Click="DiagnoseBanner_Click" />
-                        </DockPanel>
-                        <TextBlock Margin="0,2,0,0" TextWrapping="Wrap"
-                                   Style="{DynamicResource MutedText}" Text="{Binding BannerStatus}" />
-                        <TextBlock Margin="0,0,0,4" TextWrapping="Wrap"
-                                   Style="{DynamicResource MutedText}" Text="{Binding BannerDiagnosticStatus}" />
-                        <CheckBox Margin="0,3" IsChecked="{Binding StripBannerOnReply}"
-                                  IsEnabled="{Binding HasBanner}"
-                                  Content="{loc:Loc Key=Settings_StripBannerOnReply_CheckBox}" />
-                        <CheckBox Margin="0,3" IsChecked="{Binding StripBannerOnClassify}"
-                                  IsEnabled="{Binding HasBanner}">
-                            <TextBlock TextWrapping="Wrap" MaxWidth="400"
-                                       Text="{loc:Loc Key=Settings_StripBannerOnClassify_CheckBox}" />
-                        </CheckBox>
-                        <CheckBox Margin="0,3" IsChecked="{Binding StripBannerOnAutoClassify}"
-                                  IsEnabled="{Binding HasBanner}">
-                            <TextBlock TextWrapping="Wrap" MaxWidth="400"
-                                       Text="{loc:Loc Key=Settings_StripBannerOnAutoClassify_CheckBox}" />
-                        </CheckBox>
-                    </StackPanel>
-                </GroupBox>
+            <!-- ===================== Classify ===================== -->
+            <TabItem Header="{loc:Loc Key=Settings_Nav_Classify}">
+                <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="12">
+                    <GroupBox Header="{loc:Loc Key=Settings_Classify_Header}">
+                        <StackPanel Margin="6">
+                            <DockPanel Margin="0,3">
+                                <TextBlock DockPanel.Dock="Right" Style="{DynamicResource InfoGlyph}"
+                                           ToolTip="{loc:Loc Key=Settings_KeepCopy_Info}" />
+                                <CheckBox IsChecked="{Binding KeepCopy}"
+                                          Content="{loc:Loc Key=Settings_KeepCopy_CheckBox}" />
+                            </DockPanel>
+                            <DockPanel Margin="0,3">
+                                <TextBlock DockPanel.Dock="Right" Style="{DynamicResource InfoGlyph}"
+                                           ToolTip="{loc:Loc Key=Settings_RemoveAttachments_Info}" />
+                                <CheckBox IsChecked="{Binding RemoveAttachments}"
+                                          Content="{loc:Loc Key=Settings_RemoveAttachments_CheckBox}" />
+                            </DockPanel>
+                            <StackPanel Margin="18,0,0,3">
+                                <TextBlock Margin="0,2,0,0" FontStyle="Italic" Foreground="#777"
+                                           Text="{loc:Loc Key=Settings_AttachmentRemovalMode_Label}" />
+                                <RadioButton Margin="0,2" GroupName="AttachMode"
+                                             IsChecked="{Binding AttachmentRemovalModeIsModal}">
+                                    <TextBlock TextWrapping="Wrap" MaxWidth="360"
+                                               Text="{loc:Loc Key=Settings_AttachmentRemovalMode_Modal}" />
+                                </RadioButton>
+                                <RadioButton Margin="0,2" GroupName="AttachMode"
+                                             IsChecked="{Binding AttachmentRemovalModeIsDeleteSilently}">
+                                    <TextBlock TextWrapping="Wrap" MaxWidth="360"
+                                               Text="{loc:Loc Key=Settings_AttachmentRemovalMode_DeleteSilently}" />
+                                </RadioButton>
+                                <TextBlock Margin="0,6,0,0" FontStyle="Italic" Foreground="#777"
+                                           Text="{loc:Loc Key=Settings_AttachmentLabelLocation_Label}" />
+                                <RadioButton Margin="0,2" GroupName="AttachLabelLoc"
+                                             IsChecked="{Binding AttachmentLabelLocationIsBody}">
+                                    <TextBlock TextWrapping="Wrap" MaxWidth="360"
+                                               Text="{loc:Loc Key=Settings_AttachmentLabelLocation_Body}" />
+                                </RadioButton>
+                                <RadioButton Margin="0,2" GroupName="AttachLabelLoc"
+                                             IsChecked="{Binding AttachmentLabelLocationIsInfoBar}">
+                                    <TextBlock TextWrapping="Wrap" MaxWidth="360"
+                                               Text="{loc:Loc Key=Settings_AttachmentLabelLocation_InfoBar}" />
+                                </RadioButton>
+                                <RadioButton Margin="0,2" GroupName="AttachLabelLoc"
+                                             IsChecked="{Binding AttachmentLabelLocationIsNone}">
+                                    <TextBlock TextWrapping="Wrap" MaxWidth="360"
+                                               Text="{loc:Loc Key=Settings_AttachmentLabelLocation_None}" />
+                                </RadioButton>
+                            </StackPanel>
+                            <DockPanel Margin="0,3">
+                                <TextBlock DockPanel.Dock="Right" Style="{DynamicResource InfoGlyph}"
+                                           ToolTip="{loc:Loc Key=Settings_ClassifySafetyCopy_Info}" />
+                                <CheckBox IsChecked="{Binding ClassifySafetyCopy}">
+                                    <TextBlock TextWrapping="Wrap" MaxWidth="380"
+                                               Text="{loc:Loc Key=Settings_ClassifySafetyCopy_CheckBox}" />
+                                </CheckBox>
+                            </DockPanel>
+                            <DockPanel Margin="0,3">
+                                <TextBlock DockPanel.Dock="Right" Style="{DynamicResource InfoGlyph}"
+                                           ToolTip="{loc:Loc Key=Settings_WidenConversation_Info}" />
+                                <CheckBox IsChecked="{Binding WidenConversation}"
+                                          Content="{loc:Loc Key=Settings_WidenConversation_CheckBox}" />
+                            </DockPanel>
+                            <DockPanel Margin="0,3">
+                                <TextBlock DockPanel.Dock="Right" Style="{DynamicResource InfoGlyph}"
+                                           ToolTip="{loc:Loc Key=Settings_ClassifyMeetingItems_Info}" />
+                                <CheckBox IsChecked="{Binding ClassifyMeetingItems}">
+                                    <TextBlock TextWrapping="Wrap" MaxWidth="380"
+                                               Text="{loc:Loc Key=Settings_ClassifyMeetingItems_CheckBox}" />
+                                </CheckBox>
+                            </DockPanel>
+                            <CheckBox Margin="0,3" IsChecked="{Binding MarkAsReadOnClassify}">
+                                <TextBlock TextWrapping="Wrap" MaxWidth="380"
+                                           Text="{loc:Loc Key=Settings_MarkAsReadOnClassify_CheckBox}" />
+                            </CheckBox>
+                            <DockPanel Margin="0,8,0,2" LastChildFill="False">
+                                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                    <TextBlock Text="{loc:Loc Key=Settings_AutoClassHistoryDays_Label}"
+                                               VerticalAlignment="Center" />
+                                    <TextBlock Style="{DynamicResource InfoGlyph}"
+                                               ToolTip="{loc:Loc Key=Settings_AutoClassHistoryDays_Info}" />
+                                </StackPanel>
+                                <TextBox DockPanel.Dock="Right" Width="60" Margin="6,0,0,0"
+                                         Text="{Binding AutoClassHistoryDaysText, UpdateSourceTrigger=LostFocus}" />
+                            </DockPanel>
+                        </StackPanel>
+                    </GroupBox>
+                </ScrollViewer>
+            </TabItem>
 
-                <GroupBox Header="{loc:Loc Key=Settings_SendingGuards_Header}" Margin="0,0,0,8">
-                    <StackPanel Margin="6">
-                        <CheckBox Margin="0,3" IsChecked="{Binding SendExternalWarning}">
-                            <TextBlock TextWrapping="Wrap" MaxWidth="400"
-                                       Text="{loc:Loc Key=Settings_SendExternalWarning_CheckBox}" />
-                        </CheckBox>
-                        <TextBlock Margin="0,8,0,2" Text="{loc:Loc Key=Settings_InternalDomains_Label}" />
-                        <TextBox Text="{Binding InternalDomainsText, UpdateSourceTrigger=LostFocus}" />
-                        <TextBlock Margin="0,8,0,2" Text="{loc:Loc Key=Settings_ForgottenAttachmentKeywords_Label}" />
-                        <TextBox Text="{Binding ForgottenAttachmentKeywordsText, UpdateSourceTrigger=LostFocus}" />
-                    </StackPanel>
-                </GroupBox>
+            <!-- ===================== Attachments ===================== -->
+            <TabItem Header="{loc:Loc Key=Settings_Nav_Attachments}">
+                <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="12">
+                    <GroupBox Header="{loc:Loc Key=Settings_FavoriteFolders_Header}">
+                        <StackPanel Margin="6">
+                            <TextBlock TextWrapping="Wrap"
+                                       Text="{loc:Loc Key=Settings_FavoriteFolders_Description}" />
+                            <ListBox x:Name="FavoriteFoldersList" Margin="0,6,0,4" Height="140"
+                                     ItemsSource="{Binding FavoriteFolders}" />
+                            <DockPanel LastChildFill="False">
+                                <Button DockPanel.Dock="Left" Padding="8,2"
+                                        Content="{loc:Loc Key=Settings_FavoriteFolders_Add_Button}"
+                                        Click="AddFavoriteFolder_Click" />
+                                <Button DockPanel.Dock="Left" Padding="8,2" Margin="6,0,0,0"
+                                        Content="{loc:Loc Key=Settings_FavoriteFolders_Remove_Button}"
+                                        Click="RemoveFavoriteFolder_Click" />
+                            </DockPanel>
+                            <TextBlock Margin="0,4,0,0" TextWrapping="Wrap"
+                                       Style="{DynamicResource MutedText}"
+                                       Text="{loc:Loc Key=Settings_FavoriteFolders_Note}" />
+                        </StackPanel>
+                    </GroupBox>
+                </ScrollViewer>
+            </TabItem>
 
-                <GroupBox Header="{loc:Loc Key=Settings_SentItems_Header}" Margin="0,0,0,8">
-                    <StackPanel Margin="6">
-                        <TextBlock Text="{loc:Loc Key=Settings_SentItemsTriage_Label}" />
-                        <ComboBox Margin="0,4,0,0" Width="220" HorizontalAlignment="Left"
-                                  ItemsSource="{Binding TriageModes}"
-                                  SelectedValuePath="Mode"
-                                  SelectedValue="{Binding SentItemTriageMode}">
-                            <ComboBox.ItemTemplate>
-                                <DataTemplate>
-                                    <TextBlock Text="{Binding Label}" />
-                                </DataTemplate>
-                            </ComboBox.ItemTemplate>
-                        </ComboBox>
-                        <CheckBox Margin="0,8,0,0" IsChecked="{Binding ClassifyAfterMoveToInbox}">
-                            <TextBlock TextWrapping="Wrap" MaxWidth="400"
-                                       Text="{loc:Loc Key=Settings_ClassifyAfterMoveToInbox_CheckBox}" />
-                        </CheckBox>
-                    </StackPanel>
-                </GroupBox>
+            <!-- ===================== Sending ===================== -->
+            <TabItem Header="{loc:Loc Key=Settings_Nav_Sending}">
+                <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="12">
+                    <GroupBox Header="{loc:Loc Key=Settings_SendingGuards_Header}">
+                        <StackPanel Margin="6">
+                            <DockPanel Margin="0,3">
+                                <TextBlock DockPanel.Dock="Right" Style="{DynamicResource InfoGlyph}"
+                                           ToolTip="{loc:Loc Key=Settings_SendExternalWarning_Info}" />
+                                <CheckBox IsChecked="{Binding SendExternalWarning}">
+                                    <TextBlock TextWrapping="Wrap" MaxWidth="380"
+                                               Text="{loc:Loc Key=Settings_SendExternalWarning_CheckBox}" />
+                                </CheckBox>
+                            </DockPanel>
+                            <TextBlock Margin="0,8,0,2" Text="{loc:Loc Key=Settings_InternalDomains_Label}" />
+                            <TextBox Text="{Binding InternalDomainsText, UpdateSourceTrigger=LostFocus}" />
+                            <TextBlock Margin="0,8,0,2" Text="{loc:Loc Key=Settings_ForgottenAttachmentKeywords_Label}" />
+                            <TextBox Text="{Binding ForgottenAttachmentKeywordsText, UpdateSourceTrigger=LostFocus}" />
+                        </StackPanel>
+                    </GroupBox>
+                </ScrollViewer>
+            </TabItem>
 
-                <GroupBox Header="{loc:Loc Key=Settings_FavoriteFolders_Header}" Margin="0,0,0,8">
-                    <StackPanel Margin="6">
-                        <TextBlock TextWrapping="Wrap"
-                                   Text="{loc:Loc Key=Settings_FavoriteFolders_Description}" />
-                        <ListBox x:Name="FavoriteFoldersList" Margin="0,6,0,4" Height="96"
-                                 ItemsSource="{Binding FavoriteFolders}" />
-                        <DockPanel LastChildFill="False">
-                            <Button DockPanel.Dock="Left" Padding="8,2"
-                                    Content="{loc:Loc Key=Settings_FavoriteFolders_Add_Button}"
-                                    Click="AddFavoriteFolder_Click" />
-                            <Button DockPanel.Dock="Left" Padding="8,2" Margin="6,0,0,0"
-                                    Content="{loc:Loc Key=Settings_FavoriteFolders_Remove_Button}"
-                                    Click="RemoveFavoriteFolder_Click" />
-                        </DockPanel>
-                        <TextBlock Margin="0,4,0,0" TextWrapping="Wrap"
-                                   Text="{loc:Loc Key=Settings_FavoriteFolders_Note}" />
-                    </StackPanel>
-                </GroupBox>
+            <!-- ===================== External-sender banner ===================== -->
+            <TabItem Header="{loc:Loc Key=Settings_Nav_Banner}">
+                <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="12">
+                    <GroupBox Header="{loc:Loc Key=Settings_Banner_Header}">
+                        <StackPanel Margin="6">
+                            <TextBlock TextWrapping="Wrap" Style="{DynamicResource MutedText}"
+                                       Text="{loc:Loc Key=Settings_Banner_Description}" />
+                            <DockPanel Margin="0,6,0,2" LastChildFill="False">
+                                <Button DockPanel.Dock="Left" Content="{loc:Loc Key=Settings_LearnBanner_Button}" Padding="8,2"
+                                        IsEnabled="{Binding CanLearnBanner}" Click="LearnBanner_Click" />
+                                <Button DockPanel.Dock="Left" Content="{loc:Loc Key=Settings_ForgetBanner_Button}" Padding="8,2" Margin="6,0,0,0"
+                                        IsEnabled="{Binding HasBanner}" Click="ClearBanner_Click" />
+                                <Button DockPanel.Dock="Left" Content="{loc:Loc Key=Settings_DiagnoseBanner_Button}" Padding="8,2" Margin="6,0,0,0"
+                                        IsEnabled="{Binding CanLearnBanner}" Click="DiagnoseBanner_Click" />
+                            </DockPanel>
+                            <TextBlock Margin="0,2,0,0" TextWrapping="Wrap"
+                                       Style="{DynamicResource MutedText}" Text="{Binding BannerStatus}" />
+                            <TextBlock Margin="0,0,0,4" TextWrapping="Wrap"
+                                       Style="{DynamicResource MutedText}" Text="{Binding BannerDiagnosticStatus}" />
+                            <CheckBox Margin="0,3" IsChecked="{Binding StripBannerOnReply}"
+                                      IsEnabled="{Binding HasBanner}"
+                                      Content="{loc:Loc Key=Settings_StripBannerOnReply_CheckBox}" />
+                            <CheckBox Margin="0,3" IsChecked="{Binding StripBannerOnClassify}"
+                                      IsEnabled="{Binding HasBanner}">
+                                <TextBlock TextWrapping="Wrap" MaxWidth="400"
+                                           Text="{loc:Loc Key=Settings_StripBannerOnClassify_CheckBox}" />
+                            </CheckBox>
+                            <CheckBox Margin="0,3" IsChecked="{Binding StripBannerOnAutoClassify}"
+                                      IsEnabled="{Binding HasBanner}">
+                                <TextBlock TextWrapping="Wrap" MaxWidth="400"
+                                           Text="{loc:Loc Key=Settings_StripBannerOnAutoClassify_CheckBox}" />
+                            </CheckBox>
+                        </StackPanel>
+                    </GroupBox>
+                </ScrollViewer>
+            </TabItem>
 
-                <GroupBox Header="{loc:Loc Key=Settings_Language_Header}">
-                    <StackPanel Margin="6">
-                        <DockPanel LastChildFill="False">
-                            <TextBlock Text="{loc:Loc Key=Settings_Language_Label}" VerticalAlignment="Center" />
-                            <ComboBox DockPanel.Dock="Right" Width="180" HorizontalAlignment="Right"
-                                      ItemsSource="{Binding UiLanguages}"
-                                      SelectedValuePath="Code"
-                                      SelectedValue="{Binding PreferredUiLanguage}">
+            <!-- ===================== Sent items ===================== -->
+            <TabItem Header="{loc:Loc Key=Settings_Nav_SentItems}">
+                <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="12">
+                    <GroupBox Header="{loc:Loc Key=Settings_SentItems_Header}">
+                        <StackPanel Margin="6">
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="{loc:Loc Key=Settings_SentItemsTriage_Label}" VerticalAlignment="Center" />
+                                <TextBlock Style="{DynamicResource InfoGlyph}"
+                                           ToolTip="{loc:Loc Key=Settings_SentItemsTriage_Info}" />
+                            </StackPanel>
+                            <ComboBox Margin="0,4,0,0" Width="220" HorizontalAlignment="Left"
+                                      ItemsSource="{Binding TriageModes}"
+                                      SelectedValuePath="Mode"
+                                      SelectedValue="{Binding SentItemTriageMode}">
                                 <ComboBox.ItemTemplate>
                                     <DataTemplate>
                                         <TextBlock Text="{Binding Label}" />
                                     </DataTemplate>
                                 </ComboBox.ItemTemplate>
                             </ComboBox>
-                        </DockPanel>
-                        <TextBlock Margin="0,6,0,0" TextWrapping="Wrap"
-                                   Style="{DynamicResource MutedText}"
-                                   Text="{loc:Loc Key=Settings_Language_RestartNote}" />
+                            <TextBlock Margin="0,8,0,2" TextWrapping="Wrap"
+                                       Text="{loc:Loc Key=Settings_TriageArchiveFolder_Label}" />
+                            <DockPanel LastChildFill="True">
+                                <Button DockPanel.Dock="Right" Padding="8,2" Margin="6,0,0,0"
+                                        Content="{loc:Loc Key=Settings_TriageArchiveFolder_Clear_Button}"
+                                        Click="ClearArchiveFolder_Click" />
+                                <Button DockPanel.Dock="Right" Padding="8,2" Margin="6,0,0,0"
+                                        Content="{loc:Loc Key=Settings_TriageArchiveFolder_Pick_Button}"
+                                        Click="PickArchiveFolder_Click" />
+                                <TextBlock VerticalAlignment="Center" TextTrimming="CharacterEllipsis"
+                                           Style="{DynamicResource MutedText}"
+                                           Text="{Binding SentItemTriageArchiveFolderPath}" />
+                            </DockPanel>
+                            <DockPanel Margin="0,8,0,0">
+                                <TextBlock DockPanel.Dock="Right" Style="{DynamicResource InfoGlyph}"
+                                           ToolTip="{loc:Loc Key=Settings_ClassifyAfterMoveToInbox_Info}" />
+                                <CheckBox IsChecked="{Binding ClassifyAfterMoveToInbox}">
+                                    <TextBlock TextWrapping="Wrap" MaxWidth="380"
+                                               Text="{loc:Loc Key=Settings_ClassifyAfterMoveToInbox_CheckBox}" />
+                                </CheckBox>
+                            </DockPanel>
+                        </StackPanel>
+                    </GroupBox>
+                </ScrollViewer>
+            </TabItem>
+
+            <!-- ===================== General ===================== -->
+            <TabItem Header="{loc:Loc Key=Settings_Nav_General}">
+                <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="12">
+                    <StackPanel>
+                        <GroupBox Header="{loc:Loc Key=Settings_Language_Header}" Margin="0,0,0,8">
+                            <StackPanel Margin="6">
+                                <DockPanel LastChildFill="False">
+                                    <TextBlock Text="{loc:Loc Key=Settings_Language_Label}" VerticalAlignment="Center" />
+                                    <ComboBox DockPanel.Dock="Right" Width="180" HorizontalAlignment="Right"
+                                              ItemsSource="{Binding UiLanguages}"
+                                              SelectedValuePath="Code"
+                                              SelectedValue="{Binding PreferredUiLanguage}">
+                                        <ComboBox.ItemTemplate>
+                                            <DataTemplate>
+                                                <TextBlock Text="{Binding Label}" />
+                                            </DataTemplate>
+                                        </ComboBox.ItemTemplate>
+                                    </ComboBox>
+                                </DockPanel>
+                                <TextBlock Margin="0,6,0,0" TextWrapping="Wrap"
+                                           Style="{DynamicResource MutedText}"
+                                           Text="{loc:Loc Key=Settings_Language_RestartNote}" />
+                            </StackPanel>
+                        </GroupBox>
+
+                        <GroupBox Header="{loc:Loc Key=Settings_Updates_Header}" Margin="0,0,0,8">
+                            <StackPanel Margin="6">
+                                <CheckBox IsChecked="{Binding UpdateCheckEnabled}">
+                                    <TextBlock TextWrapping="Wrap" MaxWidth="400"
+                                               Text="{loc:Loc Key=Settings_UpdateCheck_Enable_CheckBox}" />
+                                </CheckBox>
+                                <TextBlock Margin="0,8,0,2" TextWrapping="Wrap"
+                                           Text="{loc:Loc Key=Settings_UpdateCheck_Url_Label}" />
+                                <TextBox Text="{Binding UpdateCheckUrl, UpdateSourceTrigger=LostFocus}" />
+                                <TextBlock Margin="0,4,0,0" TextWrapping="Wrap"
+                                           Style="{DynamicResource MutedText}"
+                                           Text="{loc:Loc Key=Settings_UpdateCheck_Note}" />
+                            </StackPanel>
+                        </GroupBox>
+
+                        <TextBlock Margin="6,4,0,0" Style="{DynamicResource MutedText}"
+                                   Text="{Binding AboutVersion}" />
                     </StackPanel>
-                </GroupBox>
-            </StackPanel>
-        </ScrollViewer>
+                </ScrollViewer>
+            </TabItem>
+        </TabControl>
     </DockPanel>
 </Window>

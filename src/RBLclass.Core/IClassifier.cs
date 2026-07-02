@@ -71,6 +71,7 @@ namespace RBLclass.Core
                                         IReadOnlyList<AttachmentDisposition> attachmentDispositions = null,
                                         AttachmentLabelOptions labelOptions = null,
                                         int historyRetentionDays = 0,
-                                        string bannerSignature = null);
+                                        string bannerSignature = null,
+                                        bool markAsRead = false);
     }
 }

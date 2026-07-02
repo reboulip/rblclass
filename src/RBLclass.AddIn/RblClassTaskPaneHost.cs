@@ -85,6 +85,7 @@ namespace RBLclass.AddIn
         public void RefreshOnShow()
         {
             EnsureView();
+            _view?.FocusSearch();
         }
 
         /// <summary>Push a live selection count into the pane view model.</summary>
@@ -97,6 +98,12 @@ namespace RBLclass.AddIn
         public void ActivatePigEasterEgg()
         {
             (_view?.DataContext as MainPaneViewModel)?.ActivatePigEasterEgg();
+        }
+
+        /// <summary>Show the opt-in "newer version available" banner (v2.7.0.0 E1).</summary>
+        public void ShowUpdateBanner(string version)
+        {
+            (_view?.DataContext as MainPaneViewModel)?.ShowUpdateBanner(version);
         }
 
         private void ApplyThemeAndSelection()

@@ -55,12 +55,20 @@ namespace RBLclass.Core
         public IReadOnlyList<string> ForgottenAttachmentKeywords { get; set; }
         public SentItemTriageMode SentItemTriageMode { get; set; }
         public bool ClassifyAfterMoveToInbox { get; set; }
+        public string SentItemTriageArchiveStoreId { get; set; }
+        public string SentItemTriageArchiveEntryId { get; set; }
+        public string SentItemTriageArchivePath { get; set; }
         public IReadOnlyList<string> AttachmentFavoriteFolders { get; set; }
         public AttachmentRemovalMode AttachmentRemovalMode { get; set; }
         public AttachmentLabelLocation AttachmentLabelLocation { get; set; }
-        public bool AutoExpandResults { get; set; }
+        public SearchPathDisplayMode SearchPathDisplayMode { get; set; }
         public int AutoClassHistoryDays { get; set; }
         public bool ClassifyMeetingItems { get; set; }
+        public bool MarkAsReadOnClassify { get; set; }
+        public bool UpdateCheckEnabled { get; set; }
+        public string UpdateCheckUrl { get; set; }
+        public string UpdateCheckLastSeenVersion { get; set; }
+        public string UpdateCheckDismissedUtc { get; set; }
         public string PreferredUiLanguage { get; set; }
 
         /// <summary>Read every key, falling back to the same defaults the individual call sites use today.</summary>
@@ -92,13 +100,23 @@ namespace RBLclass.Core
                     store.Get(SettingsKeys.SentItemTriageMode, null),
                     store.GetBool(SettingsKeys.SentItemTriagePrompt, true)),
                 ClassifyAfterMoveToInbox = store.GetBool(SettingsKeys.ClassifyAfterMoveToInbox, true),
+                SentItemTriageArchiveStoreId = store.Get(SettingsKeys.SentItemTriageArchiveStoreId, string.Empty),
+                SentItemTriageArchiveEntryId = store.Get(SettingsKeys.SentItemTriageArchiveEntryId, string.Empty),
+                SentItemTriageArchivePath = store.Get(SettingsKeys.SentItemTriageArchivePath, string.Empty),
                 AttachmentFavoriteFolders = ParseList(store.Get(SettingsKeys.AttachmentFavoriteFolders, string.Empty)),
                 AttachmentRemovalMode = ParseAttachmentRemovalMode(store.Get(SettingsKeys.AttachmentRemovalMode, null)),
                 AttachmentLabelLocation = ParseAttachmentLabelLocation(store.Get(SettingsKeys.AttachmentLabelLocation, null)),
-                AutoExpandResults = store.GetBool(SettingsKeys.AutoExpandResults, false),
+                SearchPathDisplayMode = ParsePathDisplayMode(
+                    store.Get(SettingsKeys.SearchPathDisplayMode, null),
+                    store.GetBool(SettingsKeys.AutoExpandResults, false)),
                 AutoClassHistoryDays = ParseClampedInt(store.Get(SettingsKeys.AutoClassHistoryDays, null),
                     DefaultAutoClassHistoryDays, 1, MaxAutoClassHistoryDays),
                 ClassifyMeetingItems = store.GetBool(SettingsKeys.ClassifyMeetingItems, false),
+                MarkAsReadOnClassify = store.GetBool(SettingsKeys.MarkAsReadOnClassify, false),
+                UpdateCheckEnabled = store.GetBool(SettingsKeys.UpdateCheckEnabled, false),
+                UpdateCheckUrl = store.Get(SettingsKeys.UpdateCheckUrl, string.Empty),
+                UpdateCheckLastSeenVersion = store.Get(SettingsKeys.UpdateCheckLastSeenVersion, string.Empty),
+                UpdateCheckDismissedUtc = store.Get(SettingsKeys.UpdateCheckDismissedUtc, string.Empty),
                 PreferredUiLanguage = ParseUiLanguage(store.Get(SettingsKeys.PreferredUiLanguage, null))
             };
         }
@@ -125,13 +143,21 @@ namespace RBLclass.Core
             store.Set(SettingsKeys.ForgottenAttachmentKeywords, FormatList(ForgottenAttachmentKeywords));
             store.Set(SettingsKeys.SentItemTriageMode, SentItemTriageMode.ToString());
             store.SetBool(SettingsKeys.ClassifyAfterMoveToInbox, ClassifyAfterMoveToInbox);
+            store.Set(SettingsKeys.SentItemTriageArchiveStoreId, SentItemTriageArchiveStoreId ?? string.Empty);
+            store.Set(SettingsKeys.SentItemTriageArchiveEntryId, SentItemTriageArchiveEntryId ?? string.Empty);
+            store.Set(SettingsKeys.SentItemTriageArchivePath, SentItemTriageArchivePath ?? string.Empty);
             store.Set(SettingsKeys.AttachmentFavoriteFolders, FormatList(AttachmentFavoriteFolders));
             store.Set(SettingsKeys.AttachmentRemovalMode, AttachmentRemovalMode.ToString());
             store.Set(SettingsKeys.AttachmentLabelLocation, AttachmentLabelLocation.ToString());
-            store.SetBool(SettingsKeys.AutoExpandResults, AutoExpandResults);
+            store.Set(SettingsKeys.SearchPathDisplayMode, SearchPathDisplayMode.ToString());
             store.Set(SettingsKeys.AutoClassHistoryDays,
                 AutoClassHistoryDays.ToString(CultureInfo.InvariantCulture));
             store.SetBool(SettingsKeys.ClassifyMeetingItems, ClassifyMeetingItems);
+            store.SetBool(SettingsKeys.MarkAsReadOnClassify, MarkAsReadOnClassify);
+            store.SetBool(SettingsKeys.UpdateCheckEnabled, UpdateCheckEnabled);
+            store.Set(SettingsKeys.UpdateCheckUrl, UpdateCheckUrl ?? string.Empty);
+            store.Set(SettingsKeys.UpdateCheckLastSeenVersion, UpdateCheckLastSeenVersion ?? string.Empty);
+            store.Set(SettingsKeys.UpdateCheckDismissedUtc, UpdateCheckDismissedUtc ?? string.Empty);
             store.Set(SettingsKeys.PreferredUiLanguage, PreferredUiLanguage);
         }
 
@@ -153,6 +179,19 @@ namespace RBLclass.Core
             return Enum.TryParse(raw, out mode)
                    && Enum.IsDefined(typeof(AttachmentRemovalMode), mode)
                 ? mode : AttachmentRemovalMode.Modal;
+        }
+
+        /// <summary>
+        /// Parse the stored path-display mode; when absent, migrate the legacy
+        /// AutoExpandResults flag (on → PerSegment, off → OneLine). Unrecognised
+        /// values fall back to OneLine (v2.7.0.0 C1).
+        /// </summary>
+        private static SearchPathDisplayMode ParsePathDisplayMode(string raw, bool legacyAutoExpand)
+        {
+            SearchPathDisplayMode mode;
+            if (Enum.TryParse(raw, out mode) && Enum.IsDefined(typeof(SearchPathDisplayMode), mode))
+                return mode;
+            return legacyAutoExpand ? SearchPathDisplayMode.PerSegment : SearchPathDisplayMode.OneLine;
         }
 
         /// <summary>Unrecognised or missing values fall back to Body (the reliable label location).</summary>

@@ -5,6 +5,7 @@ namespace RBLclass.AddIn
     {
         MoveToInbox = 0,
         Delete = 1,
-        Leave = 2
+        Leave = 2,
+        MoveToArchive = 3
     }
 }

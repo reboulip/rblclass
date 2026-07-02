@@ -1,0 +1,741 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>RBLclass — User Guide / Benutzerhandbuch / Guide d'utilisation</title>
+<style>
+  body {
+    font-family: -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
+    line-height: 1.55;
+    color: #222;
+    max-width: 780px;
+    margin: 2em auto;
+    padding: 0 1.5em;
+  }
+  h1 { font-size: 1.6em; border-bottom: 2px solid #2a5d8a; padding-bottom: 0.3em; }
+  h2 { font-size: 1.25em; color: #2a5d8a; margin-top: 1.6em; }
+  h3 { font-size: 1.05em; color: #2a5d8a; margin-top: 1.2em; }
+  code, .path, kbd {
+    font-family: Consolas, "Courier New", monospace;
+    background: #f1f3f5;
+    padding: 0.1em 0.35em;
+    border-radius: 3px;
+    font-size: 0.95em;
+  }
+  kbd { border: 1px solid #c4ccd4; box-shadow: 0 1px 0 #c4ccd4; }
+  table { border-collapse: collapse; width: 100%; margin: 0.8em 0; }
+  th, td { border: 1px solid #d8dde2; padding: 0.5em 0.7em; text-align: left; vertical-align: top; }
+  th { background: #f1f3f5; }
+  .note {
+    background: #eef6ff;
+    border-left: 4px solid #2a5d8a;
+    padding: 0.7em 1em;
+    margin: 1em 0;
+  }
+  footer { margin-top: 2.5em; font-size: 0.9em; color: #666; }
+
+  /* Language switcher */
+  .lang-switch {
+    position: fixed;
+    top: 1em;
+    right: 1.5em;
+    background: #fff;
+    border: 1px solid #d8dde2;
+    border-radius: 6px;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.12);
+    overflow: hidden;
+    z-index: 10;
+  }
+  .lang-switch button {
+    font-family: inherit;
+    font-size: 0.9em;
+    border: none;
+    background: #fff;
+    color: #2a5d8a;
+    padding: 0.45em 0.9em;
+    cursor: pointer;
+  }
+  .lang-switch button + button { border-left: 1px solid #d8dde2; }
+  .lang-switch button.active { background: #2a5d8a; color: #fff; font-weight: bold; }
+  .lang-switch button:hover:not(.active) { background: #eef6ff; }
+  .lang-block { display: none; }
+  .lang-block.active { display: block; }
+
+  @media print {
+    .lang-switch { display: none; }
+  }
+</style>
+</head>
+<body>
+
+<nav class="lang-switch" aria-label="Language selector">
+  <button type="button" data-lang="en" class="active" onclick="setLang('en')">English</button><button type="button" data-lang="de" onclick="setLang('de')">Deutsch</button><button type="button" data-lang="fr" onclick="setLang('fr')">Français</button>
+</nav>
+
+<!-- ================================================================ -->
+<!-- ENGLISH                                                          -->
+<!-- ================================================================ -->
+<div class="lang-block active" data-lang="en" lang="en">
+
+<h1>RBLclass — User Guide</h1>
+<p>
+RBLclass is an Outlook add-in that helps you file (classify) emails into
+folders across your mailboxes and PST archives, with fast keyword search over
+your whole folder tree. It adds a task pane on the right of Outlook and an
+<strong>RBLclass</strong> tab on the ribbon.
+</p>
+
+<h2>Getting started</h2>
+<p>
+The RBLclass pane opens automatically when Outlook starts. If you close it, the
+<strong>RBLclass</strong> ribbon tab has four buttons:
+</p>
+<ul>
+  <li><strong>RBLclass pane</strong> — show or hide the pane.</li>
+  <li><strong>Refresh folders</strong> — re-scan your mailboxes so folders you
+      created or renamed directly in Outlook show up in search.</li>
+  <li><strong>Settings</strong> — all options (see the Settings reference below).</li>
+  <li><strong>About</strong> — version, author and technical information.</li>
+</ul>
+<p>
+Keyboard access to the pane: press <kbd>Alt</kbd>, then <kbd>R</kbd> (the
+RBLclass tab), then <kbd>R</kbd> again (the pane button).
+</p>
+
+<h2>Features</h2>
+
+<h3>Folder search</h3>
+<p>Type keywords in the search box at the top of the pane. Results appear after
+a short pause. For each result row:</p>
+<ul>
+  <li><strong>Single-click</strong> the row to check it as a filing destination
+      (check several to file into all of them at once).</li>
+  <li><kbd>Enter</kbd> files the selected mail into the highlighted folder.</li>
+  <li><kbd>Ctrl</kbd>+<kbd>Enter</kbd> <em>opens</em> the highlighted folder in
+      Outlook instead of filing.</li>
+  <li><strong>Double-click</strong> a row to file into that folder immediately.</li>
+  <li>The <strong>↗</strong> button opens that folder in Outlook.</li>
+  <li>Right-click → <strong>Add subfolder…</strong> creates a sub-folder under it.</li>
+  <li>The <strong>⤢</strong> button cycles how that row shows its path (see
+      "Search result path display" in Settings).</li>
+</ul>
+<p>Tapping <kbd>Ctrl</kbd> on its own (press and release, without another key)
+toggles <em>"List every matching folder"</em>.</p>
+
+<h3>Classify</h3>
+<p>
+Select one or more mails in Outlook, check the destination folder(s) in the
+pane, then click <strong>Classify</strong> (or press <kbd>Enter</kbd> /
+double-click for a single folder). The <strong>▶ Options</strong> zone offers
+five per-action overrides, seeded from your settings and reset after each
+classify: keep a copy, remove attachments from the filed copy, include the
+whole conversation, strip the external-sender banner, and mark as read.
+</p>
+<p>
+<strong>Auto-class</strong> files the selected mail(s) to wherever their
+conversation was last classified, without picking a folder by hand.
+</p>
+
+<h3>Undo</h3>
+<p>
+The <strong>Undo</strong> button — or <kbd>Ctrl</kbd>+<kbd>Z</kbd> anywhere in
+the pane — reverses the last classify: moved mails go back to their source
+folder (and are re-selected there so you can re-file them elsewhere) and filed
+copies are removed. Only the last classify can be undone; removed attachments
+cannot be restored.
+</p>
+
+<h3>Attachment management</h3>
+<p>
+When <em>"Remove attachments"</em> is on, the filed copy loses its attachments;
+the original (or the kept copy) is never touched. In the default
+<em>"Ask what to do with each attachment"</em> mode, a dialog lets you Delete,
+Save to… or Keep each attachment; a <em>"use the same save directory"</em>
+checkbox applies your choice to all of them. Encrypted (S/MIME) mails are never
+stripped.
+</p>
+
+<h3>Sent-item triage</h3>
+<p>
+Each time a mail lands in <strong>Sent Items</strong>, RBLclass can act
+automatically or ask you. The choices are: <strong>Move to Inbox</strong>,
+<strong>Move to archive folder</strong> (a folder you configure), <strong>Delete
+from Sent Items</strong>, or <strong>Leave in Sent Items</strong>. When a sent
+mail is moved to the Inbox, the pane can auto-open with that mail pinned as the
+next thing to file.
+</p>
+
+<h3>Send-time guards</h3>
+<ul>
+  <li><strong>Forgotten attachment</strong>: if your message body mentions an
+      attachment (using the configured keywords) but nothing is attached, a
+      confirmation appears before the mail goes out.</li>
+  <li><strong>External recipient</strong>: before sending, a confirmation lists
+      any recipient whose domain is not on your internal-domains list.</li>
+</ul>
+
+<h3>External-sender banner strip</h3>
+<p>
+Many organisations add a "this email came from outside" banner to incoming
+mail. Teach RBLclass that banner once (Settings → External-sender banner →
+<em>Learn from selected mail</em>), and it can strip it automatically from your
+replies and forwards, and from filed copies.
+</p>
+
+<h2>Settings reference</h2>
+<p>Open Settings from the RBLclass ribbon group. Every change applies and
+persists immediately — there is no "Apply" button, and closing is always safe.</p>
+
+<h3>Folder search</h3>
+<table>
+<tr><th>Setting</th><th>Default</th><th>What it does</th></tr>
+<tr><td>List every matching folder</td><td>Off</td><td>When off, duplicate branches of the tree are collapsed; when on, every matching folder is listed separately.</td></tr>
+<tr><td>Match only the start of words</td><td>Off</td><td>Stricter matching: "proj" matches "Projects" but "security" does <em>not</em> match "Cybersecurity". The default (off) is the broader "contains" search.</td></tr>
+<tr><td>Open folders in a new Outlook window</td><td>Off</td><td>When on, "open folder" opens a new Outlook window instead of navigating the current one.</td></tr>
+<tr><td>Search result path display</td><td>Single line</td><td>How each result row shows its folder path: a single left-trimmed line, the full path wrapped to the pane width, or the full path with one sub-folder per line. The per-row <strong>⤢</strong> button cycles all three for that row.</td></tr>
+<tr><td>Maximum results to display</td><td>50</td><td>Cap on the number of result rows. Range depends on your mailbox size.</td></tr>
+<tr><td>Search after at least N characters</td><td>2</td><td>Avoids searching on a single letter. Range 1–10.</td></tr>
+<tr><td>Pause before searching (ms)</td><td>200</td><td>Search fires this many milliseconds after your last keystroke. Range 0–2000.</td></tr>
+</table>
+
+<h3>Classify</h3>
+<table>
+<tr><th>Setting</th><th>Default</th><th>What it does</th></tr>
+<tr><td>Keep the original after classifying</td><td>Off</td><td>Copies the mail to the destination and leaves the original in place ("Keep a copy").</td></tr>
+<tr><td>Remove attachments from the filed copy</td><td>Off</td><td>Strips attachments from the copy that lands in the destination; the original is untouched. Sub-options: ask per attachment (default) or delete all silently; and whether to record a "former attachments" note in the body.</td></tr>
+<tr><td>Keep a safety copy in Deleted Items</td><td>Off</td><td>When the original is not kept, also places a copy in Deleted Items as a safety net.</td></tr>
+<tr><td>Include the whole conversation by default</td><td>Off</td><td>Pre-checks the pane's "Include the whole conversation" option.</td></tr>
+<tr><td>Classify meeting requests and responses</td><td>Off</td><td>Allows meeting items selected in Outlook to be classified alongside regular mails.</td></tr>
+<tr><td>Mark classified mail as read</td><td>Off</td><td>Marks each filed mail as read as part of classify (including Auto-class).</td></tr>
+<tr><td>Auto-class history window (days)</td><td>90</td><td>How far back Auto-class looks when deciding where a conversation was last filed. Range 1–3650.</td></tr>
+</table>
+
+<h3>External-sender banner</h3>
+<p><em>Learn from selected mail</em> captures the banner from the currently
+selected mail; <em>Forget</em> clears it; <em>Diagnose</em> reports whether the
+current mail matches. Then three toggles (all off by default, and only useful
+once a banner is learned): strip on reply/forward, strip on classify, and strip
+during Auto-class.</p>
+
+<h3>Sending guards</h3>
+<table>
+<tr><th>Setting</th><th>Default</th><th>What it does</th></tr>
+<tr><td>Warn before sending outside the organisation</td><td>On</td><td>Confirmation dialog if any recipient's domain is not on the internal list.</td></tr>
+<tr><td>Domains treated as internal</td><td>(empty)</td><td>Semicolon-separated domains to exempt from the external-recipient warning, e.g. <code>contoso.com;subsidiary.fr</code>.</td></tr>
+<tr><td>Forgotten-attachment keywords</td><td>attach;enclos;joint;PJ</td><td>If one of these words appears in the body but no attachment is attached, a warning appears before sending. Clear the field to disable the guard.</td></tr>
+</table>
+
+<h3>Sent items</h3>
+<table>
+<tr><th>Setting</th><th>Default</th><th>What it does</th></tr>
+<tr><td>When a mail lands in Sent Items</td><td>Ask me each time</td><td>Ask each time, or automatically Move to Inbox, Move to archive folder, Delete, or Leave.</td></tr>
+<tr><td>Archive folder</td><td>(not configured)</td><td>The Outlook folder sent mail is moved to when "Move to archive folder" is chosen. Use <em>Pick folder…</em> / <em>Clear</em>.</td></tr>
+<tr><td>Open the classify pane after moving to Inbox</td><td>On</td><td>Reveals the pane with the sent mail pinned as the next classify target.</td></tr>
+</table>
+
+<h3>Updates</h3>
+<table>
+<tr><th>Setting</th><th>Default</th><th>What it does</th></tr>
+<tr><td>Check for a newer version at startup</td><td>Off</td><td>When on <em>and</em> a URL is set, RBLclass makes one request to that URL at startup to read the latest version number, and shows an orange banner if a newer version is available. No other data is sent, and nothing happens if the URL is blank.</td></tr>
+<tr><td>Version-check URL</td><td>(empty)</td><td>The address of a plain-text version marker on your internal HTTPS share. Ask your deployment team for this value.</td></tr>
+</table>
+
+<h3>Favourite attachment folders</h3>
+<p>Pre-index Windows directories so the "Save to…" picker (in the attachment
+dialog) finds a save location as fast as an Outlook folder. Sub-folders are
+indexed to a depth of 4.</p>
+
+<h3>Language</h3>
+<p>RBLclass follows Outlook's language by default (falling back to English). You
+can override it to English, Français or Deutsch. Changing the language takes
+effect after you restart Outlook.</p>
+
+<h2>Keyboard shortcuts</h2>
+<table>
+<tr><th>Shortcut</th><th>Action</th></tr>
+<tr><td><kbd>Ctrl</kbd>+<kbd>Z</kbd></td><td>Undo the last classify (anywhere in the RBLclass pane).</td></tr>
+<tr><td><kbd>Enter</kbd></td><td>File the selected mail into the highlighted folder.</td></tr>
+<tr><td><kbd>Ctrl</kbd>+<kbd>Enter</kbd></td><td>Open the highlighted folder in Outlook.</td></tr>
+<tr><td><kbd>Ctrl</kbd> (tap)</td><td>Toggle "List every matching folder".</td></tr>
+<tr><td><kbd>Alt</kbd>, <kbd>R</kbd>, <kbd>R</kbd></td><td>Open / toggle the RBLclass pane from the ribbon.</td></tr>
+<tr><td><kbd>Tab</kbd> (from the search box)</td><td>Open the Options panel and move focus to its first checkbox.</td></tr>
+</table>
+
+<h2>Refresh the folder index</h2>
+<p>The folder index is built automatically in the background when Outlook starts.
+If you create or rename a folder directly in Outlook and it doesn't appear in
+search, click <strong>Refresh folders</strong> on the ribbon.</p>
+
+<h2>Suggesting improvements / reporting problems</h2>
+<p>
+RBLclass is maintained on GitHub:
+<a href="https://github.com/reboulip/rblclass/issues">github.com/reboulip/rblclass/issues</a>.
+Open an issue there to report a bug or suggest a feature. If you cannot reach
+GitHub from your workstation, use the contact channel from the installation
+guide instead. To help diagnose a problem, attach the latest log file from
+<span class="path">%LocalAppData%\RBLclass\logs\</span>.
+</p>
+
+<footer>
+This file is self-contained (no external images or styles) — safe to send as a
+single email attachment or to place on the internal share next to the installer.
+</footer>
+
+</div>
+
+<!-- ================================================================ -->
+<!-- DEUTSCH                                                          -->
+<!-- ================================================================ -->
+<div class="lang-block" data-lang="de" lang="de">
+
+<h1>RBLclass — Benutzerhandbuch</h1>
+<p>
+RBLclass ist ein Outlook-Add-in, das E-Mails schnell in Ordner über Ihre
+Postfächer und PST-Archive hinweg ablegt (klassifiziert), mit einer schnellen
+Stichwortsuche über den gesamten Ordnerbaum. Es fügt rechts in Outlook einen
+Aufgabenbereich und ein Menüband-Register <strong>RBLclass</strong> hinzu.
+</p>
+
+<h2>Erste Schritte</h2>
+<p>
+Der RBLclass-Bereich öffnet sich automatisch beim Start von Outlook. Wenn Sie
+ihn schließen, bietet das Menüband-Register <strong>RBLclass</strong> vier
+Schaltflächen:
+</p>
+<ul>
+  <li><strong>RBLclass-Bereich</strong> — den Bereich ein-/ausblenden.</li>
+  <li><strong>Ordner aktualisieren</strong> — Postfächer neu einlesen, damit
+      direkt in Outlook erstellte oder umbenannte Ordner in der Suche erscheinen.</li>
+  <li><strong>Einstellungen</strong> — alle Optionen (siehe unten).</li>
+  <li><strong>Info</strong> — Version, Autor und technische Angaben.</li>
+</ul>
+<p>
+Tastaturzugriff auf den Bereich: <kbd>Alt</kbd>, dann <kbd>R</kbd> (Register
+RBLclass), dann erneut <kbd>R</kbd> (Bereichsschaltfläche).
+</p>
+
+<h2>Funktionen</h2>
+
+<h3>Ordnersuche</h3>
+<p>Geben Sie Stichwörter in das Suchfeld oben im Bereich ein. Die Ergebnisse
+erscheinen nach einer kurzen Pause. Pro Ergebniszeile:</p>
+<ul>
+  <li><strong>Einfachklick</strong> auf die Zeile markiert sie als Ablageziel
+      (mehrere markieren, um in alle gleichzeitig abzulegen).</li>
+  <li><kbd>Eingabe</kbd> legt die ausgewählte E-Mail in den markierten Ordner ab.</li>
+  <li><kbd>Strg</kbd>+<kbd>Eingabe</kbd> <em>öffnet</em> den markierten Ordner in
+      Outlook, statt abzulegen.</li>
+  <li><strong>Doppelklick</strong> auf eine Zeile legt sofort in diesen Ordner ab.</li>
+  <li>Die Schaltfläche <strong>↗</strong> öffnet diesen Ordner in Outlook.</li>
+  <li>Rechtsklick → <strong>Unterordner hinzufügen…</strong> erstellt einen
+      Unterordner darunter.</li>
+  <li>Die Schaltfläche <strong>⤢</strong> wechselt die Pfadanzeige dieser Zeile
+      (siehe „Pfadanzeige der Suchergebnisse" in den Einstellungen).</li>
+</ul>
+<p>Ein kurzes Antippen von <kbd>Strg</kbd> allein (drücken und loslassen)
+schaltet <em>„Alle passenden Ordner anzeigen"</em> um.</p>
+
+<h3>Klassifizieren</h3>
+<p>
+Wählen Sie in Outlook eine oder mehrere E-Mails aus, markieren Sie im Bereich
+die Zielordner und klicken Sie auf <strong>Klassifizieren</strong> (oder
+<kbd>Eingabe</kbd> / Doppelklick für einen einzelnen Ordner). Der Bereich
+<strong>▶ Optionen</strong> bietet fünf Überschreibungen pro Aktion, aus Ihren
+Einstellungen vorbelegt und nach jeder Ablage zurückgesetzt: Kopie behalten,
+Anhänge aus der abgelegten Kopie entfernen, gesamte Unterhaltung einbeziehen,
+Externe-Absender-Banner entfernen und als gelesen markieren.
+</p>
+<p>
+<strong>Auto-Klassierung</strong> legt die ausgewählte(n) E-Mail(s) dorthin ab,
+wo ihre Unterhaltung zuletzt abgelegt wurde, ohne Ordnerauswahl von Hand.
+</p>
+
+<h3>Rückgängig</h3>
+<p>
+Die Schaltfläche <strong>Rückgängig</strong> — oder <kbd>Strg</kbd>+<kbd>Z</kbd>
+irgendwo im Bereich — macht die letzte Ablage rückgängig: verschobene E-Mails
+kehren in ihren Quellordner zurück (und werden dort erneut ausgewählt, damit Sie
+sie anderswo ablegen können) und abgelegte Kopien werden entfernt. Nur die
+letzte Ablage kann rückgängig gemacht werden; entfernte Anhänge nicht.
+</p>
+
+<h3>Anhangsverwaltung</h3>
+<p>
+Ist <em>„Anhänge entfernen"</em> aktiv, verliert die abgelegte Kopie ihre
+Anhänge; das Original (oder die behaltene Kopie) bleibt unberührt. Im
+Standardmodus <em>„Bei jedem Anhang nachfragen"</em> können Sie jeden Anhang
+löschen, unter … speichern oder behalten; ein Kontrollkästchen
+<em>„denselben Speicherort verwenden"</em> wendet die Wahl auf alle an.
+Verschlüsselte (S/MIME) E-Mails werden nie bereinigt.
+</p>
+
+<h3>Postausgang-Verwaltung</h3>
+<p>
+Jedes Mal, wenn eine E-Mail in <strong>Gesendete Elemente</strong> gelangt, kann
+RBLclass automatisch handeln oder nachfragen. Die Optionen sind: <strong>In den
+Posteingang verschieben</strong>, <strong>In Archivordner verschieben</strong>
+(ein von Ihnen konfigurierter Ordner), <strong>Aus gesendeten Elementen
+löschen</strong> oder <strong>In gesendeten Elementen belassen</strong>. Wird
+eine gesendete E-Mail in den Posteingang verschoben, kann sich der Bereich
+öffnen und diese E-Mail als nächstes Ablageziel anheften.
+</p>
+
+<h3>Sendeprüfungen</h3>
+<ul>
+  <li><strong>Vergessener Anhang</strong>: Erwähnt Ihr Text einen Anhang (über
+      die konfigurierten Stichwörter), ist aber keiner beigefügt, erscheint vor
+      dem Senden eine Rückfrage.</li>
+  <li><strong>Externer Empfänger</strong>: Vor dem Senden werden Empfänger
+      aufgelistet, deren Domäne nicht in Ihrer internen Liste steht.</li>
+</ul>
+
+<h3>Externe-Absender-Banner entfernen</h3>
+<p>
+Viele Organisationen fügen eingehenden E-Mails ein „Diese E-Mail kam von
+außen"-Banner hinzu. Bringen Sie RBLclass dieses Banner einmal bei
+(Einstellungen → Externe-Absender-Banner → <em>Aus ausgewählter E-Mail
+lernen</em>), und es kann es automatisch aus Antworten und Weiterleitungen sowie
+aus abgelegten Kopien entfernen.
+</p>
+
+<h2>Einstellungsreferenz</h2>
+<p>Öffnen Sie die Einstellungen über die RBLclass-Menübandgruppe. Jede Änderung
+wird sofort übernommen und gespeichert — es gibt keine „Übernehmen"-Schaltfläche,
+und Schließen ist immer sicher.</p>
+
+<h3>Ordnersuche</h3>
+<table>
+<tr><th>Einstellung</th><th>Standard</th><th>Wirkung</th></tr>
+<tr><td>Alle passenden Ordner anzeigen</td><td>Aus</td><td>Aus: doppelte Zweige werden zusammengefasst; ein: jeder passende Ordner wird einzeln aufgeführt.</td></tr>
+<tr><td>Nur Wortanfänge abgleichen</td><td>Aus</td><td>Strengerer Abgleich: „proj" trifft auf „Projects", aber „security" trifft <em>nicht</em> auf „Cybersecurity". Standard (aus) ist die breitere „enthält"-Suche.</td></tr>
+<tr><td>Ordner in neuem Outlook-Fenster öffnen</td><td>Aus</td><td>Ein: „Ordner öffnen" öffnet ein neues Fenster statt das aktuelle umzuleiten.</td></tr>
+<tr><td>Pfadanzeige der Suchergebnisse</td><td>Einzelne Zeile</td><td>Wie jede Ergebniszeile den Pfad zeigt: einzelne, links abgeschnittene Zeile; vollständiger, auf die Bereichsbreite umgebrochener Pfad; oder vollständiger Pfad mit einem Unterordner pro Zeile. Die <strong>⤢</strong>-Schaltfläche wechselt alle drei pro Zeile.</td></tr>
+<tr><td>Maximale Ergebnisanzahl</td><td>50</td><td>Obergrenze der angezeigten Zeilen.</td></tr>
+<tr><td>Suchen ab mindestens N Zeichen</td><td>2</td><td>Verhindert die Suche bei einem einzelnen Buchstaben. Bereich 1–10.</td></tr>
+<tr><td>Pause vor der Suche (ms)</td><td>200</td><td>Die Suche startet so viele Millisekunden nach dem letzten Tastendruck. Bereich 0–2000.</td></tr>
+</table>
+
+<h3>Klassifizieren</h3>
+<table>
+<tr><th>Einstellung</th><th>Standard</th><th>Wirkung</th></tr>
+<tr><td>Original nach dem Klassifizieren behalten</td><td>Aus</td><td>Kopiert die E-Mail ins Ziel und belässt das Original („Kopie behalten").</td></tr>
+<tr><td>Anhänge aus der abgelegten Kopie entfernen</td><td>Aus</td><td>Entfernt Anhänge aus der Zielkopie; das Original bleibt unberührt. Unteroptionen: pro Anhang nachfragen (Standard) oder alle ohne Nachfrage löschen; und ob ein „Ehemalige Anhänge"-Hinweis im Text vermerkt wird.</td></tr>
+<tr><td>Sicherheitskopie in Gelöschte Elemente</td><td>Aus</td><td>Wenn das Original nicht behalten wird, wird zusätzlich eine Kopie in Gelöschte Elemente als Sicherung abgelegt.</td></tr>
+<tr><td>Standardmäßig die gesamte Unterhaltung</td><td>Aus</td><td>Aktiviert die Option „Gesamte Unterhaltung einbeziehen" im Bereich vor.</td></tr>
+<tr><td>Besprechungsanfragen und -antworten ablegen</td><td>Aus</td><td>Erlaubt, in Outlook ausgewählte Besprechungselemente mit abzulegen.</td></tr>
+<tr><td>Abgelegte E-Mails als gelesen markieren</td><td>Aus</td><td>Markiert jede abgelegte E-Mail beim Klassifizieren als gelesen (auch Auto-Klassierung).</td></tr>
+<tr><td>Verlaufsfenster der Auto-Klassierung (Tage)</td><td>90</td><td>Wie weit die Auto-Klassierung zurückblickt. Bereich 1–3650.</td></tr>
+</table>
+
+<h3>Externe-Absender-Banner</h3>
+<p><em>Aus ausgewählter E-Mail lernen</em> erfasst das Banner der aktuell
+gewählten E-Mail; <em>Vergessen</em> löscht es; <em>Diagnose</em> meldet, ob die
+aktuelle E-Mail passt. Danach drei Schalter (alle standardmäßig aus, nur nach
+dem Lernen sinnvoll): beim Antworten/Weiterleiten entfernen, beim Klassifizieren
+entfernen und bei der Auto-Klassierung entfernen.</p>
+
+<h3>Sendeprüfungen</h3>
+<table>
+<tr><th>Einstellung</th><th>Standard</th><th>Wirkung</th></tr>
+<tr><td>Vor dem Senden nach außerhalb warnen</td><td>Ein</td><td>Rückfrage, wenn die Domäne eines Empfängers nicht in der internen Liste steht.</td></tr>
+<tr><td>Als intern geltende Domänen</td><td>(leer)</td><td>Durch Semikolon getrennte Domänen, die von der Warnung ausgenommen sind, z. B. <code>contoso.com;subsidiary.fr</code>.</td></tr>
+<tr><td>Stichwörter für vergessene Anhänge</td><td>attach;enclos;joint;PJ</td><td>Kommt eines dieser Wörter im Text vor, ist aber kein Anhang beigefügt, erscheint vor dem Senden eine Warnung. Feld leeren, um die Prüfung zu deaktivieren.</td></tr>
+</table>
+
+<h3>Gesendete Elemente</h3>
+<table>
+<tr><th>Einstellung</th><th>Standard</th><th>Wirkung</th></tr>
+<tr><td>Wenn eine E-Mail in Gesendete Elemente gelangt</td><td>Jedes Mal fragen</td><td>Jedes Mal fragen, oder automatisch: In den Posteingang, In Archivordner, Löschen oder Belassen.</td></tr>
+<tr><td>Archivordner</td><td>(nicht konfiguriert)</td><td>Der Ordner, in den gesendete E-Mails bei „In Archivordner verschieben" gelegt werden. <em>Ordner wählen…</em> / <em>Löschen</em>.</td></tr>
+<tr><td>Ablagebereich nach Verschieben in Posteingang öffnen</td><td>Ein</td><td>Zeigt den Bereich mit der gesendeten E-Mail als nächstem Ablageziel.</td></tr>
+</table>
+
+<h3>Aktualisierungen</h3>
+<table>
+<tr><th>Einstellung</th><th>Standard</th><th>Wirkung</th></tr>
+<tr><td>Beim Start nach einer neueren Version suchen</td><td>Aus</td><td>Ein <em>und</em> mit gesetzter URL: RBLclass sendet beim Start eine Anfrage an diese URL, um die neueste Versionsnummer zu lesen, und zeigt ein orangefarbenes Banner, wenn eine neuere Version verfügbar ist. Es werden keine weiteren Daten gesendet; bei leerer URL geschieht nichts.</td></tr>
+<tr><td>URL für die Versionsprüfung</td><td>(leer)</td><td>Adresse einer Textdatei mit der Versionsnummer auf Ihrem internen HTTPS-Share. Fragen Sie Ihr Bereitstellungsteam nach diesem Wert.</td></tr>
+</table>
+
+<h3>Bevorzugte Anlagenordner</h3>
+<p>Indizieren Sie Windows-Verzeichnisse vor, damit die „Speichern unter…"-Auswahl
+(im Anhang-Dialog) einen Speicherort so schnell findet wie einen Outlook-Ordner.
+Unterordner werden bis zu einer Tiefe von 4 indiziert.</p>
+
+<h3>Sprache</h3>
+<p>RBLclass folgt standardmäßig der Sprache von Outlook (mit Rückfall auf
+Englisch). Sie können auf English, Français oder Deutsch umstellen. Die Änderung
+wird nach einem Neustart von Outlook wirksam.</p>
+
+<h2>Tastaturkürzel</h2>
+<table>
+<tr><th>Kürzel</th><th>Aktion</th></tr>
+<tr><td><kbd>Strg</kbd>+<kbd>Z</kbd></td><td>Letzte Ablage rückgängig machen (irgendwo im Bereich).</td></tr>
+<tr><td><kbd>Eingabe</kbd></td><td>Ausgewählte E-Mail in den markierten Ordner ablegen.</td></tr>
+<tr><td><kbd>Strg</kbd>+<kbd>Eingabe</kbd></td><td>Markierten Ordner in Outlook öffnen.</td></tr>
+<tr><td><kbd>Strg</kbd> (antippen)</td><td>„Alle passenden Ordner anzeigen" umschalten.</td></tr>
+<tr><td><kbd>Alt</kbd>, <kbd>R</kbd>, <kbd>R</kbd></td><td>RBLclass-Bereich über das Menüband öffnen/umschalten.</td></tr>
+<tr><td><kbd>Tab</kbd> (aus dem Suchfeld)</td><td>Optionen öffnen und Fokus auf das erste Kontrollkästchen setzen.</td></tr>
+</table>
+
+<h2>Ordnerindex aktualisieren</h2>
+<p>Der Ordnerindex wird beim Start von Outlook automatisch im Hintergrund
+aufgebaut. Wenn Sie einen Ordner direkt in Outlook erstellen oder umbenennen und
+er nicht in der Suche erscheint, klicken Sie im Menüband auf
+<strong>Ordner aktualisieren</strong>.</p>
+
+<h2>Verbesserungsvorschläge / Problemmeldungen</h2>
+<p>
+RBLclass wird auf GitHub gepflegt:
+<a href="https://github.com/reboulip/rblclass/issues">github.com/reboulip/rblclass/issues</a>.
+Öffnen Sie dort ein Issue, um einen Fehler zu melden oder eine Funktion
+vorzuschlagen. Falls Sie GitHub von Ihrem Arbeitsplatz nicht erreichen, nutzen
+Sie den Kontaktkanal aus der Installationsanleitung. Zur Fehlerdiagnose fügen
+Sie die neueste Protokolldatei aus
+<span class="path">%LocalAppData%\RBLclass\logs\</span> bei.
+</p>
+
+<footer>
+Diese Datei ist autark (keine externen Bilder oder Stile) — sie kann als einzelne
+E-Mail-Anlage versendet oder neben dem Installationsprogramm auf dem internen
+Share abgelegt werden.
+</footer>
+
+</div>
+
+<!-- ================================================================ -->
+<!-- FRANÇAIS                                                         -->
+<!-- ================================================================ -->
+<div class="lang-block" data-lang="fr" lang="fr">
+
+<h1>RBLclass — Guide d'utilisation</h1>
+<p>
+RBLclass est un complément Outlook qui aide à classer rapidement les e-mails
+dans des dossiers, à travers vos boîtes aux lettres et archives PST, avec une
+recherche par mots-clés sur toute l'arborescence. Il ajoute un volet à droite
+d'Outlook et un onglet <strong>RBLclass</strong> sur le ruban.
+</p>
+
+<h2>Premiers pas</h2>
+<p>
+Le volet RBLclass s'ouvre automatiquement au démarrage d'Outlook. Si vous le
+fermez, l'onglet <strong>RBLclass</strong> du ruban propose quatre boutons :
+</p>
+<ul>
+  <li><strong>Volet RBLclass</strong> — afficher ou masquer le volet.</li>
+  <li><strong>Actualiser les dossiers</strong> — réanalyser les boîtes pour que
+      les dossiers créés ou renommés directement dans Outlook apparaissent.</li>
+  <li><strong>Paramètres</strong> — toutes les options (voir plus bas).</li>
+  <li><strong>À propos</strong> — version, auteur et informations techniques.</li>
+</ul>
+<p>
+Accès clavier au volet : <kbd>Alt</kbd>, puis <kbd>R</kbd> (onglet RBLclass),
+puis <kbd>R</kbd> à nouveau (bouton du volet).
+</p>
+
+<h2>Fonctionnalités</h2>
+
+<h3>Recherche de dossiers</h3>
+<p>Saisissez des mots-clés dans le champ de recherche en haut du volet. Les
+résultats apparaissent après une courte pause. Pour chaque ligne :</p>
+<ul>
+  <li><strong>Clic simple</strong> sur la ligne pour la cocher comme
+      destination (cochez-en plusieurs pour classer dans toutes à la fois).</li>
+  <li><kbd>Entrée</kbd> classe le message sélectionné dans le dossier en
+      surbrillance.</li>
+  <li><kbd>Ctrl</kbd>+<kbd>Entrée</kbd> <em>ouvre</em> le dossier en surbrillance
+      dans Outlook au lieu de classer.</li>
+  <li><strong>Double-clic</strong> sur une ligne pour classer immédiatement dans
+      ce dossier.</li>
+  <li>Le bouton <strong>↗</strong> ouvre ce dossier dans Outlook.</li>
+  <li>Clic droit → <strong>Ajouter un sous-dossier…</strong> crée un sous-dossier.</li>
+  <li>Le bouton <strong>⤢</strong> fait défiler le mode d'affichage du chemin de
+      cette ligne (voir « Affichage du chemin des résultats » dans les paramètres).</li>
+</ul>
+<p>Une brève pression sur <kbd>Ctrl</kbd> seul (appuyer puis relâcher) bascule
+<em>« Lister tous les dossiers correspondants »</em>.</p>
+
+<h3>Classer</h3>
+<p>
+Sélectionnez un ou plusieurs messages dans Outlook, cochez le(s) dossier(s) de
+destination dans le volet, puis cliquez sur <strong>Classer</strong> (ou
+<kbd>Entrée</kbd> / double-clic pour un seul dossier). La zone
+<strong>▶ Options</strong> propose cinq réglages ponctuels, initialisés depuis
+vos paramètres et réinitialisés après chaque classement : conserver une copie,
+supprimer les pièces jointes de la copie classée, inclure toute la conversation,
+supprimer la bannière d'expéditeur externe et marquer comme lu.
+</p>
+<p>
+<strong>Classement auto</strong> classe le(s) message(s) là où leur conversation
+a été classée la dernière fois, sans choisir de dossier à la main.
+</p>
+
+<h3>Annuler</h3>
+<p>
+Le bouton <strong>Annuler</strong> — ou <kbd>Ctrl</kbd>+<kbd>Z</kbd> n'importe où
+dans le volet — annule le dernier classement : les messages déplacés reviennent
+dans leur dossier source (et y sont resélectionnés pour les reclasser ailleurs)
+et les copies classées sont supprimées. Seul le dernier classement est
+annulable ; les pièces jointes supprimées ne sont pas restaurées.
+</p>
+
+<h3>Gestion des pièces jointes</h3>
+<p>
+Lorsque <em>« Supprimer les pièces jointes »</em> est activé, la copie classée
+perd ses pièces jointes ; l'original (ou la copie conservée) n'est jamais
+touché. Dans le mode par défaut <em>« Demander pour chaque pièce jointe »</em>,
+une boîte de dialogue permet de Supprimer, Enregistrer sous… ou Conserver chaque
+pièce jointe ; une case <em>« utiliser le même dossier »</em> applique votre
+choix à toutes. Les messages chiffrés (S/MIME) ne sont jamais modifiés.
+</p>
+
+<h3>Gestion des envois</h3>
+<p>
+Chaque fois qu'un message arrive dans les <strong>Éléments envoyés</strong>,
+RBLclass peut agir automatiquement ou vous demander. Les choix sont :
+<strong>Déplacer vers la boîte de réception</strong>, <strong>Déplacer vers le
+dossier d'archivage</strong> (un dossier que vous configurez),
+<strong>Supprimer des éléments envoyés</strong> ou <strong>Laisser dans les
+éléments envoyés</strong>. Quand un message envoyé est déplacé vers la boîte de
+réception, le volet peut s'ouvrir avec ce message épinglé comme prochain à classer.
+</p>
+
+<h3>Contrôles à l'envoi</h3>
+<ul>
+  <li><strong>Pièce jointe oubliée</strong> : si le corps du message mentionne
+      une pièce jointe (via les mots-clés configurés) mais qu'aucune n'est
+      jointe, une confirmation apparaît avant l'envoi.</li>
+  <li><strong>Destinataire externe</strong> : avant l'envoi, une confirmation
+      liste tout destinataire dont le domaine n'est pas dans votre liste interne.</li>
+</ul>
+
+<h3>Suppression de la bannière d'expéditeur externe</h3>
+<p>
+Beaucoup d'organisations ajoutent aux messages entrants une bannière « cet
+e-mail vient de l'extérieur ». Apprenez cette bannière à RBLclass une fois
+(Paramètres → Bannière d'expéditeur externe → <em>Apprendre depuis le message
+sélectionné</em>), et il pourra la retirer automatiquement de vos réponses et
+transferts, ainsi que des copies classées.
+</p>
+
+<h2>Référence des paramètres</h2>
+<p>Ouvrez les paramètres depuis le groupe RBLclass du ruban. Chaque changement
+s'applique et persiste immédiatement — il n'y a pas de bouton « Appliquer », et
+fermer est toujours sans risque.</p>
+
+<h3>Recherche de dossiers</h3>
+<table>
+<tr><th>Paramètre</th><th>Défaut</th><th>Effet</th></tr>
+<tr><td>Lister tous les dossiers correspondants</td><td>Désactivé</td><td>Désactivé : les branches en double sont regroupées ; activé : chaque dossier correspondant est listé séparément.</td></tr>
+<tr><td>Ne correspondre qu'au début des mots</td><td>Désactivé</td><td>Correspondance plus stricte : « proj » correspond à « Projects » mais « security » ne correspond <em>pas</em> à « Cybersecurity ». Le défaut (désactivé) est la recherche « contient » plus large.</td></tr>
+<tr><td>Ouvrir les dossiers dans une nouvelle fenêtre</td><td>Désactivé</td><td>Activé : « ouvrir le dossier » ouvre une nouvelle fenêtre au lieu de rediriger la fenêtre actuelle.</td></tr>
+<tr><td>Affichage du chemin des résultats</td><td>Une seule ligne</td><td>Comment chaque ligne affiche son chemin : une seule ligne tronquée à gauche ; le chemin complet replié selon la largeur du volet ; ou le chemin complet avec un sous-dossier par ligne. Le bouton <strong>⤢</strong> fait défiler les trois pour cette ligne.</td></tr>
+<tr><td>Nombre maximal de résultats</td><td>50</td><td>Limite du nombre de lignes affichées.</td></tr>
+<tr><td>Rechercher à partir de N caractères</td><td>2</td><td>Évite de rechercher sur une seule lettre. Plage 1–10.</td></tr>
+<tr><td>Pause avant la recherche (ms)</td><td>200</td><td>La recherche se déclenche ce nombre de millisecondes après la dernière frappe. Plage 0–2000.</td></tr>
+</table>
+
+<h3>Classer</h3>
+<table>
+<tr><th>Paramètre</th><th>Défaut</th><th>Effet</th></tr>
+<tr><td>Conserver l'original après classement</td><td>Désactivé</td><td>Copie le message vers la destination et laisse l'original en place (« Conserver une copie »).</td></tr>
+<tr><td>Supprimer les pièces jointes de la copie classée</td><td>Désactivé</td><td>Retire les pièces jointes de la copie de destination ; l'original n'est pas touché. Sous-options : demander pour chaque pièce jointe (défaut) ou tout supprimer sans demander ; et s'il faut noter une mention « anciennes pièces jointes » dans le corps.</td></tr>
+<tr><td>Copie de sécurité dans Éléments supprimés</td><td>Désactivé</td><td>Quand l'original n'est pas conservé, place aussi une copie dans Éléments supprimés par sécurité.</td></tr>
+<tr><td>Inclure toute la conversation par défaut</td><td>Désactivé</td><td>Précoche l'option « Inclure toute la conversation » du volet.</td></tr>
+<tr><td>Classer les demandes et réponses de réunion</td><td>Désactivé</td><td>Permet de classer les éléments de réunion sélectionnés dans Outlook.</td></tr>
+<tr><td>Marquer les messages classés comme lus</td><td>Désactivé</td><td>Marque chaque message classé comme lu (y compris le Classement auto).</td></tr>
+<tr><td>Fenêtre d'historique du Classement auto (jours)</td><td>90</td><td>Jusqu'où le Classement auto remonte. Plage 1–3650.</td></tr>
+</table>
+
+<h3>Bannière d'expéditeur externe</h3>
+<p><em>Apprendre depuis le message sélectionné</em> capture la bannière du
+message sélectionné ; <em>Oublier</em> l'efface ; <em>Diagnostiquer</em> indique
+si le message actuel correspond. Puis trois options (toutes désactivées par
+défaut, utiles seulement une fois une bannière apprise) : retirer à la
+réponse/au transfert, retirer au classement, et retirer lors du Classement auto.</p>
+
+<h3>Contrôles à l'envoi</h3>
+<table>
+<tr><th>Paramètre</th><th>Défaut</th><th>Effet</th></tr>
+<tr><td>Avertir avant l'envoi hors de l'organisation</td><td>Activé</td><td>Confirmation si le domaine d'un destinataire n'est pas dans la liste interne.</td></tr>
+<tr><td>Domaines considérés comme internes</td><td>(vide)</td><td>Domaines séparés par des points-virgules exemptés de l'avertissement, p. ex. <code>contoso.com;subsidiary.fr</code>.</td></tr>
+<tr><td>Mots-clés de pièce jointe oubliée</td><td>attach;enclos;joint;PJ</td><td>Si l'un de ces mots figure dans le corps mais qu'aucune pièce jointe n'est présente, un avertissement apparaît avant l'envoi. Videz le champ pour désactiver le contrôle.</td></tr>
+</table>
+
+<h3>Éléments envoyés</h3>
+<table>
+<tr><th>Paramètre</th><th>Défaut</th><th>Effet</th></tr>
+<tr><td>Quand un message arrive dans les Éléments envoyés</td><td>Demander à chaque fois</td><td>Demander, ou automatiquement : Déplacer vers la boîte de réception, Déplacer vers le dossier d'archivage, Supprimer ou Laisser.</td></tr>
+<tr><td>Dossier d'archivage</td><td>(non configuré)</td><td>Le dossier vers lequel les messages envoyés sont déplacés avec « Déplacer vers le dossier d'archivage ». <em>Choisir un dossier…</em> / <em>Effacer</em>.</td></tr>
+<tr><td>Ouvrir le volet après déplacement vers la boîte de réception</td><td>Activé</td><td>Affiche le volet avec le message envoyé épinglé comme prochaine destination.</td></tr>
+</table>
+
+<h3>Mises à jour</h3>
+<table>
+<tr><th>Paramètre</th><th>Défaut</th><th>Effet</th></tr>
+<tr><td>Vérifier une nouvelle version au démarrage</td><td>Désactivé</td><td>Activé <em>et</em> avec une URL renseignée : RBLclass effectue une requête vers cette URL au démarrage pour lire le dernier numéro de version, et affiche une bannière orange si une version plus récente est disponible. Aucune autre donnée n'est envoyée ; rien ne se passe si l'URL est vide.</td></tr>
+<tr><td>URL de vérification de version</td><td>(vide)</td><td>Adresse d'un fichier texte de version sur votre partage HTTPS interne. Demandez cette valeur à votre équipe de déploiement.</td></tr>
+</table>
+
+<h3>Dossiers de pièces jointes favoris</h3>
+<p>Pré-indexez des répertoires Windows pour que le sélecteur « Enregistrer
+sous… » (dans la boîte de dialogue des pièces jointes) trouve un emplacement
+aussi vite qu'un dossier Outlook. Les sous-dossiers sont indexés jusqu'à une
+profondeur de 4.</p>
+
+<h3>Langue</h3>
+<p>RBLclass suit la langue d'Outlook par défaut (avec repli sur l'anglais). Vous
+pouvez la forcer à English, Français ou Deutsch. Le changement prend effet après
+le redémarrage d'Outlook.</p>
+
+<h2>Raccourcis clavier</h2>
+<table>
+<tr><th>Raccourci</th><th>Action</th></tr>
+<tr><td><kbd>Ctrl</kbd>+<kbd>Z</kbd></td><td>Annuler le dernier classement (n'importe où dans le volet).</td></tr>
+<tr><td><kbd>Entrée</kbd></td><td>Classer le message sélectionné dans le dossier en surbrillance.</td></tr>
+<tr><td><kbd>Ctrl</kbd>+<kbd>Entrée</kbd></td><td>Ouvrir le dossier en surbrillance dans Outlook.</td></tr>
+<tr><td><kbd>Ctrl</kbd> (bref)</td><td>Basculer « Lister tous les dossiers correspondants ».</td></tr>
+<tr><td><kbd>Alt</kbd>, <kbd>R</kbd>, <kbd>R</kbd></td><td>Ouvrir / basculer le volet RBLclass depuis le ruban.</td></tr>
+<tr><td><kbd>Tab</kbd> (depuis le champ de recherche)</td><td>Ouvrir les Options et placer le focus sur la première case.</td></tr>
+</table>
+
+<h2>Actualiser l'index des dossiers</h2>
+<p>L'index des dossiers est construit automatiquement en arrière-plan au
+démarrage d'Outlook. Si vous créez ou renommez un dossier directement dans
+Outlook et qu'il n'apparaît pas dans la recherche, cliquez sur
+<strong>Actualiser les dossiers</strong> sur le ruban.</p>
+
+<h2>Suggestions et signalement de problèmes</h2>
+<p>
+RBLclass est maintenu sur GitHub :
+<a href="https://github.com/reboulip/rblclass/issues">github.com/reboulip/rblclass/issues</a>.
+Ouvrez-y un ticket pour signaler un bogue ou proposer une fonctionnalité. Si
+vous ne pouvez pas accéder à GitHub depuis votre poste, utilisez le canal de
+contact du guide d'installation. Pour aider au diagnostic, joignez le dernier
+fichier journal depuis
+<span class="path">%LocalAppData%\RBLclass\logs\</span>.
+</p>
+
+<footer>
+Ce fichier est autonome (pas d'images ni de styles externes) — il peut être
+envoyé en pièce jointe unique, ou déposé à côté de l'installateur sur l'espace
+partagé interne.
+</footer>
+
+</div>
+
+<script>
+  function setLang(lang) {
+    document.querySelectorAll('.lang-block').forEach(function (el) {
+      el.classList.toggle('active', el.getAttribute('data-lang') === lang);
+    });
+    document.querySelectorAll('.lang-switch button').forEach(function (btn) {
+      btn.classList.toggle('active', btn.getAttribute('data-lang') === lang);
+    });
+    document.documentElement.setAttribute('lang', lang);
+  }
+</script>
+
+</body>
+</html>

@@ -36,9 +36,11 @@ namespace RBLclass.AddIn.ViewModels
 
         private string _query = string.Empty;
         private bool _allResults, _keepCopy, _removeAttachments, _widenConversation, _stripBanner;
+        private bool _markAsRead;
         private bool _canStripBanner;
         private bool _isOptionsExpanded;
         private SelectableFolder _selectedResult;
+        private SearchPathDisplayMode _pathDisplayMode = SearchPathDisplayMode.OneLine;
         private string _selectionSummary;
         private string _searchFeedback = string.Empty;
         private string _busyStatus = string.Empty;
@@ -91,6 +93,7 @@ namespace RBLclass.AddIn.ViewModels
                 _removeAttachments = _settings.GetBool(SettingsKeys.RemoveAttachments, false);
                 _widenConversation = _settings.GetBool(SettingsKeys.WidenConversation, false);
                 _stripBanner = _settings.GetBool(SettingsKeys.StripBannerOnClassify, false);
+                _markAsRead = _settings.GetBool(SettingsKeys.MarkAsReadOnClassify, false);
                 _canStripBanner = !string.IsNullOrWhiteSpace(
                     _settings.Get(SettingsKeys.ExternalBannerSignature, string.Empty));
                 _easterEggActive = _settings.GetBool(SettingsKeys.EasterEggActive, false);
@@ -455,7 +458,8 @@ namespace RBLclass.AddIn.ViewModels
                 var result = _classifier.AutoClassify(items, resolve, keepCopy, removeAttachments, safetyCopy,
                                                        attachmentDispositions, labelOptions,
                                                        historyRetentionDays: retentionDays,
-                                                       bannerSignature: autoClassBannerSig);
+                                                       bannerSignature: autoClassBannerSig,
+                                                       markAsRead: s != null && s.MarkAsReadOnClassify);
                 swCore.Stop();
                 Log.Information(
                     "PERF AutoClass core {Ms} ms: filed={Filed}, noHistory={NoHistory}, stale={Stale}, errors={Errors}",
@@ -539,6 +543,7 @@ namespace RBLclass.AddIn.ViewModels
                     undoStatus += _loc.GetString("Status_Undo_AttachmentsNotRestored");
                 PushStatus(undoStatus);
 
+                ScheduleRestoreSelection(undone);
                 ScheduleSelectionRefresh("Undo");
             }
             finally
@@ -590,6 +595,51 @@ namespace RBLclass.AddIn.ViewModels
             _pinnedItem = null;
             OnPropertyChanged(nameof(HasPinnedItem));
             OnPropertyChanged(nameof(PinnedItemSubject));
+        }
+
+        // v2.7.0.0 E1: opt-in "a newer version is available" banner. Set from the
+        // background startup check (marshalled to this thread); dismissed by the
+        // user, which persists the version so it does not return.
+        private bool _hasUpdateAvailable;
+        private string _updateBannerText = string.Empty;
+        private string _updateVersion = string.Empty;
+
+        /// <summary>True while the update banner is shown (v2.7.0.0 E1).</summary>
+        public bool HasUpdateAvailable
+        {
+            get => _hasUpdateAvailable;
+            private set => SetProperty(ref _hasUpdateAvailable, value);
+        }
+
+        /// <summary>The update banner message, naming the available version (v2.7.0.0 E1).</summary>
+        public string UpdateBannerText
+        {
+            get => _updateBannerText;
+            private set => SetProperty(ref _updateBannerText, value);
+        }
+
+        /// <summary>Show the "newer version available" banner for <paramref name="version"/> (v2.7.0.0 E1).</summary>
+        public void ShowUpdateBanner(string version)
+        {
+            _updateVersion = version ?? string.Empty;
+            UpdateBannerText = _loc.GetString("MainPane_UpdateAvailable_Banner", _updateVersion);
+            HasUpdateAvailable = true;
+        }
+
+        /// <summary>
+        /// Dismiss the update banner and snooze it for this version (v2.7.0.0 E1):
+        /// record the version and the dismissal time, so it stays hidden until the
+        /// snooze window elapses, then re-appears.
+        /// </summary>
+        public void DismissUpdateBanner()
+        {
+            HasUpdateAvailable = false;
+            if (_settings != null && !string.IsNullOrEmpty(_updateVersion))
+            {
+                _settings.Set(SettingsKeys.UpdateCheckLastSeenVersion, _updateVersion);
+                _settings.Set(SettingsKeys.UpdateCheckDismissedUtc,
+                    DateTime.UtcNow.ToString("o", System.Globalization.CultureInfo.InvariantCulture));
+            }
         }
 
         public void RefreshSelection()
@@ -645,6 +695,29 @@ namespace RBLclass.AddIn.ViewModels
         }
 
         /// <summary>
+        /// After an Undo, select the moved-back mail in its source folder so the
+        /// user can immediately re-file it elsewhere (v2.7.0.0 A1). Deferred to
+        /// <see cref="DispatcherPriority.ApplicationIdle"/>: the moves have just
+        /// re-added the items to the source folder and Outlook must first repaint
+        /// that folder's view before <c>AddToSelection</c> can find them -
+        /// selecting synchronously here silently no-ops.
+        /// </summary>
+        private void ScheduleRestoreSelection(UndoResult undone)
+        {
+            if (TaskPaneServices.SelectItemsInFolder == null
+                || undone.RestoredFolder == null || undone.RestoredItems.Count == 0)
+                return;
+
+            var folder = undone.RestoredFolder;
+            var items = undone.RestoredItems;
+            Dispatcher.CurrentDispatcher.BeginInvoke(new Action(() =>
+            {
+                try { TaskPaneServices.SelectItemsInFolder(folder.StoreId, folder.EntryId, items); }
+                catch (Exception ex) { Log.Warning(ex, "Deferred restore-selection failed"); }
+            }), DispatcherPriority.ApplicationIdle);
+        }
+
+        /// <summary>
         /// Navigate Outlook to a folder (the per-row open button). New-window
         /// behaviour is read live from settings - since v2.2 it is configured
         /// only in the Settings dialog, no longer toggled in the pane.
@@ -654,6 +727,18 @@ namespace RBLclass.AddIn.ViewModels
             if (folder == null) return;
             bool newWindow = _settings != null && _settings.GetBool(SettingsKeys.OpenInNewWindow, false);
             _navigate?.Invoke(folder, newWindow);
+        }
+
+        /// <summary>
+        /// Open the highlighted (or first) folder in Outlook - Ctrl+Enter in the
+        /// search box (v2.7.0.0 A2), distinct from Enter which files into it.
+        /// </summary>
+        public void OpenHighlighted()
+        {
+            FlushPendingSearch(); // never open based on stale, pre-debounce results
+            var folder = (SelectedResult ?? (Results.Count > 0 ? Results[0] : null))?.Folder;
+            if (folder == null) { PushStatus(_loc.GetString("Status_NoMatchingFolderToFile")); return; }
+            OpenFolder(folder);
         }
 
         /// <summary>File into the highlighted (or first) folder - Enter in the search box.</summary>
@@ -857,7 +942,8 @@ namespace RBLclass.AddIn.ViewModels
                 var result = await _classifier.ClassifyAsync(
                     new ClassifyRequest(preflight.Items, destinations, _keepCopy,
                                         _removeAttachments, markTasksComplete, safetyCopy,
-                                        bannerSignature, attachmentDispositions, labelOptions),
+                                        bannerSignature, attachmentDispositions, labelOptions,
+                                        markAsRead: _markAsRead),
                     progress,
                     YieldToPump);
                 swCore.Stop();
@@ -968,6 +1054,7 @@ namespace RBLclass.AddIn.ViewModels
                 _removeAttachments = _settings.GetBool(SettingsKeys.RemoveAttachments, false);
                 _widenConversation = _settings.GetBool(SettingsKeys.WidenConversation, false);
                 _stripBanner = _settings.GetBool(SettingsKeys.StripBannerOnClassify, false);
+                _markAsRead = _settings.GetBool(SettingsKeys.MarkAsReadOnClassify, false);
                 OnPropertyChanged(nameof(AllResults));
                 OnPropertyChanged(nameof(KeepCopy));
                 OnPropertyChanged(nameof(RemoveAttachments));
@@ -1011,9 +1098,26 @@ namespace RBLclass.AddIn.ViewModels
         }
 
         /// <summary>Add one result row, re-checking it if it is in the accumulated selection and tracking its checkbox.</summary>
+        /// <summary>
+        /// The default row display mode (v2.7.0.0 C1): the stored
+        /// SearchPathDisplayMode, or the legacy AutoExpandResults flag migrated
+        /// (on → PerSegment) when the new setting has never been written.
+        /// </summary>
+        private SearchPathDisplayMode ResolvePathDisplayMode()
+        {
+            if (_settings == null) return SearchPathDisplayMode.OneLine;
+            SearchPathDisplayMode mode;
+            if (Enum.TryParse(_settings.Get(SettingsKeys.SearchPathDisplayMode, null), out mode)
+                && Enum.IsDefined(typeof(SearchPathDisplayMode), mode))
+                return mode;
+            return _settings.GetBool(SettingsKeys.AutoExpandResults, false)
+                ? SearchPathDisplayMode.PerSegment
+                : SearchPathDisplayMode.OneLine;
+        }
+
         private void AddResultRow(FolderSearchResult r)
         {
-            var row = new SelectableFolder(r);
+            var row = new SelectableFolder(r, _pathDisplayMode);
             row.IsSelected = _selectedKeys.Contains(KeyOf(row.Folder));
             row.PropertyChanged += (s, e) =>
             {
@@ -1039,12 +1143,10 @@ namespace RBLclass.AddIn.ViewModels
             var outcome = _search.Search(_query,
                 new FolderSearchOptions(matchMode, _allResults, maxResults, minLength));
 
+            _pathDisplayMode = ResolvePathDisplayMode();
             Results.Clear();
             foreach (var r in outcome.Results)
                 AddResultRow(r);
-            if (_settings != null && _settings.GetBool(SettingsKeys.AutoExpandResults, false))
-                foreach (var row in Results)
-                    row.IsExpanded = true;
 
             string trimmed = (_query ?? string.Empty).Trim();
             if (outcome.TotalMatchCount == 0)

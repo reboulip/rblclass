@@ -68,17 +68,33 @@ namespace RBLclass.Core
     /// <summary>Outcome of executing a <see cref="ClassifyUndoPlan"/>.</summary>
     public sealed class UndoResult
     {
-        public UndoResult(int movesRestored, int copiesDeleted, int flagsRestored, int errors)
+        public UndoResult(int movesRestored, int copiesDeleted, int flagsRestored, int errors,
+                          FolderNode restoredFolder = null,
+                          IReadOnlyList<MailItemRef> restoredItems = null)
         {
             MovesRestored = movesRestored;
             CopiesDeleted = copiesDeleted;
             FlagsRestored = flagsRestored;
             Errors = errors;
+            RestoredFolder = restoredFolder;
+            RestoredItems = (restoredItems ?? new MailItemRef[0]).ToArray();
         }
 
         public int MovesRestored { get; }
         public int CopiesDeleted { get; }
         public int FlagsRestored { get; }
         public int Errors { get; }
+
+        /// <summary>
+        /// The folder the moved-back items were restored to (v2.7.0.0 A1), or null
+        /// when nothing was moved back. The caller re-selects <see cref="RestoredItems"/>
+        /// here so the user can immediately re-file them elsewhere. Only one folder
+        /// is reported - the explorer shows one at a time - so items restored to
+        /// other folders (the rare multi-folder undo) are not listed.
+        /// </summary>
+        public FolderNode RestoredFolder { get; }
+
+        /// <summary>The moved-back items in <see cref="RestoredFolder"/>, to re-select.</summary>
+        public IReadOnlyList<MailItemRef> RestoredItems { get; }
     }
 }

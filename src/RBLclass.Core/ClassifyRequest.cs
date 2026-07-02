@@ -24,7 +24,8 @@ namespace RBLclass.Core
                                bool safetyCopy = false,
                                string bannerSignature = null,
                                IReadOnlyList<AttachmentDisposition> attachmentDispositions = null,
-                               AttachmentLabelOptions labelOptions = null)
+                               AttachmentLabelOptions labelOptions = null,
+                               bool markAsRead = false)
         {
             Items = (items ?? throw new ArgumentNullException(nameof(items))).ToArray();
             Destinations = (destinations ?? throw new ArgumentNullException(nameof(destinations))).ToArray();
@@ -37,6 +38,7 @@ namespace RBLclass.Core
                 ? attachmentDispositions.ToArray()
                 : (IReadOnlyList<AttachmentDisposition>)new AttachmentDisposition[0];
             LabelOptions = labelOptions;
+            MarkAsRead = markAsRead;
         }
 
         /// <summary>The mail items to file (already widened, if requested).</summary>
@@ -101,5 +103,13 @@ namespace RBLclass.Core
         /// each filed copy after a disposition (v2.4.0.0). Null = no label.
         /// </summary>
         public AttachmentLabelOptions LabelOptions { get; }
+
+        /// <summary>
+        /// When true, the filed copy of each classified mail is marked as read
+        /// (<c>UnRead = false</c>) after filing (v2.7.0.0 D2). Acts on the filed
+        /// copy only - with "keep a copy" on, the kept original's read-state is
+        /// untouched. Does not modify message content; S/MIME-safe.
+        /// </summary>
+        public bool MarkAsRead { get; }
     }
 }
