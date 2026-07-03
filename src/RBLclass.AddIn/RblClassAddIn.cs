@@ -432,7 +432,12 @@ namespace RBLclass.AddIn
                             return;
 
                         _ = uiDispatcher.BeginInvoke(new Action(() =>
-                            TaskPaneServices.Host?.ShowUpdateBanner(remote.ToString())));
+                        {
+                            // Runs later on the dispatcher, outside this try/catch -
+                            // needs its own guard (v2.7.1.0 B1).
+                            try { TaskPaneServices.Host?.ShowUpdateBanner(remote.ToString()); }
+                            catch (Exception ex) { TryLog("ShowUpdateBanner failed", ex); }
+                        }));
                     }
                 }
                 catch (Exception ex)

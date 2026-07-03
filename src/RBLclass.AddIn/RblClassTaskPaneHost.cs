@@ -54,25 +54,36 @@ namespace RBLclass.AddIn
         {
             if (_view == null)
             {
-                _view = new MainPaneView();
-                if (TaskPaneServices.Search != null && TaskPaneServices.Classifier != null)
+                try
                 {
-                    var vm = new MainPaneViewModel(
-                        TaskPaneServices.Search,
-                        TaskPaneServices.Classifier,
-                        TaskPaneServices.GetSelection,
-                        TaskPaneServices.CreateSubfolder,
-                        TaskPaneServices.Navigate,
-                        TaskPaneServices.Settings,
-                        TaskPaneServices.ConfirmMarkTasksComplete,
-                        TaskPaneServices.PromptForName,
-                        TaskPaneServices.GetAllFolders);
-                    vm.SubscribeToIndexStatus(TaskPaneServices.FolderIndex);
-                    TaskPaneServices.PinMailForClassify = vm.PinMailForClassify;
-                    _view.DataContext = vm;
-                }
+                    _view = new MainPaneView();
+                    if (TaskPaneServices.Search != null && TaskPaneServices.Classifier != null)
+                    {
+                        var vm = new MainPaneViewModel(
+                            TaskPaneServices.Search,
+                            TaskPaneServices.Classifier,
+                            TaskPaneServices.GetSelection,
+                            TaskPaneServices.CreateSubfolder,
+                            TaskPaneServices.Navigate,
+                            TaskPaneServices.Settings,
+                            TaskPaneServices.ConfirmMarkTasksComplete,
+                            TaskPaneServices.PromptForName,
+                            TaskPaneServices.GetAllFolders);
+                        vm.SubscribeToIndexStatus(TaskPaneServices.FolderIndex);
+                        TaskPaneServices.PinMailForClassify = vm.PinMailForClassify;
+                        _view.DataContext = vm;
+                    }
 
-                _elementHost.Child = _view;
+                    _elementHost.Child = _view;
+                }
+                catch (Exception ex)
+                {
+                    // Reset so the next show retries construction instead of
+                    // leaving a permanently blank pane (v2.7.1.0 B1).
+                    try { Log.Error(ex, "EnsureView failed; will retry on next show."); } catch { }
+                    _view = null;
+                    return;
+                }
             }
 
             ApplyThemeAndSelection();

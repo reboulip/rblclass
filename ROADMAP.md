@@ -130,7 +130,7 @@ each item is one coherent, testable change.
       subtypes (e.g. `.MultipartSigned`) are reported as skipped siblings.
 
 ### B — Exception safety & result accounting
-- [ ] **B1.** Guard every unguarded UI entry point so no exception can escape to
+- [x] **B1.** Guard every unguarded UI entry point so no exception can escape to
       the dispatcher inside Outlook: the Ctrl+Enter `OpenHighlighted()` branch in
       `QueryBox_KeyDown`, `AutoClass_Click`, `Undo_Click`, and the update-banner
       `BeginInvoke` action in `ScheduleUpdateCheck` (try/catch + `Log.Error`,
