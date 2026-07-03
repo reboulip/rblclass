@@ -121,7 +121,7 @@ each item is one coherent, testable change.
       their default state, never flipping an explicit non-SaveTo choice to SaveTo.
       **Extended during verification:** the default-checked radio per row is now
       *Save to* (non-destructive default) instead of *Delete*, per user feedback.
-- [ ] **A3.** `OutlookMailStore` small integrity fixes: (a) when keep-copy filing
+- [x] **A3.** `OutlookMailStore` small integrity fixes: (a) when keep-copy filing
       fails (`Copy()` succeeded, `Move()` threw), best-effort delete the
       transient copy before rethrowing so no orphaned duplicate accumulates in
       the source folder; (b) in `AddSiblingIfInScope`, replace the exact

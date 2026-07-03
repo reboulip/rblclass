@@ -354,48 +354,63 @@ namespace RBLclass.Outlook.Adapter
 
                     using (var destFolder = new ComRef<OutlookOM.Folder>(rawDest))
                     {
+                        // Manually managed (not using) so the catch below can still
+                        // reach the transient copy to delete it (v2.7.1.0 A3).
+                        ComRef<object> comCopy = null;
                         try
                         {
                             object copyRaw = mail != null ? mail.Copy() : meeting.Copy();
-                            using (var comCopy = new ComRef<object>(copyRaw))
+                            comCopy = new ComRef<object>(copyRaw);
+
+                            var copyMail    = comCopy.Value as OutlookOM.MailItem;
+                            var copyMeeting = copyMail == null ? comCopy.Value as OutlookOM.MeetingItem : null;
+                            if (copyMail == null && copyMeeting == null) return null;
+
+                            // Mark the copy read before it is placed (v2.7.0.0 D2):
+                            // setting UnRead on the not-yet-arrived copy is race-free,
+                            // unlike a re-fetch after Move which Outlook's arrival
+                            // handling can clobber. S/MIME guard and MeetingItem
+                            // support delegated to TryMarkItemRead (v2.7.1.0 A1).
+                            if (markAsRead)
+                                TryMarkItemRead(copyMail, copyMeeting);
+
+                            // Move returns the moved item; the copy reference is now
+                            // invalid (CLAUDE.md). Read the moved item's id for the
+                            // returned ref, then release it.
+                            object movedRaw = copyMail != null
+                                ? copyMail.Move(destFolder.Value)
+                                : copyMeeting.Move(destFolder.Value);
+                            using (var comMoved = new ComRef<object>(movedRaw))
                             {
-                                var copyMail    = comCopy.Value as OutlookOM.MailItem;
-                                var copyMeeting = copyMail == null ? comCopy.Value as OutlookOM.MeetingItem : null;
-                                if (copyMail == null && copyMeeting == null) return null;
-
-                                // Mark the copy read before it is placed (v2.7.0.0 D2):
-                                // setting UnRead on the not-yet-arrived copy is race-free,
-                                // unlike a re-fetch after Move which Outlook's arrival
-                                // handling can clobber. S/MIME guard and MeetingItem
-                                // support delegated to TryMarkItemRead (v2.7.1.0 A1).
-                                if (markAsRead)
-                                    TryMarkItemRead(copyMail, copyMeeting);
-
-                                // Move returns the moved item; the copy reference is now
-                                // invalid (CLAUDE.md). Read the moved item's id for the
-                                // returned ref, then release it.
-                                object movedRaw = copyMail != null
-                                    ? copyMail.Move(destFolder.Value)
-                                    : copyMeeting.Move(destFolder.Value);
-                                using (var comMoved = new ComRef<object>(movedRaw))
-                                {
-                                    var movedMail    = comMoved.Value as OutlookOM.MailItem;
-                                    var movedMeeting = movedMail == null ? comMoved.Value as OutlookOM.MeetingItem : null;
-                                    string movedEntryId =
-                                        movedMail    != null ? Safe(() => movedMail.EntryID, null) :
-                                        movedMeeting != null ? Safe(() => movedMeeting.EntryID, null) : null;
-                                    if (movedEntryId == null) return null;
-                                    swPerf.Stop();
-                                    Log.Information(
-                                        "PERF CopyItemToFolder {Ms} ms: item {EntryId} -> {Path}",
-                                        swPerf.ElapsedMilliseconds, item.EntryId, destination.FullPath);
-                                    return new MailItemRef(destination.StoreId, movedEntryId,
-                                                           item.Subject, item.IsMeetingItem);
-                                }
+                                var movedMail    = comMoved.Value as OutlookOM.MailItem;
+                                var movedMeeting = movedMail == null ? comMoved.Value as OutlookOM.MeetingItem : null;
+                                string movedEntryId =
+                                    movedMail    != null ? Safe(() => movedMail.EntryID, null) :
+                                    movedMeeting != null ? Safe(() => movedMeeting.EntryID, null) : null;
+                                if (movedEntryId == null) return null;
+                                swPerf.Stop();
+                                Log.Information(
+                                    "PERF CopyItemToFolder {Ms} ms: item {EntryId} -> {Path}",
+                                    swPerf.ElapsedMilliseconds, item.EntryId, destination.FullPath);
+                                return new MailItemRef(destination.StoreId, movedEntryId,
+                                                       item.Subject, item.IsMeetingItem);
                             }
                         }
                         catch (Exception ex)
                         {
+                            // Best-effort: if Copy() succeeded but Move() threw, delete
+                            // the transient copy before rethrowing so no orphaned
+                            // duplicate accumulates in the source folder (v2.7.1.0 A3).
+                            if (comCopy != null)
+                            {
+                                try
+                                {
+                                    var orphan = comCopy.Value as OutlookOM.MailItem;
+                                    if (orphan != null) orphan.Delete();
+                                    else (comCopy.Value as OutlookOM.MeetingItem)?.Delete();
+                                }
+                                catch { }
+                            }
                             // Some folders (notably a store root) can reject items.
                             // Log the cause and rethrow so the classifier counts this
                             // destination as failed and keeps the original intact.
@@ -403,6 +418,10 @@ namespace RBLclass.Outlook.Adapter
                                 "Filing into folder {Path} ({EntryId}) failed; it may not accept items.",
                                 destination.FullPath, destination.EntryId);
                             throw;
+                        }
+                        finally
+                        {
+                            comCopy?.Dispose();
                         }
                     }
                 }
@@ -814,7 +833,10 @@ namespace RBLclass.Outlook.Adapter
                 if (folderEntryId != inboxEntryId && folderEntryId != sentEntryId) return;
 
                 // In scope. Encrypted/signed S/MIME is skipped but reported.
-                if (Safe(() => sibling.MessageClass, string.Empty) == "IPM.Note.SMIME")
+                // StartsWith, like every other S/MIME guard in this file, so
+                // subtypes (.MultipartSigned, ...) are caught too (v2.7.1.0 A3).
+                if (Safe(() => sibling.MessageClass, string.Empty)
+                        .StartsWith("IPM.Note.SMIME", StringComparison.OrdinalIgnoreCase))
                 {
                     skipped.Add(Safe(() => sibling.Subject, "(encrypted message)"));
                     return;
