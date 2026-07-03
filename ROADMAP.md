@@ -100,6 +100,119 @@ Phase 6 (pilot rollout) is in progress; Phases 7–9 are forward-looking.
 
 ---
 
+## v2.7.1.0 — code-review remediation sprint
+
+Fixes from the 2026-07-03 full code review (diff review of the v2.7.0.0 sprint
++ whole-codebase review; 20 ranked findings + verified mentions). Grouped so
+each item is one coherent, testable change.
+
+### A — Data integrity (classify & attachments)
+- [ ] **A1.** Mark-as-read hardening in `OutlookMailStore`: extract the duplicated
+      `UnRead = false; Save()` block from `CopyItemToFolder`/`MoveItemToFolder`
+      into one shared helper that (a) skips `IPM.Note.SMIME*` items via the same
+      `StartsWith(OrdinalIgnoreCase)` guard every other content-mutating path
+      uses (Save on signed/encrypted mail risks corruption — the
+      `ClassifyRequest.MarkAsRead` doc comment already promises "S/MIME-safe"),
+      and (b) also marks `MeetingItem` objects read (they expose `UnRead`) so the
+      setting applies to meeting classify too.
+- [ ] **A2.** Attachment disposition dialog: "use the same save directory" must
+      no longer override rows the user explicitly set to Delete/Keep —
+      `ApplySameDirectory` applies the chosen directory only to rows still in
+      their default state, never flipping an explicit non-SaveTo choice to SaveTo.
+- [ ] **A3.** `OutlookMailStore` small integrity fixes: (a) when keep-copy filing
+      fails (`Copy()` succeeded, `Move()` threw), best-effort delete the
+      transient copy before rethrowing so no orphaned duplicate accumulates in
+      the source folder; (b) in `AddSiblingIfInScope`, replace the exact
+      `== "IPM.Note.SMIME"` check with the `StartsWith("IPM.Note.SMIME",
+      OrdinalIgnoreCase)` guard used everywhere else, so signed/encrypted
+      subtypes (e.g. `.MultipartSigned`) are reported as skipped siblings.
+
+### B — Exception safety & result accounting
+- [ ] **B1.** Guard every unguarded UI entry point so no exception can escape to
+      the dispatcher inside Outlook: the Ctrl+Enter `OpenHighlighted()` branch in
+      `QueryBox_KeyDown`, `AutoClass_Click`, `Undo_Click`, and the update-banner
+      `BeginInvoke` action in `ScheduleUpdateCheck` (try/catch + `Log.Error`,
+      matching `Classify_Click`). Also make `RblClassTaskPaneHost.EnsureView`
+      recoverable: if ViewModel construction throws, reset `_view` to null so a
+      later show retries instead of leaving a permanently blank pane.
+- [ ] **B2.** Fix classify strip-failure accounting: wrap the strip-all
+      `_store.RemoveAttachments(filedRef)` call (and `MarkTaskComplete`) in
+      try/catch like the sibling per-attachment calls, so a strip failure is
+      logged and reported as a strip failure instead of double-counting the same
+      action as both filed and errored; guard the `mail.Attachments`/`.Count`
+      enumeration inside `OutlookMailStore.RemoveAttachments` with the file's
+      `Safe()` pattern.
+- [ ] **B3.** Surface partial auto-classify failures: carry the inner
+      `ClassifyResult.Errors`/`EncryptedStripSkips` into `AutoClassifyResult`
+      and reflect them in the auto-class status line, so "filed to A, failed at
+      B" is no longer reported as a clean success.
+
+### C — Sent-item triage hardening
+- [ ] **C1.** Triage handler fixes (one change, three parts): (a) set the
+      re-entrancy suppression before `ShowDialog()` (reset in `finally`) so a
+      second sent item arriving during the open triage dialog cannot stack a
+      second modal; (b) surface stale archive-folder failures — Settings
+      re-resolves the configured folder's liveness so the existing "no longer
+      found" placeholder actually shows, and a failed MoveToArchive gives
+      user-visible feedback (pane status) instead of a log-only silent leave;
+      (c) pass the already-loaded `Settings` into `ApplySentItemTriage` instead
+      of reloading a second full snapshot in the MoveToArchive case.
+
+### D — Startup & pane behaviour
+- [ ] **D1.** Add the persisted setting (promised by v2.7.0.0 A2) gating the
+      startup auto-show of the pane — default ON to preserve current behaviour,
+      opt-out in Settings → General; localized in all three languages.
+- [ ] **D2.** First-run folder walk must yield between stores
+      (`Dispatcher.Yield`, like the manual refresh path `RunFolderWalkAsync`)
+      so Outlook stays responsive during the initial index on multi-PST profiles.
+- [ ] **D3.** Propagate mid-session settings changes to the pane immediately:
+      re-seed the pane option fields (keep copy, remove attachments, widen
+      conversation, strip banner, mark as read) and the path-display default
+      when the Settings window persists a change, so the very next classify uses
+      the new values (the user guide promises "applied immediately"). While
+      there, delete `ResolvePathDisplayMode`'s duplicated migration logic in
+      favour of the parsed value already in the `Settings` snapshot loaded by
+      `Refresh()`, and move the orphaned `AddResultRow` doc comment back to its
+      method.
+
+### E — Settings window & persistence
+- [ ] **E1.** `SettingsWindow`: flush the focused TextBox's pending
+      LostFocus-triggered binding before closing, so Enter (IsDefault) or Esc
+      (IsCancel) no longer silently discards the last edit.
+- [ ] **E2.** `SqliteSettingsStore` hardening: set `PRAGMA journal_mode=WAL`
+      like the other two stores (via one shared connection-open helper used by
+      all three); add batch `GetAll()`/`SetMany()` so `Settings.Load`/`Save`
+      use one connection instead of ~30; make the `Settings` table DDL
+      single-source so the copy in `SqliteFolderRepository.ApplyV1` cannot
+      silently drift (it is dead code today).
+- [ ] **E3.** Hot-path costs on the search path: stop calling a full
+      `Settings.Load` per keystroke just to read `SearchDebounceMs` (cache it,
+      invalidated on settings save via D3's propagation), and cache each
+      folder's normalized path + word split (computed at index load/reindex)
+      so `Search()` no longer re-normalizes the entire tree per query.
+
+### F — API consistency, small fixes & docs
+- [ ] **F1.** Consolidate the classify per-action toggles (`keepCopy`,
+      `removeAttachments`, `markTasksComplete`, `safetyCopy`, `markAsRead`, …)
+      into a `ClassifyOptions` object accepted by `ClassifyRequest` and the
+      `IMailStore` filing methods, ending the per-sprint positional-bool growth
+      (10-parameter ctor today); update all call sites and test fakes.
+- [ ] **F2.** Add the missing "mark as read" checkbox to the pane's Options zone
+      as the fifth per-action override (seeded from settings, reset after each
+      classify, like the other four) so the shipped user guide's description of
+      five overrides becomes accurate.
+- [ ] **F3.** Favourite attachment folders: validate on add that the chosen
+      directory path contains no `;` (the settings list separator) and reject
+      with a localized message, so a legal-but-unusual NTFS name cannot corrupt
+      the favourites list on reload.
+
+### G — Release stamp
+- [x] **G1.** Bump `AssemblyVersion`/`AssemblyFileVersion` (AssemblyInfo.cs) and
+      `release.config.json` to **2.7.1.0** with the sprint summary comment
+      (third-field bump so the MSI MajorUpgrade sees it as newer).
+
+---
+
 ## Phase 6 — Pilot rollout (in progress)
 
 - [x] Documentation: trilingual (EN/DE/FR) self-contained single-file HTML
