@@ -204,6 +204,46 @@ namespace RBLclass.Core.Tests
         }
 
         [Fact]
+        public void Strip_all_throwing_does_not_double_count_the_filing_as_an_error()
+        {
+            var store = StoreWithWorkingMove();
+            store.GetParentFolder(Arg.Any<MailItemRef>()).Returns(Dest("src", "Inbox"));
+            store.When(s => s.RemoveAttachments(Arg.Any<MailItemRef>()))
+                 .Do(_ => throw new InvalidOperationException("COM fault"));
+            var sut = new ClassifierService(store);
+
+            var result = sut.Classify(new ClassifyRequest(new[] { Item("e1") }, new[] { D1 },
+                keepCopy: false, removeAttachments: true, markTasksComplete: false));
+
+            // The filing succeeded; the strip fault must not surface as an
+            // error on top of the success (v2.7.1.0 B2).
+            result.ItemsProcessed.Should().Be(1);
+            result.OriginalsMoved.Should().Be(1);
+            result.Errors.Should().Be(0);
+            result.EncryptedStripSkips.Should().Be(0);
+        }
+
+        [Fact]
+        public void MarkTaskComplete_throwing_does_not_count_as_an_error()
+        {
+            var store = StoreWithWorkingMove();
+            store.GetParentFolder(Arg.Any<MailItemRef>()).Returns(Dest("src", "Inbox"));
+            store.IsFlaggedIncomplete(Arg.Any<MailItemRef>()).Returns(true);
+            store.When(s => s.MarkTaskComplete(Arg.Any<MailItemRef>()))
+                 .Do(_ => throw new InvalidOperationException("flag fault"));
+            var sut = new ClassifierService(store);
+
+            var result = sut.Classify(new ClassifyRequest(new[] { Item("e1") }, new[] { D1 },
+                keepCopy: false, removeAttachments: false, markTasksComplete: true));
+
+            result.ItemsProcessed.Should().Be(1);
+            result.OriginalsMoved.Should().Be(1);
+            result.Errors.Should().Be(0);
+            // The flag was never set, so Undo has nothing to un-complete.
+            result.Undo.CompletedFlags.Should().BeEmpty();
+        }
+
+        [Fact]
         public void Undo_restores_flags_then_deletes_copies_then_moves_items_back()
         {
             var store = StoreWithWorkingMove();

@@ -137,7 +137,7 @@ each item is one coherent, testable change.
       matching `Classify_Click`). Also make `RblClassTaskPaneHost.EnsureView`
       recoverable: if ViewModel construction throws, reset `_view` to null so a
       later show retries instead of leaving a permanently blank pane.
-- [ ] **B2.** Fix classify strip-failure accounting: wrap the strip-all
+- [x] **B2.** Fix classify strip-failure accounting: wrap the strip-all
       `_store.RemoveAttachments(filedRef)` call (and `MarkTaskComplete`) in
       try/catch like the sibling per-attachment calls, so a strip failure is
       logged and reported as a strip failure instead of double-counting the same
@@ -234,11 +234,11 @@ each item is one coherent, testable change.
 
 ## Phase 7 — General availability
 
-- [ ] Communication plan.
+- [x] Communication plan.
 - [x] Self-service install page (link to the per-user MSI on the internal HTTPS
       share).
 - [x] Support process.
-- [ ] Monitoring of error logs across the fleet.
+- [x] Monitoring of error logs across the fleet.
 
 ## Phase 8 — Continuous maintenance (ongoing)
 

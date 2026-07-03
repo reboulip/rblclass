@@ -966,9 +966,14 @@ namespace RBLclass.Outlook.Adapter
                         return false;
                     }
 
-                    using (var attachments = new ComRef<OutlookOM.Attachments>(mail.Attachments))
+                    OutlookOM.Attachments rawAtts;
+                    // Guarded like the per-attachment reads below: a COM fault here
+                    // must not escape mid-classify (v2.7.1.0 B2).
+                    try { rawAtts = mail.Attachments; }
+                    catch { return true; } // collection inaccessible - nothing to strip
+                    using (var attachments = new ComRef<OutlookOM.Attachments>(rawAtts))
                     {
-                        int count = attachments.Value.Count;
+                        int count = Safe(() => attachments.Value.Count, 0);
                         bool removedAny = false;
                         // Remove from the end so indexes don't shift underneath us.
                         // Inline/embedded images are left in place (v2.5.0.0 B2).

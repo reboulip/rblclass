@@ -199,8 +199,13 @@ namespace RBLclass.Core
                             }
                             if (markComplete)
                             {
-                                _store.MarkTaskComplete(filedRef);
-                                acc.Flags.Add(filedRef);
+                                try
+                                {
+                                    _store.MarkTaskComplete(filedRef);
+                                    // Record for Undo only when the flag was set.
+                                    acc.Flags.Add(filedRef);
+                                }
+                                catch { /* adapter logs; a flag failure never fails a successful filing */ }
                             }
                         }
                     }
@@ -291,8 +296,20 @@ namespace RBLclass.Core
             }
             else
             {
-                stripped = _store.RemoveAttachments(filedRef);
-                if (!stripped) acc.EncryptedSkips++;
+                try
+                {
+                    stripped = _store.RemoveAttachments(filedRef);
+                    // false = the adapter's S/MIME guard fired, not a COM fault.
+                    if (!stripped) acc.EncryptedSkips++;
+                }
+                catch
+                {
+                    // COM fault during strip-all: the adapter logs the cause.
+                    // The filing itself succeeded - propagating would let the
+                    // per-destination catch double-count this action as both
+                    // filed and errored (v2.7.1.0 B2).
+                    stripped = false;
+                }
             }
 
             if (stripped) acc.Strips++;
