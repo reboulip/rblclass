@@ -366,12 +366,10 @@ namespace RBLclass.Outlook.Adapter
                                 // Mark the copy read before it is placed (v2.7.0.0 D2):
                                 // setting UnRead on the not-yet-arrived copy is race-free,
                                 // unlike a re-fetch after Move which Outlook's arrival
-                                // handling can clobber.
-                                if (markAsRead && copyMail != null)
-                                {
-                                    try { copyMail.UnRead = false; copyMail.Save(); }
-                                    catch { }
-                                }
+                                // handling can clobber. S/MIME guard and MeetingItem
+                                // support delegated to TryMarkItemRead (v2.7.1.0 A1).
+                                if (markAsRead)
+                                    TryMarkItemRead(copyMail, copyMeeting);
 
                                 // Move returns the moved item; the copy reference is now
                                 // invalid (CLAUDE.md). Read the moved item's id for the
@@ -456,12 +454,11 @@ namespace RBLclass.Outlook.Adapter
                                 item.EntryId, destination.FullPath);
 
                             // Mark read before the move (v2.7.0.0 D2): the moved item
-                            // keeps its read state, so this is race-free.
-                            if (markAsRead && mail != null)
-                            {
-                                try { mail.UnRead = false; mail.Save(); }
-                                catch { }
-                            }
+                            // keeps its read state, so this is race-free. S/MIME guard
+                            // and MeetingItem support delegated to TryMarkItemRead
+                            // (v2.7.1.0 A1).
+                            if (markAsRead)
+                                TryMarkItemRead(mail, meeting);
 
                             // Move returns the moved item; the original reference
                             // is now invalid (CLAUDE.md). No transient copy is
@@ -1556,6 +1553,37 @@ namespace RBLclass.Outlook.Adapter
         {
             try { return read(); }
             catch { return fallback; }
+        }
+
+        /// <summary>
+        /// Mark a resolved Outlook item (MailItem or MeetingItem) as read in-place.
+        /// For MailItem, first checks MessageClass: S/MIME-encrypted/signed items
+        /// (IPM.Note.SMIME*) are skipped because Save() on such items risks payload
+        /// corruption — ClassifyRequest.MarkAsRead promises "S/MIME-safe".
+        /// MeetingItem objects carry no S/MIME payload (IPM.Schedule.Meeting.*) and
+        /// are marked unconditionally. Best-effort: all COM faults are swallowed
+        /// (v2.7.1.0 A1).
+        /// </summary>
+        private static void TryMarkItemRead(OutlookOM.MailItem mail, OutlookOM.MeetingItem meeting)
+        {
+            if (mail != null)
+            {
+                string messageClass = Safe(() => mail.MessageClass, string.Empty);
+                if (messageClass.StartsWith("IPM.Note.SMIME", StringComparison.OrdinalIgnoreCase))
+                {
+                    Log.Information(
+                        "MarkAsRead skipped an encrypted/signed item ({MessageClass}).",
+                        messageClass);
+                    return;
+                }
+                try { mail.UnRead = false; mail.Save(); }
+                catch { }
+            }
+            else if (meeting != null)
+            {
+                try { meeting.UnRead = false; meeting.Save(); }
+                catch { }
+            }
         }
     }
 }

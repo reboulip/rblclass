@@ -107,7 +107,7 @@ Fixes from the 2026-07-03 full code review (diff review of the v2.7.0.0 sprint
 each item is one coherent, testable change.
 
 ### A — Data integrity (classify & attachments)
-- [ ] **A1.** Mark-as-read hardening in `OutlookMailStore`: extract the duplicated
+- [x] **A1.** Mark-as-read hardening in `OutlookMailStore`: extract the duplicated
       `UnRead = false; Save()` block from `CopyItemToFolder`/`MoveItemToFolder`
       into one shared helper that (a) skips `IPM.Note.SMIME*` items via the same
       `StartsWith(OrdinalIgnoreCase)` guard every other content-mutating path
