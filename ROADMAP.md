@@ -115,10 +115,12 @@ each item is one coherent, testable change.
       `ClassifyRequest.MarkAsRead` doc comment already promises "S/MIME-safe"),
       and (b) also marks `MeetingItem` objects read (they expose `UnRead`) so the
       setting applies to meeting classify too.
-- [ ] **A2.** Attachment disposition dialog: "use the same save directory" must
+- [x] **A2.** Attachment disposition dialog: "use the same save directory" must
       no longer override rows the user explicitly set to Delete/Keep —
       `ApplySameDirectory` applies the chosen directory only to rows still in
       their default state, never flipping an explicit non-SaveTo choice to SaveTo.
+      **Extended during verification:** the default-checked radio per row is now
+      *Save to* (non-destructive default) instead of *Delete*, per user feedback.
 - [ ] **A3.** `OutlookMailStore` small integrity fixes: (a) when keep-copy filing
       fails (`Copy()` succeeded, `Move()` threw), best-effort delete the
       transient copy before rethrowing so no orphaned duplicate accumulates in
