@@ -638,6 +638,12 @@
   <data name="Status_AutoClass_PartialErrors_Other" xml:space="preserve">
     <value>{0} échecs partiels vers des dossiers</value>
   </data>
+  <data name="Status_AutoClass_AlreadyInPlace_One" xml:space="preserve">
+    <value>{0} déjà dans son dossier mémorisé</value>
+  </data>
+  <data name="Status_AutoClass_AlreadyInPlace_Other" xml:space="preserve">
+    <value>{0} déjà dans leur dossier mémorisé</value>
+  </data>
 
   <!-- MainPaneViewModel: Undo result -->
   <data name="Status_Undo_Result" xml:space="preserve">

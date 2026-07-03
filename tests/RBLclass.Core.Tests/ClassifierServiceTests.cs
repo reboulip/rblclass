@@ -804,6 +804,50 @@ namespace RBLclass.Core.Tests
         }
 
         [Fact]
+        public void AutoClassify_mail_already_in_its_remembered_folder_is_not_an_error()
+        {
+            var store = StoreWithWorkingMove();
+            var inbox = Dest("d1", "Inbox"); // remembered destination == current folder
+            store.GetParentFolder(Arg.Any<MailItemRef>()).Returns(inbox);
+            var history = Substitute.For<IClassificationHistory>();
+            var item = Item("e1");
+            store.GetConversationKey(item).Returns("conv-1");
+            history.GetLatestDestinations("conv-1", Arg.Any<DateTime>())
+                   .Returns(new[] { new HistoryDestination("s1", "d1") });
+            var sut = new ClassifierService(store, history);
+
+            var result = sut.AutoClassify(new[] { item },
+                (s, e) => (s == "s1" && e == "d1") ? inbox : null,
+                keepCopy: false, removeAttachments: false, safetyCopy: false);
+
+            // Outlook rejects a same-folder move; the mail is where its
+            // conversation lives, so report it, don't error (v2.7.1.0 B3).
+            result.Filed.Should().Be(0);
+            result.Errors.Should().Be(0);
+            result.AlreadyInPlace.Should().Be(1);
+            store.DidNotReceive().MoveItemToFolder(Arg.Any<MailItemRef>(), Arg.Any<FolderNode>(), Arg.Any<bool>());
+        }
+
+        [Fact]
+        public void Classify_with_recordHistory_false_files_but_writes_no_history()
+        {
+            var store = StoreWithWorkingMove();
+            store.GetParentFolder(Arg.Any<MailItemRef>()).Returns(Dest("src", "Inbox"));
+            store.GetConversationKey(Arg.Any<MailItemRef>()).Returns("conv-1");
+            var history = Substitute.For<IClassificationHistory>();
+            var sut = new ClassifierService(store, history);
+
+            // The sent-item triage's routing moves use this: they must never
+            // become the conversation's remembered folder (v2.7.1.0 B3).
+            var result = sut.Classify(new ClassifyRequest(new[] { Item("e1") }, new[] { D1 },
+                keepCopy: false, removeAttachments: false, recordHistory: false));
+
+            result.ItemsProcessed.Should().Be(1);
+            history.DidNotReceive().Record(Arg.Any<string>(), Arg.Any<string>(),
+                Arg.Any<IReadOnlyList<FolderNode>>(), Arg.Any<DateTime>());
+        }
+
+        [Fact]
         public void A_move_that_resolves_nothing_counts_as_an_error_and_processes_nothing()
         {
             var store = Substitute.For<IMailStore>(); // MoveItemToFolder returns null

@@ -25,7 +25,8 @@ namespace RBLclass.Core
                                string bannerSignature = null,
                                IReadOnlyList<AttachmentDisposition> attachmentDispositions = null,
                                AttachmentLabelOptions labelOptions = null,
-                               bool markAsRead = false)
+                               bool markAsRead = false,
+                               bool recordHistory = true)
         {
             Items = (items ?? throw new ArgumentNullException(nameof(items))).ToArray();
             Destinations = (destinations ?? throw new ArgumentNullException(nameof(destinations))).ToArray();
@@ -39,6 +40,7 @@ namespace RBLclass.Core
                 : (IReadOnlyList<AttachmentDisposition>)new AttachmentDisposition[0];
             LabelOptions = labelOptions;
             MarkAsRead = markAsRead;
+            RecordHistory = recordHistory;
         }
 
         /// <summary>The mail items to file (already widened, if requested).</summary>
@@ -111,5 +113,14 @@ namespace RBLclass.Core
         /// untouched. Does not modify message content; S/MIME-safe.
         /// </summary>
         public bool MarkAsRead { get; }
+
+        /// <summary>
+        /// When false, the filing is NOT recorded in the classification history
+        /// (v2.7.1.0 B3). Routing moves - the post-send triage's move-to-inbox /
+        /// move-to-archive - must not become the conversation's "remembered
+        /// folder", or auto-class starts filing the whole conversation to the
+        /// inbox/archive instead of where the user actually classifies.
+        /// </summary>
+        public bool RecordHistory { get; }
     }
 }

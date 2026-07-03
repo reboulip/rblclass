@@ -462,9 +462,9 @@ namespace RBLclass.AddIn.ViewModels
                                                        markAsRead: s != null && s.MarkAsReadOnClassify);
                 swCore.Stop();
                 Log.Information(
-                    "PERF AutoClass core {Ms} ms: filed={Filed}, noHistory={NoHistory}, stale={Stale}, errors={Errors}, partialErrors={PartialErrors}, encryptedSkips={EncryptedSkips}",
+                    "PERF AutoClass core {Ms} ms: filed={Filed}, noHistory={NoHistory}, stale={Stale}, errors={Errors}, partialErrors={PartialErrors}, encryptedSkips={EncryptedSkips}, alreadyInPlace={AlreadyInPlace}",
                     swCore.ElapsedMilliseconds, result.Filed, result.NoHistory, result.StaleFolders, result.Errors,
-                    result.PartialErrors, result.EncryptedStripSkips);
+                    result.PartialErrors, result.EncryptedStripSkips, result.AlreadyInPlace);
 
                 // Show where the mail went (the destination folders), so the
                 // user can see and open them; empty when nothing was filed.
@@ -508,12 +508,15 @@ namespace RBLclass.AddIn.ViewModels
         private static string DescribeAutoClass(AutoClassifyResult r, ILocalizationService loc)
         {
             // Nothing filed and the only reason is "never classified before".
-            if (r.Filed == 0 && r.NoHistory > 0 && r.StaleFolders == 0 && r.Errors == 0)
+            if (r.Filed == 0 && r.NoHistory > 0 && r.StaleFolders == 0 && r.Errors == 0
+                && r.AlreadyInPlace == 0)
                 return loc.GetString("Status_AutoClass_NoHistoryOnly");
 
             var parts = new List<string>();
             if (r.Filed > 0)
                 parts.Add(loc.Plural(r.Filed, "Status_AutoClass_Filed_One", "Status_AutoClass_Filed_Other"));
+            if (r.AlreadyInPlace > 0)
+                parts.Add(loc.Plural(r.AlreadyInPlace, "Status_AutoClass_AlreadyInPlace_One", "Status_AutoClass_AlreadyInPlace_Other"));
             if (r.NoHistory > 0)
                 parts.Add(loc.Plural(r.NoHistory, "Status_AutoClass_NoHistory_One", "Status_AutoClass_NoHistory_Other"));
             if (r.StaleFolders > 0)

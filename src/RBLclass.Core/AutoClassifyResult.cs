@@ -12,6 +12,7 @@ namespace RBLclass.Core
     {
         public AutoClassifyResult(int filed, int noHistory, int staleFolders,
                                   int errors, int partialErrors, int encryptedStripSkips,
+                                  int alreadyInPlace,
                                   ClassifyUndoPlan undo,
                                   IReadOnlyList<FolderNode> filedDestinations = null)
         {
@@ -21,6 +22,7 @@ namespace RBLclass.Core
             Errors = errors;
             PartialErrors = partialErrors;
             EncryptedStripSkips = encryptedStripSkips;
+            AlreadyInPlace = alreadyInPlace;
             Undo = undo;
             FiledDestinations = (filedDestinations ?? new FolderNode[0]).ToArray();
         }
@@ -55,6 +57,13 @@ namespace RBLclass.Core
         /// inner runs.
         /// </summary>
         public int EncryptedStripSkips { get; }
+
+        /// <summary>
+        /// Mails already sitting in their (only) remembered destination folder
+        /// (v2.7.1.0 B3). Nothing to do: Outlook rejects a same-folder move
+        /// (0x80020009), so these are reported instead of counted as errors.
+        /// </summary>
+        public int AlreadyInPlace { get; }
 
         /// <summary>
         /// The combined undo plan covering every filing this run did, or null

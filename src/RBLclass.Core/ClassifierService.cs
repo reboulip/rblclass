@@ -340,7 +340,7 @@ namespace RBLclass.Core
         private List<string> WriteHistory(ClassifyRequest request, ClassifyAccumulator acc)
         {
             var historyBatchIds = new List<string>();
-            if (_history != null && acc.FiledConversationKeys.Count > 0)
+            if (request.RecordHistory && _history != null && acc.FiledConversationKeys.Count > 0)
             {
                 string batchId = Guid.NewGuid().ToString("N");
                 try
@@ -467,7 +467,7 @@ namespace RBLclass.Core
                 throw new InvalidOperationException("Auto-class requires a classification history store.");
 
             int filed = 0, noHistory = 0, staleFolders = 0, errors = 0,
-                partialErrors = 0, encryptedStripSkips = 0;
+                partialErrors = 0, encryptedStripSkips = 0, alreadyInPlace = 0;
 
             DateTime cutoff = (historyRetentionDays > 0)
                 ? DateTime.UtcNow.AddDays(-historyRetentionDays)
@@ -508,6 +508,17 @@ namespace RBLclass.Core
 
                 if (live.Count == 0) { staleFolders++; continue; }
 
+                // Drop destinations the mail already sits in: Outlook rejects a
+                // same-folder move (0x80020009) and there is nothing to do anyway.
+                // A mail whose only remembered folder is its current one is
+                // "already in place", not an error (v2.7.1.0 B3).
+                FolderNode parent;
+                try { parent = _store.GetParentFolder(item); }
+                catch { parent = null; }
+                if (parent != null)
+                    live.RemoveAll(f => f.StoreId == parent.StoreId && f.EntryId == parent.EntryId);
+                if (live.Count == 0) { alreadyInPlace++; continue; }
+
                 // Reuse the full classify path - same move/copy/strip/history
                 // semantics, and it records a fresh batch that Undo rolls back.
                 var result = Classify(new ClassifyRequest(
@@ -545,7 +556,7 @@ namespace RBLclass.Core
 
             var plan = new ClassifyUndoPlan(allMoves, allCopies, allFlags, strips, allBatchIds);
             return new AutoClassifyResult(filed, noHistory, staleFolders, errors,
-                                          partialErrors, encryptedStripSkips,
+                                          partialErrors, encryptedStripSkips, alreadyInPlace,
                                           plan.IsEmpty ? null : plan, filedDestinations);
         }
 

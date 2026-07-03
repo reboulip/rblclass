@@ -638,6 +638,12 @@
   <data name="Status_AutoClass_PartialErrors_Other" xml:space="preserve">
     <value>{0} partielle Zielfehler</value>
   </data>
+  <data name="Status_AutoClass_AlreadyInPlace_One" xml:space="preserve">
+    <value>{0} bereits im gemerkten Ordner</value>
+  </data>
+  <data name="Status_AutoClass_AlreadyInPlace_Other" xml:space="preserve">
+    <value>{0} bereits im gemerkten Ordner</value>
+  </data>
 
   <!-- MainPaneViewModel: Undo result -->
   <data name="Status_Undo_Result" xml:space="preserve">

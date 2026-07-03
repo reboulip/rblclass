@@ -144,10 +144,18 @@ each item is one coherent, testable change.
       action as both filed and errored; guard the `mail.Attachments`/`.Count`
       enumeration inside `OutlookMailStore.RemoveAttachments` with the file's
       `Safe()` pattern.
-- [ ] **B3.** Surface partial auto-classify failures: carry the inner
+- [x] **B3.** Surface partial auto-classify failures: carry the inner
       `ClassifyResult.Errors`/`EncryptedStripSkips` into `AutoClassifyResult`
       and reflect them in the auto-class status line, so "filed to A, failed at
       B" is no longer reported as a clean success.
+      **Extended during verification (two root-cause fixes):** (a) auto-class
+      now skips destinations the mail already sits in (Outlook rejects a
+      same-folder move with 0x80020009) and reports them as "already in its
+      remembered folder"; (b) the post-send triage's move-to-inbox /
+      move-to-archive no longer record classification history
+      (`ClassifyRequest.RecordHistory = false`) — they had been overwriting
+      every conversation's remembered folder with the inbox/archive, silently
+      breaking auto-class for those conversations.
 
 ### C — Sent-item triage hardening
 - [ ] **C1.** Triage handler fixes (one change, three parts): (a) set the

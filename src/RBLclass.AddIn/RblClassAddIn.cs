@@ -752,7 +752,11 @@ namespace RBLclass.AddIn
                                             keepCopy: false, removeAttachments: false,
                                             markTasksComplete: false,
                                             safetyCopy: _settingsStore.GetBool(
-                                                SettingsKeys.ClassifySafetyCopy, false)));
+                                                SettingsKeys.ClassifySafetyCopy, false),
+                                            // Routing, not a classification decision -
+                                            // must not become the conversation's
+                                            // remembered folder (v2.7.1.0 B3).
+                                            recordHistory: false));
                     Log.Information(
                         "Sent-item triage moved {Processed} mail(s) to archive folder '{Path}' ({Errors} failed).",
                         archiveResult.ItemsProcessed, archiveFolder.FullPath, archiveResult.Errors);
@@ -770,7 +774,11 @@ namespace RBLclass.AddIn
                                             keepCopy: false, removeAttachments: false,
                                             markTasksComplete: false,
                                             safetyCopy: _settingsStore.GetBool(
-                                                SettingsKeys.ClassifySafetyCopy, false)));
+                                                SettingsKeys.ClassifySafetyCopy, false),
+                                            // Routing, not a classification decision -
+                                            // must not become the conversation's
+                                            // remembered folder (v2.7.1.0 B3).
+                                            recordHistory: false));
                     Log.Information(
                         "Sent-item triage moved {Processed} mail(s) to the Inbox ({Errors} failed).",
                         result.ItemsProcessed, result.Errors);
