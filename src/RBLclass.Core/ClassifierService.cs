@@ -466,7 +466,8 @@ namespace RBLclass.Core
             if (_history == null)
                 throw new InvalidOperationException("Auto-class requires a classification history store.");
 
-            int filed = 0, noHistory = 0, staleFolders = 0, errors = 0;
+            int filed = 0, noHistory = 0, staleFolders = 0, errors = 0,
+                partialErrors = 0, encryptedStripSkips = 0;
 
             DateTime cutoff = (historyRetentionDays > 0)
                 ? DateTime.UtcNow.AddDays(-historyRetentionDays)
@@ -531,6 +532,10 @@ namespace RBLclass.Core
                         strips += result.Undo.AttachmentStrips;
                         allBatchIds.AddRange(result.Undo.HistoryBatchIds);
                     }
+                    // Filed, but some destination may still have failed - carry
+                    // the partial failures instead of masking them (v2.7.1.0 B3).
+                    partialErrors += result.Errors;
+                    encryptedStripSkips += result.EncryptedStripSkips;
                 }
                 else
                 {
@@ -540,6 +545,7 @@ namespace RBLclass.Core
 
             var plan = new ClassifyUndoPlan(allMoves, allCopies, allFlags, strips, allBatchIds);
             return new AutoClassifyResult(filed, noHistory, staleFolders, errors,
+                                          partialErrors, encryptedStripSkips,
                                           plan.IsEmpty ? null : plan, filedDestinations);
         }
 

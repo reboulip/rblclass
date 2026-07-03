@@ -462,8 +462,9 @@ namespace RBLclass.AddIn.ViewModels
                                                        markAsRead: s != null && s.MarkAsReadOnClassify);
                 swCore.Stop();
                 Log.Information(
-                    "PERF AutoClass core {Ms} ms: filed={Filed}, noHistory={NoHistory}, stale={Stale}, errors={Errors}",
-                    swCore.ElapsedMilliseconds, result.Filed, result.NoHistory, result.StaleFolders, result.Errors);
+                    "PERF AutoClass core {Ms} ms: filed={Filed}, noHistory={NoHistory}, stale={Stale}, errors={Errors}, partialErrors={PartialErrors}, encryptedSkips={EncryptedSkips}",
+                    swCore.ElapsedMilliseconds, result.Filed, result.NoHistory, result.StaleFolders, result.Errors,
+                    result.PartialErrors, result.EncryptedStripSkips);
 
                 // Show where the mail went (the destination folders), so the
                 // user can see and open them; empty when nothing was filed.
@@ -477,6 +478,12 @@ namespace RBLclass.AddIn.ViewModels
                     autoClassStatus += _loc.Plural(items.Count,
                         "Status_Classify_EncryptedAttachmentsKept_One",
                         "Status_Classify_EncryptedAttachmentsKept_Other");
+
+                // Filed S/MIME mail kept its attachments - say so, like the
+                // regular classify path does (v2.7.1.0 B3).
+                if (result.EncryptedStripSkips > 0)
+                    autoClassStatus += _loc.Plural(result.EncryptedStripSkips,
+                        "Status_Classify_EncryptedKept_One", "Status_Classify_EncryptedKept_Other");
 
                 PushStatus(autoClassStatus);
 
@@ -513,6 +520,8 @@ namespace RBLclass.AddIn.ViewModels
                 parts.Add(loc.Plural(r.StaleFolders, "Status_AutoClass_StaleFolders_One", "Status_AutoClass_StaleFolders_Other"));
             if (r.Errors > 0)
                 parts.Add(loc.Plural(r.Errors, "Status_AutoClass_Errors_One", "Status_AutoClass_Errors_Other"));
+            if (r.PartialErrors > 0)
+                parts.Add(loc.Plural(r.PartialErrors, "Status_AutoClass_PartialErrors_One", "Status_AutoClass_PartialErrors_Other"));
             return parts.Count == 0 ? loc.GetString("Status_AutoClass_Nothing") : string.Join("; ", parts) + ".";
         }
 

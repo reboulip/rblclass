@@ -756,6 +756,54 @@ namespace RBLclass.Core.Tests
         }
 
         [Fact]
+        public void AutoClassify_partial_destination_failure_is_surfaced_as_PartialErrors()
+        {
+            var store = StoreWithWorkingMove();
+            store.GetParentFolder(Arg.Any<MailItemRef>()).Returns(Dest("src", "Inbox"));
+            // D1 gets the copy slot (D2, last, is the move slot) - refuse it.
+            store.When(s => s.CopyItemToFolder(Arg.Any<MailItemRef>(), D1, Arg.Any<bool>()))
+                 .Do(_ => throw new InvalidOperationException("copy to D1 refused"));
+            var history = Substitute.For<IClassificationHistory>();
+            var item = Item("e1");
+            store.GetConversationKey(item).Returns("conv-1");
+            history.GetLatestDestinations("conv-1", Arg.Any<DateTime>())
+                   .Returns(new[] { new HistoryDestination("s1", "d1"), new HistoryDestination("s1", "d2") });
+            var sut = new ClassifierService(store, history);
+
+            var result = sut.AutoClassify(new[] { item },
+                (s, e) => e == "d1" ? D1 : e == "d2" ? D2 : null,
+                keepCopy: false, removeAttachments: false, safetyCopy: false);
+
+            // Filed to D2 but failed at D1: not a clean success (v2.7.1.0 B3).
+            result.Filed.Should().Be(1);
+            result.Errors.Should().Be(0);
+            result.PartialErrors.Should().Be(1);
+        }
+
+        [Fact]
+        public void AutoClassify_encrypted_strip_skip_is_surfaced_on_result()
+        {
+            var store = StoreWithWorkingMove();
+            store.GetParentFolder(Arg.Any<MailItemRef>()).Returns(Dest("src", "Inbox"));
+            store.RemoveAttachments(Arg.Any<MailItemRef>()).Returns(false); // S/MIME guard fires
+            var history = Substitute.For<IClassificationHistory>();
+            var item = Item("e1");
+            store.GetConversationKey(item).Returns("conv-1");
+            history.GetLatestDestinations("conv-1", Arg.Any<DateTime>())
+                   .Returns(new[] { new HistoryDestination("s1", "d1") });
+            var sut = new ClassifierService(store, history);
+
+            var result = sut.AutoClassify(new[] { item },
+                (s, e) => (s == "s1" && e == "d1") ? D1 : null,
+                keepCopy: false, removeAttachments: true, safetyCopy: false);
+
+            result.Filed.Should().Be(1);
+            result.EncryptedStripSkips.Should().Be(1);
+            result.Errors.Should().Be(0);
+            result.PartialErrors.Should().Be(0);
+        }
+
+        [Fact]
         public void A_move_that_resolves_nothing_counts_as_an_error_and_processes_nothing()
         {
             var store = Substitute.For<IMailStore>(); // MoveItemToFolder returns null

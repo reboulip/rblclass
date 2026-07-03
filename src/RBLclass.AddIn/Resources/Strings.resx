@@ -632,6 +632,12 @@
   <data name="Status_AutoClass_Errors_Other" xml:space="preserve">
     <value>{0} failed</value>
   </data>
+  <data name="Status_AutoClass_PartialErrors_One" xml:space="preserve">
+    <value>{0} partial destination failure</value>
+  </data>
+  <data name="Status_AutoClass_PartialErrors_Other" xml:space="preserve">
+    <value>{0} partial destination failures</value>
+  </data>
 
   <!-- MainPaneViewModel: Undo result -->
   <data name="Status_Undo_Result" xml:space="preserve">
