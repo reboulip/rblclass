@@ -202,7 +202,7 @@ each item is one coherent, testable change.
       so `Search()` no longer re-normalizes the entire tree per query.
 
 ### F — API consistency, small fixes & docs
-- [ ] **F1.** Consolidate the classify per-action toggles (`keepCopy`,
+- [x] **F1.** Consolidate the classify per-action toggles (`keepCopy`,
       `removeAttachments`, `markTasksComplete`, `safetyCopy`, `markAsRead`, …)
       into a `ClassifyOptions` object accepted by `ClassifyRequest` and the
       `IMailStore` filing methods, ending the per-sprint positional-bool growth

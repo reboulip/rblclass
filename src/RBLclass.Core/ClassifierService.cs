@@ -454,15 +454,15 @@ namespace RBLclass.Core
 
         public AutoClassifyResult AutoClassify(IReadOnlyList<MailItemRef> items,
                                                Func<string, string, FolderNode> resolveLiveFolder,
-                                               bool keepCopy, bool removeAttachments, bool safetyCopy,
+                                               ClassifyOptions options = null,
                                                IReadOnlyList<AttachmentDisposition> attachmentDispositions = null,
                                                AttachmentLabelOptions labelOptions = null,
                                                int historyRetentionDays = 0,
-                                               string bannerSignature = null,
-                                               bool markAsRead = false)
+                                               string bannerSignature = null)
         {
             if (items == null) throw new ArgumentNullException(nameof(items));
             if (resolveLiveFolder == null) throw new ArgumentNullException(nameof(resolveLiveFolder));
+            options = options ?? ClassifyOptions.Default;
             if (_history == null)
                 throw new InvalidOperationException("Auto-class requires a classification history store.");
 
@@ -522,12 +522,10 @@ namespace RBLclass.Core
                 // Reuse the full classify path - same move/copy/strip/history
                 // semantics, and it records a fresh batch that Undo rolls back.
                 var result = Classify(new ClassifyRequest(
-                    new[] { item }, live, keepCopy, removeAttachments,
-                    markTasksComplete: false, safetyCopy: safetyCopy,
+                    new[] { item }, live, options,
                     bannerSignature: bannerSignature,
                     attachmentDispositions: attachmentDispositions,
-                    labelOptions: labelOptions,
-                    markAsRead: markAsRead));
+                    labelOptions: labelOptions));
 
                 if (result.ItemsProcessed > 0)
                 {

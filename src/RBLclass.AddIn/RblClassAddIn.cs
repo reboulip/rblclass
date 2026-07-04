@@ -772,13 +772,11 @@ namespace RBLclass.AddIn
                     }
                     var archiveResult = _classifier.Classify(
                         new ClassifyRequest(new[] { item }, new[] { archiveFolder },
-                                            keepCopy: false, removeAttachments: false,
-                                            markTasksComplete: false,
-                                            safetyCopy: settings.ClassifySafetyCopy,
                                             // Routing, not a classification decision -
                                             // must not become the conversation's
                                             // remembered folder (v2.7.1.0 B3).
-                                            recordHistory: false));
+                                            new ClassifyOptions(safetyCopy: settings.ClassifySafetyCopy,
+                                                                recordHistory: false)));
                     Log.Information(
                         "Sent-item triage moved {Processed} mail(s) to archive folder '{Path}' ({Errors} failed).",
                         archiveResult.ItemsProcessed, archiveFolder.FullPath, archiveResult.Errors);
@@ -793,13 +791,11 @@ namespace RBLclass.AddIn
                     }
                     var result = _classifier.Classify(
                         new ClassifyRequest(new[] { item }, new[] { inbox },
-                                            keepCopy: false, removeAttachments: false,
-                                            markTasksComplete: false,
-                                            safetyCopy: settings.ClassifySafetyCopy,
                                             // Routing, not a classification decision -
                                             // must not become the conversation's
                                             // remembered folder (v2.7.1.0 B3).
-                                            recordHistory: false));
+                                            new ClassifyOptions(safetyCopy: settings.ClassifySafetyCopy,
+                                                                recordHistory: false)));
                     Log.Information(
                         "Sent-item triage moved {Processed} mail(s) to the Inbox ({Errors} failed).",
                         result.ItemsProcessed, result.Errors);

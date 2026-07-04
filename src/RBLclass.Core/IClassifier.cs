@@ -55,9 +55,9 @@ namespace RBLclass.Core
         /// <see cref="FolderNode"/> for a (storeId, entryId), or null when that
         /// folder no longer exists in the index). Items with no history, or
         /// whose every remembered destination is stale, are skipped and counted.
-        /// Honours the same <paramref name="keepCopy"/>/<paramref name="removeAttachments"/>/<paramref name="safetyCopy"/>
-        /// options as a manual classify and produces one combined undo plan.
-        /// Requires that this service was constructed with a history store.
+        /// Honours the same per-action <paramref name="options"/> as a manual
+        /// classify and produces one combined undo plan. Requires that this
+        /// service was constructed with a history store.
         /// </summary>
         /// <param name="attachmentDispositions">
         /// Per-attachment choices collected by the caller's modal pre-flight.
@@ -67,11 +67,10 @@ namespace RBLclass.Core
         /// </param>
         AutoClassifyResult AutoClassify(IReadOnlyList<MailItemRef> items,
                                         Func<string, string, FolderNode> resolveLiveFolder,
-                                        bool keepCopy, bool removeAttachments, bool safetyCopy,
+                                        ClassifyOptions options = null,
                                         IReadOnlyList<AttachmentDisposition> attachmentDispositions = null,
                                         AttachmentLabelOptions labelOptions = null,
                                         int historyRetentionDays = 0,
-                                        string bannerSignature = null,
-                                        bool markAsRead = false);
+                                        string bannerSignature = null);
     }
 }

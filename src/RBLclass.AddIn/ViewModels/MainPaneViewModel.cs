@@ -462,11 +462,14 @@ namespace RBLclass.AddIn.ViewModels
                 string autoClassBannerSig = (s != null && s.StripBannerOnAutoClassify
                     && !string.IsNullOrWhiteSpace(s.ExternalBannerSignature))
                     ? s.ExternalBannerSignature : null;
-                var result = _classifier.AutoClassify(items, resolve, keepCopy, removeAttachments, safetyCopy,
+                var result = _classifier.AutoClassify(items, resolve,
+                                                       new ClassifyOptions(keepCopy: keepCopy,
+                                                                           removeAttachments: removeAttachments,
+                                                                           safetyCopy: safetyCopy,
+                                                                           markAsRead: s != null && s.MarkAsReadOnClassify),
                                                        attachmentDispositions, labelOptions,
                                                        historyRetentionDays: retentionDays,
-                                                       bannerSignature: autoClassBannerSig,
-                                                       markAsRead: s != null && s.MarkAsReadOnClassify);
+                                                       bannerSignature: autoClassBannerSig);
                 swCore.Stop();
                 Log.Information(
                     "PERF AutoClass core {Ms} ms: filed={Filed}, noHistory={NoHistory}, stale={Stale}, errors={Errors}, partialErrors={PartialErrors}, encryptedSkips={EncryptedSkips}, alreadyInPlace={AlreadyInPlace}",
@@ -959,10 +962,15 @@ namespace RBLclass.AddIn.ViewModels
 
                 var swCore = System.Diagnostics.Stopwatch.StartNew();
                 var result = await _classifier.ClassifyAsync(
-                    new ClassifyRequest(preflight.Items, destinations, _keepCopy,
-                                        _removeAttachments, markTasksComplete, safetyCopy,
-                                        bannerSignature, attachmentDispositions, labelOptions,
-                                        markAsRead: _markAsRead),
+                    new ClassifyRequest(preflight.Items, destinations,
+                                        new ClassifyOptions(keepCopy: _keepCopy,
+                                                            removeAttachments: _removeAttachments,
+                                                            markTasksComplete: markTasksComplete,
+                                                            safetyCopy: safetyCopy,
+                                                            markAsRead: _markAsRead),
+                                        bannerSignature: bannerSignature,
+                                        attachmentDispositions: attachmentDispositions,
+                                        labelOptions: labelOptions),
                     progress,
                     YieldToPump);
                 swCore.Stop();
