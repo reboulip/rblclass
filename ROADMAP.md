@@ -186,7 +186,7 @@ each item is one coherent, testable change.
       method.
 
 ### E — Settings window & persistence
-- [ ] **E1.** `SettingsWindow`: flush the focused TextBox's pending
+- [x] **E1.** `SettingsWindow`: flush the focused TextBox's pending
       LostFocus-triggered binding before closing, so Enter (IsDefault) or Esc
       (IsCancel) no longer silently discards the last edit.
 - [ ] **E2.** `SqliteSettingsStore` hardening: set `PRAGMA journal_mode=WAL`
