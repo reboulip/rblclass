@@ -189,7 +189,7 @@ each item is one coherent, testable change.
 - [x] **E1.** `SettingsWindow`: flush the focused TextBox's pending
       LostFocus-triggered binding before closing, so Enter (IsDefault) or Esc
       (IsCancel) no longer silently discards the last edit.
-- [ ] **E2.** `SqliteSettingsStore` hardening: set `PRAGMA journal_mode=WAL`
+- [x] **E2.** `SqliteSettingsStore` hardening: set `PRAGMA journal_mode=WAL`
       like the other two stores (via one shared connection-open helper used by
       all three); add batch `GetAll()`/`SetMany()` so `Settings.Load`/`Save`
       use one connection instead of ~30; make the `Settings` table DDL

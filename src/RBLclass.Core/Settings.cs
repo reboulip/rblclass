@@ -72,97 +72,120 @@ namespace RBLclass.Core
         public bool ShowPaneOnStartup { get; set; }
         public string PreferredUiLanguage { get; set; }
 
-        /// <summary>Read every key, falling back to the same defaults the individual call sites use today.</summary>
+        /// <summary>
+        /// Read every key in one snapshot (a single connection via
+        /// <see cref="ISettingsStore.GetAll"/>, v2.7.1.0 E2), falling back to the
+        /// same defaults the individual call sites use today.
+        /// </summary>
         public static Settings Load(ISettingsStore store)
         {
+            var snap = store.GetAll();
+
+            string Str(string key, string def = null)
+                => snap.TryGetValue(key, out var v) && v != null ? v : def;
+
+            bool Bool(string key, bool def)
+            {
+                var raw = Str(key);
+                if (raw == null) return def;
+                if (raw == "1") return true;
+                if (raw == "0") return false;
+                return bool.TryParse(raw, out var p) ? p : def;
+            }
+
             return new Settings
             {
-                OpenInNewWindow = store.GetBool(SettingsKeys.OpenInNewWindow, false),
-                AllResults = store.GetBool(SettingsKeys.AllResults, false),
-                FolderMatchMode = ParseMatchMode(store.Get(SettingsKeys.FolderMatchMode, null)),
-                MaxResults = ParseMaxResults(store.Get(SettingsKeys.MaxResults, null)),
-                MinSearchLength = ParseClampedInt(store.Get(SettingsKeys.MinSearchLength, null),
+                OpenInNewWindow = Bool(SettingsKeys.OpenInNewWindow, false),
+                AllResults = Bool(SettingsKeys.AllResults, false),
+                FolderMatchMode = ParseMatchMode(Str(SettingsKeys.FolderMatchMode)),
+                MaxResults = ParseMaxResults(Str(SettingsKeys.MaxResults)),
+                MinSearchLength = ParseClampedInt(Str(SettingsKeys.MinSearchLength),
                     FolderSearchOptions.DefaultMinQueryLength, 1, MaxMinSearchLength),
-                SearchDebounceMs = ParseClampedInt(store.Get(SettingsKeys.SearchDebounceMs, null),
+                SearchDebounceMs = ParseClampedInt(Str(SettingsKeys.SearchDebounceMs),
                     DefaultSearchDebounceMs, 0, MaxSearchDebounceMs),
-                KeepCopy = store.GetBool(SettingsKeys.KeepCopy, false),
-                RemoveAttachments = store.GetBool(SettingsKeys.RemoveAttachments, false),
-                ClassifySafetyCopy = store.GetBool(SettingsKeys.ClassifySafetyCopy, false),
-                ExternalBannerSignature = store.Get(SettingsKeys.ExternalBannerSignature, string.Empty),
-                StripBannerOnReply = store.GetBool(SettingsKeys.StripBannerOnReply, false),
-                StripBannerOnClassify = store.GetBool(SettingsKeys.StripBannerOnClassify, false),
-                StripBannerOnAutoClassify = store.GetBool(SettingsKeys.StripBannerOnAutoClassify, false),
-                WidenConversation = store.GetBool(SettingsKeys.WidenConversation, false),
-                SendExternalWarning = store.GetBool(SettingsKeys.SendExternalWarning, true),
-                InternalDomains = ParseList(store.Get(SettingsKeys.InternalDomains, string.Empty)),
-                ForgottenAttachmentKeywords = ParseList(store.Get(
+                KeepCopy = Bool(SettingsKeys.KeepCopy, false),
+                RemoveAttachments = Bool(SettingsKeys.RemoveAttachments, false),
+                ClassifySafetyCopy = Bool(SettingsKeys.ClassifySafetyCopy, false),
+                ExternalBannerSignature = Str(SettingsKeys.ExternalBannerSignature, string.Empty),
+                StripBannerOnReply = Bool(SettingsKeys.StripBannerOnReply, false),
+                StripBannerOnClassify = Bool(SettingsKeys.StripBannerOnClassify, false),
+                StripBannerOnAutoClassify = Bool(SettingsKeys.StripBannerOnAutoClassify, false),
+                WidenConversation = Bool(SettingsKeys.WidenConversation, false),
+                SendExternalWarning = Bool(SettingsKeys.SendExternalWarning, true),
+                InternalDomains = ParseList(Str(SettingsKeys.InternalDomains, string.Empty)),
+                ForgottenAttachmentKeywords = ParseList(Str(
                     SettingsKeys.ForgottenAttachmentKeywords, DefaultForgottenAttachmentKeywords)),
                 SentItemTriageMode = ParseTriageMode(
-                    store.Get(SettingsKeys.SentItemTriageMode, null),
-                    store.GetBool(SettingsKeys.SentItemTriagePrompt, true)),
-                ClassifyAfterMoveToInbox = store.GetBool(SettingsKeys.ClassifyAfterMoveToInbox, true),
-                SentItemTriageArchiveStoreId = store.Get(SettingsKeys.SentItemTriageArchiveStoreId, string.Empty),
-                SentItemTriageArchiveEntryId = store.Get(SettingsKeys.SentItemTriageArchiveEntryId, string.Empty),
-                SentItemTriageArchivePath = store.Get(SettingsKeys.SentItemTriageArchivePath, string.Empty),
-                AttachmentFavoriteFolders = ParseList(store.Get(SettingsKeys.AttachmentFavoriteFolders, string.Empty)),
-                AttachmentRemovalMode = ParseAttachmentRemovalMode(store.Get(SettingsKeys.AttachmentRemovalMode, null)),
-                AttachmentLabelLocation = ParseAttachmentLabelLocation(store.Get(SettingsKeys.AttachmentLabelLocation, null)),
+                    Str(SettingsKeys.SentItemTriageMode),
+                    Bool(SettingsKeys.SentItemTriagePrompt, true)),
+                ClassifyAfterMoveToInbox = Bool(SettingsKeys.ClassifyAfterMoveToInbox, true),
+                SentItemTriageArchiveStoreId = Str(SettingsKeys.SentItemTriageArchiveStoreId, string.Empty),
+                SentItemTriageArchiveEntryId = Str(SettingsKeys.SentItemTriageArchiveEntryId, string.Empty),
+                SentItemTriageArchivePath = Str(SettingsKeys.SentItemTriageArchivePath, string.Empty),
+                AttachmentFavoriteFolders = ParseList(Str(SettingsKeys.AttachmentFavoriteFolders, string.Empty)),
+                AttachmentRemovalMode = ParseAttachmentRemovalMode(Str(SettingsKeys.AttachmentRemovalMode)),
+                AttachmentLabelLocation = ParseAttachmentLabelLocation(Str(SettingsKeys.AttachmentLabelLocation)),
                 SearchPathDisplayMode = ParsePathDisplayMode(
-                    store.Get(SettingsKeys.SearchPathDisplayMode, null),
-                    store.GetBool(SettingsKeys.AutoExpandResults, false)),
-                AutoClassHistoryDays = ParseClampedInt(store.Get(SettingsKeys.AutoClassHistoryDays, null),
+                    Str(SettingsKeys.SearchPathDisplayMode),
+                    Bool(SettingsKeys.AutoExpandResults, false)),
+                AutoClassHistoryDays = ParseClampedInt(Str(SettingsKeys.AutoClassHistoryDays),
                     DefaultAutoClassHistoryDays, 1, MaxAutoClassHistoryDays),
-                ClassifyMeetingItems = store.GetBool(SettingsKeys.ClassifyMeetingItems, false),
-                MarkAsReadOnClassify = store.GetBool(SettingsKeys.MarkAsReadOnClassify, false),
-                UpdateCheckEnabled = store.GetBool(SettingsKeys.UpdateCheckEnabled, false),
-                UpdateCheckUrl = store.Get(SettingsKeys.UpdateCheckUrl, string.Empty),
-                UpdateCheckLastSeenVersion = store.Get(SettingsKeys.UpdateCheckLastSeenVersion, string.Empty),
-                UpdateCheckDismissedUtc = store.Get(SettingsKeys.UpdateCheckDismissedUtc, string.Empty),
-                ShowPaneOnStartup = store.GetBool(SettingsKeys.ShowPaneOnStartup, true),
-                PreferredUiLanguage = ParseUiLanguage(store.Get(SettingsKeys.PreferredUiLanguage, null))
+                ClassifyMeetingItems = Bool(SettingsKeys.ClassifyMeetingItems, false),
+                MarkAsReadOnClassify = Bool(SettingsKeys.MarkAsReadOnClassify, false),
+                UpdateCheckEnabled = Bool(SettingsKeys.UpdateCheckEnabled, false),
+                UpdateCheckUrl = Str(SettingsKeys.UpdateCheckUrl, string.Empty),
+                UpdateCheckLastSeenVersion = Str(SettingsKeys.UpdateCheckLastSeenVersion, string.Empty),
+                UpdateCheckDismissedUtc = Str(SettingsKeys.UpdateCheckDismissedUtc, string.Empty),
+                ShowPaneOnStartup = Bool(SettingsKeys.ShowPaneOnStartup, true),
+                PreferredUiLanguage = ParseUiLanguage(Str(SettingsKeys.PreferredUiLanguage))
             };
         }
 
-        /// <summary>Write every key back as one unit (the dialog calls this on every change - eleven local key/value rows is not a cost worth optimising).</summary>
+        /// <summary>Write every key back as one batch transaction (a single connection, v2.7.1.0 E2).</summary>
         public void Save(ISettingsStore store)
         {
-            store.SetBool(SettingsKeys.OpenInNewWindow, OpenInNewWindow);
-            store.SetBool(SettingsKeys.AllResults, AllResults);
-            store.Set(SettingsKeys.FolderMatchMode, FolderMatchMode.ToString());
-            store.Set(SettingsKeys.MaxResults, MaxResults.ToString(CultureInfo.InvariantCulture));
-            store.Set(SettingsKeys.MinSearchLength, MinSearchLength.ToString(CultureInfo.InvariantCulture));
-            store.Set(SettingsKeys.SearchDebounceMs, SearchDebounceMs.ToString(CultureInfo.InvariantCulture));
-            store.SetBool(SettingsKeys.KeepCopy, KeepCopy);
-            store.SetBool(SettingsKeys.RemoveAttachments, RemoveAttachments);
-            store.SetBool(SettingsKeys.ClassifySafetyCopy, ClassifySafetyCopy);
-            store.Set(SettingsKeys.ExternalBannerSignature, ExternalBannerSignature ?? string.Empty);
-            store.SetBool(SettingsKeys.StripBannerOnReply, StripBannerOnReply);
-            store.SetBool(SettingsKeys.StripBannerOnClassify, StripBannerOnClassify);
-            store.SetBool(SettingsKeys.StripBannerOnAutoClassify, StripBannerOnAutoClassify);
-            store.SetBool(SettingsKeys.WidenConversation, WidenConversation);
-            store.SetBool(SettingsKeys.SendExternalWarning, SendExternalWarning);
-            store.Set(SettingsKeys.InternalDomains, FormatList(InternalDomains));
-            store.Set(SettingsKeys.ForgottenAttachmentKeywords, FormatList(ForgottenAttachmentKeywords));
-            store.Set(SettingsKeys.SentItemTriageMode, SentItemTriageMode.ToString());
-            store.SetBool(SettingsKeys.ClassifyAfterMoveToInbox, ClassifyAfterMoveToInbox);
-            store.Set(SettingsKeys.SentItemTriageArchiveStoreId, SentItemTriageArchiveStoreId ?? string.Empty);
-            store.Set(SettingsKeys.SentItemTriageArchiveEntryId, SentItemTriageArchiveEntryId ?? string.Empty);
-            store.Set(SettingsKeys.SentItemTriageArchivePath, SentItemTriageArchivePath ?? string.Empty);
-            store.Set(SettingsKeys.AttachmentFavoriteFolders, FormatList(AttachmentFavoriteFolders));
-            store.Set(SettingsKeys.AttachmentRemovalMode, AttachmentRemovalMode.ToString());
-            store.Set(SettingsKeys.AttachmentLabelLocation, AttachmentLabelLocation.ToString());
-            store.Set(SettingsKeys.SearchPathDisplayMode, SearchPathDisplayMode.ToString());
-            store.Set(SettingsKeys.AutoClassHistoryDays,
-                AutoClassHistoryDays.ToString(CultureInfo.InvariantCulture));
-            store.SetBool(SettingsKeys.ClassifyMeetingItems, ClassifyMeetingItems);
-            store.SetBool(SettingsKeys.MarkAsReadOnClassify, MarkAsReadOnClassify);
-            store.SetBool(SettingsKeys.UpdateCheckEnabled, UpdateCheckEnabled);
-            store.Set(SettingsKeys.UpdateCheckUrl, UpdateCheckUrl ?? string.Empty);
-            store.Set(SettingsKeys.UpdateCheckLastSeenVersion, UpdateCheckLastSeenVersion ?? string.Empty);
-            store.Set(SettingsKeys.UpdateCheckDismissedUtc, UpdateCheckDismissedUtc ?? string.Empty);
-            store.SetBool(SettingsKeys.ShowPaneOnStartup, ShowPaneOnStartup);
-            store.Set(SettingsKeys.PreferredUiLanguage, PreferredUiLanguage);
+            store.SetMany(new[]
+            {
+                Pair(SettingsKeys.OpenInNewWindow,              OpenInNewWindow ? "1" : "0"),
+                Pair(SettingsKeys.AllResults,                   AllResults ? "1" : "0"),
+                Pair(SettingsKeys.FolderMatchMode,              FolderMatchMode.ToString()),
+                Pair(SettingsKeys.MaxResults,                   MaxResults.ToString(CultureInfo.InvariantCulture)),
+                Pair(SettingsKeys.MinSearchLength,              MinSearchLength.ToString(CultureInfo.InvariantCulture)),
+                Pair(SettingsKeys.SearchDebounceMs,             SearchDebounceMs.ToString(CultureInfo.InvariantCulture)),
+                Pair(SettingsKeys.KeepCopy,                     KeepCopy ? "1" : "0"),
+                Pair(SettingsKeys.RemoveAttachments,            RemoveAttachments ? "1" : "0"),
+                Pair(SettingsKeys.ClassifySafetyCopy,           ClassifySafetyCopy ? "1" : "0"),
+                Pair(SettingsKeys.ExternalBannerSignature,      ExternalBannerSignature ?? string.Empty),
+                Pair(SettingsKeys.StripBannerOnReply,           StripBannerOnReply ? "1" : "0"),
+                Pair(SettingsKeys.StripBannerOnClassify,        StripBannerOnClassify ? "1" : "0"),
+                Pair(SettingsKeys.StripBannerOnAutoClassify,    StripBannerOnAutoClassify ? "1" : "0"),
+                Pair(SettingsKeys.WidenConversation,            WidenConversation ? "1" : "0"),
+                Pair(SettingsKeys.SendExternalWarning,          SendExternalWarning ? "1" : "0"),
+                Pair(SettingsKeys.InternalDomains,              FormatList(InternalDomains)),
+                Pair(SettingsKeys.ForgottenAttachmentKeywords,  FormatList(ForgottenAttachmentKeywords)),
+                Pair(SettingsKeys.SentItemTriageMode,           SentItemTriageMode.ToString()),
+                Pair(SettingsKeys.ClassifyAfterMoveToInbox,     ClassifyAfterMoveToInbox ? "1" : "0"),
+                Pair(SettingsKeys.SentItemTriageArchiveStoreId, SentItemTriageArchiveStoreId ?? string.Empty),
+                Pair(SettingsKeys.SentItemTriageArchiveEntryId, SentItemTriageArchiveEntryId ?? string.Empty),
+                Pair(SettingsKeys.SentItemTriageArchivePath,    SentItemTriageArchivePath ?? string.Empty),
+                Pair(SettingsKeys.AttachmentFavoriteFolders,    FormatList(AttachmentFavoriteFolders)),
+                Pair(SettingsKeys.AttachmentRemovalMode,        AttachmentRemovalMode.ToString()),
+                Pair(SettingsKeys.AttachmentLabelLocation,      AttachmentLabelLocation.ToString()),
+                Pair(SettingsKeys.SearchPathDisplayMode,        SearchPathDisplayMode.ToString()),
+                Pair(SettingsKeys.AutoClassHistoryDays,         AutoClassHistoryDays.ToString(CultureInfo.InvariantCulture)),
+                Pair(SettingsKeys.ClassifyMeetingItems,         ClassifyMeetingItems ? "1" : "0"),
+                Pair(SettingsKeys.MarkAsReadOnClassify,         MarkAsReadOnClassify ? "1" : "0"),
+                Pair(SettingsKeys.UpdateCheckEnabled,           UpdateCheckEnabled ? "1" : "0"),
+                Pair(SettingsKeys.UpdateCheckUrl,               UpdateCheckUrl ?? string.Empty),
+                Pair(SettingsKeys.UpdateCheckLastSeenVersion,   UpdateCheckLastSeenVersion ?? string.Empty),
+                Pair(SettingsKeys.UpdateCheckDismissedUtc,      UpdateCheckDismissedUtc ?? string.Empty),
+                Pair(SettingsKeys.ShowPaneOnStartup,            ShowPaneOnStartup ? "1" : "0"),
+                Pair(SettingsKeys.PreferredUiLanguage,          PreferredUiLanguage),
+            });
         }
+
+        private static KeyValuePair<string, string> Pair(string key, string value)
+            => new KeyValuePair<string, string>(key, value);
 
         private static SentItemTriageMode ParseTriageMode(string raw, bool legacyPromptOn)
         {

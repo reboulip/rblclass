@@ -284,10 +284,9 @@ namespace RBLclass.Core.Persistence
                     "  PRIMARY KEY (StoreId, EntryId)" +
                     ");" +
                     "CREATE INDEX IF NOT EXISTS IX_Folders_StoreId ON Folders(StoreId);" +
-                    "CREATE TABLE IF NOT EXISTS Settings (" +
-                    "  Key   TEXT PRIMARY KEY," +
-                    "  Value TEXT" +
-                    ");";
+                    // Single-sourced from the settings store so the two copies
+                    // cannot drift (v2.7.1.0 E2).
+                    SqliteSettingsStore.CreateTableSql;
                 cmd.ExecuteNonQuery();
             }
         }

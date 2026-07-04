@@ -1,3 +1,5 @@
+using System.Collections.Generic;
+
 namespace RBLclass.Core
 {
     /// <summary>
@@ -22,5 +24,19 @@ namespace RBLclass.Core
 
         /// <summary>Set a bool as "1"/"0".</summary>
         void SetBool(string key, bool value);
+
+        /// <summary>
+        /// Read every stored key in a single query. Keys absent from the store
+        /// are absent from the result. Used by <see cref="Settings.Load"/> so a
+        /// full load is one connection, not one per key (v2.7.1.0 E2).
+        /// </summary>
+        IDictionary<string, string> GetAll();
+
+        /// <summary>
+        /// Insert-or-replace every entry in a single transaction. Used by
+        /// <see cref="Settings.Save"/> so a full save is one connection
+        /// (v2.7.1.0 E2).
+        /// </summary>
+        void SetMany(IEnumerable<KeyValuePair<string, string>> entries);
     }
 }
