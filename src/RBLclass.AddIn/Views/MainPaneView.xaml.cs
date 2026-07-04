@@ -198,6 +198,12 @@ namespace RBLclass.AddIn.Views
             catch (Exception ex) { Log.Error(ex, "SaveAsSelected failed."); }
         }
 
+        private void ManageAttachments_Click(object sender, RoutedEventArgs e)
+        {
+            try { Vm?.ManageAttachmentsSelected(); }
+            catch (Exception ex) { Log.Error(ex, "ManageAttachmentsSelected failed."); }
+        }
+
         private void OpenFolder_Click(object sender, RoutedEventArgs e)
         {
             var folder = (sender as FrameworkElement)?.DataContext as SelectableFolder;

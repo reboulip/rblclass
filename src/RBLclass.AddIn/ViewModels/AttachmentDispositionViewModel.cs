@@ -54,7 +54,15 @@ namespace RBLclass.AddIn.ViewModels
                 ? string.Empty
                 : loc.Plural(inlineExcluded,
                     "AttachDisp_InlineExcluded_One", "AttachDisp_InlineExcluded_Other");
+
+            IntroText = loc.GetString("AttachDisp_Intro");
         }
+
+        /// <summary>
+        /// Intro text at the top of the modal. Defaults to the classify-path
+        /// wording; overridden to the standalone variant for A2 (v2.8.0.0).
+        /// </summary>
+        public string IntroText { get; set; }
 
         public ObservableCollection<AttachmentRowViewModel> Rows { get; }
         public string EncryptedNotice { get; }

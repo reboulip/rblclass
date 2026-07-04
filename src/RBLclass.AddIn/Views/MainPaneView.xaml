@@ -89,6 +89,11 @@
                             FontFamily="Segoe UI Emoji" FontSize="14"
                             Click="SaveAs_Click"
                             ToolTip="{loc:Loc Key=MainPane_SaveAs_ToolTip}" />
+                    <Button DockPanel.Dock="Right" Padding="6,1" Margin="0,0,6,0"
+                            Content="{loc:Loc Key=MainPane_ManageAttachments_Button}"
+                            FontFamily="Segoe UI Emoji" FontSize="14"
+                            Click="ManageAttachments_Click"
+                            ToolTip="{loc:Loc Key=MainPane_ManageAttachments_ToolTip}" />
                     <Ellipse DockPanel.Dock="Right" Width="10" Height="10" Margin="0,0,6,0"
                              VerticalAlignment="Center" ToolTip="{Binding IndexStatusToolTip}">
                         <Ellipse.Style>

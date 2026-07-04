@@ -72,5 +72,18 @@ namespace RBLclass.Core
                                         AttachmentLabelOptions labelOptions = null,
                                         int historyRetentionDays = 0,
                                         string bannerSignature = null);
+
+        /// <summary>
+        /// Apply <paramref name="dispositions"/> in place on the referenced items
+        /// (v2.8.0.0 A2: standalone attachment management without a classify move).
+        /// Mirrors the classify-path logic: saves SaveTo attachments first; blocks
+        /// the strip if any save fails; honours Keep rows by removing non-Keep
+        /// attachments individually (highest id first); falls back to strip-all when
+        /// no Keep rows are present; appends the label note when
+        /// <paramref name="labelOptions"/> is non-null and attachments were removed.
+        /// </summary>
+        AttachmentsAppliedResult ApplyAttachmentDispositions(
+            IReadOnlyList<AttachmentDisposition> dispositions,
+            AttachmentLabelOptions labelOptions = null);
     }
 }

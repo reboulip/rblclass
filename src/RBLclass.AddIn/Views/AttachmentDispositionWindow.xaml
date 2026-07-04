@@ -21,7 +21,7 @@
         </DockPanel>
 
         <StackPanel DockPanel.Dock="Top">
-            <TextBlock Text="{loc:Loc Key=AttachDisp_Intro}" TextWrapping="Wrap" Margin="0,0,0,6" />
+            <TextBlock Text="{Binding IntroText}" TextWrapping="Wrap" Margin="0,0,0,6" />
             <Border Background="{DynamicResource Theme.ControlBackground}"
                     BorderBrush="{DynamicResource Theme.ControlBorder}" BorderThickness="1"
                     CornerRadius="3" Padding="8,5" Margin="0,0,0,6"

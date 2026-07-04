@@ -72,6 +72,12 @@
   <data name="MainPane_SaveAs_ToolTip" xml:space="preserve">
     <value>Die ausgewählte(n) E-Mail(s) als .msg-Dateien in einem Ordner speichern</value>
   </data>
+  <data name="MainPane_ManageAttachments_Button" xml:space="preserve">
+    <value>📎</value>
+  </data>
+  <data name="MainPane_ManageAttachments_ToolTip" xml:space="preserve">
+    <value>Anlagen der ausgewählten E-Mail(s) verwalten: behalten, löschen oder in einem Ordner speichern</value>
+  </data>
   <data name="MainPane_QueryBox_ToolTip" xml:space="preserve">
     <value>Eingabe legt in den markierten Ordner ab; Strg+Eingabe öffnet ihn. Strg allein drücken, um „Alle passenden Ordner anzeigen“ umzuschalten</value>
   </data>
@@ -135,6 +141,9 @@
   <data name="MainPane_Busy_Saving" xml:space="preserve">
     <value>Wird gespeichert…</value>
   </data>
+  <data name="MainPane_Busy_ManagingAttachments" xml:space="preserve">
+    <value>Anlagen werden verwaltet…</value>
+  </data>
   <data name="Status_Classify_Progress_One" xml:space="preserve">
     <value>Ablage {0} von {1}…</value>
   </data>
@@ -188,6 +197,9 @@
   </data>
   <data name="AttachDisp_Intro" xml:space="preserve">
     <value>Wählen Sie, was mit jeder Anlage geschehen soll, bevor die E-Mail abgelegt wird.</value>
+  </data>
+  <data name="AttachDisp_StandaloneIntro" xml:space="preserve">
+    <value>Wählen Sie, was mit jeder Anlage geschehen soll.</value>
   </data>
   <data name="AttachDisp_EncryptedExcluded_One" xml:space="preserve">
     <value>{0} verschlüsselte E-Mail ausgeschlossen — ihre Anlagen verbleiben bei der E-Mail.</value>
@@ -597,6 +609,18 @@
   </data>
   <data name="Status_SaveAs_Failed" xml:space="preserve">
     <value> ({0} fehlgeschlagen)</value>
+  </data>
+  <data name="Status_ManageAttachments_NoAttachments" xml:space="preserve">
+    <value>Die ausgewählte(n) E-Mail(s) haben keine zu verwaltenden Anlagen.</value>
+  </data>
+  <data name="Status_ManageAttachments_Cancelled" xml:space="preserve">
+    <value>Anlagenverwaltung abgebrochen.</value>
+  </data>
+  <data name="Status_ManageAttachments_Applied_One" xml:space="preserve">
+    <value>Anlagen von 1 E-Mail verwaltet.</value>
+  </data>
+  <data name="Status_ManageAttachments_Applied_Other" xml:space="preserve">
+    <value>Anlagen von {0} E-Mails verwaltet.</value>
   </data>
   <data name="Status_AutoClassing" xml:space="preserve">
     <value>Auto-Klassierung läuft…</value>

@@ -333,6 +333,97 @@ namespace RBLclass.Core
         }
 
         /// <summary>
+        /// A2 (v2.8.0.0): apply attachment dispositions in place on the selected
+        /// items, with no classify move. Same rules as
+        /// <see cref="ApplyAttachmentRemoval"/> but the item is its own "filed"
+        /// ref (nothing was copied/moved). Each item is processed independently.
+        /// </summary>
+        public AttachmentsAppliedResult ApplyAttachmentDispositions(
+            IReadOnlyList<AttachmentDisposition> dispositions,
+            AttachmentLabelOptions labelOptions = null)
+        {
+            var byItem = new Dictionary<string, KeyValuePair<MailItemRef, List<AttachmentDisposition>>>();
+            foreach (var d in dispositions ?? new AttachmentDisposition[0])
+            {
+                string key = d.Item.StoreId + " " + d.Item.EntryId;
+                if (!byItem.TryGetValue(key, out var entry))
+                {
+                    entry = new KeyValuePair<MailItemRef, List<AttachmentDisposition>>(
+                        d.Item, new List<AttachmentDisposition>());
+                    byItem[key] = entry;
+                }
+                entry.Value.Add(d);
+            }
+
+            int applied = 0, errors = 0, encryptedSkips = 0;
+
+            foreach (var kv in byItem)
+            {
+                var item = kv.Value.Key;
+                var rows = kv.Value.Value;
+
+                // Save the "Save to" attachments first; block the strip if any fail
+                // (the strip primitive removes all attachments, so a failed save
+                // would lose the very file the user asked to keep).
+                bool allSavesSucceeded = true;
+                foreach (var d in rows)
+                {
+                    if (d.Action == AttachmentDispositionAction.SaveTo
+                        && !string.IsNullOrWhiteSpace(d.TargetDirectory))
+                    {
+                        bool saved;
+                        try { saved = _store.SaveAttachmentToFile(item, d.AttachmentId, d.TargetDirectory); }
+                        catch { saved = false; }
+                        if (!saved) allSavesSucceeded = false;
+                    }
+                }
+
+                if (!allSavesSucceeded) { errors++; continue; }
+
+                bool stripped;
+                if (rows.Any(d => d.Action == AttachmentDispositionAction.Keep))
+                {
+                    stripped = false;
+                    foreach (var d in rows.Where(d => d.Action != AttachmentDispositionAction.Keep)
+                                          .OrderByDescending(d => d.AttachmentId))
+                    {
+                        bool removed;
+                        try { removed = _store.RemoveAttachment(item, d.AttachmentId); }
+                        catch { removed = false; }
+                        if (removed) stripped = true;
+                    }
+                }
+                else
+                {
+                    try
+                    {
+                        stripped = _store.RemoveAttachments(item);
+                        if (!stripped) encryptedSkips++; // S/MIME guard fired
+                    }
+                    catch { stripped = false; }
+                }
+
+                if (stripped) applied++;
+
+                if (labelOptions != null && stripped)
+                {
+                    var labelRows = rows.Where(d => d.Action != AttachmentDispositionAction.Keep).ToList();
+                    if (labelRows.Count > 0)
+                    {
+                        var block = AttachmentLabelFormatter.Format(labelRows, labelOptions, DateTime.Now);
+                        if (block != null)
+                        {
+                            try { _store.AppendHtmlNote(item, block); }
+                            catch { /* best-effort */ }
+                        }
+                    }
+                }
+            }
+
+            return new AttachmentsAppliedResult(applied, errors, encryptedSkips);
+        }
+
+        /// <summary>
         /// Record the history for Auto-class: one batch for the whole classify
         /// action, one row per (filed conversation, destination). Best-effort -
         /// a history write never fails the classify. Returns the batch id(s).

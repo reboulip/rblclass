@@ -331,6 +331,20 @@ namespace RBLclass.AddIn
                     return window.ShowDialog() == true ? vm.BuildDispositions() : null;
                 };
 
+                // A2: standalone disposition modal (same window, different intro).
+                TaskPaneServices.ShowStandaloneAttachmentDisposition = groups =>
+                {
+                    var vm = new AttachmentDispositionViewModel(groups, TaskPaneServices.Localization)
+                    {
+                        IntroText = TaskPaneServices.Localization.GetString("AttachDisp_StandaloneIntro")
+                    };
+                    var window = new AttachmentDispositionWindow { DataContext = vm };
+                    return window.ShowDialog() == true ? vm.BuildDispositions() : null;
+                };
+                // A2: apply dispositions in place (no move).
+                TaskPaneServices.ApplyAttachmentDispositions = (dispositions, labelOptions) =>
+                    _classifier.ApplyAttachmentDispositions(dispositions, labelOptions);
+
                 // A1: "Save as" - pick a target directory, then save each item as .msg.
                 TaskPaneServices.ShowSaveAsPicker = () =>
                 {

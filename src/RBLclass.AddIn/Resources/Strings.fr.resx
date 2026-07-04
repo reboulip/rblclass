@@ -72,6 +72,12 @@
   <data name="MainPane_SaveAs_ToolTip" xml:space="preserve">
     <value>Enregistrer le(s) message(s) sélectionné(s) sous forme de fichiers .msg dans un dossier</value>
   </data>
+  <data name="MainPane_ManageAttachments_Button" xml:space="preserve">
+    <value>📎</value>
+  </data>
+  <data name="MainPane_ManageAttachments_ToolTip" xml:space="preserve">
+    <value>Gérer les pièces jointes du/des message(s) sélectionné(s) : conserver, supprimer ou enregistrer dans un dossier</value>
+  </data>
   <data name="MainPane_QueryBox_ToolTip" xml:space="preserve">
     <value>Entrée classe dans le dossier en surbrillance ; Ctrl+Entrée l'ouvre. Appuyez sur Ctrl seul pour activer/désactiver « Lister tous les dossiers correspondants »</value>
   </data>
@@ -135,6 +141,9 @@
   <data name="MainPane_Busy_Saving" xml:space="preserve">
     <value>Enregistrement…</value>
   </data>
+  <data name="MainPane_Busy_ManagingAttachments" xml:space="preserve">
+    <value>Traitement des pièces jointes…</value>
+  </data>
   <data name="Status_Classify_Progress_One" xml:space="preserve">
     <value>Classement {0} sur {1}…</value>
   </data>
@@ -188,6 +197,9 @@
   </data>
   <data name="AttachDisp_Intro" xml:space="preserve">
     <value>Choisissez le traitement de chaque pièce jointe avant le classement du message.</value>
+  </data>
+  <data name="AttachDisp_StandaloneIntro" xml:space="preserve">
+    <value>Choisissez le traitement de chaque pièce jointe.</value>
   </data>
   <data name="AttachDisp_EncryptedExcluded_One" xml:space="preserve">
     <value>{0} message chiffré exclu — ses pièces jointes restent avec le message.</value>
@@ -597,6 +609,18 @@
   </data>
   <data name="Status_SaveAs_Failed" xml:space="preserve">
     <value> ({0} échoué(s))</value>
+  </data>
+  <data name="Status_ManageAttachments_NoAttachments" xml:space="preserve">
+    <value>Le(s) message(s) sélectionné(s) n'ont pas de pièces jointes à gérer.</value>
+  </data>
+  <data name="Status_ManageAttachments_Cancelled" xml:space="preserve">
+    <value>Gestion des pièces jointes annulée.</value>
+  </data>
+  <data name="Status_ManageAttachments_Applied_One" xml:space="preserve">
+    <value>Pièces jointes d'1 message traitées.</value>
+  </data>
+  <data name="Status_ManageAttachments_Applied_Other" xml:space="preserve">
+    <value>Pièces jointes de {0} messages traitées.</value>
   </data>
   <data name="Status_AutoClassing" xml:space="preserve">
     <value>Classement automatique…</value>

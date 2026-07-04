@@ -178,6 +178,24 @@ namespace RBLclass.AddIn
             IReadOnlyList<AttachmentDisposition>> ShowAttachmentDisposition;
 
         /// <summary>
+        /// Show the disposition modal for standalone attachment management
+        /// (v2.8.0.0 A2). Same modal as <see cref="ShowAttachmentDisposition"/>
+        /// but with the standalone intro text; returns the choices or null when
+        /// cancelled.
+        /// </summary>
+        public static Func<
+            IReadOnlyList<(MailItemRef Item, IReadOnlyList<AttachmentInfo> Attachments, bool IsEncrypted)>,
+            IReadOnlyList<AttachmentDisposition>> ShowStandaloneAttachmentDisposition;
+
+        /// <summary>
+        /// Apply attachment dispositions in place on the referenced items
+        /// (v2.8.0.0 A2: standalone, no classify move). Backed by
+        /// <see cref="IClassifier.ApplyAttachmentDispositions"/>; UI thread only.
+        /// </summary>
+        public static Func<IReadOnlyList<AttachmentDisposition>, AttachmentLabelOptions, AttachmentsAppliedResult>
+            ApplyAttachmentDispositions;
+
+        /// <summary>
         /// Show the Save As directory-picker modal (reusing the favourite-folder
         /// search + OS-browse UX) and return the chosen directory, or null when
         /// the user cancels. Call on the Outlook UI thread. (v2.8.0.0 A1)

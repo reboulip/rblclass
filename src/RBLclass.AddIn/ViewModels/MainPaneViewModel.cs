@@ -570,6 +570,90 @@ namespace RBLclass.AddIn.ViewModels
             }
         }
 
+        /// <summary>
+        /// Open the attachment-disposition modal for the current selection and
+        /// apply the user's choices in place on the selected items — no classify
+        /// move (v2.8.0.0 A2).
+        /// </summary>
+        public void ManageAttachmentsSelected()
+        {
+            if (_isBusy) return;
+
+            var items = _getSelection != null ? _getSelection() : new MailItemRef[0];
+            if (items.Count == 0) { PushStatus(_loc.GetString("Status_NoMailSelectedAction")); return; }
+
+            if (TaskPaneServices.GatherAttachments == null
+                || TaskPaneServices.ShowStandaloneAttachmentDisposition == null
+                || TaskPaneServices.ApplyAttachmentDispositions == null)
+                return;
+
+            var groups = TaskPaneServices.GatherAttachments(items);
+
+            // Nothing to manage when no item has a detachable (non-inline) attachment.
+            if (!groups.Any(g => g.IsEncrypted || g.Attachments.Any(a => !a.IsInline)))
+            {
+                PushStatus(_loc.GetString("Status_ManageAttachments_NoAttachments"));
+                return;
+            }
+
+            // Every attachment-bearing item is encrypted: skip the modal.
+            if (AllAttachmentBearersAreEncrypted(groups))
+            {
+                PushStatus(_loc.Plural(items.Count,
+                    "Status_Classify_EncryptedAttachmentsKept_One",
+                    "Status_Classify_EncryptedAttachmentsKept_Other"));
+                return;
+            }
+
+            // Show the modal while the pane is still enabled (SaveAsSelected pattern).
+            var dispositions = TaskPaneServices.ShowStandaloneAttachmentDisposition(groups);
+            if (dispositions == null)
+            {
+                PushStatus(_loc.GetString("Status_ManageAttachments_Cancelled"));
+                return;
+            }
+
+            IsBusy = true;
+            BusyStatus = _loc.GetString("MainPane_Busy_ManagingAttachments");
+            try
+            {
+                AttachmentLabelOptions labelOptions = null;
+                if (_settings != null)
+                {
+                    var s = Settings.Load(_settings);
+                    if (s.AttachmentLabelLocation != AttachmentLabelLocation.None)
+                    {
+                        labelOptions = new AttachmentLabelOptions(
+                            _loc.GetString("AttachmentLabel_Header_One"),
+                            _loc.GetString("AttachmentLabel_Header_Other"),
+                            _loc.GetString("AttachmentLabel_SavedTo"),
+                            _loc.GetString("AttachmentLabel_DeletedOn"),
+                            "yyyy-MM-dd");
+                    }
+                }
+
+                var result = TaskPaneServices.ApplyAttachmentDispositions(dispositions, labelOptions);
+
+                string status = _loc.Plural(result.Applied,
+                    "Status_ManageAttachments_Applied_One", "Status_ManageAttachments_Applied_Other");
+                if (result.Errors > 0)
+                    status += _loc.GetString("Status_SaveAs_Failed", result.Errors);
+                if (result.EncryptedSkips > 0)
+                    status += _loc.Plural(result.EncryptedSkips,
+                        "Status_Classify_EncryptedKept_One", "Status_Classify_EncryptedKept_Other");
+                PushStatus(status);
+            }
+            catch (Exception ex)
+            {
+                Log.Error(ex, "ManageAttachmentsSelected failed.");
+                PushStatus(_loc.GetString("Status_ManageAttachments_Cancelled"));
+            }
+            finally
+            {
+                IsBusy = false;
+            }
+        }
+
         private static string DescribeAutoClass(AutoClassifyResult r, ILocalizationService loc)
         {
             // Nothing filed and the only reason is "never classified before".

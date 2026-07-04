@@ -72,6 +72,12 @@
   <data name="MainPane_SaveAs_ToolTip" xml:space="preserve">
     <value>Save the selected email(s) as .msg files to a folder</value>
   </data>
+  <data name="MainPane_ManageAttachments_Button" xml:space="preserve">
+    <value>📎</value>
+  </data>
+  <data name="MainPane_ManageAttachments_ToolTip" xml:space="preserve">
+    <value>Manage attachments of the selected email(s): keep, delete, or save to a folder</value>
+  </data>
   <data name="MainPane_QueryBox_ToolTip" xml:space="preserve">
     <value>Enter files into the highlighted folder; Ctrl+Enter opens it. Press Ctrl alone to toggle 'List every matching folder'</value>
   </data>
@@ -135,6 +141,9 @@
   <data name="MainPane_Busy_Saving" xml:space="preserve">
     <value>Saving…</value>
   </data>
+  <data name="MainPane_Busy_ManagingAttachments" xml:space="preserve">
+    <value>Managing attachments…</value>
+  </data>
   <data name="Status_Classify_Progress_One" xml:space="preserve">
     <value>Filing {0} of {1}…</value>
   </data>
@@ -188,6 +197,9 @@
   </data>
   <data name="AttachDisp_Intro" xml:space="preserve">
     <value>Choose what to do with each attachment before the mail is filed.</value>
+  </data>
+  <data name="AttachDisp_StandaloneIntro" xml:space="preserve">
+    <value>Choose what to do with each attachment.</value>
   </data>
   <data name="AttachDisp_EncryptedExcluded_One" xml:space="preserve">
     <value>{0} encrypted mail was excluded — its attachments stay with the mail.</value>
@@ -597,6 +609,18 @@
   </data>
   <data name="Status_SaveAs_Failed" xml:space="preserve">
     <value> ({0} failed)</value>
+  </data>
+  <data name="Status_ManageAttachments_NoAttachments" xml:space="preserve">
+    <value>The selected email(s) have no attachments to manage.</value>
+  </data>
+  <data name="Status_ManageAttachments_Cancelled" xml:space="preserve">
+    <value>Attachment management cancelled.</value>
+  </data>
+  <data name="Status_ManageAttachments_Applied_One" xml:space="preserve">
+    <value>1 email's attachments managed.</value>
+  </data>
+  <data name="Status_ManageAttachments_Applied_Other" xml:space="preserve">
+    <value>{0} emails' attachments managed.</value>
   </data>
   <data name="Status_AutoClassing" xml:space="preserve">
     <value>Auto-classing…</value>
