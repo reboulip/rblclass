@@ -149,6 +149,13 @@ namespace RBLclass.AddIn.ViewModels
         }
 
         /// <summary>
+        /// Push a status message from an external caller on the Outlook STA
+        /// thread (v2.7.1.0 C1: the sent-item triage handler reports its
+        /// archive-folder failure here).
+        /// </summary>
+        public void PushExternalStatus(string message) => PushStatus(message);
+
+        /// <summary>
         /// Destinations accumulated across searches (v2.2): checking a row adds
         /// its folder here, and the set survives re-searches so multi-keyword
         /// destinations can be built up (search kw1, check, search kw2, check,

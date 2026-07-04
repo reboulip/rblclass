@@ -233,6 +233,15 @@ namespace RBLclass.AddIn
                         return null;
                     }
                 };
+                TaskPaneServices.GetFolderByEntryId = (storeId, entryId) =>
+                {
+                    try { return _mailStore.GetFolderByEntryId(storeId, entryId); }
+                    catch (Exception ex)
+                    {
+                        TryLog("GetFolderByEntryId failed", ex);
+                        return null;
+                    }
+                };
                 TaskPaneServices.PromptForName = parentFolderName =>
                 {
                     var prompt = new NamePromptWindow(parentFolderName);
@@ -688,33 +697,42 @@ namespace RBLclass.AddIn
                 var reference = _mailStore.ResolveMailItem(item);
                 if (reference == null) return; // not a mail item (meeting response, report...)
 
-                SentItemTriageAction action;
-                if (mode == SentItemTriageMode.AskEveryTime)
-                {
-                    string archivePath = string.IsNullOrEmpty(settings.SentItemTriageArchiveEntryId)
-                        ? null : settings.SentItemTriageArchivePath;
-                    var triageVm = new SentItemTriageViewModel(reference.Subject, archivePath);
-                    new SentItemTriageWindow { DataContext = triageVm }.ShowDialog();
-                    if (triageVm.SelectedAction == null || triageVm.SelectedAction == SentItemTriageAction.Leave)
-                        return;
-                    action = triageVm.SelectedAction.Value;
-                }
-                else if (mode == SentItemTriageMode.Delete)
-                {
-                    action = SentItemTriageAction.Delete;
-                }
-                else if (mode == SentItemTriageMode.MoveToArchive)
-                {
-                    action = SentItemTriageAction.MoveToArchive;
-                }
-                else
-                {
-                    action = SentItemTriageAction.MoveToInbox;
-                }
-
+                // Set BEFORE the modal below: ShowDialog pumps the message loop,
+                // so a second sent item arriving mid-dialog would otherwise
+                // re-enter here and stack a second dialog (v2.7.1.0 C1).
                 _suppressSentItemTriage = true;
-                try { ApplySentItemTriage(action, reference); }
-                finally { _suppressSentItemTriage = false; }
+                try
+                {
+                    SentItemTriageAction action;
+                    if (mode == SentItemTriageMode.AskEveryTime)
+                    {
+                        string archivePath = string.IsNullOrEmpty(settings.SentItemTriageArchiveEntryId)
+                            ? null : settings.SentItemTriageArchivePath;
+                        var triageVm = new SentItemTriageViewModel(reference.Subject, archivePath);
+                        new SentItemTriageWindow { DataContext = triageVm }.ShowDialog();
+                        if (triageVm.SelectedAction == null || triageVm.SelectedAction == SentItemTriageAction.Leave)
+                            return;
+                        action = triageVm.SelectedAction.Value;
+                    }
+                    else if (mode == SentItemTriageMode.Delete)
+                    {
+                        action = SentItemTriageAction.Delete;
+                    }
+                    else if (mode == SentItemTriageMode.MoveToArchive)
+                    {
+                        action = SentItemTriageAction.MoveToArchive;
+                    }
+                    else
+                    {
+                        action = SentItemTriageAction.MoveToInbox;
+                    }
+
+                    ApplySentItemTriage(action, reference, settings);
+                }
+                finally
+                {
+                    _suppressSentItemTriage = false;
+                }
             }
             catch (Exception ex)
             {
@@ -726,7 +744,7 @@ namespace RBLclass.AddIn
         /// Apply a triage action to the single sent item (no conversation
         /// widening, no destination picker - those were dropped in the rework).
         /// </summary>
-        private void ApplySentItemTriage(SentItemTriageAction action, MailItemRef item)
+        private void ApplySentItemTriage(SentItemTriageAction action, MailItemRef item, Settings settings)
         {
             switch (action)
             {
@@ -736,23 +754,23 @@ namespace RBLclass.AddIn
                     break;
 
                 case SentItemTriageAction.MoveToArchive:
-                    var archiveSettings = Settings.Load(_settingsStore);
-                    var archiveFolder = string.IsNullOrEmpty(archiveSettings.SentItemTriageArchiveEntryId)
+                    var archiveFolder = string.IsNullOrEmpty(settings.SentItemTriageArchiveEntryId)
                         ? null
                         : _mailStore.GetFolderByEntryId(
-                            archiveSettings.SentItemTriageArchiveStoreId,
-                            archiveSettings.SentItemTriageArchiveEntryId);
+                            settings.SentItemTriageArchiveStoreId,
+                            settings.SentItemTriageArchiveEntryId);
                     if (archiveFolder == null)
                     {
                         Log.Warning("Sent-item triage: archive folder not configured or no longer resolves; leaving mail in Sent Items.");
+                        TaskPaneServices.Host?.PushExternalStatus(
+                            TaskPaneServices.Localization?.GetString("Status_TriageArchiveFolderMissing"));
                         return;
                     }
                     var archiveResult = _classifier.Classify(
                         new ClassifyRequest(new[] { item }, new[] { archiveFolder },
                                             keepCopy: false, removeAttachments: false,
                                             markTasksComplete: false,
-                                            safetyCopy: _settingsStore.GetBool(
-                                                SettingsKeys.ClassifySafetyCopy, false),
+                                            safetyCopy: settings.ClassifySafetyCopy,
                                             // Routing, not a classification decision -
                                             // must not become the conversation's
                                             // remembered folder (v2.7.1.0 B3).
@@ -773,8 +791,7 @@ namespace RBLclass.AddIn
                         new ClassifyRequest(new[] { item }, new[] { inbox },
                                             keepCopy: false, removeAttachments: false,
                                             markTasksComplete: false,
-                                            safetyCopy: _settingsStore.GetBool(
-                                                SettingsKeys.ClassifySafetyCopy, false),
+                                            safetyCopy: settings.ClassifySafetyCopy,
                                             // Routing, not a classification decision -
                                             // must not become the conversation's
                                             // remembered folder (v2.7.1.0 B3).
@@ -785,7 +802,7 @@ namespace RBLclass.AddIn
 
                     // E1: optionally hand the moved mail to the pane as the next
                     // classify target and reveal it, so the user can file it now.
-                    if (_settingsStore.GetBool(SettingsKeys.ClassifyAfterMoveToInbox, true)
+                    if (settings.ClassifyAfterMoveToInbox
                         && result.Undo != null && result.Undo.Moves.Count > 0)
                     {
                         EnsureTaskPane();

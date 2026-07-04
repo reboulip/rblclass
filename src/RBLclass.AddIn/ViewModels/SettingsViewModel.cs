@@ -30,6 +30,7 @@ namespace RBLclass.AddIn.ViewModels
         private string _autoClassHistoryDaysText;
         private string _bannerStatus;
         private string _bannerDiagnosticStatus = string.Empty;
+        private bool _archiveFolderIsStale;
 
         /// <param name="captureSelectedHtml">
         /// Returns the HTML body of the currently selected mail, for the "learn
@@ -46,6 +47,19 @@ namespace RBLclass.AddIn.ViewModels
             _searchDebounceMsText = _settings.SearchDebounceMs.ToString(CultureInfo.InvariantCulture);
             _autoClassHistoryDaysText = _settings.AutoClassHistoryDays.ToString(CultureInfo.InvariantCulture);
             _bannerStatus = DescribeBanner(_settings.ExternalBannerSignature);
+
+            // Re-resolve the configured archive folder once at window open so a
+            // deleted/renamed folder shows the "no longer found" placeholder
+            // instead of its stale cached path (v2.7.1.0 C1).
+            if (!string.IsNullOrEmpty(_settings.SentItemTriageArchiveEntryId)
+                && !string.IsNullOrEmpty(_settings.SentItemTriageArchiveStoreId)
+                && TaskPaneServices.GetFolderByEntryId != null)
+            {
+                _archiveFolderIsStale =
+                    TaskPaneServices.GetFolderByEntryId(
+                        _settings.SentItemTriageArchiveStoreId,
+                        _settings.SentItemTriageArchiveEntryId) == null;
+            }
 
             TriageModes = new[]
             {
@@ -515,7 +529,7 @@ namespace RBLclass.AddIn.ViewModels
         public string SentItemTriageArchiveFolderPath =>
             string.IsNullOrEmpty(_settings.SentItemTriageArchiveEntryId)
                 ? _loc.GetString("Settings_TriageArchiveFolder_NotSet")
-                : string.IsNullOrEmpty(_settings.SentItemTriageArchivePath)
+                : _archiveFolderIsStale
                     ? _loc.GetString("Settings_TriageArchiveFolder_Stale")
                     : _settings.SentItemTriageArchivePath;
 
@@ -528,6 +542,7 @@ namespace RBLclass.AddIn.ViewModels
             _settings.SentItemTriageArchiveStoreId = folder.StoreId;
             _settings.SentItemTriageArchiveEntryId = folder.EntryId;
             _settings.SentItemTriageArchivePath = folder.FullPath;
+            _archiveFolderIsStale = false;
             _settings.Save(_store);
             OnPropertyChanged(nameof(SentItemTriageArchiveFolderPath));
         }
@@ -538,6 +553,7 @@ namespace RBLclass.AddIn.ViewModels
             _settings.SentItemTriageArchiveStoreId = string.Empty;
             _settings.SentItemTriageArchiveEntryId = string.Empty;
             _settings.SentItemTriageArchivePath = string.Empty;
+            _archiveFolderIsStale = false;
             _settings.Save(_store);
             OnPropertyChanged(nameof(SentItemTriageArchiveFolderPath));
         }

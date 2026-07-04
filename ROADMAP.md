@@ -158,7 +158,7 @@ each item is one coherent, testable change.
       breaking auto-class for those conversations.
 
 ### C — Sent-item triage hardening
-- [ ] **C1.** Triage handler fixes (one change, three parts): (a) set the
+- [x] **C1.** Triage handler fixes (one change, three parts): (a) set the
       re-entrancy suppression before `ShowDialog()` (reset in `finally`) so a
       second sent item arriving during the open triage dialog cannot stack a
       second modal; (b) surface stale archive-folder failures — Settings

@@ -117,6 +117,15 @@ namespace RBLclass.AddIn
             (_view?.DataContext as MainPaneViewModel)?.ShowUpdateBanner(version);
         }
 
+        /// <summary>
+        /// Push a triage-outcome status message into the pane's rolling journal
+        /// (v2.7.1.0 C1). Silently ignored when the pane is not yet initialized.
+        /// </summary>
+        public void PushExternalStatus(string message)
+        {
+            (_view?.DataContext as MainPaneViewModel)?.PushExternalStatus(message);
+        }
+
         private void ApplyThemeAndSelection()
         {
             (_view?.DataContext as MainPaneViewModel)?.RefreshSelection();

@@ -148,6 +148,13 @@ namespace RBLclass.AddIn
         public static Func<FolderNode> PickOutlookFolder;
 
         /// <summary>
+        /// Resolve a folder by its (StoreId, EntryId) pair, or null when it no
+        /// longer exists (v2.7.1.0 C1: staleness check for the sent-item archive
+        /// target). Wired at startup; null until then. UI thread only.
+        /// </summary>
+        public static Func<string, string, FolderNode> GetFolderByEntryId;
+
+        /// <summary>
         /// Activate the pig easter egg in the main pane's Auto-Class button label.
         /// Wired at startup; null until then.
         /// </summary>

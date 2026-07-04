@@ -82,9 +82,12 @@ namespace RBLclass.Core
 
         /// <summary>
         /// Resolve a folder by its stable (storeId, entryId) pair, or null when it
-        /// no longer resolves (store closed, entry gone). Used to resolve the
-        /// persisted sent-item archive folder (v2.7.0.0 B2). Touches COM - call on
-        /// the Outlook UI thread.
+        /// no longer resolves (store closed, entry gone) OR when it now sits under
+        /// the store's Deleted Items subtree - Outlook soft-deletes folders there
+        /// and they keep resolving by EntryID, but as a filing destination such a
+        /// folder is gone (v2.7.1.0 C1). Used to resolve the persisted sent-item
+        /// archive folder (v2.7.0.0 B2). Touches COM - call on the Outlook UI
+        /// thread.
         /// </summary>
         FolderNode GetFolderByEntryId(string storeId, string entryId);
 

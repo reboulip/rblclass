@@ -705,6 +705,9 @@
   <data name="Status_Classify_EncryptedInConversation_Other" xml:space="preserve">
     <value> {0} encrypted messages in the conversation were left in place.</value>
   </data>
+  <data name="Status_TriageArchiveFolderMissing" xml:space="preserve">
+    <value>Sent-item triage: archive folder not found — mail left in Sent Items.</value>
+  </data>
 
   <!-- RblClassAddIn: MessageBox dialogs -->
   <data name="MsgBox_ConfirmMarkTasksComplete_Title" xml:space="preserve">

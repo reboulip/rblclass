@@ -1443,8 +1443,66 @@ namespace RBLclass.Outlook.Adapter
                 catch { return null; } // no longer resolves - tolerate the miss
 
                 using (var folder = new ComRef<OutlookOM.Folder>(rawFolder))
+                {
+                    // A folder "deleted" in Outlook is soft-moved under Deleted
+                    // Items and still resolves by EntryID. For the callers of
+                    // this method (the sent-item archive target) such a folder
+                    // is gone - filing into it hides mail inside Deleted Items
+                    // (v2.7.1.0 C1).
+                    var rawStore = Safe<OutlookOM.Store>(() => folder.Value.Store, null);
+                    if (rawStore != null)
+                    {
+                        using (var store = new ComRef<OutlookOM.Store>(rawStore))
+                        {
+                            string deletedItemsEntryId = SafeDeletedItemsEntryId(store.Value);
+                            if (IsUnderDeletedItems(folder.Value, deletedItemsEntryId))
+                                return null;
+                        }
+                    }
                     return DescribeFolder(folder.Value);
+                }
             }
+        }
+
+        /// <summary>
+        /// True when <paramref name="folder"/> is, or sits anywhere under, the
+        /// store's Deleted Items folder - detected by walking the parent chain
+        /// and comparing EntryIDs (robust against renames and localization).
+        /// Does not release <paramref name="folder"/> itself (v2.7.1.0 C1).
+        /// </summary>
+        private static bool IsUnderDeletedItems(OutlookOM.Folder folder, string deletedItemsEntryId)
+        {
+            if (string.IsNullOrEmpty(deletedItemsEntryId)) return false;
+
+            OutlookOM.Folder current = folder;   // caller-owned; never released here
+            ComRef<OutlookOM.Folder> owned = null; // the parent we currently hold
+            try
+            {
+                for (int depth = 0; depth < 64; depth++)
+                {
+                    string entryId = Safe(() => current.EntryID, null);
+                    if (entryId == null) return false;
+                    if (entryId == deletedItemsEntryId) return true;
+
+                    object rawParent;
+                    try { rawParent = current.Parent; }
+                    catch { return false; }
+
+                    var parentFolder = rawParent as OutlookOM.Folder;
+                    if (parentFolder == null)
+                    {
+                        // Reached the store root (Parent is a Store/NameSpace).
+                        if (rawParent != null) new ComRef<object>(rawParent).Dispose();
+                        return false;
+                    }
+
+                    owned?.Dispose();
+                    owned = new ComRef<OutlookOM.Folder>(parentFolder);
+                    current = parentFolder;
+                }
+                return false;
+            }
+            finally { owned?.Dispose(); }
         }
 
         public FolderNode PickFolder()
