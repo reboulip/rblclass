@@ -175,7 +175,7 @@ each item is one coherent, testable change.
 - [x] **D2.** First-run folder walk must yield between stores
       (`Dispatcher.Yield`, like the manual refresh path `RunFolderWalkAsync`)
       so Outlook stays responsive during the initial index on multi-PST profiles.
-- [ ] **D3.** Propagate mid-session settings changes to the pane immediately:
+- [x] **D3.** Propagate mid-session settings changes to the pane immediately:
       re-seed the pane option fields (keep copy, remove attachments, widen
       conversation, strip banner, mark as read) and the path-display default
       when the Settings window persists a change, so the very next classify uses

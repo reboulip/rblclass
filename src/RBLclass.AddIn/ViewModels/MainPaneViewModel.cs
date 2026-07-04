@@ -86,16 +86,9 @@ namespace RBLclass.AddIn.ViewModels
             _selectionSummary = _loc.GetString("Status_NoMailSelectedSummary");
             _autoClassLabel = _loc.GetString("MainPane_AutoClass_Button");
 
+            SeedOptionsFromSettings();
             if (_settings != null)
             {
-                _allResults = _settings.GetBool(SettingsKeys.AllResults, false);
-                _keepCopy = _settings.GetBool(SettingsKeys.KeepCopy, false);
-                _removeAttachments = _settings.GetBool(SettingsKeys.RemoveAttachments, false);
-                _widenConversation = _settings.GetBool(SettingsKeys.WidenConversation, false);
-                _stripBanner = _settings.GetBool(SettingsKeys.StripBannerOnClassify, false);
-                _markAsRead = _settings.GetBool(SettingsKeys.MarkAsReadOnClassify, false);
-                _canStripBanner = !string.IsNullOrWhiteSpace(
-                    _settings.Get(SettingsKeys.ExternalBannerSignature, string.Empty));
                 _easterEggActive = _settings.GetBool(SettingsKeys.EasterEggActive, false);
                 if (_easterEggActive)
                     _autoClassLabel = _loc.GetString("MainPane_AutoClass_EasterEgg");
@@ -1062,26 +1055,44 @@ namespace RBLclass.AddIn.ViewModels
         /// </summary>
         private void ResetOptionsToDefaults()
         {
-            if (_settings != null)
-            {
-                // Set the backing fields (not the public setters): the AllResults
-                // setter would call Refresh(), which clears the just-classified
-                // results the user wants to keep seeing (v2.4 A1); the others
-                // would re-write the same persisted value. Just notify the view.
-                _allResults = _settings.GetBool(SettingsKeys.AllResults, false);
-                _keepCopy = _settings.GetBool(SettingsKeys.KeepCopy, false);
-                _removeAttachments = _settings.GetBool(SettingsKeys.RemoveAttachments, false);
-                _widenConversation = _settings.GetBool(SettingsKeys.WidenConversation, false);
-                _stripBanner = _settings.GetBool(SettingsKeys.StripBannerOnClassify, false);
-                _markAsRead = _settings.GetBool(SettingsKeys.MarkAsReadOnClassify, false);
-                OnPropertyChanged(nameof(AllResults));
-                OnPropertyChanged(nameof(KeepCopy));
-                OnPropertyChanged(nameof(RemoveAttachments));
-                OnPropertyChanged(nameof(WidenConversation));
-                OnPropertyChanged(nameof(StripBanner));
-            }
+            SeedOptionsFromSettings();
             IsOptionsExpanded = false;
         }
+
+        /// <summary>
+        /// Seed the five pane option backing fields (and CanStripBanner) from the
+        /// persisted settings defaults. Shared by the constructor, the
+        /// post-classify reset, and the after-Settings-close reload (v2.7.1.0 D3).
+        /// Always sets the backing fields, never the public setters: the
+        /// AllResults setter would call Refresh() (clearing just-classified
+        /// results, v2.4 A1) and the others would re-write the same persisted
+        /// value; here we only re-read and notify the view.
+        /// </summary>
+        private void SeedOptionsFromSettings()
+        {
+            if (_settings == null) return;
+            _allResults = _settings.GetBool(SettingsKeys.AllResults, false);
+            _keepCopy = _settings.GetBool(SettingsKeys.KeepCopy, false);
+            _removeAttachments = _settings.GetBool(SettingsKeys.RemoveAttachments, false);
+            _widenConversation = _settings.GetBool(SettingsKeys.WidenConversation, false);
+            _stripBanner = _settings.GetBool(SettingsKeys.StripBannerOnClassify, false);
+            _markAsRead = _settings.GetBool(SettingsKeys.MarkAsReadOnClassify, false);
+            _canStripBanner = !string.IsNullOrWhiteSpace(
+                _settings.Get(SettingsKeys.ExternalBannerSignature, string.Empty));
+            OnPropertyChanged(nameof(AllResults));
+            OnPropertyChanged(nameof(KeepCopy));
+            OnPropertyChanged(nameof(RemoveAttachments));
+            OnPropertyChanged(nameof(WidenConversation));
+            OnPropertyChanged(nameof(StripBanner));
+            OnPropertyChanged(nameof(CanStripBanner));
+        }
+
+        /// <summary>
+        /// Re-seed the pane option fields from settings after the Settings window
+        /// closes, so the very next classify uses the new values without a restart
+        /// (v2.7.1.0 D3). Called via <see cref="RblClassTaskPaneHost.ReloadOptionDefaults"/>.
+        /// </summary>
+        public void ReloadOptionDefaults() => SeedOptionsFromSettings();
 
         /// <summary>
         /// Re-search after the typing pause configured in settings (immediate
@@ -1117,23 +1128,6 @@ namespace RBLclass.AddIn.ViewModels
         }
 
         /// <summary>Add one result row, re-checking it if it is in the accumulated selection and tracking its checkbox.</summary>
-        /// <summary>
-        /// The default row display mode (v2.7.0.0 C1): the stored
-        /// SearchPathDisplayMode, or the legacy AutoExpandResults flag migrated
-        /// (on → PerSegment) when the new setting has never been written.
-        /// </summary>
-        private SearchPathDisplayMode ResolvePathDisplayMode()
-        {
-            if (_settings == null) return SearchPathDisplayMode.OneLine;
-            SearchPathDisplayMode mode;
-            if (Enum.TryParse(_settings.Get(SettingsKeys.SearchPathDisplayMode, null), out mode)
-                && Enum.IsDefined(typeof(SearchPathDisplayMode), mode))
-                return mode;
-            return _settings.GetBool(SettingsKeys.AutoExpandResults, false)
-                ? SearchPathDisplayMode.PerSegment
-                : SearchPathDisplayMode.OneLine;
-        }
-
         private void AddResultRow(FolderSearchResult r)
         {
             var row = new SelectableFolder(r, _pathDisplayMode);
@@ -1151,18 +1145,22 @@ namespace RBLclass.AddIn.ViewModels
             var matchMode = FolderMatchMode.Substring;
             var maxResults = FolderSearchOptions.DefaultMaxResults;
             var minLength = FolderSearchOptions.DefaultMinQueryLength;
+            _pathDisplayMode = SearchPathDisplayMode.OneLine;
             if (_settings != null)
             {
                 var settings = Settings.Load(_settings);
                 matchMode = settings.FolderMatchMode;
                 maxResults = settings.MaxResults;
                 minLength = settings.MinSearchLength;
+                // Reuse the snapshot's parsed value (incl. the legacy
+                // AutoExpandResults migration) instead of re-reading the store
+                // in a second helper (v2.7.1.0 D3).
+                _pathDisplayMode = settings.SearchPathDisplayMode;
             }
 
             var outcome = _search.Search(_query,
                 new FolderSearchOptions(matchMode, _allResults, maxResults, minLength));
 
-            _pathDisplayMode = ResolvePathDisplayMode();
             Results.Clear();
             foreach (var r in outcome.Results)
                 AddResultRow(r);

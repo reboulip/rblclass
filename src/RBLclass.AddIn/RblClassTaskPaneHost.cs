@@ -126,6 +126,15 @@ namespace RBLclass.AddIn
             (_view?.DataContext as MainPaneViewModel)?.PushExternalStatus(message);
         }
 
+        /// <summary>
+        /// Re-seed the pane option defaults from settings after the Settings
+        /// dialog closes (v2.7.1.0 D3).
+        /// </summary>
+        public void ReloadOptionDefaults()
+        {
+            (_view?.DataContext as MainPaneViewModel)?.ReloadOptionDefaults();
+        }
+
         private void ApplyThemeAndSelection()
         {
             (_view?.DataContext as MainPaneViewModel)?.RefreshSelection();

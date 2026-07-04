@@ -964,6 +964,10 @@ namespace RBLclass.AddIn
                         () => _mailStore.GetSelectedItemHtmlBody())
                 }.ShowDialog();
 
+                // Re-seed the pane option defaults so the very next classify uses
+                // the new values without requiring a restart (v2.7.1.0 D3).
+                TaskPaneServices.Host?.ReloadOptionDefaults();
+
                 // Re-index favourites in case the favourite-folder list changed
                 // while the dialog was open (v2.4.0.0 F1).
                 ReindexFavoritesInBackground();
