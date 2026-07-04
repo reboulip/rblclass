@@ -194,5 +194,8 @@ namespace RBLclass.Core
 
         /// <summary>Show the classify pane automatically when Outlook starts (v2.7.1.0 D1, default on — uncheck to suppress).</summary>
         public const string ShowPaneOnStartup = "ShowPaneOnStartup";
+
+        /// <summary>Default for the standalone attachment-management modal's "remove saved attachments" checkbox (v2.8.0.0 A3, default on = a Save-to attachment is stripped from the email after saving).</summary>
+        public const string StripSavedAttachments = "StripSavedAttachments";
     }
 }

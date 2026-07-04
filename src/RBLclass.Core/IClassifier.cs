@@ -76,14 +76,17 @@ namespace RBLclass.Core
         /// <summary>
         /// Apply <paramref name="dispositions"/> in place on the referenced items
         /// (v2.8.0.0 A2: standalone attachment management without a classify move).
-        /// Mirrors the classify-path logic: saves SaveTo attachments first; blocks
-        /// the strip if any save fails; honours Keep rows by removing non-Keep
-        /// attachments individually (highest id first); falls back to strip-all when
-        /// no Keep rows are present; appends the label note when
+        /// Saves SaveTo attachments first and blocks the strip if any save fails.
+        /// When <paramref name="stripSavedAttachments"/> is true a saved (SaveTo)
+        /// attachment is then removed from the mail; when false it is saved but
+        /// left on the mail (v2.8.0.0 A3). Delete rows are always removed and Keep
+        /// rows never are. Removes individually (highest id first) when any
+        /// attachment is being kept, else strip-all; appends the label note when
         /// <paramref name="labelOptions"/> is non-null and attachments were removed.
         /// </summary>
         AttachmentsAppliedResult ApplyAttachmentDispositions(
             IReadOnlyList<AttachmentDisposition> dispositions,
-            AttachmentLabelOptions labelOptions = null);
+            AttachmentLabelOptions labelOptions = null,
+            bool stripSavedAttachments = true);
     }
 }

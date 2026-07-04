@@ -177,6 +177,15 @@
   <data name="Settings_FavoriteFolders_Note" xml:space="preserve">
     <value>Les sous-dossiers sont indexés jusqu'à une profondeur de 4 (jusqu'à 2000 répertoires par racine).</value>
   </data>
+  <data name="Settings_ManageAttachments_Header" xml:space="preserve">
+    <value>Gérer les pièces jointes</value>
+  </data>
+  <data name="Settings_StripSavedAttachments_CheckBox" xml:space="preserve">
+    <value>Supprimer par défaut les pièces jointes enregistrées du message</value>
+  </data>
+  <data name="Settings_StripSavedAttachments_Info" xml:space="preserve">
+    <value>Définit la valeur par défaut de la case « Supprimer les pièces jointes enregistrées du message » dans la fenêtre de gestion des pièces jointes (📎). Si activée, une pièce jointe « Enregistrer dans » est supprimée du message après avoir été enregistrée dans un dossier ; sinon, elle est enregistrée mais conservée sur le message. Les pièces jointes ne sont jamais supprimées des messages chiffrés S/MIME.</value>
+  </data>
   <data name="Settings_FavoriteFolders_InvalidSemicolon" xml:space="preserve">
     <value>Le chemin du dossier sélectionné contient un point-virgule (;), utilisé comme séparateur de liste et qui ne peut pas être enregistré. Choisissez un autre dossier.</value>
   </data>
@@ -218,6 +227,9 @@
   </data>
   <data name="AttachDisp_UseSameDirectory_CheckBox" xml:space="preserve">
     <value>Utiliser le même dossier de sauvegarde pour toutes les pièces jointes</value>
+  </data>
+  <data name="AttachDisp_StripSaved_CheckBox" xml:space="preserve">
+    <value>Supprimer les pièces jointes enregistrées du message (décocher pour en enregistrer une copie tout en les conservant sur le message)</value>
   </data>
   <data name="AttachDisp_Delete_Radio" xml:space="preserve">
     <value>Supprimer</value>

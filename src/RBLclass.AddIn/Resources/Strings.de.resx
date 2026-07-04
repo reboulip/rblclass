@@ -177,6 +177,15 @@
   <data name="Settings_FavoriteFolders_Note" xml:space="preserve">
     <value>Unterordner werden bis zu einer Tiefe von 4 indiziert (bis zu 2000 Verzeichnisse pro Stammordner).</value>
   </data>
+  <data name="Settings_ManageAttachments_Header" xml:space="preserve">
+    <value>Anlagen verwalten</value>
+  </data>
+  <data name="Settings_StripSavedAttachments_CheckBox" xml:space="preserve">
+    <value>Gespeicherte Anhänge standardmäßig aus der E-Mail entfernen</value>
+  </data>
+  <data name="Settings_StripSavedAttachments_Info" xml:space="preserve">
+    <value>Legt den Standardwert für das Kontrollkästchen „Gespeicherte Anhänge aus der E-Mail entfernen" im Anlagenverwaltungsfenster (📎) fest. Wenn aktiviert, wird ein „Speichern unter"-Anhang nach dem Speichern in einem Ordner aus der E-Mail entfernt; andernfalls wird er gespeichert, aber in der E-Mail belassen. Anhänge werden bei S/MIME-verschlüsselten E-Mails nie entfernt.</value>
+  </data>
   <data name="Settings_FavoriteFolders_InvalidSemicolon" xml:space="preserve">
     <value>Der gewählte Ordnerpfad enthält ein Semikolon (;), das als Listentrennzeichen verwendet wird und nicht gespeichert werden kann. Wählen Sie einen anderen Ordner.</value>
   </data>
@@ -218,6 +227,9 @@
   </data>
   <data name="AttachDisp_UseSameDirectory_CheckBox" xml:space="preserve">
     <value>Dasselbe Speicherverzeichnis für alle Anlagen verwenden</value>
+  </data>
+  <data name="AttachDisp_StripSaved_CheckBox" xml:space="preserve">
+    <value>Gespeicherte Anhänge aus der E-Mail entfernen (deaktivieren, um eine Kopie zu speichern und sie in der E-Mail zu behalten)</value>
   </data>
   <data name="AttachDisp_Delete_Radio" xml:space="preserve">
     <value>Löschen</value>

@@ -70,6 +70,7 @@ namespace RBLclass.Core
         public string UpdateCheckLastSeenVersion { get; set; }
         public string UpdateCheckDismissedUtc { get; set; }
         public bool ShowPaneOnStartup { get; set; }
+        public bool StripSavedAttachments { get; set; }
         public string PreferredUiLanguage { get; set; }
 
         /// <summary>
@@ -137,6 +138,7 @@ namespace RBLclass.Core
                 UpdateCheckLastSeenVersion = Str(SettingsKeys.UpdateCheckLastSeenVersion, string.Empty),
                 UpdateCheckDismissedUtc = Str(SettingsKeys.UpdateCheckDismissedUtc, string.Empty),
                 ShowPaneOnStartup = Bool(SettingsKeys.ShowPaneOnStartup, true),
+                StripSavedAttachments = Bool(SettingsKeys.StripSavedAttachments, true),
                 PreferredUiLanguage = ParseUiLanguage(Str(SettingsKeys.PreferredUiLanguage))
             };
         }
@@ -180,6 +182,7 @@ namespace RBLclass.Core
                 Pair(SettingsKeys.UpdateCheckLastSeenVersion,   UpdateCheckLastSeenVersion ?? string.Empty),
                 Pair(SettingsKeys.UpdateCheckDismissedUtc,      UpdateCheckDismissedUtc ?? string.Empty),
                 Pair(SettingsKeys.ShowPaneOnStartup,            ShowPaneOnStartup ? "1" : "0"),
+                Pair(SettingsKeys.StripSavedAttachments,        StripSavedAttachments ? "1" : "0"),
                 Pair(SettingsKeys.PreferredUiLanguage,          PreferredUiLanguage),
             });
         }

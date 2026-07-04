@@ -177,6 +177,15 @@
   <data name="Settings_FavoriteFolders_Note" xml:space="preserve">
     <value>Sub-folders are indexed to a depth of 4 (up to 2000 directories per root).</value>
   </data>
+  <data name="Settings_ManageAttachments_Header" xml:space="preserve">
+    <value>Manage attachments</value>
+  </data>
+  <data name="Settings_StripSavedAttachments_CheckBox" xml:space="preserve">
+    <value>Remove saved attachments from the email by default</value>
+  </data>
+  <data name="Settings_StripSavedAttachments_Info" xml:space="preserve">
+    <value>Sets the default for the "remove saved attachments from the email" checkbox in the attachment-management window (📎). When on, a "Save to" attachment is removed from the email after being saved to a folder; when off, it is saved but left on the email. Attachments are never removed from S/MIME-encrypted mail.</value>
+  </data>
   <data name="Settings_FavoriteFolders_InvalidSemicolon" xml:space="preserve">
     <value>The selected folder path contains a semicolon (;), which is used as the list separator and cannot be stored. Choose a different folder.</value>
   </data>
@@ -218,6 +227,9 @@
   </data>
   <data name="AttachDisp_UseSameDirectory_CheckBox" xml:space="preserve">
     <value>Use the same save directory for all attachments</value>
+  </data>
+  <data name="AttachDisp_StripSaved_CheckBox" xml:space="preserve">
+    <value>Remove saved attachments from the email (uncheck to save a copy but keep them on the email)</value>
   </data>
   <data name="AttachDisp_Delete_Radio" xml:space="preserve">
     <value>Delete</value>

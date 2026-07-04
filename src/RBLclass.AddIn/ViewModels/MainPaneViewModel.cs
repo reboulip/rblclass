@@ -606,12 +606,15 @@ namespace RBLclass.AddIn.ViewModels
             }
 
             // Show the modal while the pane is still enabled (SaveAsSelected pattern).
-            var dispositions = TaskPaneServices.ShowStandaloneAttachmentDisposition(groups);
-            if (dispositions == null)
+            var modalResult = TaskPaneServices.ShowStandaloneAttachmentDisposition(groups);
+            if (modalResult == null)
             {
                 PushStatus(_loc.GetString("Status_ManageAttachments_Cancelled"));
                 return;
             }
+
+            var dispositions = modalResult.Value.Dispositions;
+            bool stripSaved = modalResult.Value.StripSavedAttachments;
 
             IsBusy = true;
             BusyStatus = _loc.GetString("MainPane_Busy_ManagingAttachments");
@@ -632,7 +635,7 @@ namespace RBLclass.AddIn.ViewModels
                     }
                 }
 
-                var result = TaskPaneServices.ApplyAttachmentDispositions(dispositions, labelOptions);
+                var result = TaskPaneServices.ApplyAttachmentDispositions(dispositions, labelOptions, stripSaved);
 
                 string status = _loc.Plural(result.Applied,
                     "Status_ManageAttachments_Applied_One", "Status_ManageAttachments_Applied_Other");

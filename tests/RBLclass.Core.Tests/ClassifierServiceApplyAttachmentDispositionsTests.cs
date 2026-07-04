@@ -197,5 +197,48 @@ namespace RBLclass.Core.Tests
             result.Errors.Should().Be(0);
             result.EncryptedSkips.Should().Be(0);
         }
+
+        // A3 (v2.8.0.0): stripSavedAttachments = false keeps saved attachments on the mail.
+        [Fact]
+        public void StripSavedFalse_saves_but_does_not_remove_the_attachment()
+        {
+            var store = Substitute.For<IMailStore>();
+            store.SaveAttachmentToFile(Arg.Any<MailItemRef>(), Arg.Any<int>(), Arg.Any<string>())
+                 .Returns(true);
+            var sut = new ClassifierService(store);
+            var e1 = Item("e1");
+
+            var result = sut.ApplyAttachmentDispositions(new[]
+            {
+                Disp(e1, 1, AttachmentDispositionAction.SaveTo, @"C:\dst"),
+            }, labelOptions: null, stripSavedAttachments: false);
+
+            store.Received(1).SaveAttachmentToFile(Arg.Any<MailItemRef>(), 1, @"C:\dst");
+            store.DidNotReceive().RemoveAttachments(Arg.Any<MailItemRef>());
+            store.DidNotReceive().RemoveAttachment(Arg.Any<MailItemRef>(), Arg.Any<int>());
+            result.Applied.Should().Be(1); // the attachment was still saved
+        }
+
+        [Fact]
+        public void StripSavedFalse_still_removes_Delete_rows_but_keeps_SaveTo()
+        {
+            var store = Substitute.For<IMailStore>();
+            store.SaveAttachmentToFile(Arg.Any<MailItemRef>(), Arg.Any<int>(), Arg.Any<string>())
+                 .Returns(true);
+            store.RemoveAttachment(Arg.Any<MailItemRef>(), Arg.Any<int>()).Returns(true);
+            var sut = new ClassifierService(store);
+            var e1 = Item("e1");
+
+            var result = sut.ApplyAttachmentDispositions(new[]
+            {
+                Disp(e1, 1, AttachmentDispositionAction.SaveTo, @"C:\dst"),
+                Disp(e1, 2, AttachmentDispositionAction.Delete),
+            }, labelOptions: null, stripSavedAttachments: false);
+
+            store.Received(1).RemoveAttachment(Arg.Any<MailItemRef>(), 2); // delete row removed
+            store.DidNotReceive().RemoveAttachment(Arg.Any<MailItemRef>(), 1); // saved row kept
+            store.DidNotReceive().RemoveAttachments(Arg.Any<MailItemRef>());
+            result.Applied.Should().Be(1);
+        }
     }
 }

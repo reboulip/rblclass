@@ -370,6 +370,13 @@ namespace RBLclass.AddIn.ViewModels
             set => Apply(_settings.ShowPaneOnStartup, value, v => _settings.ShowPaneOnStartup = v);
         }
 
+        /// <summary>Default for the 📎 modal's "remove saved attachments" checkbox (v2.8.0.0 A3, default on).</summary>
+        public bool StripSavedAttachments
+        {
+            get => _settings.StripSavedAttachments;
+            set => Apply(_settings.StripSavedAttachments, value, v => _settings.StripSavedAttachments = v);
+        }
+
         /// <summary>Opt-in: check the configured URL for a newer version at startup (v2.7.0.0 E1, default off).</summary>
         public bool UpdateCheckEnabled
         {

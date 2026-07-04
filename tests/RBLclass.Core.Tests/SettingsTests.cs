@@ -68,6 +68,7 @@ namespace RBLclass.Core.Tests
             settings.UpdateCheckLastSeenVersion.Should().BeEmpty();
             settings.UpdateCheckDismissedUtc.Should().BeEmpty();
             settings.ShowPaneOnStartup.Should().BeTrue();
+            settings.StripSavedAttachments.Should().BeTrue();
         }
 
         [Fact]
@@ -108,6 +109,7 @@ namespace RBLclass.Core.Tests
                 UpdateCheckLastSeenVersion = "2.9.0.0",
                 UpdateCheckDismissedUtc = "2026-07-02T10:00:00.0000000Z",
                 ShowPaneOnStartup = false,
+                StripSavedAttachments = false,
                 PreferredUiLanguage = "fr"
             };
 
@@ -147,6 +149,7 @@ namespace RBLclass.Core.Tests
             reloaded.UpdateCheckLastSeenVersion.Should().Be("2.9.0.0");
             reloaded.UpdateCheckDismissedUtc.Should().Be("2026-07-02T10:00:00.0000000Z");
             reloaded.ShowPaneOnStartup.Should().BeFalse();
+            reloaded.StripSavedAttachments.Should().BeFalse();
             reloaded.PreferredUiLanguage.Should().Be("fr");
         }
 

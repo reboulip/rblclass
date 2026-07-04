@@ -331,19 +331,31 @@ namespace RBLclass.AddIn
                     return window.ShowDialog() == true ? vm.BuildDispositions() : null;
                 };
 
-                // A2: standalone disposition modal (same window, different intro).
+                // A2: standalone disposition modal (same window, different intro);
+                // A3: shows the "remove saved attachments" toggle, seeded from Settings.
                 TaskPaneServices.ShowStandaloneAttachmentDisposition = groups =>
                 {
+                    bool defaultStrip = true;
+                    try
+                    {
+                        if (_settingsStore != null)
+                            defaultStrip = Settings.Load(_settingsStore).StripSavedAttachments;
+                    }
+                    catch { /* fall back to strip-on */ }
                     var vm = new AttachmentDispositionViewModel(groups, TaskPaneServices.Localization)
                     {
-                        IntroText = TaskPaneServices.Localization.GetString("AttachDisp_StandaloneIntro")
+                        IntroText = TaskPaneServices.Localization.GetString("AttachDisp_StandaloneIntro"),
+                        ShowStripToggle = true,
+                        StripSavedAttachments = defaultStrip
                     };
                     var window = new AttachmentDispositionWindow { DataContext = vm };
-                    return window.ShowDialog() == true ? vm.BuildDispositions() : null;
+                    if (window.ShowDialog() != true) return null;
+                    return ((IReadOnlyList<AttachmentDisposition> Dispositions, bool StripSavedAttachments)?)
+                        (vm.BuildDispositions(), vm.StripSavedAttachments);
                 };
-                // A2: apply dispositions in place (no move).
-                TaskPaneServices.ApplyAttachmentDispositions = (dispositions, labelOptions) =>
-                    _classifier.ApplyAttachmentDispositions(dispositions, labelOptions);
+                // A2/A3: apply dispositions in place (no move); strip flag from the modal.
+                TaskPaneServices.ApplyAttachmentDispositions = (dispositions, labelOptions, stripSaved) =>
+                    _classifier.ApplyAttachmentDispositions(dispositions, labelOptions, stripSaved);
 
                 // A1: "Save as" - pick a target directory, then save each item as .msg.
                 TaskPaneServices.ShowSaveAsPicker = () =>

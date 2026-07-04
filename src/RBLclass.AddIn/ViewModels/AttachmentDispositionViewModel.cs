@@ -64,6 +64,20 @@ namespace RBLclass.AddIn.ViewModels
         /// </summary>
         public string IntroText { get; set; }
 
+        /// <summary>
+        /// Show the "remove saved attachments from the email" checkbox — set only
+        /// for the standalone A2 modal; the classify path leaves it hidden so
+        /// Save-to keeps stripping as before (v2.8.0.0 A3).
+        /// </summary>
+        public bool ShowStripToggle { get; set; }
+
+        /// <summary>
+        /// Bound to the strip checkbox: true = a Save-to attachment is removed from
+        /// the mail after saving; false = saved but left on the mail. Seeded from
+        /// the Settings default (v2.8.0.0 A3).
+        /// </summary>
+        public bool StripSavedAttachments { get; set; } = true;
+
         public ObservableCollection<AttachmentRowViewModel> Rows { get; }
         public string EncryptedNotice { get; }
         public bool HasEncryptedNotice => !string.IsNullOrEmpty(EncryptedNotice);

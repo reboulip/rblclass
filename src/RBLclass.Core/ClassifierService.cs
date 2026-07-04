@@ -340,7 +340,8 @@ namespace RBLclass.Core
         /// </summary>
         public AttachmentsAppliedResult ApplyAttachmentDispositions(
             IReadOnlyList<AttachmentDisposition> dispositions,
-            AttachmentLabelOptions labelOptions = null)
+            AttachmentLabelOptions labelOptions = null,
+            bool stripSavedAttachments = true)
         {
             var byItem = new Dictionary<string, KeyValuePair<MailItemRef, List<AttachmentDisposition>>>();
             foreach (var d in dispositions ?? new AttachmentDisposition[0])
@@ -365,6 +366,7 @@ namespace RBLclass.Core
                 // Save the "Save to" attachments first; block the strip if any fail
                 // (the strip primitive removes all attachments, so a failed save
                 // would lose the very file the user asked to keep).
+                bool anySaved = false;
                 bool allSavesSucceeded = true;
                 foreach (var d in rows)
                 {
@@ -374,48 +376,57 @@ namespace RBLclass.Core
                         bool saved;
                         try { saved = _store.SaveAttachmentToFile(item, d.AttachmentId, d.TargetDirectory); }
                         catch { saved = false; }
-                        if (!saved) allSavesSucceeded = false;
+                        if (saved) anySaved = true; else allSavesSucceeded = false;
                     }
                 }
 
                 if (!allSavesSucceeded) { errors++; continue; }
 
-                bool stripped;
-                if (rows.Any(d => d.Action == AttachmentDispositionAction.Keep))
+                // A3: a saved (SaveTo) attachment is removed only when the caller
+                // asked to strip saved attachments; otherwise it is left on the mail
+                // (treated like Keep). Delete rows are always removed.
+                Func<AttachmentDisposition, bool> isRemoved = d =>
+                    d.Action == AttachmentDispositionAction.Delete
+                    || (d.Action == AttachmentDispositionAction.SaveTo && stripSavedAttachments);
+
+                var toRemove = rows.Where(isRemoved).ToList();
+                bool anyKept = rows.Any(d => !isRemoved(d));
+
+                bool stripped = false;
+                if (toRemove.Count > 0)
                 {
-                    stripped = false;
-                    foreach (var d in rows.Where(d => d.Action != AttachmentDispositionAction.Keep)
-                                          .OrderByDescending(d => d.AttachmentId))
+                    if (anyKept)
                     {
-                        bool removed;
-                        try { removed = _store.RemoveAttachment(item, d.AttachmentId); }
-                        catch { removed = false; }
-                        if (removed) stripped = true;
+                        // Some attachments stay: remove only the targeted ones,
+                        // highest id first (removing one shifts the indexes above it).
+                        foreach (var d in toRemove.OrderByDescending(d => d.AttachmentId))
+                        {
+                            bool removed;
+                            try { removed = _store.RemoveAttachment(item, d.AttachmentId); }
+                            catch { removed = false; }
+                            if (removed) stripped = true;
+                        }
                     }
-                }
-                else
-                {
-                    try
+                    else
                     {
-                        stripped = _store.RemoveAttachments(item);
-                        if (!stripped) encryptedSkips++; // S/MIME guard fired
+                        try
+                        {
+                            stripped = _store.RemoveAttachments(item);
+                            if (!stripped) encryptedSkips++; // S/MIME guard fired
+                        }
+                        catch { stripped = false; }
                     }
-                    catch { stripped = false; }
                 }
 
-                if (stripped) applied++;
+                if (stripped || anySaved) applied++;
 
                 if (labelOptions != null && stripped)
                 {
-                    var labelRows = rows.Where(d => d.Action != AttachmentDispositionAction.Keep).ToList();
-                    if (labelRows.Count > 0)
+                    var block = AttachmentLabelFormatter.Format(toRemove, labelOptions, DateTime.Now);
+                    if (block != null)
                     {
-                        var block = AttachmentLabelFormatter.Format(labelRows, labelOptions, DateTime.Now);
-                        if (block != null)
-                        {
-                            try { _store.AppendHtmlNote(item, block); }
-                            catch { /* best-effort */ }
-                        }
+                        try { _store.AppendHtmlNote(item, block); }
+                        catch { /* best-effort */ }
                     }
                 }
             }

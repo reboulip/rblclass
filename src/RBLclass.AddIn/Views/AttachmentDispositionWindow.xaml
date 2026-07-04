@@ -41,6 +41,12 @@
                       IsChecked="{Binding UseSameDirectory, Mode=TwoWay}"
                       Margin="0,0,0,4"
                       Visibility="{Binding HasRows, Converter={StaticResource BoolToVis}}" />
+            <CheckBox IsChecked="{Binding StripSavedAttachments, Mode=TwoWay}"
+                      Margin="0,0,0,4"
+                      Visibility="{Binding ShowStripToggle, Converter={StaticResource BoolToVis}}">
+                <TextBlock TextWrapping="Wrap" MaxWidth="620"
+                           Text="{loc:Loc Key=AttachDisp_StripSaved_CheckBox}" />
+            </CheckBox>
         </StackPanel>
 
         <ListBox ItemsSource="{Binding Rows}" HorizontalContentAlignment="Stretch"

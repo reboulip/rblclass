@@ -180,19 +180,22 @@ namespace RBLclass.AddIn
         /// <summary>
         /// Show the disposition modal for standalone attachment management
         /// (v2.8.0.0 A2). Same modal as <see cref="ShowAttachmentDisposition"/>
-        /// but with the standalone intro text; returns the choices or null when
-        /// cancelled.
+        /// but with the standalone intro text and the A3 "remove saved attachments"
+        /// toggle; returns the choices and the toggle state, or null when cancelled.
         /// </summary>
         public static Func<
             IReadOnlyList<(MailItemRef Item, IReadOnlyList<AttachmentInfo> Attachments, bool IsEncrypted)>,
-            IReadOnlyList<AttachmentDisposition>> ShowStandaloneAttachmentDisposition;
+            (IReadOnlyList<AttachmentDisposition> Dispositions, bool StripSavedAttachments)?>
+            ShowStandaloneAttachmentDisposition;
 
         /// <summary>
         /// Apply attachment dispositions in place on the referenced items
-        /// (v2.8.0.0 A2: standalone, no classify move). Backed by
+        /// (v2.8.0.0 A2: standalone, no classify move). When
+        /// <c>stripSavedAttachments</c> is false, a Save-to attachment is saved but
+        /// kept on the mail (v2.8.0.0 A3). Backed by
         /// <see cref="IClassifier.ApplyAttachmentDispositions"/>; UI thread only.
         /// </summary>
-        public static Func<IReadOnlyList<AttachmentDisposition>, AttachmentLabelOptions, AttachmentsAppliedResult>
+        public static Func<IReadOnlyList<AttachmentDisposition>, AttachmentLabelOptions, bool, AttachmentsAppliedResult>
             ApplyAttachmentDispositions;
 
         /// <summary>
