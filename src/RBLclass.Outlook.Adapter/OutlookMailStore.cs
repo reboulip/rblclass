@@ -1275,6 +1275,65 @@ namespace RBLclass.Outlook.Adapter
             return false;
         }
 
+        public bool SaveMailAsFile(MailItemRef item, string destinationDirectory)
+        {
+            if (item == null || string.IsNullOrWhiteSpace(destinationDirectory)) return false;
+
+            try { System.IO.Directory.CreateDirectory(destinationDirectory); }
+            catch (Exception ex)
+            {
+                Log.Error(ex, "SaveMailAsFile: destination directory unusable: {Dir}", destinationDirectory);
+                return false;
+            }
+
+            using (var session = new ComRef<OutlookOM.NameSpace>(_app.Session))
+            {
+                object rawItem;
+                try { rawItem = session.Value.GetItemFromID(item.EntryId, item.StoreId); }
+                catch { return false; }
+
+                using (var comItem = new ComRef<object>(rawItem))
+                {
+                    var mail = comItem.Value as OutlookOM.MailItem;
+                    if (mail == null) return false;
+
+                    string subject = Safe(() => mail.Subject, string.Empty) ?? string.Empty;
+                    string baseName = SanitizeFileName(subject);
+                    if (string.IsNullOrWhiteSpace(baseName)) baseName = "email";
+                    string fileName = baseName + ".msg";
+
+                    string destPath = AttachmentFilenameCollisionResolver.Resolve(
+                        destinationDirectory, fileName, System.IO.File.Exists);
+                    try
+                    {
+                        mail.SaveAs(destPath, OutlookOM.OlSaveAsType.olMSG);
+                        Log.Information("SaveMailAsFile: saved to {Path}", destPath);
+                        return true;
+                    }
+                    catch (Exception ex)
+                    {
+                        Log.Error(ex, "SaveMailAsFile: SaveAs failed for {Path}", destPath);
+                        return false;
+                    }
+                }
+            }
+        }
+
+        private static string SanitizeFileName(string subject)
+        {
+            if (string.IsNullOrWhiteSpace(subject)) return string.Empty;
+            char[] invalid = System.IO.Path.GetInvalidFileNameChars();
+            var sb = new System.Text.StringBuilder();
+            foreach (char c in subject)
+            {
+                if (Array.IndexOf(invalid, c) < 0) sb.Append(c);
+            }
+            string result = sb.ToString().Trim();
+            // Truncate so directory + filename stays within 260-char MAX_PATH headroom.
+            if (result.Length > 128) result = result.Substring(0, 128).TrimEnd();
+            return result;
+        }
+
         public bool StripExternalBanner(MailItemRef item, string bannerSignature)
         {
             if (item == null || string.IsNullOrWhiteSpace(bannerSignature)) return false;

@@ -66,6 +66,12 @@
   <data name="MainPane_AutoClass_ToolTip" xml:space="preserve">
     <value>File the selected mail(s) to the folder(s) their conversation was last classified into</value>
   </data>
+  <data name="MainPane_SaveAs_Button" xml:space="preserve">
+    <value>💾</value>
+  </data>
+  <data name="MainPane_SaveAs_ToolTip" xml:space="preserve">
+    <value>Save the selected email(s) as .msg files to a folder</value>
+  </data>
   <data name="MainPane_QueryBox_ToolTip" xml:space="preserve">
     <value>Enter files into the highlighted folder; Ctrl+Enter opens it. Press Ctrl alone to toggle 'List every matching folder'</value>
   </data>
@@ -125,6 +131,9 @@
   </data>
   <data name="MainPane_Busy_Filing" xml:space="preserve">
     <value>Filing…</value>
+  </data>
+  <data name="MainPane_Busy_Saving" xml:space="preserve">
+    <value>Saving…</value>
   </data>
   <data name="Status_Classify_Progress_One" xml:space="preserve">
     <value>Filing {0} of {1}…</value>
@@ -215,6 +224,18 @@
   </data>
   <data name="AttachDisp_TargetPrefix" xml:space="preserve">
     <value>Save to: </value>
+  </data>
+  <data name="SaveAsPicker_Title" xml:space="preserve">
+    <value>Save email(s) as files</value>
+  </data>
+  <data name="SaveAsPicker_Intro" xml:space="preserve">
+    <value>Choose a folder to save the selected email(s) into as .msg files.</value>
+  </data>
+  <data name="SaveAsPicker_Save_Button" xml:space="preserve">
+    <value>Save</value>
+  </data>
+  <data name="SaveAsPicker_Cancel_Button" xml:space="preserve">
+    <value>Cancel</value>
   </data>
   <data name="AttachDisp_Confirm_Button" xml:space="preserve">
     <value>Confirm</value>
@@ -564,6 +585,18 @@
   </data>
   <data name="Status_ClassifyCancelled" xml:space="preserve">
     <value>Classify cancelled.</value>
+  </data>
+  <data name="Status_SaveAs_Cancelled" xml:space="preserve">
+    <value>Save cancelled.</value>
+  </data>
+  <data name="Status_SaveAs_Result_One" xml:space="preserve">
+    <value>1 email saved.</value>
+  </data>
+  <data name="Status_SaveAs_Result_Other" xml:space="preserve">
+    <value>{0} emails saved.</value>
+  </data>
+  <data name="Status_SaveAs_Failed" xml:space="preserve">
+    <value> ({0} failed)</value>
   </data>
   <data name="Status_AutoClassing" xml:space="preserve">
     <value>Auto-classing…</value>

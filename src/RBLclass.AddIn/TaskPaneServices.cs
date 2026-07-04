@@ -176,5 +176,19 @@ namespace RBLclass.AddIn
         public static Func<
             IReadOnlyList<(MailItemRef Item, IReadOnlyList<AttachmentInfo> Attachments, bool IsEncrypted)>,
             IReadOnlyList<AttachmentDisposition>> ShowAttachmentDisposition;
+
+        /// <summary>
+        /// Show the Save As directory-picker modal (reusing the favourite-folder
+        /// search + OS-browse UX) and return the chosen directory, or null when
+        /// the user cancels. Call on the Outlook UI thread. (v2.8.0.0 A1)
+        /// </summary>
+        public static Func<string> ShowSaveAsPicker;
+
+        /// <summary>
+        /// Save each item in <paramref name="items"/> as a .msg file into
+        /// <paramref name="directory"/>. Returns (Saved, Failed) counts. Touches
+        /// COM - call on the Outlook UI thread. (v2.8.0.0 A1)
+        /// </summary>
+        public static Func<IReadOnlyList<MailItemRef>, string, (int Saved, int Failed)> SaveMailsAsFiles;
     }
 }

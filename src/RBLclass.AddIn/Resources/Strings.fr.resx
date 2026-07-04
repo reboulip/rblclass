@@ -66,6 +66,12 @@
   <data name="MainPane_AutoClass_ToolTip" xml:space="preserve">
     <value>Classer le(s) message(s) sélectionné(s) dans le(s) dossier(s) où leur conversation a été classée la dernière fois</value>
   </data>
+  <data name="MainPane_SaveAs_Button" xml:space="preserve">
+    <value>💾</value>
+  </data>
+  <data name="MainPane_SaveAs_ToolTip" xml:space="preserve">
+    <value>Enregistrer le(s) message(s) sélectionné(s) sous forme de fichiers .msg dans un dossier</value>
+  </data>
   <data name="MainPane_QueryBox_ToolTip" xml:space="preserve">
     <value>Entrée classe dans le dossier en surbrillance ; Ctrl+Entrée l'ouvre. Appuyez sur Ctrl seul pour activer/désactiver « Lister tous les dossiers correspondants »</value>
   </data>
@@ -125,6 +131,9 @@
   </data>
   <data name="MainPane_Busy_Filing" xml:space="preserve">
     <value>Classement en cours…</value>
+  </data>
+  <data name="MainPane_Busy_Saving" xml:space="preserve">
+    <value>Enregistrement…</value>
   </data>
   <data name="Status_Classify_Progress_One" xml:space="preserve">
     <value>Classement {0} sur {1}…</value>
@@ -215,6 +224,18 @@
   </data>
   <data name="AttachDisp_TargetPrefix" xml:space="preserve">
     <value>Enregistrer dans : </value>
+  </data>
+  <data name="SaveAsPicker_Title" xml:space="preserve">
+    <value>Enregistrer le(s) message(s) sous forme de fichiers</value>
+  </data>
+  <data name="SaveAsPicker_Intro" xml:space="preserve">
+    <value>Choisissez un dossier pour enregistrer le(s) message(s) sélectionné(s) sous forme de fichiers .msg.</value>
+  </data>
+  <data name="SaveAsPicker_Save_Button" xml:space="preserve">
+    <value>Enregistrer</value>
+  </data>
+  <data name="SaveAsPicker_Cancel_Button" xml:space="preserve">
+    <value>Annuler</value>
   </data>
   <data name="AttachDisp_Confirm_Button" xml:space="preserve">
     <value>Confirmer</value>
@@ -564,6 +585,18 @@
   </data>
   <data name="Status_ClassifyCancelled" xml:space="preserve">
     <value>Classement annulé.</value>
+  </data>
+  <data name="Status_SaveAs_Cancelled" xml:space="preserve">
+    <value>Enregistrement annulé.</value>
+  </data>
+  <data name="Status_SaveAs_Result_One" xml:space="preserve">
+    <value>1 message enregistré.</value>
+  </data>
+  <data name="Status_SaveAs_Result_Other" xml:space="preserve">
+    <value>{0} messages enregistrés.</value>
+  </data>
+  <data name="Status_SaveAs_Failed" xml:space="preserve">
+    <value> ({0} échoué(s))</value>
   </data>
   <data name="Status_AutoClassing" xml:space="preserve">
     <value>Classement automatique…</value>

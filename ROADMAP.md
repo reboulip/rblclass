@@ -237,7 +237,7 @@ each item is one coherent, testable change.
 ## v2.8.0.0 — feedback wave: pane actions, sent-items, classify reliability
 
 ### A — Pane actions
-- [ ] **A1.** Add a "save as" button to the pane, next to the Auto-Class button, letting the user save the selected email(s) as files, reusing the attachment-disposition modal's directory picker for the target folder. [#40]
+- [x] **A1.** Add a "save as" button to the pane, next to the Auto-Class button, letting the user save the selected email(s) as files, reusing the attachment-disposition modal's directory picker for the target folder. [#40]
 - [ ] **A2.** Add a manual attachment-removal button: opens the attachment-disposition modal for the selected email(s) without a classify move, so keep/delete/save-to can be applied standalone. [#38]
 
 ### B — Sent-items handling

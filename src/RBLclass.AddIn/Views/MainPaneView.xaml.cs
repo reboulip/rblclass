@@ -192,6 +192,12 @@ namespace RBLclass.AddIn.Views
             FocusSearchAfterClassify();
         }
 
+        private void SaveAs_Click(object sender, RoutedEventArgs e)
+        {
+            try { Vm?.SaveAsSelected(); }
+            catch (Exception ex) { Log.Error(ex, "SaveAsSelected failed."); }
+        }
+
         private void OpenFolder_Click(object sender, RoutedEventArgs e)
         {
             var folder = (sender as FrameworkElement)?.DataContext as SelectableFolder;

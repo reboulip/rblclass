@@ -66,6 +66,12 @@
   <data name="MainPane_AutoClass_ToolTip" xml:space="preserve">
     <value>Die ausgewählte(n) E-Mail(s) in den Ordner(n) ablegen, in dem ihre Unterhaltung zuletzt klassiert wurde</value>
   </data>
+  <data name="MainPane_SaveAs_Button" xml:space="preserve">
+    <value>💾</value>
+  </data>
+  <data name="MainPane_SaveAs_ToolTip" xml:space="preserve">
+    <value>Die ausgewählte(n) E-Mail(s) als .msg-Dateien in einem Ordner speichern</value>
+  </data>
   <data name="MainPane_QueryBox_ToolTip" xml:space="preserve">
     <value>Eingabe legt in den markierten Ordner ab; Strg+Eingabe öffnet ihn. Strg allein drücken, um „Alle passenden Ordner anzeigen“ umzuschalten</value>
   </data>
@@ -125,6 +131,9 @@
   </data>
   <data name="MainPane_Busy_Filing" xml:space="preserve">
     <value>Wird abgelegt…</value>
+  </data>
+  <data name="MainPane_Busy_Saving" xml:space="preserve">
+    <value>Wird gespeichert…</value>
   </data>
   <data name="Status_Classify_Progress_One" xml:space="preserve">
     <value>Ablage {0} von {1}…</value>
@@ -215,6 +224,18 @@
   </data>
   <data name="AttachDisp_TargetPrefix" xml:space="preserve">
     <value>Speichern in: </value>
+  </data>
+  <data name="SaveAsPicker_Title" xml:space="preserve">
+    <value>E-Mail(s) als Dateien speichern</value>
+  </data>
+  <data name="SaveAsPicker_Intro" xml:space="preserve">
+    <value>Wählen Sie einen Ordner aus, in dem die ausgewählte(n) E-Mail(s) als .msg-Dateien gespeichert werden sollen.</value>
+  </data>
+  <data name="SaveAsPicker_Save_Button" xml:space="preserve">
+    <value>Speichern</value>
+  </data>
+  <data name="SaveAsPicker_Cancel_Button" xml:space="preserve">
+    <value>Abbrechen</value>
   </data>
   <data name="AttachDisp_Confirm_Button" xml:space="preserve">
     <value>Bestätigen</value>
@@ -564,6 +585,18 @@
   </data>
   <data name="Status_ClassifyCancelled" xml:space="preserve">
     <value>Klassieren abgebrochen.</value>
+  </data>
+  <data name="Status_SaveAs_Cancelled" xml:space="preserve">
+    <value>Speichern abgebrochen.</value>
+  </data>
+  <data name="Status_SaveAs_Result_One" xml:space="preserve">
+    <value>1 E-Mail gespeichert.</value>
+  </data>
+  <data name="Status_SaveAs_Result_Other" xml:space="preserve">
+    <value>{0} E-Mails gespeichert.</value>
+  </data>
+  <data name="Status_SaveAs_Failed" xml:space="preserve">
+    <value> ({0} fehlgeschlagen)</value>
   </data>
   <data name="Status_AutoClassing" xml:space="preserve">
     <value>Auto-Klassierung läuft…</value>

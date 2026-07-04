@@ -46,6 +46,7 @@
                 <RowDefinition Height="Auto" />  <!-- 5: Options panel -->
                 <RowDefinition Height="Auto" />  <!-- 6: classify + undo -->
                 <RowDefinition Height="Auto" />  <!-- 7: status -->
+                <RowDefinition Height="Auto" />  <!-- 8: selection summary -->
             </Grid.RowDefinitions>
 
             <StackPanel Grid.Row="0" Margin="0,0,0,6">
@@ -71,8 +72,6 @@
                     </StackPanel>
                 </Border>
                 <DockPanel LastChildFill="False">
-                    <TextBlock DockPanel.Dock="Left" FontWeight="Bold" VerticalAlignment="Center"
-                               Text="{Binding SelectionSummary}" />
                     <Button DockPanel.Dock="Right" Padding="6,1"
                             IsEnabled="{Binding CanAutoClass}" Click="AutoClass_Click"
                             ToolTip="{loc:Loc Key=MainPane_AutoClass_ToolTip}">
@@ -85,6 +84,11 @@
                             </Grid>
                         </Button.Content>
                     </Button>
+                    <Button DockPanel.Dock="Right" Padding="6,1" Margin="0,0,6,0"
+                            Content="{loc:Loc Key=MainPane_SaveAs_Button}"
+                            FontFamily="Segoe UI Emoji" FontSize="14"
+                            Click="SaveAs_Click"
+                            ToolTip="{loc:Loc Key=MainPane_SaveAs_ToolTip}" />
                     <Ellipse DockPanel.Dock="Right" Width="10" Height="10" Margin="0,0,6,0"
                              VerticalAlignment="Center" ToolTip="{Binding IndexStatusToolTip}">
                         <Ellipse.Style>
@@ -254,6 +258,11 @@
                     </ItemsControl.ItemTemplate>
                 </ItemsControl>
             </StackPanel>
+
+            <!-- Row 8: selection summary, kept at the bottom so it can never
+                 crowd out the header action buttons (v2.8.0.0 A1 feedback). -->
+            <TextBlock Grid.Row="8" Margin="0,6,0,0" FontWeight="Bold" TextWrapping="Wrap"
+                       Text="{Binding SelectionSummary}" />
         </Grid>
 
         <!-- Busy overlay. -->

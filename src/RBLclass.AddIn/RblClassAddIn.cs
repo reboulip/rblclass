@@ -331,6 +331,32 @@ namespace RBLclass.AddIn
                     return window.ShowDialog() == true ? vm.BuildDispositions() : null;
                 };
 
+                // A1: "Save as" - pick a target directory, then save each item as .msg.
+                TaskPaneServices.ShowSaveAsPicker = () =>
+                {
+                    var vm = new SaveAsPickerViewModel();
+                    var window = new SaveAsPickerWindow { DataContext = vm };
+                    return window.ShowDialog() == true ? vm.TargetDirectory : null;
+                };
+                TaskPaneServices.SaveMailsAsFiles = (items, directory) =>
+                {
+                    int saved = 0, failed = 0;
+                    foreach (var it in items)
+                    {
+                        try
+                        {
+                            if (_mailStore.SaveMailAsFile(it, directory)) saved++;
+                            else failed++;
+                        }
+                        catch (Exception ex)
+                        {
+                            Log.Error(ex, "SaveMailAsFile failed for {EntryId}", it.EntryId);
+                            failed++;
+                        }
+                    }
+                    return (saved, failed);
+                };
+
                 // Keep the classify pane's selection count live.
                 try
                 {

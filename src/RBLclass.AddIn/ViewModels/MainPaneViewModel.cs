@@ -526,6 +526,50 @@ namespace RBLclass.AddIn.ViewModels
             }
         }
 
+        /// <summary>
+        /// Save the current selection as .msg files (the pane's Save-as button,
+        /// v2.8.0.0 A1): show the directory-picker modal, then call the COM save
+        /// for each item. Everything stays on the STA thread; the modal blocks
+        /// synchronously like the other disposition dialogs.
+        /// </summary>
+        public void SaveAsSelected()
+        {
+            if (_isBusy) return;
+
+            var items = _getSelection != null ? _getSelection() : new MailItemRef[0];
+            if (items.Count == 0) { PushStatus(_loc.GetString("Status_NoMailSelectedAction")); return; }
+
+            // Show the picker while the pane is still enabled (mirrors the preflight
+            // attach-disposition pattern in DoClassifyAsync).
+            var directory = TaskPaneServices.ShowSaveAsPicker?.Invoke();
+            if (string.IsNullOrWhiteSpace(directory))
+            {
+                PushStatus(_loc.GetString("Status_SaveAs_Cancelled"));
+                return;
+            }
+
+            IsBusy = true;
+            BusyStatus = _loc.GetString("MainPane_Busy_Saving");
+            try
+            {
+                var result = TaskPaneServices.SaveMailsAsFiles?.Invoke(items, directory) ?? (0, 0);
+                string status = _loc.Plural(result.Saved,
+                    "Status_SaveAs_Result_One", "Status_SaveAs_Result_Other");
+                if (result.Failed > 0)
+                    status += _loc.GetString("Status_SaveAs_Failed", result.Failed);
+                PushStatus(status);
+            }
+            catch (Exception ex)
+            {
+                Log.Error(ex, "SaveAsSelected failed.");
+                PushStatus(_loc.GetString("Status_SaveAs_Cancelled"));
+            }
+            finally
+            {
+                IsBusy = false;
+            }
+        }
+
         private static string DescribeAutoClass(AutoClassifyResult r, ILocalizationService loc)
         {
             // Nothing filed and the only reason is "never classified before".

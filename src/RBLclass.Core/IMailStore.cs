@@ -273,5 +273,14 @@ namespace RBLclass.Core
         /// thread.
         /// </summary>
         FolderNode GetInboxFolder();
+
+        /// <summary>
+        /// Save <paramref name="item"/> as a .msg file in
+        /// <paramref name="destinationDirectory"/>, deriving the filename from the
+        /// item's subject (sanitized, collision-resolved). Returns true on success.
+        /// Creates the directory if it does not exist. Touches COM - call on the
+        /// Outlook UI thread. (v2.8.0.0 A1)
+        /// </summary>
+        bool SaveMailAsFile(MailItemRef item, string destinationDirectory);
     }
 }
