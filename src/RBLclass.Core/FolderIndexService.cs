@@ -21,8 +21,11 @@ namespace RBLclass.Core
         private readonly object _gate = new object();
         private List<FolderNode> _cache = new List<FolderNode>();
         private IndexStatus _indexStatus = IndexStatus.NotFound;
+        private volatile int _cacheVersion;
 
         public event PropertyChangedEventHandler PropertyChanged;
+
+        public int CacheVersion => _cacheVersion;
 
         public IndexStatus IndexStatus
         {
@@ -113,6 +116,7 @@ namespace RBLclass.Core
                 var merged = _cache.Where(f => f.StoreId != storeId).ToList();
                 merged.AddRange(folders);
                 _cache = merged;
+                _cacheVersion++;
             }
         }
 
@@ -129,6 +133,7 @@ namespace RBLclass.Core
             lock (_gate)
             {
                 _cache = folders;
+                _cacheVersion++;
             }
         }
 

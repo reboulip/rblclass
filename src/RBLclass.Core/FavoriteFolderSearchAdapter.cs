@@ -30,6 +30,11 @@ namespace RBLclass.Core
 
         public IReadOnlyList<FolderNode> GetAll() => _nodes;
 
+        // The snapshot is immutable for this adapter's lifetime, and each search
+        // builds a fresh adapter+FolderSearchService pair (see FavoriteFolderService),
+        // so a constant version correctly triggers exactly one norm-cache build.
+        public int CacheVersion => 0;
+
         // The index-lifecycle methods are never called on this read-only adapter.
         public IndexResult Load() => throw new NotSupportedException();
         public IndexResult WalkAndPersist() => throw new NotSupportedException();

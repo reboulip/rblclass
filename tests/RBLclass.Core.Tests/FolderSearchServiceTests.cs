@@ -251,5 +251,40 @@ namespace RBLclass.Core.Tests
             outcome.Results[0].Folder.EntryId.Should().Be("e5");
             outcome.Results[0].IsCollapsed.Should().BeTrue();
         }
+
+        [Fact]
+        public void Repeated_search_returns_identical_results()
+        {
+            // The normalized-path cache (v2.7.1.0 E3) must not change results
+            // between successive searches over the same tree generation.
+            var search = DefaultSearch();
+
+            var first = search.Search("proj");
+            var second = search.Search("proj");
+
+            second.TotalMatchCount.Should().Be(first.TotalMatchCount);
+            second.Results.Select(r => r.Folder.EntryId)
+                  .Should().Equal(first.Results.Select(r => r.Folder.EntryId));
+        }
+
+        [Fact]
+        public void Search_reflects_the_new_tree_after_a_cache_version_change()
+        {
+            // First generation: the full corpus. Second: a single new accented
+            // folder, with a bumped CacheVersion. The cache must rebuild and the
+            // accented match must still normalize correctly (v2.7.1.0 E3).
+            var newNode = new FolderNode("s1", "e9", null, "Sécurité",
+                                         "Archive / Sécurité", isLeaf: true);
+            var tree = Substitute.For<IFolderTree>();
+            tree.GetAll().Returns(Corpus, new[] { newNode });
+            tree.CacheVersion.Returns(0, 1);
+            var search = new FolderSearchService(tree);
+
+            search.Search("projects").Results.Should().NotBeEmpty(); // gen 0
+
+            var outcome = search.Search("securite"); // gen 1
+            outcome.Results.Should().ContainSingle()
+                   .Which.Folder.EntryId.Should().Be("e9");
+        }
     }
 }

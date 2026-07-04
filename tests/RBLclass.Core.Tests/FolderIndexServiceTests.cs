@@ -289,5 +289,54 @@ namespace RBLclass.Core.Tests
             result.FolderCount.Should().Be(0);
             service.GetAll().Should().BeEmpty();
         }
+
+        [Fact]
+        public void CacheVersion_increments_after_WalkAndPersist()
+        {
+            var stores = new[] { new StoreInfo("s1", "One", isDataFileStore: true) };
+            var folders = new Dictionary<string, IReadOnlyList<FolderNode>>
+            {
+                ["s1"] = new[] { Node("s1", "a1", null, "A1", "One / A1") },
+            };
+            var service = new FolderIndexService(StoreWith(stores, folders), NewRepo());
+            var before = service.CacheVersion;
+
+            service.WalkAndPersist();
+
+            service.CacheVersion.Should().BeGreaterThan(before); // v2.7.1.0 E3
+        }
+
+        [Fact]
+        public void CacheVersion_increments_after_ReindexStore()
+        {
+            var stores = new[] { new StoreInfo("s1", "One", isDataFileStore: true) };
+            var folders = new Dictionary<string, IReadOnlyList<FolderNode>>
+            {
+                ["s1"] = new[] { Node("s1", "a1", null, "A1", "One / A1") },
+            };
+            var mail = StoreWith(stores, folders);
+            var service = new FolderIndexService(mail, NewRepo());
+            service.WalkAndPersist();
+            var afterWalk = service.CacheVersion;
+
+            service.ReindexStore("s1");
+
+            service.CacheVersion.Should().BeGreaterThan(afterWalk);
+        }
+
+        [Fact]
+        public void CacheVersion_increments_after_PersistWalkedStores()
+        {
+            var service = new FolderIndexService(Substitute.For<IMailStore>(), NewRepo());
+            var before = service.CacheVersion;
+
+            service.PersistWalkedStores(new List<(StoreInfo Store, IReadOnlyList<FolderNode> Folders)>
+            {
+                (new StoreInfo("s1", "One", isDataFileStore: true),
+                 new[] { Node("s1", "a1", null, "A1", "One / A1") }),
+            });
+
+            service.CacheVersion.Should().BeGreaterThan(before);
+        }
     }
 }

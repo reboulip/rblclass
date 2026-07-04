@@ -195,7 +195,7 @@ each item is one coherent, testable change.
       use one connection instead of ~30; make the `Settings` table DDL
       single-source so the copy in `SqliteFolderRepository.ApplyV1` cannot
       silently drift (it is dead code today).
-- [ ] **E3.** Hot-path costs on the search path: stop calling a full
+- [x] **E3.** Hot-path costs on the search path: stop calling a full
       `Settings.Load` per keystroke just to read `SearchDebounceMs` (cache it,
       invalidated on settings save via D3's propagation), and cache each
       folder's normalized path + word split (computed at index load/reindex)

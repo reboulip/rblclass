@@ -41,6 +41,13 @@ namespace RBLclass.AddIn.ViewModels
         private bool _isOptionsExpanded;
         private SelectableFolder _selectedResult;
         private SearchPathDisplayMode _pathDisplayMode = SearchPathDisplayMode.OneLine;
+        // Search-behaviour settings cached so the search path never loads the
+        // full settings snapshot per keystroke; refreshed by SeedOptionsFromSettings
+        // (startup, post-classify, and on Settings close via D3) (v2.7.1.0 E3).
+        private int _searchDebounceMs = Settings.DefaultSearchDebounceMs;
+        private FolderMatchMode _matchMode = FolderMatchMode.Substring;
+        private int _maxResults = FolderSearchOptions.DefaultMaxResults;
+        private int _minSearchLength = FolderSearchOptions.DefaultMinQueryLength;
         private string _selectionSummary;
         private string _searchFeedback = string.Empty;
         private string _busyStatus = string.Empty;
@@ -1071,14 +1078,19 @@ namespace RBLclass.AddIn.ViewModels
         private void SeedOptionsFromSettings()
         {
             if (_settings == null) return;
-            _allResults = _settings.GetBool(SettingsKeys.AllResults, false);
-            _keepCopy = _settings.GetBool(SettingsKeys.KeepCopy, false);
-            _removeAttachments = _settings.GetBool(SettingsKeys.RemoveAttachments, false);
-            _widenConversation = _settings.GetBool(SettingsKeys.WidenConversation, false);
-            _stripBanner = _settings.GetBool(SettingsKeys.StripBannerOnClassify, false);
-            _markAsRead = _settings.GetBool(SettingsKeys.MarkAsReadOnClassify, false);
-            _canStripBanner = !string.IsNullOrWhiteSpace(
-                _settings.Get(SettingsKeys.ExternalBannerSignature, string.Empty));
+            var s = Settings.Load(_settings);
+            _allResults = s.AllResults;
+            _keepCopy = s.KeepCopy;
+            _removeAttachments = s.RemoveAttachments;
+            _widenConversation = s.WidenConversation;
+            _stripBanner = s.StripBannerOnClassify;
+            _markAsRead = s.MarkAsReadOnClassify;
+            _canStripBanner = !string.IsNullOrWhiteSpace(s.ExternalBannerSignature);
+            _searchDebounceMs = s.SearchDebounceMs;
+            _matchMode = s.FolderMatchMode;
+            _maxResults = s.MaxResults;
+            _minSearchLength = s.MinSearchLength;
+            _pathDisplayMode = s.SearchPathDisplayMode;
             OnPropertyChanged(nameof(AllResults));
             OnPropertyChanged(nameof(KeepCopy));
             OnPropertyChanged(nameof(RemoveAttachments));
@@ -1101,9 +1113,7 @@ namespace RBLclass.AddIn.ViewModels
         /// </summary>
         private void ScheduleRefresh()
         {
-            int debounceMs = _settings != null
-                ? Settings.Load(_settings).SearchDebounceMs
-                : Settings.DefaultSearchDebounceMs;
+            int debounceMs = _searchDebounceMs;
             if (debounceMs <= 0) { Refresh(); return; }
 
             if (_searchTimer == null)
@@ -1142,24 +1152,11 @@ namespace RBLclass.AddIn.ViewModels
 
         private void Refresh()
         {
-            var matchMode = FolderMatchMode.Substring;
-            var maxResults = FolderSearchOptions.DefaultMaxResults;
-            var minLength = FolderSearchOptions.DefaultMinQueryLength;
-            _pathDisplayMode = SearchPathDisplayMode.OneLine;
-            if (_settings != null)
-            {
-                var settings = Settings.Load(_settings);
-                matchMode = settings.FolderMatchMode;
-                maxResults = settings.MaxResults;
-                minLength = settings.MinSearchLength;
-                // Reuse the snapshot's parsed value (incl. the legacy
-                // AutoExpandResults migration) instead of re-reading the store
-                // in a second helper (v2.7.1.0 D3).
-                _pathDisplayMode = settings.SearchPathDisplayMode;
-            }
-
+            // matchMode/maxResults/minLength/pathDisplayMode are cached by
+            // SeedOptionsFromSettings, refreshed whenever settings change
+            // (v2.7.1.0 E3), so the search path does no per-search settings load.
             var outcome = _search.Search(_query,
-                new FolderSearchOptions(matchMode, _allResults, maxResults, minLength));
+                new FolderSearchOptions(_matchMode, _allResults, _maxResults, _minSearchLength));
 
             Results.Clear();
             foreach (var r in outcome.Results)
@@ -1170,8 +1167,8 @@ namespace RBLclass.AddIn.ViewModels
             {
                 if (trimmed.Length == 0)
                     SearchFeedback = string.Empty;
-                else if (trimmed.Length < minLength)
-                    SearchFeedback = _loc.GetString("Status_TypeAtLeastChars", minLength);
+                else if (trimmed.Length < _minSearchLength)
+                    SearchFeedback = _loc.GetString("Status_TypeAtLeastChars", _minSearchLength);
                 else
                     SearchFeedback = _loc.GetString("Status_NoMatchingFolders");
             }
