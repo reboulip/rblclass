@@ -228,6 +228,17 @@ namespace RBLclass.AddIn.ViewModels
             set => SetProperty(ref _stripBanner, value);
         }
 
+        /// <summary>
+        /// Mark the filed copy as read after classify (v2.7.1.0 F2). The default
+        /// comes from the MarkAsReadOnClassify setting; toggling it here is a
+        /// per-action override (v2.4 B1) and does not change the setting.
+        /// </summary>
+        public bool MarkAsRead
+        {
+            get => _markAsRead;
+            set => SetProperty(ref _markAsRead, value);
+        }
+
         /// <summary>True when a banner has been learned, so the strip tickbox is worth showing.</summary>
         public bool CanStripBanner
         {
@@ -1104,6 +1115,7 @@ namespace RBLclass.AddIn.ViewModels
             OnPropertyChanged(nameof(RemoveAttachments));
             OnPropertyChanged(nameof(WidenConversation));
             OnPropertyChanged(nameof(StripBanner));
+            OnPropertyChanged(nameof(MarkAsRead));
             OnPropertyChanged(nameof(CanStripBanner));
         }
 

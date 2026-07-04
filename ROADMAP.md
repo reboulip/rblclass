@@ -55,6 +55,17 @@ Phase 6 (pilot rollout) is in progress; Phases 7–9 are forward-looking.
 
 - [ ] **Strip the external-sender banner on reply and on classify** —
       implemented in the v2.1.0.0 scope; didn't work, so was re-implemented in v2.6.0.0 - pending tests
+- [ ] **Intermittent `MailItem.Move` failure (0x80020009) on the dev Gmail/IMAP
+      account** — classify into a valid destination fails for *some* items with
+      "may not accept items" (per-item, not per-folder; other items to the same
+      folder succeed). Surfaced during v2.7.1.0 F2 testing but predates the
+      sprint and is unrelated to any v2.7.1.0 change (mark-as-read is now applied
+      only after a successful move, so a failed move no longer changes read
+      state; the read-state seen on failure was Outlook's own "mark items as
+      read when viewed in the Reading Pane"). Likely a Gmail/IMAP move quirk or a
+      stale selection EntryID. Investigate on the real 32-bit target / a
+      non-Gmail store before pilot; not reproducible as a code defect on the
+      current dev account.
 
 ---
 
@@ -207,7 +218,7 @@ each item is one coherent, testable change.
       into a `ClassifyOptions` object accepted by `ClassifyRequest` and the
       `IMailStore` filing methods, ending the per-sprint positional-bool growth
       (10-parameter ctor today); update all call sites and test fakes.
-- [ ] **F2.** Add the missing "mark as read" checkbox to the pane's Options zone
+- [x] **F2.** Add the missing "mark as read" checkbox to the pane's Options zone
       as the fifth per-action override (seeded from settings, reset after each
       classify, like the other four) so the shipped user guide's description of
       five overrides becomes accurate.

@@ -472,13 +472,6 @@ namespace RBLclass.Outlook.Adapter
                                 "Classify move BEGIN (D1): item {EntryId} -> {Path}",
                                 item.EntryId, destination.FullPath);
 
-                            // Mark read before the move (v2.7.0.0 D2): the moved item
-                            // keeps its read state, so this is race-free. S/MIME guard
-                            // and MeetingItem support delegated to TryMarkItemRead
-                            // (v2.7.1.0 A1).
-                            if (markAsRead)
-                                TryMarkItemRead(mail, meeting);
-
                             // Move returns the moved item; the original reference
                             // is now invalid (CLAUDE.md). No transient copy is
                             // created and nothing lands in Deleted Items - the
@@ -492,6 +485,14 @@ namespace RBLclass.Outlook.Adapter
                             {
                                 var movedMail    = comMoved.Value as OutlookOM.MailItem;
                                 var movedMeeting = movedMail == null ? comMoved.Value as OutlookOM.MeetingItem : null;
+
+                                // Mark read only AFTER a successful move, on the moved
+                                // item itself (v2.7.1.0 F2): a failed move must not
+                                // leave the mail marked read but unfiled. S/MIME guard
+                                // and MeetingItem support via TryMarkItemRead.
+                                if (markAsRead)
+                                    TryMarkItemRead(movedMail, movedMeeting);
+
                                 string movedEntryId =
                                     movedMail    != null ? Safe(() => movedMail.EntryID, null) :
                                     movedMeeting != null ? Safe(() => movedMeeting.EntryID, null) : null;

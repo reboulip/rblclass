@@ -222,6 +222,8 @@
                 <CheckBox Content="{loc:Loc Key=MainPane_StripBanner_CheckBox}" Margin="0,3,0,0"
                           IsChecked="{Binding StripBanner}"
                           Visibility="{Binding CanStripBanner, Converter={StaticResource BoolToVis}}" />
+                <CheckBox Content="{loc:Loc Key=MainPane_MarkAsRead_CheckBox}" Margin="0,3,0,0"
+                          IsChecked="{Binding MarkAsRead}" />
             </StackPanel>
 
             <StackPanel Grid.Row="6" Orientation="Horizontal" Margin="0,8,0,0">

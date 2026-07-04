@@ -84,6 +84,9 @@
   <data name="MainPane_StripBanner_CheckBox" xml:space="preserve">
     <value>Strip the external-sender banner</value>
   </data>
+  <data name="MainPane_MarkAsRead_CheckBox" xml:space="preserve">
+    <value>Mark as read</value>
+  </data>
   <data name="Settings_PathDisplay_Label" xml:space="preserve">
     <value>Search result path display:</value>
   </data>

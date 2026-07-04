@@ -84,6 +84,9 @@
   <data name="MainPane_StripBanner_CheckBox" xml:space="preserve">
     <value>Supprimer la bannière d'expéditeur externe</value>
   </data>
+  <data name="MainPane_MarkAsRead_CheckBox" xml:space="preserve">
+    <value>Marquer comme lu</value>
+  </data>
   <data name="Settings_PathDisplay_Label" xml:space="preserve">
     <value>Affichage du chemin des résultats :</value>
   </data>
