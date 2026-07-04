@@ -159,6 +159,9 @@
   <data name="Settings_FavoriteFolders_Note" xml:space="preserve">
     <value>Les sous-dossiers sont indexés jusqu'à une profondeur de 4 (jusqu'à 2000 répertoires par racine).</value>
   </data>
+  <data name="Settings_FavoriteFolders_InvalidSemicolon" xml:space="preserve">
+    <value>Le chemin du dossier sélectionné contient un point-virgule (;), utilisé comme séparateur de liste et qui ne peut pas être enregistré. Choisissez un autre dossier.</value>
+  </data>
   <data name="Settings_FavoriteFolders_BrowseDescription" xml:space="preserve">
     <value>Sélectionnez un dossier à ajouter à vos favoris</value>
   </data>

@@ -31,6 +31,7 @@ namespace RBLclass.AddIn.ViewModels
         private string _bannerStatus;
         private string _bannerDiagnosticStatus = string.Empty;
         private bool _archiveFolderIsStale;
+        private string _favoriteFolderStatus = string.Empty;
 
         /// <param name="captureSelectedHtml">
         /// Returns the HTML body of the currently selected mail, for the "learn
@@ -140,11 +141,29 @@ namespace RBLclass.AddIn.ViewModels
             OnPropertyChanged(nameof(AttachmentLabelLocationIsNone));
         }
 
+        /// <summary>
+        /// Inline status below the favourites Add/Remove buttons: empty when no
+        /// error, set to a localized rejection message when the chosen path can't
+        /// be stored (it contains the ';' list separator) (v2.7.1.0 F3).
+        /// </summary>
+        public string FavoriteFolderStatus
+        {
+            get => _favoriteFolderStatus;
+            private set => SetProperty(ref _favoriteFolderStatus, value);
+        }
+
         /// <summary>Browse for a directory and add it (deduped, case-insensitive).</summary>
         public void AddFavoriteFolder()
         {
             string path = TaskPaneServices.BrowseForFolder?.Invoke();
             if (string.IsNullOrWhiteSpace(path)) return;
+            if (!FavoriteFolderService.IsValidFavoritePath(path))
+            {
+                // A ';' would be split into bogus entries on reload; reject it.
+                FavoriteFolderStatus = _loc.GetString("Settings_FavoriteFolders_InvalidSemicolon");
+                return;
+            }
+            FavoriteFolderStatus = string.Empty;
             if (FavoriteFolders.Contains(path, StringComparer.OrdinalIgnoreCase)) return;
             FavoriteFolders.Add(path);
             PersistFavorites();

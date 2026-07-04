@@ -159,6 +159,9 @@
   <data name="Settings_FavoriteFolders_Note" xml:space="preserve">
     <value>Unterordner werden bis zu einer Tiefe von 4 indiziert (bis zu 2000 Verzeichnisse pro Stammordner).</value>
   </data>
+  <data name="Settings_FavoriteFolders_InvalidSemicolon" xml:space="preserve">
+    <value>Der gewählte Ordnerpfad enthält ein Semikolon (;), das als Listentrennzeichen verwendet wird und nicht gespeichert werden kann. Wählen Sie einen anderen Ordner.</value>
+  </data>
   <data name="Settings_FavoriteFolders_BrowseDescription" xml:space="preserve">
     <value>Wählen Sie einen Ordner für Ihre Favoriten aus</value>
   </data>

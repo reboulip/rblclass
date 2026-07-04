@@ -20,6 +20,18 @@ namespace RBLclass.Core
         /// <summary>Hard cap on indexed directories across all roots.</summary>
         public const int DefaultMaxTotal = 2000;
 
+        /// <summary>
+        /// True when <paramref name="path"/> is a valid favourite-folder entry:
+        /// non-empty and free of the ';' the settings list uses as its separator
+        /// (<see cref="Settings.FormatList"/>/<see cref="Settings.ParseList"/>).
+        /// A path that fails this would be silently split into bogus entries on
+        /// the next load, so the add flow rejects it (v2.7.1.0 F3).
+        /// </summary>
+        public static bool IsValidFavoritePath(string path)
+        {
+            return !string.IsNullOrEmpty(path) && path.IndexOf(';') < 0;
+        }
+
         private readonly IDirectoryScanner _scanner;
         private readonly IFavoriteFolderRepository _repo;
         private readonly ISettingsStore _settings;

@@ -222,7 +222,7 @@ each item is one coherent, testable change.
       as the fifth per-action override (seeded from settings, reset after each
       classify, like the other four) so the shipped user guide's description of
       five overrides becomes accurate.
-- [ ] **F3.** Favourite attachment folders: validate on add that the chosen
+- [x] **F3.** Favourite attachment folders: validate on add that the chosen
       directory path contains no `;` (the settings list separator) and reject
       with a localized message, so a legal-but-unusual NTFS name cannot corrupt
       the favourites list on reload.
