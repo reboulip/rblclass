@@ -385,12 +385,16 @@ namespace RBLclass.AddIn
                     ScheduleFirstRunWalk();
 
                 // Show the pane at its registered dock position on startup so it is
-                // ready to use without a click (v2.7.0.0 A2 / #31).
-                EnsureTaskPane();
-                if (_taskPane != null)
+                // ready to use without a click (v2.7.0.0 A2 / #31). Opt-out
+                // suppresses it (v2.7.1.0 D1, default on).
+                if (_settingsStore.GetBool(SettingsKeys.ShowPaneOnStartup, true))
                 {
-                    _taskPane.Visible = true;
-                    TaskPaneServices.Host?.RefreshOnShow();
+                    EnsureTaskPane();
+                    if (_taskPane != null)
+                    {
+                        _taskPane.Visible = true;
+                        TaskPaneServices.Host?.RefreshOnShow();
+                    }
                 }
 
                 // Opt-in update check (v2.7.0.0 E1): off by default, runs on the

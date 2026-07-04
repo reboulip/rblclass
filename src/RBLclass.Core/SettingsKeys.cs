@@ -191,5 +191,8 @@ namespace RBLclass.Core
         /// flag. Default is OneLine.
         /// </summary>
         public const string SearchPathDisplayMode = "SearchPathDisplayMode";
+
+        /// <summary>Show the classify pane automatically when Outlook starts (v2.7.1.0 D1, default on — uncheck to suppress).</summary>
+        public const string ShowPaneOnStartup = "ShowPaneOnStartup";
     }
 }

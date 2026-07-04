@@ -344,6 +344,13 @@ namespace RBLclass.AddIn.ViewModels
             set => Apply(_settings.MarkAsReadOnClassify, value, v => _settings.MarkAsReadOnClassify = v);
         }
 
+        /// <summary>Show the classify pane automatically at Outlook startup (v2.7.1.0 D1, default on).</summary>
+        public bool ShowPaneOnStartup
+        {
+            get => _settings.ShowPaneOnStartup;
+            set => Apply(_settings.ShowPaneOnStartup, value, v => _settings.ShowPaneOnStartup = v);
+        }
+
         /// <summary>Opt-in: check the configured URL for a newer version at startup (v2.7.0.0 E1, default off).</summary>
         public bool UpdateCheckEnabled
         {

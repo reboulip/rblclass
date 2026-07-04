@@ -421,6 +421,12 @@
   <data name="Settings_Updates_Header" xml:space="preserve">
     <value>Updates</value>
   </data>
+  <data name="Settings_Startup_Header" xml:space="preserve">
+    <value>Startup</value>
+  </data>
+  <data name="Settings_ShowPaneOnStartup_CheckBox" xml:space="preserve">
+    <value>Show the classify pane automatically when Outlook starts</value>
+  </data>
   <data name="Settings_UpdateCheck_Enable_CheckBox" xml:space="preserve">
     <value>Check for a newer version at startup</value>
   </data>

@@ -169,7 +169,7 @@ each item is one coherent, testable change.
       of reloading a second full snapshot in the MoveToArchive case.
 
 ### D — Startup & pane behaviour
-- [ ] **D1.** Add the persisted setting (promised by v2.7.0.0 A2) gating the
+- [x] **D1.** Add the persisted setting (promised by v2.7.0.0 A2) gating the
       startup auto-show of the pane — default ON to preserve current behaviour,
       opt-out in Settings → General; localized in all three languages.
 - [ ] **D2.** First-run folder walk must yield between stores

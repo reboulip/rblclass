@@ -323,6 +323,15 @@
                             </StackPanel>
                         </GroupBox>
 
+                        <GroupBox Header="{loc:Loc Key=Settings_Startup_Header}" Margin="0,0,0,8">
+                            <StackPanel Margin="6">
+                                <CheckBox IsChecked="{Binding ShowPaneOnStartup}">
+                                    <TextBlock TextWrapping="Wrap" MaxWidth="400"
+                                               Text="{loc:Loc Key=Settings_ShowPaneOnStartup_CheckBox}" />
+                                </CheckBox>
+                            </StackPanel>
+                        </GroupBox>
+
                         <GroupBox Header="{loc:Loc Key=Settings_Updates_Header}" Margin="0,0,0,8">
                             <StackPanel Margin="6">
                                 <CheckBox IsChecked="{Binding UpdateCheckEnabled}">

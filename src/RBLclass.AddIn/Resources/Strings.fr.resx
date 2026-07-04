@@ -421,6 +421,12 @@
   <data name="Settings_Updates_Header" xml:space="preserve">
     <value>Mises à jour</value>
   </data>
+  <data name="Settings_Startup_Header" xml:space="preserve">
+    <value>Démarrage</value>
+  </data>
+  <data name="Settings_ShowPaneOnStartup_CheckBox" xml:space="preserve">
+    <value>Afficher le volet de classement automatiquement au démarrage d'Outlook</value>
+  </data>
   <data name="Settings_UpdateCheck_Enable_CheckBox" xml:space="preserve">
     <value>Vérifier la présence d'une nouvelle version au démarrage</value>
   </data>

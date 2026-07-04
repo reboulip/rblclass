@@ -69,6 +69,7 @@ namespace RBLclass.Core
         public string UpdateCheckUrl { get; set; }
         public string UpdateCheckLastSeenVersion { get; set; }
         public string UpdateCheckDismissedUtc { get; set; }
+        public bool ShowPaneOnStartup { get; set; }
         public string PreferredUiLanguage { get; set; }
 
         /// <summary>Read every key, falling back to the same defaults the individual call sites use today.</summary>
@@ -117,6 +118,7 @@ namespace RBLclass.Core
                 UpdateCheckUrl = store.Get(SettingsKeys.UpdateCheckUrl, string.Empty),
                 UpdateCheckLastSeenVersion = store.Get(SettingsKeys.UpdateCheckLastSeenVersion, string.Empty),
                 UpdateCheckDismissedUtc = store.Get(SettingsKeys.UpdateCheckDismissedUtc, string.Empty),
+                ShowPaneOnStartup = store.GetBool(SettingsKeys.ShowPaneOnStartup, true),
                 PreferredUiLanguage = ParseUiLanguage(store.Get(SettingsKeys.PreferredUiLanguage, null))
             };
         }
@@ -158,6 +160,7 @@ namespace RBLclass.Core
             store.Set(SettingsKeys.UpdateCheckUrl, UpdateCheckUrl ?? string.Empty);
             store.Set(SettingsKeys.UpdateCheckLastSeenVersion, UpdateCheckLastSeenVersion ?? string.Empty);
             store.Set(SettingsKeys.UpdateCheckDismissedUtc, UpdateCheckDismissedUtc ?? string.Empty);
+            store.SetBool(SettingsKeys.ShowPaneOnStartup, ShowPaneOnStartup);
             store.Set(SettingsKeys.PreferredUiLanguage, PreferredUiLanguage);
         }
 
