@@ -1014,7 +1014,7 @@ namespace RBLclass.AddIn
             _firstRunWalkTimer.Start();
         }
 
-        private void FirstRunWalkTick(object sender, EventArgs e)
+        private async void FirstRunWalkTick(object sender, EventArgs e)
         {
             // One-shot.
             _firstRunWalkTimer.Stop();
@@ -1025,8 +1025,27 @@ namespace RBLclass.AddIn
             {
                 Log.Information("No folder index found; walking live stores (first run).");
                 LogStoreInventory();
+
+                // Walk store-by-store yielding to the message pump between each,
+                // exactly like RunFolderWalkAsync, so the first-run index does not
+                // freeze Outlook on multi-PST profiles (v2.7.1.0 D2).
+                _folderTree.MarkIndexing();
+                await Dispatcher.Yield(DispatcherPriority.Background);
+
+                var exclusion = new FolderExclusionPolicy(FolderExclusionOptions.Default);
+                var includedStores = _mailStore.GetStores()
+                    .Where(s => !exclusion.IsStoreExcluded(s))
+                    .ToList();
+
                 var sw = Stopwatch.StartNew();
-                _lastIndexResult = _folderTree.WalkAndPersist();
+                var walked = new List<(StoreInfo Store, IReadOnlyList<FolderNode> Folders)>();
+                foreach (var store in includedStores)
+                {
+                    walked.Add((store, _mailStore.GetFolders(store.StoreId)));
+                    await Dispatcher.Yield(DispatcherPriority.Background);
+                }
+
+                _lastIndexResult = _folderTree.PersistWalkedStores(walked);
                 sw.Stop();
                 Log.Information(
                     "First-run folder walk complete: {Stores} stores, {Folders} folders in {Ms} ms.",
@@ -1037,6 +1056,12 @@ namespace RBLclass.AddIn
             catch (Exception ex)
             {
                 Log.Error(ex, "First-run folder walk failed.");
+            }
+            finally
+            {
+                // Never leave the status stuck on Indexing if the walk threw.
+                if (_folderTree?.IndexStatus == IndexStatus.Indexing)
+                    _folderTree.MarkReady();
             }
         }
 

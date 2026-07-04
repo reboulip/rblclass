@@ -172,7 +172,7 @@ each item is one coherent, testable change.
 - [x] **D1.** Add the persisted setting (promised by v2.7.0.0 A2) gating the
       startup auto-show of the pane — default ON to preserve current behaviour,
       opt-out in Settings → General; localized in all three languages.
-- [ ] **D2.** First-run folder walk must yield between stores
+- [x] **D2.** First-run folder walk must yield between stores
       (`Dispatcher.Yield`, like the manual refresh path `RunFolderWalkAsync`)
       so Outlook stays responsive during the initial index on multi-PST profiles.
 - [ ] **D3.** Propagate mid-session settings changes to the pane immediately:
