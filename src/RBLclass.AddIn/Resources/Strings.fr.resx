@@ -153,6 +153,12 @@
   <data name="MainPane_PinnedSentMail_Indicator" xml:space="preserve">
     <value>Classement du message que vous venez d'envoyer — recherchez un dossier et classez-le :</value>
   </data>
+  <data name="MainPane_PinnedSentMail_Delete_Button" xml:space="preserve">
+    <value>Supprimer de la boîte de réception</value>
+  </data>
+  <data name="MainPane_PinnedSentMail_Delete_ToolTip" xml:space="preserve">
+    <value>Supprimer la copie de ce message envoyé qui a été déplacée dans la boîte de réception</value>
+  </data>
   <data name="MainPane_UpdateAvailable_Banner" xml:space="preserve">
     <value>Une nouvelle version de RBLclass est disponible ({0}). Consultez la page d'installation pour mettre à jour.</value>
   </data>
@@ -609,6 +615,12 @@
   </data>
   <data name="Status_ClassifyCancelled" xml:space="preserve">
     <value>Classement annulé.</value>
+  </data>
+  <data name="Status_PinnedMail_Deleted" xml:space="preserve">
+    <value>Message envoyé supprimé de la boîte de réception.</value>
+  </data>
+  <data name="Status_PinnedMail_DeleteFailed" xml:space="preserve">
+    <value>Échec de la suppression — message laissé dans la boîte de réception.</value>
   </data>
   <data name="Status_SaveAs_Cancelled" xml:space="preserve">
     <value>Enregistrement annulé.</value>

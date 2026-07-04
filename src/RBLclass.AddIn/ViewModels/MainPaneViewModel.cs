@@ -761,6 +761,31 @@ namespace RBLclass.AddIn.ViewModels
             OnPropertyChanged(nameof(PinnedItemSubject));
         }
 
+        /// <summary>
+        /// Delete the pinned just-sent mail (now in the Inbox) and clear the pin
+        /// (v2.8.0.0 B1): the pin banner's "Delete from Inbox" button.
+        /// </summary>
+        public void DeletePinned()
+        {
+            var item = _pinnedItem;
+            if (item == null) return;
+            try
+            {
+                TaskPaneServices.DeleteMail?.Invoke(item);
+                PushStatus(_loc.GetString("Status_PinnedMail_Deleted"));
+                Log.Information("Pinned sent mail deleted from Inbox.");
+            }
+            catch (Exception ex)
+            {
+                Log.Error(ex, "DeletePinned failed.");
+                PushStatus(_loc.GetString("Status_PinnedMail_DeleteFailed"));
+            }
+            finally
+            {
+                ClearPin();
+            }
+        }
+
         // v2.7.0.0 E1: opt-in "a newer version is available" banner. Set from the
         // background startup check (marshalled to this thread); dismissed by the
         // user, which persists the version so it does not return.

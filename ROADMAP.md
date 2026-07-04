@@ -242,7 +242,7 @@ each item is one coherent, testable change.
 - [x] **A3.** In the standalone attachment-management modal (A2's 📎 button), add a "remove saved attachments from the email" checkbox that controls whether a "Save to" attachment is stripped from the email after saving (ON = save then strip, OFF = save but keep it on the email). The checkbox default comes from a new setting in Settings → Attachments. S/MIME items are never stripped. The classify-time modal is unaffected.
 
 ### B — Sent-items handling
-- [ ] **B1.** Add a "delete" button to the post-sent classify notification, to allow one-click deletion of the sent-and-moved-to-Inbox copy. [#39]
+- [x] **B1.** Add a "delete" button to the post-sent classify notification, to allow one-click deletion of the sent-and-moved-to-Inbox copy. [#39]
 
 ### C — Classify reliability
 - [ ] **C1.** Fix auto-class + attachment-modal conflict: auto-class must check for a valid target folder in the conversation history *before* opening the attachment-disposition modal, so the modal never opens for an email it cannot process; when multiple emails are selected, only show attachments for the ones that will actually be processed; surface a clearer (non-modal) message when auto-class cannot process an element. [#36]

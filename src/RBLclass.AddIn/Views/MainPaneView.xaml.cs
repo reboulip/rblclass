@@ -185,6 +185,12 @@ namespace RBLclass.AddIn.Views
 
         private void DismissUpdate_Click(object sender, RoutedEventArgs e) => Vm?.DismissUpdateBanner();
 
+        private void DeletePinned_Click(object sender, RoutedEventArgs e)
+        {
+            try { Vm?.DeletePinned(); }
+            catch (Exception ex) { Log.Error(ex, "DeletePinned failed."); }
+        }
+
         private void AutoClass_Click(object sender, RoutedEventArgs e)
         {
             try { Vm?.AutoClassSelected(); }

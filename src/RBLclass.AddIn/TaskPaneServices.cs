@@ -211,5 +211,12 @@ namespace RBLclass.AddIn
         /// COM - call on the Outlook UI thread. (v2.8.0.0 A1)
         /// </summary>
         public static Func<IReadOnlyList<MailItemRef>, string, (int Saved, int Failed)> SaveMailsAsFiles;
+
+        /// <summary>
+        /// Delete a mail item — used by the pin-banner "Delete from Inbox" button
+        /// to remove the sent-and-moved-to-Inbox copy (v2.8.0.0 B1). Wired at
+        /// startup; null until then. UI thread only.
+        /// </summary>
+        public static Action<MailItemRef> DeleteMail;
     }
 }

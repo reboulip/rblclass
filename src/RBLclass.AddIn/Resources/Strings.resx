@@ -153,6 +153,12 @@
   <data name="MainPane_PinnedSentMail_Indicator" xml:space="preserve">
     <value>Filing the mail you just sent — search a folder and file it:</value>
   </data>
+  <data name="MainPane_PinnedSentMail_Delete_Button" xml:space="preserve">
+    <value>Delete from Inbox</value>
+  </data>
+  <data name="MainPane_PinnedSentMail_Delete_ToolTip" xml:space="preserve">
+    <value>Delete this sent mail's copy that was moved to the Inbox</value>
+  </data>
   <data name="MainPane_UpdateAvailable_Banner" xml:space="preserve">
     <value>A newer version of RBLclass is available ({0}). Visit the install page to update.</value>
   </data>
@@ -609,6 +615,12 @@
   </data>
   <data name="Status_ClassifyCancelled" xml:space="preserve">
     <value>Classify cancelled.</value>
+  </data>
+  <data name="Status_PinnedMail_Deleted" xml:space="preserve">
+    <value>Sent mail deleted from Inbox.</value>
+  </data>
+  <data name="Status_PinnedMail_DeleteFailed" xml:space="preserve">
+    <value>Delete failed — mail left in Inbox.</value>
   </data>
   <data name="Status_SaveAs_Cancelled" xml:space="preserve">
     <value>Save cancelled.</value>

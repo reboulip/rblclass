@@ -65,10 +65,16 @@
                 <Border Background="#0078D4" CornerRadius="4" Padding="8,6" Margin="0,0,0,6"
                         Visibility="{Binding HasPinnedItem, Converter={StaticResource BoolToVis}}">
                     <StackPanel>
-                        <TextBlock Foreground="White" FontWeight="Bold" TextWrapping="Wrap"
+                        <TextBlock Foreground="White" FontWeight="Bold" TextWrapping="Wrap" FontSize="11"
                                    Text="{loc:Loc Key=MainPane_PinnedSentMail_Indicator}" />
-                        <TextBlock Foreground="White" FontStyle="Italic" TextWrapping="Wrap" Margin="0,3,0,0"
+                        <TextBlock Foreground="White" FontStyle="Italic" TextWrapping="Wrap" Margin="0,2,0,0" FontSize="11"
                                    Text="{Binding PinnedItemSubject}" />
+                        <!-- B1: one-click delete of the sent-and-moved-to-Inbox copy, on its own line. -->
+                        <Button HorizontalAlignment="Right" Margin="0,4,0,0" Padding="6,1" FontSize="11"
+                                Content="{loc:Loc Key=MainPane_PinnedSentMail_Delete_Button}"
+                                Background="Transparent" BorderBrush="White" BorderThickness="1" Foreground="White"
+                                Click="DeletePinned_Click"
+                                ToolTip="{loc:Loc Key=MainPane_PinnedSentMail_Delete_ToolTip}" />
                     </StackPanel>
                 </Border>
                 <DockPanel LastChildFill="False">

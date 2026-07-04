@@ -153,6 +153,12 @@
   <data name="MainPane_PinnedSentMail_Indicator" xml:space="preserve">
     <value>Ablage der soeben gesendeten E-Mail — suchen Sie einen Ordner und legen Sie sie ab:</value>
   </data>
+  <data name="MainPane_PinnedSentMail_Delete_Button" xml:space="preserve">
+    <value>Aus Posteingang löschen</value>
+  </data>
+  <data name="MainPane_PinnedSentMail_Delete_ToolTip" xml:space="preserve">
+    <value>Die in den Posteingang verschobene Kopie dieser gesendeten E-Mail löschen</value>
+  </data>
   <data name="MainPane_UpdateAvailable_Banner" xml:space="preserve">
     <value>Eine neuere Version von RBLclass ist verfügbar ({0}). Besuchen Sie die Installationsseite zum Aktualisieren.</value>
   </data>
@@ -609,6 +615,12 @@
   </data>
   <data name="Status_ClassifyCancelled" xml:space="preserve">
     <value>Klassieren abgebrochen.</value>
+  </data>
+  <data name="Status_PinnedMail_Deleted" xml:space="preserve">
+    <value>Gesendete E-Mail aus dem Posteingang gelöscht.</value>
+  </data>
+  <data name="Status_PinnedMail_DeleteFailed" xml:space="preserve">
+    <value>Löschen fehlgeschlagen — E-Mail verbleibt im Posteingang.</value>
   </data>
   <data name="Status_SaveAs_Cancelled" xml:space="preserve">
     <value>Speichern abgebrochen.</value>

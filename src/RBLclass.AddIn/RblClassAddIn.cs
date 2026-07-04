@@ -383,6 +383,13 @@ namespace RBLclass.AddIn
                     return (saved, failed);
                 };
 
+                // B1: delete the pinned sent mail from the Inbox (pin-banner button).
+                TaskPaneServices.DeleteMail = item =>
+                {
+                    try { _mailStore.DeleteItem(item); }
+                    catch (Exception ex) { TryLog("DeleteMail (pin banner) failed", ex); }
+                };
+
                 // Keep the classify pane's selection count live.
                 try
                 {
