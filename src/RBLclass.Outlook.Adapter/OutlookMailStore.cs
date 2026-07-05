@@ -786,18 +786,33 @@ namespace RBLclass.Outlook.Adapter
                         {
                             var seen = new HashSet<string> { item.EntryId };
 
-                            table.Value.MoveToStart();
-                            while (!table.Value.EndOfTable)
+                            try
                             {
-                                OutlookOM.Row row;
-                                try { row = table.Value.GetNextRow(); }
-                                catch { break; }
+                                table.Value.MoveToStart();
+                                while (!table.Value.EndOfTable)
+                                {
+                                    OutlookOM.Row row;
+                                    try { row = table.Value.GetNextRow(); }
+                                    catch { break; }
 
-                                string entryId = Safe(() => row["EntryID"] as string, null);
-                                if (entryId == null || !seen.Add(entryId)) continue;
+                                    string entryId = Safe(() => row["EntryID"] as string, null);
+                                    if (entryId == null || !seen.Add(entryId)) continue;
 
-                                AddSiblingIfInScope(session.Value, entryId,
-                                                     inboxEntryId, sentEntryId, result, skipped);
+                                    AddSiblingIfInScope(session.Value, entryId,
+                                                         inboxEntryId, sentEntryId, result, skipped);
+                                }
+                            }
+                            catch (Exception ex)
+                            {
+                                // Conversation table enumeration failed (e.g. 0x8A404005 -
+                                // conversation index server timeout, ~30s). Tolerate: return
+                                // whatever siblings were already collected, so the primary
+                                // item(s) still get filed instead of aborting the whole
+                                // classify (v2.8.0.0 C2).
+                                Log.Warning(ex,
+                                    "GetConversationSiblings: conversation table enumeration failed for item {EntryId}; " +
+                                    "widening skipped, {Siblings} sibling(s) collected before the failure.",
+                                    item?.EntryId, result.Count);
                             }
                         }
                     }

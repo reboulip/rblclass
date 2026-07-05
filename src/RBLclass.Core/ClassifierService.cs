@@ -742,7 +742,10 @@ namespace RBLclass.Core
             foreach (var item in items) AddIfNew(item);
             foreach (var item in items)
             {
-                var siblings = _store.GetConversationSiblings(item) ?? ConversationSiblings.Empty;
+                ConversationSiblings raw;
+                try { raw = _store.GetConversationSiblings(item); }
+                catch { raw = null; } // adapter failure tolerated; primary item(s) still file
+                var siblings = raw ?? ConversationSiblings.Empty;
                 foreach (var sibling in siblings.Processable) AddIfNew(sibling);
                 foreach (var subject in siblings.SkippedEncryptedSubjects)
                     if (skippedSeen.Add(subject)) skippedEncrypted.Add(subject);

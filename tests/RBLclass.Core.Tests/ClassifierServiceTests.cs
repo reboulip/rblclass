@@ -1141,6 +1141,21 @@ namespace RBLclass.Core.Tests
         }
 
         [Fact]
+        public void Preflight_with_widening_still_returns_original_item_when_GetConversationSiblings_throws()
+        {
+            // Regression guard (v2.8.0.0 C2): an adapter-level COM timeout while
+            // enumerating the conversation table must not abort the whole classify.
+            var store = Substitute.For<IMailStore>();
+            var e1 = Item("e1");
+            store.GetConversationSiblings(e1).Returns(_ => throw new InvalidOperationException("conversation timeout"));
+            var sut = new ClassifierService(store);
+
+            var preflight = sut.Preflight(new[] { e1 }, widenConversation: true);
+
+            preflight.Items.Should().ContainSingle().Which.EntryId.Should().Be("e1");
+        }
+
+        [Fact]
         public void Preflight_reports_the_flagged_incomplete_subset()
         {
             var store = Substitute.For<IMailStore>();
