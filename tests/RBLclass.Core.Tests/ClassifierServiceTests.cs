@@ -824,6 +824,117 @@ namespace RBLclass.Core.Tests
             store.DidNotReceive().MoveItemToFolder(Arg.Any<MailItemRef>(), Arg.Any<FolderNode>(), Arg.Any<bool>());
         }
 
+        // C1 (v2.8.0.0): PreflightAutoClass — the history check without filing.
+        [Fact]
+        public void PreflightAutoClass_processable_item_has_valid_live_history()
+        {
+            var store = StoreWithWorkingMove();
+            var history = Substitute.For<IClassificationHistory>();
+            var item = Item("e1");
+            store.GetConversationKey(item).Returns("conv-1");
+            store.GetParentFolder(Arg.Any<MailItemRef>()).Returns(Dest("src", "Inbox"));
+            history.GetLatestDestinations("conv-1", Arg.Any<DateTime>())
+                   .Returns(new[] { new HistoryDestination("s1", "d1") });
+            var sut = new ClassifierService(store, history);
+
+            var result = sut.PreflightAutoClass(new[] { item },
+                (s, e) => (s == "s1" && e == "d1") ? D1 : null);
+
+            result.Processable.Should().ContainSingle();
+            result.NoHistory.Should().Be(0);
+            result.StaleFolders.Should().Be(0);
+            result.AlreadyInPlace.Should().Be(0);
+            result.HasProcessableItems.Should().BeTrue();
+            store.DidNotReceive().MoveItemToFolder(Arg.Any<MailItemRef>(), Arg.Any<FolderNode>());
+        }
+
+        [Fact]
+        public void PreflightAutoClass_counts_item_with_no_history()
+        {
+            var store = StoreWithWorkingMove();
+            var history = Substitute.For<IClassificationHistory>();
+            store.GetConversationKey(Arg.Any<MailItemRef>()).Returns("conv-x");
+            history.GetLatestDestinations("conv-x", Arg.Any<DateTime>()).Returns(new HistoryDestination[0]);
+            var sut = new ClassifierService(store, history);
+
+            var result = sut.PreflightAutoClass(new[] { Item("e1") }, (s, e) => D1);
+
+            result.Processable.Should().BeEmpty();
+            result.NoHistory.Should().Be(1);
+            result.HasProcessableItems.Should().BeFalse();
+        }
+
+        [Fact]
+        public void PreflightAutoClass_counts_item_whose_remembered_folder_is_gone()
+        {
+            var store = StoreWithWorkingMove();
+            var history = Substitute.For<IClassificationHistory>();
+            store.GetConversationKey(Arg.Any<MailItemRef>()).Returns("conv-1");
+            history.GetLatestDestinations("conv-1", Arg.Any<DateTime>())
+                   .Returns(new[] { new HistoryDestination("s1", "gone") });
+            var sut = new ClassifierService(store, history);
+
+            var result = sut.PreflightAutoClass(new[] { Item("e1") }, (s, e) => null);
+
+            result.Processable.Should().BeEmpty();
+            result.StaleFolders.Should().Be(1);
+        }
+
+        [Fact]
+        public void PreflightAutoClass_counts_item_already_in_its_remembered_folder()
+        {
+            var store = StoreWithWorkingMove();
+            var inbox = Dest("d1", "Inbox");
+            store.GetParentFolder(Arg.Any<MailItemRef>()).Returns(inbox);
+            var history = Substitute.For<IClassificationHistory>();
+            var item = Item("e1");
+            store.GetConversationKey(item).Returns("conv-1");
+            history.GetLatestDestinations("conv-1", Arg.Any<DateTime>())
+                   .Returns(new[] { new HistoryDestination("s1", "d1") });
+            var sut = new ClassifierService(store, history);
+
+            var result = sut.PreflightAutoClass(new[] { item },
+                (s, e) => (s == "s1" && e == "d1") ? inbox : null);
+
+            result.Processable.Should().BeEmpty();
+            result.AlreadyInPlace.Should().Be(1);
+        }
+
+        [Fact]
+        public void PreflightAutoClass_splits_mixed_selection_correctly()
+        {
+            var store = StoreWithWorkingMove();
+            var history = Substitute.For<IClassificationHistory>();
+            var e1 = Item("e1"); var e2 = Item("e2"); var e3 = Item("e3");
+            store.GetParentFolder(Arg.Any<MailItemRef>()).Returns(Dest("src", "Inbox"));
+            store.GetConversationKey(e1).Returns("conv-1"); // processable
+            store.GetConversationKey(e2).Returns("conv-2"); // no history
+            store.GetConversationKey(e3).Returns("conv-3"); // stale
+            history.GetLatestDestinations("conv-1", Arg.Any<DateTime>())
+                   .Returns(new[] { new HistoryDestination("s1", "d1") });
+            history.GetLatestDestinations("conv-2", Arg.Any<DateTime>())
+                   .Returns(new HistoryDestination[0]);
+            history.GetLatestDestinations("conv-3", Arg.Any<DateTime>())
+                   .Returns(new[] { new HistoryDestination("s1", "gone") });
+            var sut = new ClassifierService(store, history);
+
+            var result = sut.PreflightAutoClass(new[] { e1, e2, e3 },
+                (s, e) => (s == "s1" && e == "d1") ? D1 : null);
+
+            result.Processable.Should().ContainSingle().Which.EntryId.Should().Be("e1");
+            result.NoHistory.Should().Be(1);
+            result.StaleFolders.Should().Be(1);
+            result.AlreadyInPlace.Should().Be(0);
+        }
+
+        [Fact]
+        public void PreflightAutoClass_requires_a_history_store()
+        {
+            var sut = new ClassifierService(Substitute.For<IMailStore>()); // no history
+            Action act = () => sut.PreflightAutoClass(new[] { Item("e1") }, (s, e) => D1);
+            act.Should().Throw<InvalidOperationException>();
+        }
+
         [Fact]
         public void Classify_with_recordHistory_false_files_but_writes_no_history()
         {

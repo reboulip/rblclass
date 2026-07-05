@@ -661,6 +661,63 @@ namespace RBLclass.Core
         }
 
         /// <summary>
+        /// C1 (v2.8.0.0): the history/live-folder/already-in-place scan of
+        /// <see cref="AutoClassify"/> without any filing, so the pane can decide
+        /// which items are processable before it opens the attachment modal.
+        /// </summary>
+        public AutoClassPreflightResult PreflightAutoClass(
+            IReadOnlyList<MailItemRef> items,
+            Func<string, string, FolderNode> resolveLiveFolder,
+            int historyRetentionDays = 0)
+        {
+            if (items == null) throw new ArgumentNullException(nameof(items));
+            if (resolveLiveFolder == null) throw new ArgumentNullException(nameof(resolveLiveFolder));
+            if (_history == null)
+                throw new InvalidOperationException("Auto-class preflight requires a classification history store.");
+
+            int noHistory = 0, staleFolders = 0, alreadyInPlace = 0;
+            DateTime cutoff = (historyRetentionDays > 0)
+                ? DateTime.UtcNow.AddDays(-historyRetentionDays)
+                : DateTime.MinValue;
+
+            var processable = new List<MailItemRef>();
+
+            foreach (var item in Dedupe(items))
+            {
+                string key;
+                try { key = _store.GetConversationKey(item); }
+                catch { key = null; }
+
+                if (string.IsNullOrEmpty(key)) { noHistory++; continue; }
+
+                var recorded = _history.GetLatestDestinations(key, cutoff);
+                if (recorded.Count == 0) { noHistory++; continue; }
+
+                var live = new List<FolderNode>();
+                foreach (var dest in recorded)
+                {
+                    FolderNode node;
+                    try { node = resolveLiveFolder(dest.StoreId, dest.EntryId); }
+                    catch { node = null; }
+                    if (node != null) live.Add(node);
+                }
+
+                if (live.Count == 0) { staleFolders++; continue; }
+
+                FolderNode parent;
+                try { parent = _store.GetParentFolder(item); }
+                catch { parent = null; }
+                if (parent != null)
+                    live.RemoveAll(f => f.StoreId == parent.StoreId && f.EntryId == parent.EntryId);
+                if (live.Count == 0) { alreadyInPlace++; continue; }
+
+                processable.Add(item);
+            }
+
+            return new AutoClassPreflightResult(processable, noHistory, staleFolders, alreadyInPlace);
+        }
+
+        /// <summary>
         /// The original items plus every conversation sibling reported by the
         /// store (legacy 5b step 2), deduped by (StoreId, EntryId) - the
         /// originals win the slot when a sibling lookup also returns one of

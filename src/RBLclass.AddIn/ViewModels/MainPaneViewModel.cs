@@ -427,6 +427,18 @@ namespace RBLclass.AddIn.ViewModels
                     safetyCopy = s.ClassifySafetyCopy;
                 }
 
+                int retentionDays = s?.AutoClassHistoryDays ?? Settings.DefaultAutoClassHistoryDays;
+
+                // C1 (v2.8.0.0): the modal must never open for an item that can't be
+                // filed, so check history/live-folder validity before gathering
+                // attachments.
+                var preflight = _classifier.PreflightAutoClass(items, resolve, retentionDays);
+                if (!preflight.HasProcessableItems)
+                {
+                    PushStatus(DescribePreflightFailed(preflight, _loc));
+                    return;
+                }
+
                 // A2/A3: in Modal mode, show the attachment-disposition modal before
                 // auto-classify runs, unless all attachment-bearing items are encrypted
                 // (in which case skip the modal and show a status notice instead).
@@ -438,7 +450,7 @@ namespace RBLclass.AddIn.ViewModels
                     && TaskPaneServices.GatherAttachments != null
                     && TaskPaneServices.ShowAttachmentDisposition != null)
                 {
-                    var groups = TaskPaneServices.GatherAttachments(items);
+                    var groups = TaskPaneServices.GatherAttachments(preflight.Processable);
                     if (groups.Any(g => g.IsEncrypted || g.Attachments.Any(a => !a.IsInline)))
                     {
                         if (AllAttachmentBearersAreEncrypted(groups))
@@ -469,11 +481,10 @@ namespace RBLclass.AddIn.ViewModels
                 }
 
                 var swCore = System.Diagnostics.Stopwatch.StartNew();
-                int retentionDays = s?.AutoClassHistoryDays ?? Settings.DefaultAutoClassHistoryDays;
                 string autoClassBannerSig = (s != null && s.StripBannerOnAutoClassify
                     && !string.IsNullOrWhiteSpace(s.ExternalBannerSignature))
                     ? s.ExternalBannerSignature : null;
-                var result = _classifier.AutoClassify(items, resolve,
+                var result = _classifier.AutoClassify(preflight.Processable, resolve,
                                                        new ClassifyOptions(keepCopy: keepCopy,
                                                                            removeAttachments: removeAttachments,
                                                                            safetyCopy: safetyCopy,
@@ -496,7 +507,7 @@ namespace RBLclass.AddIn.ViewModels
                 string autoClassStatus = DescribeAutoClass(result, _loc);
 
                 if (encryptedOnlySkippedModal)
-                    autoClassStatus += _loc.Plural(items.Count,
+                    autoClassStatus += _loc.Plural(preflight.Processable.Count,
                         "Status_Classify_EncryptedAttachmentsKept_One",
                         "Status_Classify_EncryptedAttachmentsKept_Other");
 
@@ -505,6 +516,24 @@ namespace RBLclass.AddIn.ViewModels
                 if (result.EncryptedStripSkips > 0)
                     autoClassStatus += _loc.Plural(result.EncryptedStripSkips,
                         "Status_Classify_EncryptedKept_One", "Status_Classify_EncryptedKept_Other");
+
+                // C1: tell the user why not all selected mails were filed, using
+                // the preflight's own skip counts (distinct from AutoClassify's
+                // result counts, which only cover the items actually passed in).
+                if (preflight.NoHistory > 0 || preflight.StaleFolders > 0 || preflight.AlreadyInPlace > 0)
+                {
+                    var skipParts = new List<string>();
+                    if (preflight.AlreadyInPlace > 0)
+                        skipParts.Add(_loc.Plural(preflight.AlreadyInPlace,
+                            "Status_AutoClass_AlreadyInPlace_One", "Status_AutoClass_AlreadyInPlace_Other"));
+                    if (preflight.NoHistory > 0)
+                        skipParts.Add(_loc.Plural(preflight.NoHistory,
+                            "Status_AutoClass_NoHistory_One", "Status_AutoClass_NoHistory_Other"));
+                    if (preflight.StaleFolders > 0)
+                        skipParts.Add(_loc.Plural(preflight.StaleFolders,
+                            "Status_AutoClass_StaleFolders_One", "Status_AutoClass_StaleFolders_Other"));
+                    autoClassStatus += " " + string.Join("; ", skipParts) + ".";
+                }
 
                 PushStatus(autoClassStatus);
 
@@ -678,6 +707,30 @@ namespace RBLclass.AddIn.ViewModels
             if (r.PartialErrors > 0)
                 parts.Add(loc.Plural(r.PartialErrors, "Status_AutoClass_PartialErrors_One", "Status_AutoClass_PartialErrors_Other"));
             return parts.Count == 0 ? loc.GetString("Status_AutoClass_Nothing") : string.Join("; ", parts) + ".";
+        }
+
+        /// <summary>
+        /// Status text for the early-exit case where no selected item has a valid
+        /// live remembered destination (C1, v2.8.0.0), so the modal was never opened.
+        /// </summary>
+        private static string DescribePreflightFailed(AutoClassPreflightResult preflight, ILocalizationService loc)
+        {
+            if (preflight.NoHistory > 0 && preflight.StaleFolders == 0 && preflight.AlreadyInPlace == 0)
+                return loc.GetString("Status_AutoClass_NoHistoryOnly");
+
+            var parts = new List<string>();
+            if (preflight.AlreadyInPlace > 0)
+                parts.Add(loc.Plural(preflight.AlreadyInPlace,
+                    "Status_AutoClass_AlreadyInPlace_One", "Status_AutoClass_AlreadyInPlace_Other"));
+            if (preflight.NoHistory > 0)
+                parts.Add(loc.Plural(preflight.NoHistory,
+                    "Status_AutoClass_NoHistory_One", "Status_AutoClass_NoHistory_Other"));
+            if (preflight.StaleFolders > 0)
+                parts.Add(loc.Plural(preflight.StaleFolders,
+                    "Status_AutoClass_StaleFolders_One", "Status_AutoClass_StaleFolders_Other"));
+            return parts.Count == 0
+                ? loc.GetString("Status_AutoClass_Nothing")
+                : string.Join("; ", parts) + ".";
         }
 
         /// <summary>Reverse the last filing action completely (the Undo button).</summary>

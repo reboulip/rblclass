@@ -74,6 +74,20 @@ namespace RBLclass.Core
                                         string bannerSignature = null);
 
         /// <summary>
+        /// History check without filing (v2.8.0.0 C1): determines which of
+        /// <paramref name="items"/> have a valid, live remembered destination and
+        /// can be auto-classed. Items with no history, a stale remembered folder,
+        /// or already in their remembered folder are counted and excluded from
+        /// <see cref="AutoClassPreflightResult.Processable"/>. Call this before
+        /// gathering attachments so the disposition modal is only shown for items
+        /// that will actually be filed.
+        /// </summary>
+        AutoClassPreflightResult PreflightAutoClass(
+            IReadOnlyList<MailItemRef> items,
+            Func<string, string, FolderNode> resolveLiveFolder,
+            int historyRetentionDays = 0);
+
+        /// <summary>
         /// Apply <paramref name="dispositions"/> in place on the referenced items
         /// (v2.8.0.0 A2: standalone attachment management without a classify move).
         /// Saves SaveTo attachments first and blocks the strip if any save fails.
