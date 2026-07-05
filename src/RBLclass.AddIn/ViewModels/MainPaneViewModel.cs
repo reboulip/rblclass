@@ -41,6 +41,13 @@ namespace RBLclass.AddIn.ViewModels
         private bool _isOptionsExpanded;
         private SelectableFolder _selectedResult;
         private SearchPathDisplayMode _pathDisplayMode = SearchPathDisplayMode.OneLine;
+        // Search-behaviour settings cached so the search path never loads the
+        // full settings snapshot per keystroke; refreshed by SeedOptionsFromSettings
+        // (startup, post-classify, and on Settings close via D3) (v2.7.1.0 E3).
+        private int _searchDebounceMs = Settings.DefaultSearchDebounceMs;
+        private FolderMatchMode _matchMode = FolderMatchMode.Substring;
+        private int _maxResults = FolderSearchOptions.DefaultMaxResults;
+        private int _minSearchLength = FolderSearchOptions.DefaultMinQueryLength;
         private string _selectionSummary;
         private string _searchFeedback = string.Empty;
         private string _busyStatus = string.Empty;
@@ -86,16 +93,9 @@ namespace RBLclass.AddIn.ViewModels
             _selectionSummary = _loc.GetString("Status_NoMailSelectedSummary");
             _autoClassLabel = _loc.GetString("MainPane_AutoClass_Button");
 
+            SeedOptionsFromSettings();
             if (_settings != null)
             {
-                _allResults = _settings.GetBool(SettingsKeys.AllResults, false);
-                _keepCopy = _settings.GetBool(SettingsKeys.KeepCopy, false);
-                _removeAttachments = _settings.GetBool(SettingsKeys.RemoveAttachments, false);
-                _widenConversation = _settings.GetBool(SettingsKeys.WidenConversation, false);
-                _stripBanner = _settings.GetBool(SettingsKeys.StripBannerOnClassify, false);
-                _markAsRead = _settings.GetBool(SettingsKeys.MarkAsReadOnClassify, false);
-                _canStripBanner = !string.IsNullOrWhiteSpace(
-                    _settings.Get(SettingsKeys.ExternalBannerSignature, string.Empty));
                 _easterEggActive = _settings.GetBool(SettingsKeys.EasterEggActive, false);
                 if (_easterEggActive)
                     _autoClassLabel = _loc.GetString("MainPane_AutoClass_EasterEgg");
@@ -147,6 +147,13 @@ namespace RBLclass.AddIn.ViewModels
                 StatusLog.RemoveAt(StatusLog.Count - 1);
             OnPropertyChanged(nameof(HasStatusEntries));
         }
+
+        /// <summary>
+        /// Push a status message from an external caller on the Outlook STA
+        /// thread (v2.7.1.0 C1: the sent-item triage handler reports its
+        /// archive-folder failure here).
+        /// </summary>
+        public void PushExternalStatus(string message) => PushStatus(message);
 
         /// <summary>
         /// Destinations accumulated across searches (v2.2): checking a row adds
@@ -219,6 +226,17 @@ namespace RBLclass.AddIn.ViewModels
         {
             get => _stripBanner;
             set => SetProperty(ref _stripBanner, value);
+        }
+
+        /// <summary>
+        /// Mark the filed copy as read after classify (v2.7.1.0 F2). The default
+        /// comes from the MarkAsReadOnClassify setting; toggling it here is a
+        /// per-action override (v2.4 B1) and does not change the setting.
+        /// </summary>
+        public bool MarkAsRead
+        {
+            get => _markAsRead;
+            set => SetProperty(ref _markAsRead, value);
         }
 
         /// <summary>True when a banner has been learned, so the strip tickbox is worth showing.</summary>
@@ -381,7 +399,7 @@ namespace RBLclass.AddIn.ViewModels
             // so the diagnostic log shows the snapshot-build cost, the Core call
             // cost, and the item count - the user reports Auto-class feeling slow.
             var swAuto = System.Diagnostics.Stopwatch.StartNew();
-            Log.Information("PERF AutoClass START: {Items} selected item(s)", items.Count);
+            Log.Debug("PERF AutoClass START: {Items} selected item(s)", items.Count);
 
             try
             {
@@ -391,7 +409,7 @@ namespace RBLclass.AddIn.ViewModels
                 foreach (var f in _getAllFolders())
                     byKey[KeyOf(f)] = f;
                 swSnapshot.Stop();
-                Log.Information("PERF AutoClass folder-snapshot built {Ms} ms: {Folders} folder(s)",
+                Log.Debug("PERF AutoClass folder-snapshot built {Ms} ms: {Folders} folder(s)",
                                 swSnapshot.ElapsedMilliseconds, byKey.Count);
                 Func<string, string, FolderNode> resolve = (storeId, entryId) =>
                 {
@@ -409,6 +427,18 @@ namespace RBLclass.AddIn.ViewModels
                     safetyCopy = s.ClassifySafetyCopy;
                 }
 
+                int retentionDays = s?.AutoClassHistoryDays ?? Settings.DefaultAutoClassHistoryDays;
+
+                // C1 (v2.8.0.0): the modal must never open for an item that can't be
+                // filed, so check history/live-folder validity before gathering
+                // attachments.
+                var preflight = _classifier.PreflightAutoClass(items, resolve, retentionDays);
+                if (!preflight.HasProcessableItems)
+                {
+                    PushStatus(DescribePreflightFailed(preflight, _loc));
+                    return;
+                }
+
                 // A2/A3: in Modal mode, show the attachment-disposition modal before
                 // auto-classify runs, unless all attachment-bearing items are encrypted
                 // (in which case skip the modal and show a status notice instead).
@@ -420,7 +450,7 @@ namespace RBLclass.AddIn.ViewModels
                     && TaskPaneServices.GatherAttachments != null
                     && TaskPaneServices.ShowAttachmentDisposition != null)
                 {
-                    var groups = TaskPaneServices.GatherAttachments(items);
+                    var groups = TaskPaneServices.GatherAttachments(preflight.Processable);
                     if (groups.Any(g => g.IsEncrypted || g.Attachments.Any(a => !a.IsInline)))
                     {
                         if (AllAttachmentBearersAreEncrypted(groups))
@@ -451,19 +481,23 @@ namespace RBLclass.AddIn.ViewModels
                 }
 
                 var swCore = System.Diagnostics.Stopwatch.StartNew();
-                int retentionDays = s?.AutoClassHistoryDays ?? Settings.DefaultAutoClassHistoryDays;
                 string autoClassBannerSig = (s != null && s.StripBannerOnAutoClassify
                     && !string.IsNullOrWhiteSpace(s.ExternalBannerSignature))
                     ? s.ExternalBannerSignature : null;
-                var result = _classifier.AutoClassify(items, resolve, keepCopy, removeAttachments, safetyCopy,
+                var result = _classifier.AutoClassify(preflight.Processable, resolve,
+                                                       new ClassifyOptions(keepCopy: keepCopy,
+                                                                           removeAttachments: removeAttachments,
+                                                                           safetyCopy: safetyCopy,
+                                                                           markAsRead: s != null && s.MarkAsReadOnClassify),
                                                        attachmentDispositions, labelOptions,
                                                        historyRetentionDays: retentionDays,
-                                                       bannerSignature: autoClassBannerSig,
-                                                       markAsRead: s != null && s.MarkAsReadOnClassify);
+                                                       bannerSignature: autoClassBannerSig);
                 swCore.Stop();
+                Log.Debug("PERF AutoClass core {Ms} ms", swCore.ElapsedMilliseconds);
                 Log.Information(
-                    "PERF AutoClass core {Ms} ms: filed={Filed}, noHistory={NoHistory}, stale={Stale}, errors={Errors}",
-                    swCore.ElapsedMilliseconds, result.Filed, result.NoHistory, result.StaleFolders, result.Errors);
+                    "AutoClass done: filed={Filed}, noHistory={NoHistory}, stale={Stale}, errors={Errors}, partialErrors={PartialErrors}, encryptedSkips={EncryptedSkips}, alreadyInPlace={AlreadyInPlace}",
+                    result.Filed, result.NoHistory, result.StaleFolders, result.Errors,
+                    result.PartialErrors, result.EncryptedStripSkips, result.AlreadyInPlace);
 
                 // Show where the mail went (the destination folders), so the
                 // user can see and open them; empty when nothing was filed.
@@ -474,9 +508,33 @@ namespace RBLclass.AddIn.ViewModels
                 string autoClassStatus = DescribeAutoClass(result, _loc);
 
                 if (encryptedOnlySkippedModal)
-                    autoClassStatus += _loc.Plural(items.Count,
+                    autoClassStatus += _loc.Plural(preflight.Processable.Count,
                         "Status_Classify_EncryptedAttachmentsKept_One",
                         "Status_Classify_EncryptedAttachmentsKept_Other");
+
+                // Filed S/MIME mail kept its attachments - say so, like the
+                // regular classify path does (v2.7.1.0 B3).
+                if (result.EncryptedStripSkips > 0)
+                    autoClassStatus += _loc.Plural(result.EncryptedStripSkips,
+                        "Status_Classify_EncryptedKept_One", "Status_Classify_EncryptedKept_Other");
+
+                // C1: tell the user why not all selected mails were filed, using
+                // the preflight's own skip counts (distinct from AutoClassify's
+                // result counts, which only cover the items actually passed in).
+                if (preflight.NoHistory > 0 || preflight.StaleFolders > 0 || preflight.AlreadyInPlace > 0)
+                {
+                    var skipParts = new List<string>();
+                    if (preflight.AlreadyInPlace > 0)
+                        skipParts.Add(_loc.Plural(preflight.AlreadyInPlace,
+                            "Status_AutoClass_AlreadyInPlace_One", "Status_AutoClass_AlreadyInPlace_Other"));
+                    if (preflight.NoHistory > 0)
+                        skipParts.Add(_loc.Plural(preflight.NoHistory,
+                            "Status_AutoClass_NoHistory_One", "Status_AutoClass_NoHistory_Other"));
+                    if (preflight.StaleFolders > 0)
+                        skipParts.Add(_loc.Plural(preflight.StaleFolders,
+                            "Status_AutoClass_StaleFolders_One", "Status_AutoClass_StaleFolders_Other"));
+                    autoClassStatus += " " + string.Join("; ", skipParts) + ".";
+                }
 
                 PushStatus(autoClassStatus);
 
@@ -491,29 +549,189 @@ namespace RBLclass.AddIn.ViewModels
             finally
             {
                 swAuto.Stop();
-                Log.Information("PERF AutoClass END: total {Ms} ms for {Items} item(s)",
+                Log.Debug("PERF AutoClass END: total {Ms} ms for {Items} item(s)",
                                 swAuto.ElapsedMilliseconds, items.Count);
                 Dispatcher.CurrentDispatcher.BeginInvoke(
                     new Action(() => IsBusy = false), DispatcherPriority.Background);
             }
         }
 
+        /// <summary>
+        /// Save the current selection as .msg files (the pane's Save-as button,
+        /// v2.8.0.0 A1): show the directory-picker modal, then call the COM save
+        /// for each item. Everything stays on the STA thread; the modal blocks
+        /// synchronously like the other disposition dialogs.
+        /// </summary>
+        public void SaveAsSelected()
+        {
+            if (_isBusy) return;
+
+            var items = _getSelection != null ? _getSelection() : new MailItemRef[0];
+            if (items.Count == 0) { PushStatus(_loc.GetString("Status_NoMailSelectedAction")); return; }
+
+            // Show the picker while the pane is still enabled (mirrors the preflight
+            // attach-disposition pattern in DoClassifyAsync).
+            var directory = TaskPaneServices.ShowSaveAsPicker?.Invoke();
+            if (string.IsNullOrWhiteSpace(directory))
+            {
+                PushStatus(_loc.GetString("Status_SaveAs_Cancelled"));
+                return;
+            }
+
+            IsBusy = true;
+            BusyStatus = _loc.GetString("MainPane_Busy_Saving");
+            try
+            {
+                var result = TaskPaneServices.SaveMailsAsFiles?.Invoke(items, directory) ?? (0, 0);
+                string status = _loc.Plural(result.Saved,
+                    "Status_SaveAs_Result_One", "Status_SaveAs_Result_Other");
+                if (result.Failed > 0)
+                    status += _loc.GetString("Status_SaveAs_Failed", result.Failed);
+                PushStatus(status);
+            }
+            catch (Exception ex)
+            {
+                Log.Error(ex, "SaveAsSelected failed.");
+                PushStatus(_loc.GetString("Status_SaveAs_Cancelled"));
+            }
+            finally
+            {
+                IsBusy = false;
+            }
+        }
+
+        /// <summary>
+        /// Open the attachment-disposition modal for the current selection and
+        /// apply the user's choices in place on the selected items — no classify
+        /// move (v2.8.0.0 A2).
+        /// </summary>
+        public void ManageAttachmentsSelected()
+        {
+            if (_isBusy) return;
+
+            var items = _getSelection != null ? _getSelection() : new MailItemRef[0];
+            if (items.Count == 0) { PushStatus(_loc.GetString("Status_NoMailSelectedAction")); return; }
+
+            if (TaskPaneServices.GatherAttachments == null
+                || TaskPaneServices.ShowStandaloneAttachmentDisposition == null
+                || TaskPaneServices.ApplyAttachmentDispositions == null)
+                return;
+
+            var groups = TaskPaneServices.GatherAttachments(items);
+
+            // Nothing to manage when no item has a detachable (non-inline) attachment.
+            if (!groups.Any(g => g.IsEncrypted || g.Attachments.Any(a => !a.IsInline)))
+            {
+                PushStatus(_loc.GetString("Status_ManageAttachments_NoAttachments"));
+                return;
+            }
+
+            // Every attachment-bearing item is encrypted: skip the modal.
+            if (AllAttachmentBearersAreEncrypted(groups))
+            {
+                PushStatus(_loc.Plural(items.Count,
+                    "Status_Classify_EncryptedAttachmentsKept_One",
+                    "Status_Classify_EncryptedAttachmentsKept_Other"));
+                return;
+            }
+
+            // Show the modal while the pane is still enabled (SaveAsSelected pattern).
+            var modalResult = TaskPaneServices.ShowStandaloneAttachmentDisposition(groups);
+            if (modalResult == null)
+            {
+                PushStatus(_loc.GetString("Status_ManageAttachments_Cancelled"));
+                return;
+            }
+
+            var dispositions = modalResult.Value.Dispositions;
+            bool stripSaved = modalResult.Value.StripSavedAttachments;
+
+            IsBusy = true;
+            BusyStatus = _loc.GetString("MainPane_Busy_ManagingAttachments");
+            try
+            {
+                AttachmentLabelOptions labelOptions = null;
+                if (_settings != null)
+                {
+                    var s = Settings.Load(_settings);
+                    if (s.AttachmentLabelLocation != AttachmentLabelLocation.None)
+                    {
+                        labelOptions = new AttachmentLabelOptions(
+                            _loc.GetString("AttachmentLabel_Header_One"),
+                            _loc.GetString("AttachmentLabel_Header_Other"),
+                            _loc.GetString("AttachmentLabel_SavedTo"),
+                            _loc.GetString("AttachmentLabel_DeletedOn"),
+                            "yyyy-MM-dd");
+                    }
+                }
+
+                var result = TaskPaneServices.ApplyAttachmentDispositions(dispositions, labelOptions, stripSaved);
+
+                string status = _loc.Plural(result.Applied,
+                    "Status_ManageAttachments_Applied_One", "Status_ManageAttachments_Applied_Other");
+                if (result.Errors > 0)
+                    status += _loc.GetString("Status_SaveAs_Failed", result.Errors);
+                if (result.EncryptedSkips > 0)
+                    status += _loc.Plural(result.EncryptedSkips,
+                        "Status_Classify_EncryptedKept_One", "Status_Classify_EncryptedKept_Other");
+                PushStatus(status);
+            }
+            catch (Exception ex)
+            {
+                Log.Error(ex, "ManageAttachmentsSelected failed.");
+                PushStatus(_loc.GetString("Status_ManageAttachments_Cancelled"));
+            }
+            finally
+            {
+                IsBusy = false;
+            }
+        }
+
         private static string DescribeAutoClass(AutoClassifyResult r, ILocalizationService loc)
         {
             // Nothing filed and the only reason is "never classified before".
-            if (r.Filed == 0 && r.NoHistory > 0 && r.StaleFolders == 0 && r.Errors == 0)
+            if (r.Filed == 0 && r.NoHistory > 0 && r.StaleFolders == 0 && r.Errors == 0
+                && r.AlreadyInPlace == 0)
                 return loc.GetString("Status_AutoClass_NoHistoryOnly");
 
             var parts = new List<string>();
             if (r.Filed > 0)
                 parts.Add(loc.Plural(r.Filed, "Status_AutoClass_Filed_One", "Status_AutoClass_Filed_Other"));
+            if (r.AlreadyInPlace > 0)
+                parts.Add(loc.Plural(r.AlreadyInPlace, "Status_AutoClass_AlreadyInPlace_One", "Status_AutoClass_AlreadyInPlace_Other"));
             if (r.NoHistory > 0)
                 parts.Add(loc.Plural(r.NoHistory, "Status_AutoClass_NoHistory_One", "Status_AutoClass_NoHistory_Other"));
             if (r.StaleFolders > 0)
                 parts.Add(loc.Plural(r.StaleFolders, "Status_AutoClass_StaleFolders_One", "Status_AutoClass_StaleFolders_Other"));
             if (r.Errors > 0)
                 parts.Add(loc.Plural(r.Errors, "Status_AutoClass_Errors_One", "Status_AutoClass_Errors_Other"));
+            if (r.PartialErrors > 0)
+                parts.Add(loc.Plural(r.PartialErrors, "Status_AutoClass_PartialErrors_One", "Status_AutoClass_PartialErrors_Other"));
             return parts.Count == 0 ? loc.GetString("Status_AutoClass_Nothing") : string.Join("; ", parts) + ".";
+        }
+
+        /// <summary>
+        /// Status text for the early-exit case where no selected item has a valid
+        /// live remembered destination (C1, v2.8.0.0), so the modal was never opened.
+        /// </summary>
+        private static string DescribePreflightFailed(AutoClassPreflightResult preflight, ILocalizationService loc)
+        {
+            if (preflight.NoHistory > 0 && preflight.StaleFolders == 0 && preflight.AlreadyInPlace == 0)
+                return loc.GetString("Status_AutoClass_NoHistoryOnly");
+
+            var parts = new List<string>();
+            if (preflight.AlreadyInPlace > 0)
+                parts.Add(loc.Plural(preflight.AlreadyInPlace,
+                    "Status_AutoClass_AlreadyInPlace_One", "Status_AutoClass_AlreadyInPlace_Other"));
+            if (preflight.NoHistory > 0)
+                parts.Add(loc.Plural(preflight.NoHistory,
+                    "Status_AutoClass_NoHistory_One", "Status_AutoClass_NoHistory_Other"));
+            if (preflight.StaleFolders > 0)
+                parts.Add(loc.Plural(preflight.StaleFolders,
+                    "Status_AutoClass_StaleFolders_One", "Status_AutoClass_StaleFolders_Other"));
+            return parts.Count == 0
+                ? loc.GetString("Status_AutoClass_Nothing")
+                : string.Join("; ", parts) + ".";
         }
 
         /// <summary>Reverse the last filing action completely (the Undo button).</summary>
@@ -595,6 +813,31 @@ namespace RBLclass.AddIn.ViewModels
             _pinnedItem = null;
             OnPropertyChanged(nameof(HasPinnedItem));
             OnPropertyChanged(nameof(PinnedItemSubject));
+        }
+
+        /// <summary>
+        /// Delete the pinned just-sent mail (now in the Inbox) and clear the pin
+        /// (v2.8.0.0 B1): the pin banner's "Delete from Inbox" button.
+        /// </summary>
+        public void DeletePinned()
+        {
+            var item = _pinnedItem;
+            if (item == null) return;
+            try
+            {
+                TaskPaneServices.DeleteMail?.Invoke(item);
+                PushStatus(_loc.GetString("Status_PinnedMail_Deleted"));
+                Log.Information("Pinned sent mail deleted from Inbox.");
+            }
+            catch (Exception ex)
+            {
+                Log.Error(ex, "DeletePinned failed.");
+                PushStatus(_loc.GetString("Status_PinnedMail_DeleteFailed"));
+            }
+            finally
+            {
+                ClearPin();
+            }
         }
 
         // v2.7.0.0 E1: opt-in "a newer version is available" banner. Set from the
@@ -857,7 +1100,7 @@ namespace RBLclass.AddIn.ViewModels
             // separates the (COM-heavy, conversation-widening) preflight from the
             // per-item move loop, to localise the random classify-time slowness.
             var swClassify = System.Diagnostics.Stopwatch.StartNew();
-            Log.Information(
+            Log.Debug(
                 "PERF Classify START: {Items} item(s) -> {Destinations} destination(s), widen={Widen}, keepCopy={KeepCopy}, removeAttachments={RemoveAttachments}",
                 items.Count, destinations.Count, _widenConversation, _keepCopy, _removeAttachments);
 
@@ -866,7 +1109,7 @@ namespace RBLclass.AddIn.ViewModels
                 var swPreflight = System.Diagnostics.Stopwatch.StartNew();
                 var preflight = _classifier.Preflight(items, _widenConversation);
                 swPreflight.Stop();
-                Log.Information("PERF Classify preflight {Ms} ms: {Items} item(s) after widen/dedupe",
+                Log.Debug("PERF Classify preflight {Ms} ms: {Items} item(s) after widen/dedupe",
                                 swPreflight.ElapsedMilliseconds, preflight.Items.Count);
 
                 bool markTasksComplete = false;
@@ -940,16 +1183,22 @@ namespace RBLclass.AddIn.ViewModels
 
                 var swCore = System.Diagnostics.Stopwatch.StartNew();
                 var result = await _classifier.ClassifyAsync(
-                    new ClassifyRequest(preflight.Items, destinations, _keepCopy,
-                                        _removeAttachments, markTasksComplete, safetyCopy,
-                                        bannerSignature, attachmentDispositions, labelOptions,
-                                        markAsRead: _markAsRead),
+                    new ClassifyRequest(preflight.Items, destinations,
+                                        new ClassifyOptions(keepCopy: _keepCopy,
+                                                            removeAttachments: _removeAttachments,
+                                                            markTasksComplete: markTasksComplete,
+                                                            safetyCopy: safetyCopy,
+                                                            markAsRead: _markAsRead),
+                                        bannerSignature: bannerSignature,
+                                        attachmentDispositions: attachmentDispositions,
+                                        labelOptions: labelOptions),
                     progress,
                     YieldToPump);
                 swCore.Stop();
+                Log.Debug("PERF Classify core {Ms} ms", swCore.ElapsedMilliseconds);
                 Log.Information(
-                    "PERF Classify core {Ms} ms: processed={Processed}, copies={Copies}, moved={Moved}, errors={Errors}",
-                    swCore.ElapsedMilliseconds, result.ItemsProcessed, result.CopiesMade, result.OriginalsMoved, result.Errors);
+                    "Classify done: processed={Processed}, copies={Copies}, moved={Moved}, errors={Errors}, encryptedKept={EncryptedKept}",
+                    result.ItemsProcessed, result.CopiesMade, result.OriginalsMoved, result.Errors, result.EncryptedStripSkips);
 
                 string verb = _loc.GetString(_keepCopy ? "Status_Classify_Copied" : "Status_Classify_Filed");
                 string failed = result.Errors > 0
@@ -984,7 +1233,7 @@ namespace RBLclass.AddIn.ViewModels
             finally
             {
                 swClassify.Stop();
-                Log.Information("PERF Classify END: total {Ms} ms", swClassify.ElapsedMilliseconds);
+                Log.Debug("PERF Classify END: total {Ms} ms", swClassify.ElapsedMilliseconds);
                 IsBusy = false;
             }
         }
@@ -1043,26 +1292,50 @@ namespace RBLclass.AddIn.ViewModels
         /// </summary>
         private void ResetOptionsToDefaults()
         {
-            if (_settings != null)
-            {
-                // Set the backing fields (not the public setters): the AllResults
-                // setter would call Refresh(), which clears the just-classified
-                // results the user wants to keep seeing (v2.4 A1); the others
-                // would re-write the same persisted value. Just notify the view.
-                _allResults = _settings.GetBool(SettingsKeys.AllResults, false);
-                _keepCopy = _settings.GetBool(SettingsKeys.KeepCopy, false);
-                _removeAttachments = _settings.GetBool(SettingsKeys.RemoveAttachments, false);
-                _widenConversation = _settings.GetBool(SettingsKeys.WidenConversation, false);
-                _stripBanner = _settings.GetBool(SettingsKeys.StripBannerOnClassify, false);
-                _markAsRead = _settings.GetBool(SettingsKeys.MarkAsReadOnClassify, false);
-                OnPropertyChanged(nameof(AllResults));
-                OnPropertyChanged(nameof(KeepCopy));
-                OnPropertyChanged(nameof(RemoveAttachments));
-                OnPropertyChanged(nameof(WidenConversation));
-                OnPropertyChanged(nameof(StripBanner));
-            }
+            SeedOptionsFromSettings();
             IsOptionsExpanded = false;
         }
+
+        /// <summary>
+        /// Seed the five pane option backing fields (and CanStripBanner) from the
+        /// persisted settings defaults. Shared by the constructor, the
+        /// post-classify reset, and the after-Settings-close reload (v2.7.1.0 D3).
+        /// Always sets the backing fields, never the public setters: the
+        /// AllResults setter would call Refresh() (clearing just-classified
+        /// results, v2.4 A1) and the others would re-write the same persisted
+        /// value; here we only re-read and notify the view.
+        /// </summary>
+        private void SeedOptionsFromSettings()
+        {
+            if (_settings == null) return;
+            var s = Settings.Load(_settings);
+            _allResults = s.AllResults;
+            _keepCopy = s.KeepCopy;
+            _removeAttachments = s.RemoveAttachments;
+            _widenConversation = s.WidenConversation;
+            _stripBanner = s.StripBannerOnClassify;
+            _markAsRead = s.MarkAsReadOnClassify;
+            _canStripBanner = !string.IsNullOrWhiteSpace(s.ExternalBannerSignature);
+            _searchDebounceMs = s.SearchDebounceMs;
+            _matchMode = s.FolderMatchMode;
+            _maxResults = s.MaxResults;
+            _minSearchLength = s.MinSearchLength;
+            _pathDisplayMode = s.SearchPathDisplayMode;
+            OnPropertyChanged(nameof(AllResults));
+            OnPropertyChanged(nameof(KeepCopy));
+            OnPropertyChanged(nameof(RemoveAttachments));
+            OnPropertyChanged(nameof(WidenConversation));
+            OnPropertyChanged(nameof(StripBanner));
+            OnPropertyChanged(nameof(MarkAsRead));
+            OnPropertyChanged(nameof(CanStripBanner));
+        }
+
+        /// <summary>
+        /// Re-seed the pane option fields from settings after the Settings window
+        /// closes, so the very next classify uses the new values without a restart
+        /// (v2.7.1.0 D3). Called via <see cref="RblClassTaskPaneHost.ReloadOptionDefaults"/>.
+        /// </summary>
+        public void ReloadOptionDefaults() => SeedOptionsFromSettings();
 
         /// <summary>
         /// Re-search after the typing pause configured in settings (immediate
@@ -1071,9 +1344,7 @@ namespace RBLclass.AddIn.ViewModels
         /// </summary>
         private void ScheduleRefresh()
         {
-            int debounceMs = _settings != null
-                ? Settings.Load(_settings).SearchDebounceMs
-                : Settings.DefaultSearchDebounceMs;
+            int debounceMs = _searchDebounceMs;
             if (debounceMs <= 0) { Refresh(); return; }
 
             if (_searchTimer == null)
@@ -1098,23 +1369,6 @@ namespace RBLclass.AddIn.ViewModels
         }
 
         /// <summary>Add one result row, re-checking it if it is in the accumulated selection and tracking its checkbox.</summary>
-        /// <summary>
-        /// The default row display mode (v2.7.0.0 C1): the stored
-        /// SearchPathDisplayMode, or the legacy AutoExpandResults flag migrated
-        /// (on → PerSegment) when the new setting has never been written.
-        /// </summary>
-        private SearchPathDisplayMode ResolvePathDisplayMode()
-        {
-            if (_settings == null) return SearchPathDisplayMode.OneLine;
-            SearchPathDisplayMode mode;
-            if (Enum.TryParse(_settings.Get(SettingsKeys.SearchPathDisplayMode, null), out mode)
-                && Enum.IsDefined(typeof(SearchPathDisplayMode), mode))
-                return mode;
-            return _settings.GetBool(SettingsKeys.AutoExpandResults, false)
-                ? SearchPathDisplayMode.PerSegment
-                : SearchPathDisplayMode.OneLine;
-        }
-
         private void AddResultRow(FolderSearchResult r)
         {
             var row = new SelectableFolder(r, _pathDisplayMode);
@@ -1129,21 +1383,12 @@ namespace RBLclass.AddIn.ViewModels
 
         private void Refresh()
         {
-            var matchMode = FolderMatchMode.Substring;
-            var maxResults = FolderSearchOptions.DefaultMaxResults;
-            var minLength = FolderSearchOptions.DefaultMinQueryLength;
-            if (_settings != null)
-            {
-                var settings = Settings.Load(_settings);
-                matchMode = settings.FolderMatchMode;
-                maxResults = settings.MaxResults;
-                minLength = settings.MinSearchLength;
-            }
-
+            // matchMode/maxResults/minLength/pathDisplayMode are cached by
+            // SeedOptionsFromSettings, refreshed whenever settings change
+            // (v2.7.1.0 E3), so the search path does no per-search settings load.
             var outcome = _search.Search(_query,
-                new FolderSearchOptions(matchMode, _allResults, maxResults, minLength));
+                new FolderSearchOptions(_matchMode, _allResults, _maxResults, _minSearchLength));
 
-            _pathDisplayMode = ResolvePathDisplayMode();
             Results.Clear();
             foreach (var r in outcome.Results)
                 AddResultRow(r);
@@ -1153,8 +1398,8 @@ namespace RBLclass.AddIn.ViewModels
             {
                 if (trimmed.Length == 0)
                     SearchFeedback = string.Empty;
-                else if (trimmed.Length < minLength)
-                    SearchFeedback = _loc.GetString("Status_TypeAtLeastChars", minLength);
+                else if (trimmed.Length < _minSearchLength)
+                    SearchFeedback = _loc.GetString("Status_TypeAtLeastChars", _minSearchLength);
                 else
                     SearchFeedback = _loc.GetString("Status_NoMatchingFolders");
             }

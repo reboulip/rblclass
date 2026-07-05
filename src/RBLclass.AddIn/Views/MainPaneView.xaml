@@ -46,6 +46,7 @@
                 <RowDefinition Height="Auto" />  <!-- 5: Options panel -->
                 <RowDefinition Height="Auto" />  <!-- 6: classify + undo -->
                 <RowDefinition Height="Auto" />  <!-- 7: status -->
+                <RowDefinition Height="Auto" />  <!-- 8: selection summary -->
             </Grid.RowDefinitions>
 
             <StackPanel Grid.Row="0" Margin="0,0,0,6">
@@ -64,15 +65,19 @@
                 <Border Background="#0078D4" CornerRadius="4" Padding="8,6" Margin="0,0,0,6"
                         Visibility="{Binding HasPinnedItem, Converter={StaticResource BoolToVis}}">
                     <StackPanel>
-                        <TextBlock Foreground="White" FontWeight="Bold" TextWrapping="Wrap"
+                        <TextBlock Foreground="White" FontWeight="Bold" TextWrapping="Wrap" FontSize="11"
                                    Text="{loc:Loc Key=MainPane_PinnedSentMail_Indicator}" />
-                        <TextBlock Foreground="White" FontStyle="Italic" TextWrapping="Wrap" Margin="0,3,0,0"
+                        <TextBlock Foreground="White" FontStyle="Italic" TextWrapping="Wrap" Margin="0,2,0,0" FontSize="11"
                                    Text="{Binding PinnedItemSubject}" />
+                        <!-- B1: one-click delete of the sent-and-moved-to-Inbox copy, on its own line. -->
+                        <Button HorizontalAlignment="Right" Margin="0,4,0,0" Padding="6,1" FontSize="11"
+                                Content="{loc:Loc Key=MainPane_PinnedSentMail_Delete_Button}"
+                                Background="Transparent" BorderBrush="White" BorderThickness="1" Foreground="White"
+                                Click="DeletePinned_Click"
+                                ToolTip="{loc:Loc Key=MainPane_PinnedSentMail_Delete_ToolTip}" />
                     </StackPanel>
                 </Border>
                 <DockPanel LastChildFill="False">
-                    <TextBlock DockPanel.Dock="Left" FontWeight="Bold" VerticalAlignment="Center"
-                               Text="{Binding SelectionSummary}" />
                     <Button DockPanel.Dock="Right" Padding="6,1"
                             IsEnabled="{Binding CanAutoClass}" Click="AutoClass_Click"
                             ToolTip="{loc:Loc Key=MainPane_AutoClass_ToolTip}">
@@ -85,6 +90,16 @@
                             </Grid>
                         </Button.Content>
                     </Button>
+                    <Button DockPanel.Dock="Right" Padding="6,1" Margin="0,0,6,0"
+                            Content="{loc:Loc Key=MainPane_SaveAs_Button}"
+                            FontFamily="Segoe UI Emoji" FontSize="14"
+                            Click="SaveAs_Click"
+                            ToolTip="{loc:Loc Key=MainPane_SaveAs_ToolTip}" />
+                    <Button DockPanel.Dock="Right" Padding="6,1" Margin="0,0,6,0"
+                            Content="{loc:Loc Key=MainPane_ManageAttachments_Button}"
+                            FontFamily="Segoe UI Emoji" FontSize="14"
+                            Click="ManageAttachments_Click"
+                            ToolTip="{loc:Loc Key=MainPane_ManageAttachments_ToolTip}" />
                     <Ellipse DockPanel.Dock="Right" Width="10" Height="10" Margin="0,0,6,0"
                              VerticalAlignment="Center" ToolTip="{Binding IndexStatusToolTip}">
                         <Ellipse.Style>
@@ -222,6 +237,8 @@
                 <CheckBox Content="{loc:Loc Key=MainPane_StripBanner_CheckBox}" Margin="0,3,0,0"
                           IsChecked="{Binding StripBanner}"
                           Visibility="{Binding CanStripBanner, Converter={StaticResource BoolToVis}}" />
+                <CheckBox Content="{loc:Loc Key=MainPane_MarkAsRead_CheckBox}" Margin="0,3,0,0"
+                          IsChecked="{Binding MarkAsRead}" />
             </StackPanel>
 
             <StackPanel Grid.Row="6" Orientation="Horizontal" Margin="0,8,0,0">
@@ -252,6 +269,11 @@
                     </ItemsControl.ItemTemplate>
                 </ItemsControl>
             </StackPanel>
+
+            <!-- Row 8: selection summary, kept at the bottom so it can never
+                 crowd out the header action buttons (v2.8.0.0 A1 feedback). -->
+            <TextBlock Grid.Row="8" Margin="0,6,0,0" FontWeight="Bold" TextWrapping="Wrap"
+                       Text="{Binding SelectionSummary}" />
         </Grid>
 
         <!-- Busy overlay. -->

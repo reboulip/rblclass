@@ -149,33 +149,37 @@ namespace RBLclass.AddIn
             try
             {
                 InitializeStoragePaths();
-                InitializeLogging();
+
+                // The settings store must exist before InitializeLogging() so the
+                // persistent DiagnosticLogging flag can gate the minimum log level.
+                string connectionString = "Data Source=" + _dbPath;
+                _settingsStore = new SqliteSettingsStore(connectionString);
+                _settingsStore.EnsureSchema();
+                var startupSettings = Settings.Load(_settingsStore);
+
+                InitializeLogging(startupSettings.DiagnosticLogging);
 
                 var version = Assembly.GetExecutingAssembly().GetName().Version;
                 Log.Information(
                     "RBLclass add-in starting (version {Version}, 64-bit process={Is64}).",
                     version, Environment.Is64BitProcess);
 
-                string connectionString = "Data Source=" + _dbPath;
                 _repository = new SqliteFolderRepository(connectionString);
                 _mailStore = new OutlookMailStore(_outlookApp);
                 _folderTree = new FolderIndexService(_mailStore, _repository);
                 _folderSearch = new FolderSearchService(_folderTree);
-                _settingsStore = new SqliteSettingsStore(connectionString);
-                _settingsStore.EnsureSchema();
 
                 // Resolve the UI language once, before any pane/window is
                 // created - LocExtension and ViewModel constructors read
                 // TaskPaneServices.Localization (CLAUDE.md / i18n plan).
-                var preferredLanguage = Settings.Load(_settingsStore).PreferredUiLanguage;
                 var outlookLanguage = new OutlookUiLanguageProvider(_outlookApp).GetOutlookUiLanguageCode();
-                var resolvedLanguage = UiLanguageResolver.Resolve(preferredLanguage, outlookLanguage);
+                var resolvedLanguage = UiLanguageResolver.Resolve(startupSettings.PreferredUiLanguage, outlookLanguage);
                 TaskPaneServices.Localization = new LocalizationService(resolvedLanguage);
 
                 _classificationHistory = new SqliteClassificationHistory(connectionString);
                 _classificationHistory.EnsureSchema();
 
-                _classifier = new ClassifierService(_mailStore, _classificationHistory);
+                _classifier = new ClassifierService(_mailStore, _classificationHistory, new Logging.SerilogAppLog());
 
                 // Publish services for the Custom Task Pane host control (which
                 // Office instantiates via COM and so can't be constructor-injected).
@@ -230,6 +234,15 @@ namespace RBLclass.AddIn
                     catch (Exception ex)
                     {
                         TryLog("PickOutlookFolder failed", ex);
+                        return null;
+                    }
+                };
+                TaskPaneServices.GetFolderByEntryId = (storeId, entryId) =>
+                {
+                    try { return _mailStore.GetFolderByEntryId(storeId, entryId); }
+                    catch (Exception ex)
+                    {
+                        TryLog("GetFolderByEntryId failed", ex);
                         return null;
                     }
                 };
@@ -322,6 +335,65 @@ namespace RBLclass.AddIn
                     return window.ShowDialog() == true ? vm.BuildDispositions() : null;
                 };
 
+                // A2: standalone disposition modal (same window, different intro);
+                // A3: shows the "remove saved attachments" toggle, seeded from Settings.
+                TaskPaneServices.ShowStandaloneAttachmentDisposition = groups =>
+                {
+                    bool defaultStrip = true;
+                    try
+                    {
+                        if (_settingsStore != null)
+                            defaultStrip = Settings.Load(_settingsStore).StripSavedAttachments;
+                    }
+                    catch { /* fall back to strip-on */ }
+                    var vm = new AttachmentDispositionViewModel(groups, TaskPaneServices.Localization)
+                    {
+                        IntroText = TaskPaneServices.Localization.GetString("AttachDisp_StandaloneIntro"),
+                        ShowStripToggle = true,
+                        StripSavedAttachments = defaultStrip
+                    };
+                    var window = new AttachmentDispositionWindow { DataContext = vm };
+                    if (window.ShowDialog() != true) return null;
+                    return ((IReadOnlyList<AttachmentDisposition> Dispositions, bool StripSavedAttachments)?)
+                        (vm.BuildDispositions(), vm.StripSavedAttachments);
+                };
+                // A2/A3: apply dispositions in place (no move); strip flag from the modal.
+                TaskPaneServices.ApplyAttachmentDispositions = (dispositions, labelOptions, stripSaved) =>
+                    _classifier.ApplyAttachmentDispositions(dispositions, labelOptions, stripSaved);
+
+                // A1: "Save as" - pick a target directory, then save each item as .msg.
+                TaskPaneServices.ShowSaveAsPicker = () =>
+                {
+                    var vm = new SaveAsPickerViewModel();
+                    var window = new SaveAsPickerWindow { DataContext = vm };
+                    return window.ShowDialog() == true ? vm.TargetDirectory : null;
+                };
+                TaskPaneServices.SaveMailsAsFiles = (items, directory) =>
+                {
+                    int saved = 0, failed = 0;
+                    foreach (var it in items)
+                    {
+                        try
+                        {
+                            if (_mailStore.SaveMailAsFile(it, directory)) saved++;
+                            else failed++;
+                        }
+                        catch (Exception ex)
+                        {
+                            Log.Error(ex, "SaveMailAsFile failed for {EntryId}", it.EntryId);
+                            failed++;
+                        }
+                    }
+                    return (saved, failed);
+                };
+
+                // B1: delete the pinned sent mail from the Inbox (pin-banner button).
+                TaskPaneServices.DeleteMail = item =>
+                {
+                    try { _mailStore.DeleteItem(item); }
+                    catch (Exception ex) { TryLog("DeleteMail (pin banner) failed", ex); }
+                };
+
                 // Keep the classify pane's selection count live.
                 try
                 {
@@ -376,12 +448,16 @@ namespace RBLclass.AddIn
                     ScheduleFirstRunWalk();
 
                 // Show the pane at its registered dock position on startup so it is
-                // ready to use without a click (v2.7.0.0 A2 / #31).
-                EnsureTaskPane();
-                if (_taskPane != null)
+                // ready to use without a click (v2.7.0.0 A2 / #31). Opt-out
+                // suppresses it (v2.7.1.0 D1, default on).
+                if (_settingsStore.GetBool(SettingsKeys.ShowPaneOnStartup, true))
                 {
-                    _taskPane.Visible = true;
-                    TaskPaneServices.Host?.RefreshOnShow();
+                    EnsureTaskPane();
+                    if (_taskPane != null)
+                    {
+                        _taskPane.Visible = true;
+                        TaskPaneServices.Host?.RefreshOnShow();
+                    }
                 }
 
                 // Opt-in update check (v2.7.0.0 E1): off by default, runs on the
@@ -432,7 +508,12 @@ namespace RBLclass.AddIn
                             return;
 
                         _ = uiDispatcher.BeginInvoke(new Action(() =>
-                            TaskPaneServices.Host?.ShowUpdateBanner(remote.ToString())));
+                        {
+                            // Runs later on the dispatcher, outside this try/catch -
+                            // needs its own guard (v2.7.1.0 B1).
+                            try { TaskPaneServices.Host?.ShowUpdateBanner(remote.ToString()); }
+                            catch (Exception ex) { TryLog("ShowUpdateBanner failed", ex); }
+                        }));
                     }
                 }
                 catch (Exception ex)
@@ -601,14 +682,14 @@ namespace RBLclass.AddIn
                 // trace shows how many mid-batch fires we suppressed.
                 if (TaskPaneServices.BatchInProgress)
                 {
-                    Log.Information("PERF SelectionChange suppressed (batch in progress)");
+                    Log.Debug("PERF SelectionChange suppressed (batch in progress)");
                     return;
                 }
 
                 var sw = System.Diagnostics.Stopwatch.StartNew();
                 int count = _mailStore.GetSelectedItems().Count;
                 sw.Stop();
-                Log.Information("PERF SelectionChange handled {Ms} ms: {Count} selected", sw.ElapsedMilliseconds, count);
+                Log.Debug("PERF SelectionChange handled {Ms} ms: {Count} selected", sw.ElapsedMilliseconds, count);
                 TaskPaneServices.Host?.SetSelectionCount(count);
             }
             catch (Exception ex)
@@ -634,8 +715,10 @@ namespace RBLclass.AddIn
                     SettingsKeys.ForgottenAttachmentKeywords, "attach;enclos;joint;PJ"));
                 if (_attachmentGuard.ShouldWarn(info.Body, info.AttachmentCount, keywords))
                 {
-                    if (TaskPaneServices.ConfirmSendWithoutAttachment != null &&
-                        !TaskPaneServices.ConfirmSendWithoutAttachment())
+                    bool proceed = TaskPaneServices.ConfirmSendWithoutAttachment == null
+                        || TaskPaneServices.ConfirmSendWithoutAttachment();
+                    Log.Information("Forgotten-attachment guard fired: {Action}", proceed ? "proceeded" : "cancelled");
+                    if (!proceed)
                     {
                         cancel = true;
                         return;
@@ -646,12 +729,17 @@ namespace RBLclass.AddIn
                 {
                     var domains = ParseList(_settingsStore.Get(SettingsKeys.InternalDomains, string.Empty));
                     var external = _externalGuard.FindExternal(info.Recipients, domains);
-                    if (external.Count > 0 &&
-                        TaskPaneServices.ConfirmSendToExternal != null &&
-                        !TaskPaneServices.ConfirmSendToExternal(external))
+                    if (external.Count > 0)
                     {
-                        cancel = true;
-                        return;
+                        bool proceed = TaskPaneServices.ConfirmSendToExternal == null
+                            || TaskPaneServices.ConfirmSendToExternal(external);
+                        Log.Information("External-recipient guard fired ({Count} external): {Action}",
+                            external.Count, proceed ? "proceeded" : "cancelled");
+                        if (!proceed)
+                        {
+                            cancel = true;
+                            return;
+                        }
                     }
                 }
             }
@@ -683,33 +771,42 @@ namespace RBLclass.AddIn
                 var reference = _mailStore.ResolveMailItem(item);
                 if (reference == null) return; // not a mail item (meeting response, report...)
 
-                SentItemTriageAction action;
-                if (mode == SentItemTriageMode.AskEveryTime)
-                {
-                    string archivePath = string.IsNullOrEmpty(settings.SentItemTriageArchiveEntryId)
-                        ? null : settings.SentItemTriageArchivePath;
-                    var triageVm = new SentItemTriageViewModel(reference.Subject, archivePath);
-                    new SentItemTriageWindow { DataContext = triageVm }.ShowDialog();
-                    if (triageVm.SelectedAction == null || triageVm.SelectedAction == SentItemTriageAction.Leave)
-                        return;
-                    action = triageVm.SelectedAction.Value;
-                }
-                else if (mode == SentItemTriageMode.Delete)
-                {
-                    action = SentItemTriageAction.Delete;
-                }
-                else if (mode == SentItemTriageMode.MoveToArchive)
-                {
-                    action = SentItemTriageAction.MoveToArchive;
-                }
-                else
-                {
-                    action = SentItemTriageAction.MoveToInbox;
-                }
-
+                // Set BEFORE the modal below: ShowDialog pumps the message loop,
+                // so a second sent item arriving mid-dialog would otherwise
+                // re-enter here and stack a second dialog (v2.7.1.0 C1).
                 _suppressSentItemTriage = true;
-                try { ApplySentItemTriage(action, reference); }
-                finally { _suppressSentItemTriage = false; }
+                try
+                {
+                    SentItemTriageAction action;
+                    if (mode == SentItemTriageMode.AskEveryTime)
+                    {
+                        string archivePath = string.IsNullOrEmpty(settings.SentItemTriageArchiveEntryId)
+                            ? null : settings.SentItemTriageArchivePath;
+                        var triageVm = new SentItemTriageViewModel(reference.Subject, archivePath);
+                        new SentItemTriageWindow { DataContext = triageVm }.ShowDialog();
+                        if (triageVm.SelectedAction == null || triageVm.SelectedAction == SentItemTriageAction.Leave)
+                            return;
+                        action = triageVm.SelectedAction.Value;
+                    }
+                    else if (mode == SentItemTriageMode.Delete)
+                    {
+                        action = SentItemTriageAction.Delete;
+                    }
+                    else if (mode == SentItemTriageMode.MoveToArchive)
+                    {
+                        action = SentItemTriageAction.MoveToArchive;
+                    }
+                    else
+                    {
+                        action = SentItemTriageAction.MoveToInbox;
+                    }
+
+                    ApplySentItemTriage(action, reference, settings);
+                }
+                finally
+                {
+                    _suppressSentItemTriage = false;
+                }
             }
             catch (Exception ex)
             {
@@ -721,7 +818,7 @@ namespace RBLclass.AddIn
         /// Apply a triage action to the single sent item (no conversation
         /// widening, no destination picker - those were dropped in the rework).
         /// </summary>
-        private void ApplySentItemTriage(SentItemTriageAction action, MailItemRef item)
+        private void ApplySentItemTriage(SentItemTriageAction action, MailItemRef item, Settings settings)
         {
             switch (action)
             {
@@ -731,23 +828,25 @@ namespace RBLclass.AddIn
                     break;
 
                 case SentItemTriageAction.MoveToArchive:
-                    var archiveSettings = Settings.Load(_settingsStore);
-                    var archiveFolder = string.IsNullOrEmpty(archiveSettings.SentItemTriageArchiveEntryId)
+                    var archiveFolder = string.IsNullOrEmpty(settings.SentItemTriageArchiveEntryId)
                         ? null
                         : _mailStore.GetFolderByEntryId(
-                            archiveSettings.SentItemTriageArchiveStoreId,
-                            archiveSettings.SentItemTriageArchiveEntryId);
+                            settings.SentItemTriageArchiveStoreId,
+                            settings.SentItemTriageArchiveEntryId);
                     if (archiveFolder == null)
                     {
                         Log.Warning("Sent-item triage: archive folder not configured or no longer resolves; leaving mail in Sent Items.");
+                        TaskPaneServices.Host?.PushExternalStatus(
+                            TaskPaneServices.Localization?.GetString("Status_TriageArchiveFolderMissing"));
                         return;
                     }
                     var archiveResult = _classifier.Classify(
                         new ClassifyRequest(new[] { item }, new[] { archiveFolder },
-                                            keepCopy: false, removeAttachments: false,
-                                            markTasksComplete: false,
-                                            safetyCopy: _settingsStore.GetBool(
-                                                SettingsKeys.ClassifySafetyCopy, false)));
+                                            // Routing, not a classification decision -
+                                            // must not become the conversation's
+                                            // remembered folder (v2.7.1.0 B3).
+                                            new ClassifyOptions(safetyCopy: settings.ClassifySafetyCopy,
+                                                                recordHistory: false)));
                     Log.Information(
                         "Sent-item triage moved {Processed} mail(s) to archive folder '{Path}' ({Errors} failed).",
                         archiveResult.ItemsProcessed, archiveFolder.FullPath, archiveResult.Errors);
@@ -762,17 +861,18 @@ namespace RBLclass.AddIn
                     }
                     var result = _classifier.Classify(
                         new ClassifyRequest(new[] { item }, new[] { inbox },
-                                            keepCopy: false, removeAttachments: false,
-                                            markTasksComplete: false,
-                                            safetyCopy: _settingsStore.GetBool(
-                                                SettingsKeys.ClassifySafetyCopy, false)));
+                                            // Routing, not a classification decision -
+                                            // must not become the conversation's
+                                            // remembered folder (v2.7.1.0 B3).
+                                            new ClassifyOptions(safetyCopy: settings.ClassifySafetyCopy,
+                                                                recordHistory: false)));
                     Log.Information(
                         "Sent-item triage moved {Processed} mail(s) to the Inbox ({Errors} failed).",
                         result.ItemsProcessed, result.Errors);
 
                     // E1: optionally hand the moved mail to the pane as the next
                     // classify target and reveal it, so the user can file it now.
-                    if (_settingsStore.GetBool(SettingsKeys.ClassifyAfterMoveToInbox, true)
+                    if (settings.ClassifyAfterMoveToInbox
                         && result.Undo != null && result.Undo.Moves.Count > 0)
                     {
                         EnsureTaskPane();
@@ -927,8 +1027,13 @@ namespace RBLclass.AddIn
                 {
                     DataContext = new SettingsViewModel(
                         _settingsStore,
-                        () => _mailStore.GetSelectedItemHtmlBody())
+                        () => _mailStore.GetSelectedItemHtmlBody(),
+                        new Logging.SerilogAppLog())
                 }.ShowDialog();
+
+                // Re-seed the pane option defaults so the very next classify uses
+                // the new values without requiring a restart (v2.7.1.0 D3).
+                TaskPaneServices.Host?.ReloadOptionDefaults();
 
                 // Re-index favourites in case the favourite-folder list changed
                 // while the dialog was open (v2.4.0.0 F1).
@@ -980,7 +1085,7 @@ namespace RBLclass.AddIn
             _firstRunWalkTimer.Start();
         }
 
-        private void FirstRunWalkTick(object sender, EventArgs e)
+        private async void FirstRunWalkTick(object sender, EventArgs e)
         {
             // One-shot.
             _firstRunWalkTimer.Stop();
@@ -991,8 +1096,27 @@ namespace RBLclass.AddIn
             {
                 Log.Information("No folder index found; walking live stores (first run).");
                 LogStoreInventory();
+
+                // Walk store-by-store yielding to the message pump between each,
+                // exactly like RunFolderWalkAsync, so the first-run index does not
+                // freeze Outlook on multi-PST profiles (v2.7.1.0 D2).
+                _folderTree.MarkIndexing();
+                await Dispatcher.Yield(DispatcherPriority.Background);
+
+                var exclusion = new FolderExclusionPolicy(FolderExclusionOptions.Default);
+                var includedStores = _mailStore.GetStores()
+                    .Where(s => !exclusion.IsStoreExcluded(s))
+                    .ToList();
+
                 var sw = Stopwatch.StartNew();
-                _lastIndexResult = _folderTree.WalkAndPersist();
+                var walked = new List<(StoreInfo Store, IReadOnlyList<FolderNode> Folders)>();
+                foreach (var store in includedStores)
+                {
+                    walked.Add((store, _mailStore.GetFolders(store.StoreId)));
+                    await Dispatcher.Yield(DispatcherPriority.Background);
+                }
+
+                _lastIndexResult = _folderTree.PersistWalkedStores(walked);
                 sw.Stop();
                 Log.Information(
                     "First-run folder walk complete: {Stores} stores, {Folders} folders in {Ms} ms.",
@@ -1003,6 +1127,12 @@ namespace RBLclass.AddIn
             catch (Exception ex)
             {
                 Log.Error(ex, "First-run folder walk failed.");
+            }
+            finally
+            {
+                // Never leave the status stuck on Indexing if the walk threw.
+                if (_folderTree?.IndexStatus == IndexStatus.Indexing)
+                    _folderTree.MarkReady();
             }
         }
 
@@ -1044,10 +1174,17 @@ namespace RBLclass.AddIn
             Directory.CreateDirectory(_logDirectory);
         }
 
-        private void InitializeLogging()
+        /// <summary>
+        /// Min level is Information by default (meaningful actions and errors
+        /// only); the persistent DiagnosticLogging setting raises it to Debug,
+        /// which re-enables the full per-item PERF/BEGIN/END trace used for
+        /// Stormshield-target investigation (v2.8.0.0 logging audit).
+        /// </summary>
+        private void InitializeLogging(bool diagnosticLogging)
         {
+            var level = diagnosticLogging ? Serilog.Events.LogEventLevel.Debug : Serilog.Events.LogEventLevel.Information;
             Log.Logger = new LoggerConfiguration()
-                .MinimumLevel.Information()
+                .MinimumLevel.Is(level)
                 .WriteTo.File(
                     Path.Combine(_logDirectory, "rblclass-.log"),
                     rollingInterval: Serilog.RollingInterval.Day,
@@ -1063,6 +1200,7 @@ namespace RBLclass.AddIn
 
         private static void ShowError(string title, Exception ex)
         {
+            TryLog(title, ex);
             try
             {
                 var loc = TaskPaneServices.Localization;

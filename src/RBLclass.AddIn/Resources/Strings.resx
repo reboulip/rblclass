@@ -66,6 +66,18 @@
   <data name="MainPane_AutoClass_ToolTip" xml:space="preserve">
     <value>File the selected mail(s) to the folder(s) their conversation was last classified into</value>
   </data>
+  <data name="MainPane_SaveAs_Button" xml:space="preserve">
+    <value>💾</value>
+  </data>
+  <data name="MainPane_SaveAs_ToolTip" xml:space="preserve">
+    <value>Save the selected email(s) as .msg files to a folder</value>
+  </data>
+  <data name="MainPane_ManageAttachments_Button" xml:space="preserve">
+    <value>📎</value>
+  </data>
+  <data name="MainPane_ManageAttachments_ToolTip" xml:space="preserve">
+    <value>Manage attachments of the selected email(s): keep, delete, or save to a folder</value>
+  </data>
   <data name="MainPane_QueryBox_ToolTip" xml:space="preserve">
     <value>Enter files into the highlighted folder; Ctrl+Enter opens it. Press Ctrl alone to toggle 'List every matching folder'</value>
   </data>
@@ -83,6 +95,9 @@
   </data>
   <data name="MainPane_StripBanner_CheckBox" xml:space="preserve">
     <value>Strip the external-sender banner</value>
+  </data>
+  <data name="MainPane_MarkAsRead_CheckBox" xml:space="preserve">
+    <value>Mark as read</value>
   </data>
   <data name="Settings_PathDisplay_Label" xml:space="preserve">
     <value>Search result path display:</value>
@@ -123,6 +138,12 @@
   <data name="MainPane_Busy_Filing" xml:space="preserve">
     <value>Filing…</value>
   </data>
+  <data name="MainPane_Busy_Saving" xml:space="preserve">
+    <value>Saving…</value>
+  </data>
+  <data name="MainPane_Busy_ManagingAttachments" xml:space="preserve">
+    <value>Managing attachments…</value>
+  </data>
   <data name="Status_Classify_Progress_One" xml:space="preserve">
     <value>Filing {0} of {1}…</value>
   </data>
@@ -131,6 +152,12 @@
   </data>
   <data name="MainPane_PinnedSentMail_Indicator" xml:space="preserve">
     <value>Filing the mail you just sent — search a folder and file it:</value>
+  </data>
+  <data name="MainPane_PinnedSentMail_Delete_Button" xml:space="preserve">
+    <value>Delete from Inbox</value>
+  </data>
+  <data name="MainPane_PinnedSentMail_Delete_ToolTip" xml:space="preserve">
+    <value>Delete this sent mail's copy that was moved to the Inbox</value>
   </data>
   <data name="MainPane_UpdateAvailable_Banner" xml:space="preserve">
     <value>A newer version of RBLclass is available ({0}). Visit the install page to update.</value>
@@ -156,6 +183,18 @@
   <data name="Settings_FavoriteFolders_Note" xml:space="preserve">
     <value>Sub-folders are indexed to a depth of 4 (up to 2000 directories per root).</value>
   </data>
+  <data name="Settings_ManageAttachments_Header" xml:space="preserve">
+    <value>Manage attachments</value>
+  </data>
+  <data name="Settings_StripSavedAttachments_CheckBox" xml:space="preserve">
+    <value>Remove saved attachments from the email by default</value>
+  </data>
+  <data name="Settings_StripSavedAttachments_Info" xml:space="preserve">
+    <value>Sets the default for the "remove saved attachments from the email" checkbox in the attachment-management window (📎). When on, a "Save to" attachment is removed from the email after being saved to a folder; when off, it is saved but left on the email. Attachments are never removed from S/MIME-encrypted mail.</value>
+  </data>
+  <data name="Settings_FavoriteFolders_InvalidSemicolon" xml:space="preserve">
+    <value>The selected folder path contains a semicolon (;), which is used as the list separator and cannot be stored. Choose a different folder.</value>
+  </data>
   <data name="Settings_FavoriteFolders_BrowseDescription" xml:space="preserve">
     <value>Select a folder to add to your favourites</value>
   </data>
@@ -173,6 +212,9 @@
   </data>
   <data name="AttachDisp_Intro" xml:space="preserve">
     <value>Choose what to do with each attachment before the mail is filed.</value>
+  </data>
+  <data name="AttachDisp_StandaloneIntro" xml:space="preserve">
+    <value>Choose what to do with each attachment.</value>
   </data>
   <data name="AttachDisp_EncryptedExcluded_One" xml:space="preserve">
     <value>{0} encrypted mail was excluded — its attachments stay with the mail.</value>
@@ -192,6 +234,9 @@
   <data name="AttachDisp_UseSameDirectory_CheckBox" xml:space="preserve">
     <value>Use the same save directory for all attachments</value>
   </data>
+  <data name="AttachDisp_StripSaved_CheckBox" xml:space="preserve">
+    <value>Remove saved attachments from the email (uncheck to save a copy but keep them on the email)</value>
+  </data>
   <data name="AttachDisp_Delete_Radio" xml:space="preserve">
     <value>Delete</value>
   </data>
@@ -209,6 +254,18 @@
   </data>
   <data name="AttachDisp_TargetPrefix" xml:space="preserve">
     <value>Save to: </value>
+  </data>
+  <data name="SaveAsPicker_Title" xml:space="preserve">
+    <value>Save email(s) as files</value>
+  </data>
+  <data name="SaveAsPicker_Intro" xml:space="preserve">
+    <value>Choose a folder to save the selected email(s) into as .msg files.</value>
+  </data>
+  <data name="SaveAsPicker_Save_Button" xml:space="preserve">
+    <value>Save</value>
+  </data>
+  <data name="SaveAsPicker_Cancel_Button" xml:space="preserve">
+    <value>Cancel</value>
   </data>
   <data name="AttachDisp_Confirm_Button" xml:space="preserve">
     <value>Confirm</value>
@@ -421,6 +478,12 @@
   <data name="Settings_Updates_Header" xml:space="preserve">
     <value>Updates</value>
   </data>
+  <data name="Settings_Startup_Header" xml:space="preserve">
+    <value>Startup</value>
+  </data>
+  <data name="Settings_ShowPaneOnStartup_CheckBox" xml:space="preserve">
+    <value>Show the classify pane automatically when Outlook starts</value>
+  </data>
   <data name="Settings_UpdateCheck_Enable_CheckBox" xml:space="preserve">
     <value>Check for a newer version at startup</value>
   </data>
@@ -429,6 +492,12 @@
   </data>
   <data name="Settings_UpdateCheck_Note" xml:space="preserve">
     <value>Off by default. When enabled, RBLclass makes one request to this URL at startup to read the latest version number. No other data is sent.</value>
+  </data>
+  <data name="Settings_Diagnostics_Header" xml:space="preserve">
+    <value>Diagnostics</value>
+  </data>
+  <data name="Settings_DiagnosticLogging_CheckBox" xml:space="preserve">
+    <value>Enable full diagnostic logging (verbose per-item trace)</value>
   </data>
   <data name="Settings_Nav_Search" xml:space="preserve">
     <value>Search</value>
@@ -553,6 +622,36 @@
   <data name="Status_ClassifyCancelled" xml:space="preserve">
     <value>Classify cancelled.</value>
   </data>
+  <data name="Status_PinnedMail_Deleted" xml:space="preserve">
+    <value>Sent mail deleted from Inbox.</value>
+  </data>
+  <data name="Status_PinnedMail_DeleteFailed" xml:space="preserve">
+    <value>Delete failed — mail left in Inbox.</value>
+  </data>
+  <data name="Status_SaveAs_Cancelled" xml:space="preserve">
+    <value>Save cancelled.</value>
+  </data>
+  <data name="Status_SaveAs_Result_One" xml:space="preserve">
+    <value>1 email saved.</value>
+  </data>
+  <data name="Status_SaveAs_Result_Other" xml:space="preserve">
+    <value>{0} emails saved.</value>
+  </data>
+  <data name="Status_SaveAs_Failed" xml:space="preserve">
+    <value> ({0} failed)</value>
+  </data>
+  <data name="Status_ManageAttachments_NoAttachments" xml:space="preserve">
+    <value>The selected email(s) have no attachments to manage.</value>
+  </data>
+  <data name="Status_ManageAttachments_Cancelled" xml:space="preserve">
+    <value>Attachment management cancelled.</value>
+  </data>
+  <data name="Status_ManageAttachments_Applied_One" xml:space="preserve">
+    <value>1 email's attachments managed.</value>
+  </data>
+  <data name="Status_ManageAttachments_Applied_Other" xml:space="preserve">
+    <value>{0} emails' attachments managed.</value>
+  </data>
   <data name="Status_AutoClassing" xml:space="preserve">
     <value>Auto-classing…</value>
   </data>
@@ -632,6 +731,18 @@
   <data name="Status_AutoClass_Errors_Other" xml:space="preserve">
     <value>{0} failed</value>
   </data>
+  <data name="Status_AutoClass_PartialErrors_One" xml:space="preserve">
+    <value>{0} partial destination failure</value>
+  </data>
+  <data name="Status_AutoClass_PartialErrors_Other" xml:space="preserve">
+    <value>{0} partial destination failures</value>
+  </data>
+  <data name="Status_AutoClass_AlreadyInPlace_One" xml:space="preserve">
+    <value>{0} already in its remembered folder</value>
+  </data>
+  <data name="Status_AutoClass_AlreadyInPlace_Other" xml:space="preserve">
+    <value>{0} already in their remembered folder</value>
+  </data>
 
   <!-- MainPaneViewModel: Undo result -->
   <data name="Status_Undo_Result" xml:space="preserve">
@@ -692,6 +803,9 @@
   </data>
   <data name="Status_Classify_EncryptedInConversation_Other" xml:space="preserve">
     <value> {0} encrypted messages in the conversation were left in place.</value>
+  </data>
+  <data name="Status_TriageArchiveFolderMissing" xml:space="preserve">
+    <value>Sent-item triage: archive folder not found — mail left in Sent Items.</value>
   </data>
 
   <!-- RblClassAddIn: MessageBox dialogs -->

@@ -12,9 +12,13 @@ namespace RBLclass.AddIn.ViewModels
     /// </summary>
     public sealed class AttachmentRowViewModel : ObservableObject
     {
-        private AttachmentDispositionAction _action = AttachmentDispositionAction.Delete;
+        // Save-to is the default per user feedback (v2.7.1.0 A2): the default
+        // disposition must not be destructive. Confirm stays gated until the
+        // row gets a directory (or is switched to Delete/Keep).
+        private AttachmentDispositionAction _action = AttachmentDispositionAction.SaveTo;
         private string _targetDirectory = string.Empty;
         private string _favoriteQuery = string.Empty;
+        private bool _actionSetByUser;
 
         public AttachmentRowViewModel(MailItemRef item, AttachmentInfo info, string mailSubject)
         {
@@ -25,11 +29,18 @@ namespace RBLclass.AddIn.ViewModels
 
         internal System.Action<string> DirectoryChosen;
 
+        /// <summary>
+        /// True once the user has explicitly picked an action for this row.
+        /// Same-directory propagation must never override such a row (v2.7.1.0 A2).
+        /// </summary>
+        internal bool IsActionUserSet => _actionSetByUser;
+
         internal void SetDirectorySilent(string directory)
         {
             if (string.IsNullOrWhiteSpace(directory)) return;
             TargetDirectory = directory;
-            Action = AttachmentDispositionAction.SaveTo;
+            // Propagation, not a user gesture - must not mark the row user-set.
+            SetActionCore(AttachmentDispositionAction.SaveTo);
             _favoriteQuery = string.Empty;
             OnPropertyChanged(nameof(FavoriteQuery));
             FavoriteResults.Clear();
@@ -49,18 +60,24 @@ namespace RBLclass.AddIn.ViewModels
             get => _action;
             set
             {
-                if (!SetProperty(ref _action, value)) return;
-                OnPropertyChanged(nameof(IsDelete));
-                OnPropertyChanged(nameof(IsSaveTo));
-                OnPropertyChanged(nameof(IsKeep));
-                // Leaving Save-to clears its directory search state so a stale
-                // target can't gate Confirm or be re-applied (v2.5.0.0 B1).
-                if (_action != AttachmentDispositionAction.SaveTo)
-                {
-                    _favoriteQuery = string.Empty;
-                    OnPropertyChanged(nameof(FavoriteQuery));
-                    FavoriteResults.Clear();
-                }
+                _actionSetByUser = true;
+                SetActionCore(value);
+            }
+        }
+
+        private void SetActionCore(AttachmentDispositionAction action)
+        {
+            if (!SetProperty(ref _action, action)) return;
+            OnPropertyChanged(nameof(IsDelete));
+            OnPropertyChanged(nameof(IsSaveTo));
+            OnPropertyChanged(nameof(IsKeep));
+            // Leaving Save-to clears its directory search state so a stale
+            // target can't gate Confirm or be re-applied (v2.5.0.0 B1).
+            if (_action != AttachmentDispositionAction.SaveTo)
+            {
+                _favoriteQuery = string.Empty;
+                OnPropertyChanged(nameof(FavoriteQuery));
+                FavoriteResults.Clear();
             }
         }
 

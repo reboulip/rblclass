@@ -40,6 +40,16 @@ namespace RBLclass.Core
         IReadOnlyList<FolderNode> GetAll();
 
         /// <summary>
+        /// Monotonically increasing token that increments each time the cached
+        /// folder list is replaced or partially updated (Load, WalkAndPersist,
+        /// ReindexStore, PersistWalkedStores). Consumers such as
+        /// <see cref="FolderSearchService"/> compare it against their own
+        /// last-seen value to know when derived caches must be rebuilt
+        /// (v2.7.1.0 E3).
+        /// </summary>
+        int CacheVersion { get; }
+
+        /// <summary>
         /// Persist pre-walked store data and populate the in-memory cache in one
         /// transaction. Called from the shell's per-store async loop after all COM
         /// access is done; Core does no further COM calls. Does NOT transition

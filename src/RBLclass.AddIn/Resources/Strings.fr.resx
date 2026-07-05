@@ -66,6 +66,18 @@
   <data name="MainPane_AutoClass_ToolTip" xml:space="preserve">
     <value>Classer le(s) message(s) sélectionné(s) dans le(s) dossier(s) où leur conversation a été classée la dernière fois</value>
   </data>
+  <data name="MainPane_SaveAs_Button" xml:space="preserve">
+    <value>💾</value>
+  </data>
+  <data name="MainPane_SaveAs_ToolTip" xml:space="preserve">
+    <value>Enregistrer le(s) message(s) sélectionné(s) sous forme de fichiers .msg dans un dossier</value>
+  </data>
+  <data name="MainPane_ManageAttachments_Button" xml:space="preserve">
+    <value>📎</value>
+  </data>
+  <data name="MainPane_ManageAttachments_ToolTip" xml:space="preserve">
+    <value>Gérer les pièces jointes du/des message(s) sélectionné(s) : conserver, supprimer ou enregistrer dans un dossier</value>
+  </data>
   <data name="MainPane_QueryBox_ToolTip" xml:space="preserve">
     <value>Entrée classe dans le dossier en surbrillance ; Ctrl+Entrée l'ouvre. Appuyez sur Ctrl seul pour activer/désactiver « Lister tous les dossiers correspondants »</value>
   </data>
@@ -83,6 +95,9 @@
   </data>
   <data name="MainPane_StripBanner_CheckBox" xml:space="preserve">
     <value>Supprimer la bannière d'expéditeur externe</value>
+  </data>
+  <data name="MainPane_MarkAsRead_CheckBox" xml:space="preserve">
+    <value>Marquer comme lu</value>
   </data>
   <data name="Settings_PathDisplay_Label" xml:space="preserve">
     <value>Affichage du chemin des résultats :</value>
@@ -123,6 +138,12 @@
   <data name="MainPane_Busy_Filing" xml:space="preserve">
     <value>Classement en cours…</value>
   </data>
+  <data name="MainPane_Busy_Saving" xml:space="preserve">
+    <value>Enregistrement…</value>
+  </data>
+  <data name="MainPane_Busy_ManagingAttachments" xml:space="preserve">
+    <value>Traitement des pièces jointes…</value>
+  </data>
   <data name="Status_Classify_Progress_One" xml:space="preserve">
     <value>Classement {0} sur {1}…</value>
   </data>
@@ -131,6 +152,12 @@
   </data>
   <data name="MainPane_PinnedSentMail_Indicator" xml:space="preserve">
     <value>Classement du message que vous venez d'envoyer — recherchez un dossier et classez-le :</value>
+  </data>
+  <data name="MainPane_PinnedSentMail_Delete_Button" xml:space="preserve">
+    <value>Supprimer de la boîte de réception</value>
+  </data>
+  <data name="MainPane_PinnedSentMail_Delete_ToolTip" xml:space="preserve">
+    <value>Supprimer la copie de ce message envoyé qui a été déplacée dans la boîte de réception</value>
   </data>
   <data name="MainPane_UpdateAvailable_Banner" xml:space="preserve">
     <value>Une nouvelle version de RBLclass est disponible ({0}). Consultez la page d'installation pour mettre à jour.</value>
@@ -156,6 +183,18 @@
   <data name="Settings_FavoriteFolders_Note" xml:space="preserve">
     <value>Les sous-dossiers sont indexés jusqu'à une profondeur de 4 (jusqu'à 2000 répertoires par racine).</value>
   </data>
+  <data name="Settings_ManageAttachments_Header" xml:space="preserve">
+    <value>Gérer les pièces jointes</value>
+  </data>
+  <data name="Settings_StripSavedAttachments_CheckBox" xml:space="preserve">
+    <value>Supprimer par défaut les pièces jointes enregistrées du message</value>
+  </data>
+  <data name="Settings_StripSavedAttachments_Info" xml:space="preserve">
+    <value>Définit la valeur par défaut de la case « Supprimer les pièces jointes enregistrées du message » dans la fenêtre de gestion des pièces jointes (📎). Si activée, une pièce jointe « Enregistrer dans » est supprimée du message après avoir été enregistrée dans un dossier ; sinon, elle est enregistrée mais conservée sur le message. Les pièces jointes ne sont jamais supprimées des messages chiffrés S/MIME.</value>
+  </data>
+  <data name="Settings_FavoriteFolders_InvalidSemicolon" xml:space="preserve">
+    <value>Le chemin du dossier sélectionné contient un point-virgule (;), utilisé comme séparateur de liste et qui ne peut pas être enregistré. Choisissez un autre dossier.</value>
+  </data>
   <data name="Settings_FavoriteFolders_BrowseDescription" xml:space="preserve">
     <value>Sélectionnez un dossier à ajouter à vos favoris</value>
   </data>
@@ -173,6 +212,9 @@
   </data>
   <data name="AttachDisp_Intro" xml:space="preserve">
     <value>Choisissez le traitement de chaque pièce jointe avant le classement du message.</value>
+  </data>
+  <data name="AttachDisp_StandaloneIntro" xml:space="preserve">
+    <value>Choisissez le traitement de chaque pièce jointe.</value>
   </data>
   <data name="AttachDisp_EncryptedExcluded_One" xml:space="preserve">
     <value>{0} message chiffré exclu — ses pièces jointes restent avec le message.</value>
@@ -192,6 +234,9 @@
   <data name="AttachDisp_UseSameDirectory_CheckBox" xml:space="preserve">
     <value>Utiliser le même dossier de sauvegarde pour toutes les pièces jointes</value>
   </data>
+  <data name="AttachDisp_StripSaved_CheckBox" xml:space="preserve">
+    <value>Supprimer les pièces jointes enregistrées du message (décocher pour en enregistrer une copie tout en les conservant sur le message)</value>
+  </data>
   <data name="AttachDisp_Delete_Radio" xml:space="preserve">
     <value>Supprimer</value>
   </data>
@@ -209,6 +254,18 @@
   </data>
   <data name="AttachDisp_TargetPrefix" xml:space="preserve">
     <value>Enregistrer dans : </value>
+  </data>
+  <data name="SaveAsPicker_Title" xml:space="preserve">
+    <value>Enregistrer le(s) message(s) sous forme de fichiers</value>
+  </data>
+  <data name="SaveAsPicker_Intro" xml:space="preserve">
+    <value>Choisissez un dossier pour enregistrer le(s) message(s) sélectionné(s) sous forme de fichiers .msg.</value>
+  </data>
+  <data name="SaveAsPicker_Save_Button" xml:space="preserve">
+    <value>Enregistrer</value>
+  </data>
+  <data name="SaveAsPicker_Cancel_Button" xml:space="preserve">
+    <value>Annuler</value>
   </data>
   <data name="AttachDisp_Confirm_Button" xml:space="preserve">
     <value>Confirmer</value>
@@ -421,6 +478,12 @@
   <data name="Settings_Updates_Header" xml:space="preserve">
     <value>Mises à jour</value>
   </data>
+  <data name="Settings_Startup_Header" xml:space="preserve">
+    <value>Démarrage</value>
+  </data>
+  <data name="Settings_ShowPaneOnStartup_CheckBox" xml:space="preserve">
+    <value>Afficher le volet de classement automatiquement au démarrage d'Outlook</value>
+  </data>
   <data name="Settings_UpdateCheck_Enable_CheckBox" xml:space="preserve">
     <value>Vérifier la présence d'une nouvelle version au démarrage</value>
   </data>
@@ -429,6 +492,12 @@
   </data>
   <data name="Settings_UpdateCheck_Note" xml:space="preserve">
     <value>Désactivé par défaut. Une fois activé, RBLclass effectue une seule requête vers cette URL au démarrage pour lire le dernier numéro de version. Aucune autre donnée n'est envoyée.</value>
+  </data>
+  <data name="Settings_Diagnostics_Header" xml:space="preserve">
+    <value>Diagnostic</value>
+  </data>
+  <data name="Settings_DiagnosticLogging_CheckBox" xml:space="preserve">
+    <value>Activer la journalisation diagnostique complète (trace détaillée par élément)</value>
   </data>
   <data name="Settings_Nav_Search" xml:space="preserve">
     <value>Recherche</value>
@@ -553,6 +622,36 @@
   <data name="Status_ClassifyCancelled" xml:space="preserve">
     <value>Classement annulé.</value>
   </data>
+  <data name="Status_PinnedMail_Deleted" xml:space="preserve">
+    <value>Message envoyé supprimé de la boîte de réception.</value>
+  </data>
+  <data name="Status_PinnedMail_DeleteFailed" xml:space="preserve">
+    <value>Échec de la suppression — message laissé dans la boîte de réception.</value>
+  </data>
+  <data name="Status_SaveAs_Cancelled" xml:space="preserve">
+    <value>Enregistrement annulé.</value>
+  </data>
+  <data name="Status_SaveAs_Result_One" xml:space="preserve">
+    <value>1 message enregistré.</value>
+  </data>
+  <data name="Status_SaveAs_Result_Other" xml:space="preserve">
+    <value>{0} messages enregistrés.</value>
+  </data>
+  <data name="Status_SaveAs_Failed" xml:space="preserve">
+    <value> ({0} échoué(s))</value>
+  </data>
+  <data name="Status_ManageAttachments_NoAttachments" xml:space="preserve">
+    <value>Le(s) message(s) sélectionné(s) n'ont pas de pièces jointes à gérer.</value>
+  </data>
+  <data name="Status_ManageAttachments_Cancelled" xml:space="preserve">
+    <value>Gestion des pièces jointes annulée.</value>
+  </data>
+  <data name="Status_ManageAttachments_Applied_One" xml:space="preserve">
+    <value>Pièces jointes d'1 message traitées.</value>
+  </data>
+  <data name="Status_ManageAttachments_Applied_Other" xml:space="preserve">
+    <value>Pièces jointes de {0} messages traitées.</value>
+  </data>
   <data name="Status_AutoClassing" xml:space="preserve">
     <value>Classement automatique…</value>
   </data>
@@ -632,6 +731,18 @@
   <data name="Status_AutoClass_Errors_Other" xml:space="preserve">
     <value>{0} en échec</value>
   </data>
+  <data name="Status_AutoClass_PartialErrors_One" xml:space="preserve">
+    <value>{0} échec partiel vers un dossier</value>
+  </data>
+  <data name="Status_AutoClass_PartialErrors_Other" xml:space="preserve">
+    <value>{0} échecs partiels vers des dossiers</value>
+  </data>
+  <data name="Status_AutoClass_AlreadyInPlace_One" xml:space="preserve">
+    <value>{0} déjà dans son dossier mémorisé</value>
+  </data>
+  <data name="Status_AutoClass_AlreadyInPlace_Other" xml:space="preserve">
+    <value>{0} déjà dans leur dossier mémorisé</value>
+  </data>
 
   <!-- MainPaneViewModel: Undo result -->
   <data name="Status_Undo_Result" xml:space="preserve">
@@ -692,6 +803,9 @@
   </data>
   <data name="Status_Classify_EncryptedInConversation_Other" xml:space="preserve">
     <value> {0} messages chiffrés de la conversation ont été laissés en place.</value>
+  </data>
+  <data name="Status_TriageArchiveFolderMissing" xml:space="preserve">
+    <value>Triage des éléments envoyés : dossier d'archive introuvable — mail laissé dans les Éléments envoyés.</value>
   </data>
 
   <!-- RblClassAddIn: MessageBox dialogs -->

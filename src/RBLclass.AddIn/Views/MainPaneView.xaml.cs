@@ -51,7 +51,8 @@ namespace RBLclass.AddIn.Views
                 // Ctrl+Enter opens the highlighted folder (v2.7.0.0 A2), distinct
                 // from plain Enter which files into it.
                 e.Handled = true;
-                Vm?.OpenHighlighted();
+                try { Vm?.OpenHighlighted(); }
+                catch (Exception ex) { Log.Error(ex, "OpenHighlighted failed."); }
                 return;
             }
 
@@ -176,14 +177,37 @@ namespace RBLclass.AddIn.Views
 
         private void ClearSelection_Click(object sender, RoutedEventArgs e) => Vm?.ClearDestinations();
 
-        private void Undo_Click(object sender, RoutedEventArgs e) => Vm?.UndoLast();
+        private void Undo_Click(object sender, RoutedEventArgs e)
+        {
+            try { Vm?.UndoLast(); }
+            catch (Exception ex) { Log.Error(ex, "UndoLast failed."); }
+        }
 
         private void DismissUpdate_Click(object sender, RoutedEventArgs e) => Vm?.DismissUpdateBanner();
 
+        private void DeletePinned_Click(object sender, RoutedEventArgs e)
+        {
+            try { Vm?.DeletePinned(); }
+            catch (Exception ex) { Log.Error(ex, "DeletePinned failed."); }
+        }
+
         private void AutoClass_Click(object sender, RoutedEventArgs e)
         {
-            Vm?.AutoClassSelected();
+            try { Vm?.AutoClassSelected(); }
+            catch (Exception ex) { Log.Error(ex, "AutoClassSelected failed."); }
             FocusSearchAfterClassify();
+        }
+
+        private void SaveAs_Click(object sender, RoutedEventArgs e)
+        {
+            try { Vm?.SaveAsSelected(); }
+            catch (Exception ex) { Log.Error(ex, "SaveAsSelected failed."); }
+        }
+
+        private void ManageAttachments_Click(object sender, RoutedEventArgs e)
+        {
+            try { Vm?.ManageAttachmentsSelected(); }
+            catch (Exception ex) { Log.Error(ex, "ManageAttachmentsSelected failed."); }
         }
 
         private void OpenFolder_Click(object sender, RoutedEventArgs e)

@@ -74,5 +74,74 @@ namespace RBLclass.Core.Tests
             var reopened = new SqliteSettingsStore("Data Source=" + _dbPath);
             reopened.GetBool(SettingsKeys.AllResults, false).Should().BeTrue();
         }
+
+        [Fact]
+        public void Open_sets_WAL_journal_mode()
+        {
+            // EnsureSchema (ctor) already opened a connection; WAL is persisted
+            // in the file header. Query via a raw connection to prove it stuck.
+            using (var conn = new Microsoft.Data.Sqlite.SqliteConnection("Data Source=" + _dbPath))
+            {
+                conn.Open();
+                using (var cmd = conn.CreateCommand())
+                {
+                    cmd.CommandText = "PRAGMA journal_mode;";
+                    ((string)cmd.ExecuteScalar()).Should().Be("wal");
+                }
+            }
+        }
+
+        [Fact]
+        public void GetAll_returns_empty_on_a_fresh_schema()
+        {
+            _store.GetAll().Should().BeEmpty();
+        }
+
+        [Fact]
+        public void GetAll_returns_every_stored_entry()
+        {
+            _store.Set("a", "alpha");
+            _store.Set("b", "bravo");
+            _store.SetBool(SettingsKeys.KeepCopy, true);
+
+            var all = _store.GetAll();
+
+            all.Should().ContainKey("a").WhoseValue.Should().Be("alpha");
+            all.Should().ContainKey("b").WhoseValue.Should().Be("bravo");
+            all.Should().ContainKey(SettingsKeys.KeepCopy).WhoseValue.Should().Be("1");
+        }
+
+        [Fact]
+        public void SetMany_writes_all_entries_and_round_trips_via_Get_and_GetAll()
+        {
+            var pairs = new[]
+            {
+                new System.Collections.Generic.KeyValuePair<string, string>("x", "10"),
+                new System.Collections.Generic.KeyValuePair<string, string>("y", "20"),
+                new System.Collections.Generic.KeyValuePair<string, string>("z", null),
+            };
+
+            _store.SetMany(pairs);
+
+            _store.Get("x").Should().Be("10");
+            _store.Get("y").Should().Be("20");
+            _store.Get("z").Should().BeNull();
+
+            var all = _store.GetAll();
+            all.Should().ContainKey("x").WhoseValue.Should().Be("10");
+            all.Should().ContainKey("y").WhoseValue.Should().Be("20");
+            all.Should().ContainKey("z").WhoseValue.Should().BeNull();
+        }
+
+        [Fact]
+        public void SetMany_overwrites_existing_keys()
+        {
+            _store.Set("k", "old");
+            _store.SetMany(new[]
+            {
+                new System.Collections.Generic.KeyValuePair<string, string>("k", "new"),
+            });
+            _store.Get("k").Should().Be("new");
+        }
     }
 }

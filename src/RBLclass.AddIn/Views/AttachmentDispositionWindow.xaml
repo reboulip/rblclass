@@ -21,7 +21,7 @@
         </DockPanel>
 
         <StackPanel DockPanel.Dock="Top">
-            <TextBlock Text="{loc:Loc Key=AttachDisp_Intro}" TextWrapping="Wrap" Margin="0,0,0,6" />
+            <TextBlock Text="{Binding IntroText}" TextWrapping="Wrap" Margin="0,0,0,6" />
             <Border Background="{DynamicResource Theme.ControlBackground}"
                     BorderBrush="{DynamicResource Theme.ControlBorder}" BorderThickness="1"
                     CornerRadius="3" Padding="8,5" Margin="0,0,0,6"
@@ -41,6 +41,12 @@
                       IsChecked="{Binding UseSameDirectory, Mode=TwoWay}"
                       Margin="0,0,0,4"
                       Visibility="{Binding HasRows, Converter={StaticResource BoolToVis}}" />
+            <CheckBox IsChecked="{Binding StripSavedAttachments, Mode=TwoWay}"
+                      Margin="0,0,0,4"
+                      Visibility="{Binding ShowStripToggle, Converter={StaticResource BoolToVis}}">
+                <TextBlock TextWrapping="Wrap" MaxWidth="620"
+                           Text="{loc:Loc Key=AttachDisp_StripSaved_CheckBox}" />
+            </CheckBox>
         </StackPanel>
 
         <ListBox ItemsSource="{Binding Rows}" HorizontalContentAlignment="Stretch"

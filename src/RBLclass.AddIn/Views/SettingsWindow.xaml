@@ -171,25 +171,42 @@
             <!-- ===================== Attachments ===================== -->
             <TabItem Header="{loc:Loc Key=Settings_Nav_Attachments}">
                 <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="12">
-                    <GroupBox Header="{loc:Loc Key=Settings_FavoriteFolders_Header}">
-                        <StackPanel Margin="6">
-                            <TextBlock TextWrapping="Wrap"
-                                       Text="{loc:Loc Key=Settings_FavoriteFolders_Description}" />
-                            <ListBox x:Name="FavoriteFoldersList" Margin="0,6,0,4" Height="140"
-                                     ItemsSource="{Binding FavoriteFolders}" />
-                            <DockPanel LastChildFill="False">
-                                <Button DockPanel.Dock="Left" Padding="8,2"
-                                        Content="{loc:Loc Key=Settings_FavoriteFolders_Add_Button}"
-                                        Click="AddFavoriteFolder_Click" />
-                                <Button DockPanel.Dock="Left" Padding="8,2" Margin="6,0,0,0"
-                                        Content="{loc:Loc Key=Settings_FavoriteFolders_Remove_Button}"
-                                        Click="RemoveFavoriteFolder_Click" />
-                            </DockPanel>
-                            <TextBlock Margin="0,4,0,0" TextWrapping="Wrap"
-                                       Style="{DynamicResource MutedText}"
-                                       Text="{loc:Loc Key=Settings_FavoriteFolders_Note}" />
-                        </StackPanel>
-                    </GroupBox>
+                    <StackPanel>
+                        <GroupBox Header="{loc:Loc Key=Settings_FavoriteFolders_Header}" Margin="0,0,0,8">
+                            <StackPanel Margin="6">
+                                <TextBlock TextWrapping="Wrap"
+                                           Text="{loc:Loc Key=Settings_FavoriteFolders_Description}" />
+                                <ListBox x:Name="FavoriteFoldersList" Margin="0,6,0,4" Height="140"
+                                         ItemsSource="{Binding FavoriteFolders}" />
+                                <DockPanel LastChildFill="False">
+                                    <Button DockPanel.Dock="Left" Padding="8,2"
+                                            Content="{loc:Loc Key=Settings_FavoriteFolders_Add_Button}"
+                                            Click="AddFavoriteFolder_Click" />
+                                    <Button DockPanel.Dock="Left" Padding="8,2" Margin="6,0,0,0"
+                                            Content="{loc:Loc Key=Settings_FavoriteFolders_Remove_Button}"
+                                            Click="RemoveFavoriteFolder_Click" />
+                                </DockPanel>
+                                <TextBlock Margin="0,4,0,0" TextWrapping="Wrap"
+                                           Style="{DynamicResource MutedText}"
+                                           Text="{Binding FavoriteFolderStatus}" />
+                                <TextBlock Margin="0,4,0,0" TextWrapping="Wrap"
+                                           Style="{DynamicResource MutedText}"
+                                           Text="{loc:Loc Key=Settings_FavoriteFolders_Note}" />
+                            </StackPanel>
+                        </GroupBox>
+                        <GroupBox Header="{loc:Loc Key=Settings_ManageAttachments_Header}">
+                            <StackPanel Margin="6">
+                                <DockPanel Margin="0,3">
+                                    <TextBlock DockPanel.Dock="Right" Style="{DynamicResource InfoGlyph}"
+                                               ToolTip="{loc:Loc Key=Settings_StripSavedAttachments_Info}" />
+                                    <CheckBox IsChecked="{Binding StripSavedAttachments}">
+                                        <TextBlock TextWrapping="Wrap" MaxWidth="360"
+                                                   Text="{loc:Loc Key=Settings_StripSavedAttachments_CheckBox}" />
+                                    </CheckBox>
+                                </DockPanel>
+                            </StackPanel>
+                        </GroupBox>
+                    </StackPanel>
                 </ScrollViewer>
             </TabItem>
 
@@ -323,6 +340,15 @@
                             </StackPanel>
                         </GroupBox>
 
+                        <GroupBox Header="{loc:Loc Key=Settings_Startup_Header}" Margin="0,0,0,8">
+                            <StackPanel Margin="6">
+                                <CheckBox IsChecked="{Binding ShowPaneOnStartup}">
+                                    <TextBlock TextWrapping="Wrap" MaxWidth="400"
+                                               Text="{loc:Loc Key=Settings_ShowPaneOnStartup_CheckBox}" />
+                                </CheckBox>
+                            </StackPanel>
+                        </GroupBox>
+
                         <GroupBox Header="{loc:Loc Key=Settings_Updates_Header}" Margin="0,0,0,8">
                             <StackPanel Margin="6">
                                 <CheckBox IsChecked="{Binding UpdateCheckEnabled}">
@@ -335,6 +361,18 @@
                                 <TextBlock Margin="0,4,0,0" TextWrapping="Wrap"
                                            Style="{DynamicResource MutedText}"
                                            Text="{loc:Loc Key=Settings_UpdateCheck_Note}" />
+                            </StackPanel>
+                        </GroupBox>
+
+                        <GroupBox Header="{loc:Loc Key=Settings_Diagnostics_Header}" Margin="0,0,0,8">
+                            <StackPanel Margin="6">
+                                <CheckBox IsChecked="{Binding DiagnosticLogging}">
+                                    <TextBlock TextWrapping="Wrap" MaxWidth="400"
+                                               Text="{loc:Loc Key=Settings_DiagnosticLogging_CheckBox}" />
+                                </CheckBox>
+                                <TextBlock Margin="0,6,0,0" TextWrapping="Wrap"
+                                           Style="{DynamicResource MutedText}"
+                                           Text="{loc:Loc Key=Settings_Language_RestartNote}" />
                             </StackPanel>
                         </GroupBox>
 

@@ -54,7 +54,29 @@ namespace RBLclass.AddIn.ViewModels
                 ? string.Empty
                 : loc.Plural(inlineExcluded,
                     "AttachDisp_InlineExcluded_One", "AttachDisp_InlineExcluded_Other");
+
+            IntroText = loc.GetString("AttachDisp_Intro");
         }
+
+        /// <summary>
+        /// Intro text at the top of the modal. Defaults to the classify-path
+        /// wording; overridden to the standalone variant for A2 (v2.8.0.0).
+        /// </summary>
+        public string IntroText { get; set; }
+
+        /// <summary>
+        /// Show the "remove saved attachments from the email" checkbox — set only
+        /// for the standalone A2 modal; the classify path leaves it hidden so
+        /// Save-to keeps stripping as before (v2.8.0.0 A3).
+        /// </summary>
+        public bool ShowStripToggle { get; set; }
+
+        /// <summary>
+        /// Bound to the strip checkbox: true = a Save-to attachment is removed from
+        /// the mail after saving; false = saved but left on the mail. Seeded from
+        /// the Settings default (v2.8.0.0 A3).
+        /// </summary>
+        public bool StripSavedAttachments { get; set; } = true;
 
         public ObservableCollection<AttachmentRowViewModel> Rows { get; }
         public string EncryptedNotice { get; }
@@ -77,7 +99,7 @@ namespace RBLclass.AddIn.ViewModels
             Rows.All(r => r.Action != AttachmentDispositionAction.SaveTo
                           || !string.IsNullOrWhiteSpace(r.TargetDirectory));
 
-        /// <summary>"Apply to all": set every row to Delete (the safe default).</summary>
+        /// <summary>"Apply to all": set every row to Delete.</summary>
         public void DeleteAll()
         {
             foreach (var r in Rows) r.Action = AttachmentDispositionAction.Delete;
@@ -89,6 +111,11 @@ namespace RBLclass.AddIn.ViewModels
             foreach (var r in Rows)
             {
                 if (ReferenceEquals(r, source)) continue;
+                // Never flip an explicitly-chosen Delete/Keep row to Save-to; a
+                // row already in Save-to just receives the updated directory
+                // (v2.7.1.0 A2).
+                if (r.IsActionUserSet && r.Action != AttachmentDispositionAction.SaveTo)
+                    continue;
                 r.SetDirectorySilent(directory);
             }
         }

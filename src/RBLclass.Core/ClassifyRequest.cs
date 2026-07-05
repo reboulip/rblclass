@@ -18,27 +18,19 @@ namespace RBLclass.Core
     {
         public ClassifyRequest(IReadOnlyList<MailItemRef> items,
                                IReadOnlyList<FolderNode> destinations,
-                               bool keepCopy,
-                               bool removeAttachments,
-                               bool markTasksComplete = false,
-                               bool safetyCopy = false,
+                               ClassifyOptions options = null,
                                string bannerSignature = null,
                                IReadOnlyList<AttachmentDisposition> attachmentDispositions = null,
-                               AttachmentLabelOptions labelOptions = null,
-                               bool markAsRead = false)
+                               AttachmentLabelOptions labelOptions = null)
         {
             Items = (items ?? throw new ArgumentNullException(nameof(items))).ToArray();
             Destinations = (destinations ?? throw new ArgumentNullException(nameof(destinations))).ToArray();
-            KeepCopy = keepCopy;
-            RemoveAttachments = removeAttachments;
-            MarkTasksComplete = markTasksComplete;
-            SafetyCopy = safetyCopy;
+            Options = options ?? ClassifyOptions.Default;
             BannerSignature = bannerSignature;
             AttachmentDispositions = attachmentDispositions != null
                 ? attachmentDispositions.ToArray()
                 : (IReadOnlyList<AttachmentDisposition>)new AttachmentDisposition[0];
             LabelOptions = labelOptions;
-            MarkAsRead = markAsRead;
         }
 
         /// <summary>The mail items to file (already widened, if requested).</summary>
@@ -50,11 +42,14 @@ namespace RBLclass.Core
         /// </summary>
         public IReadOnlyList<FolderNode> Destinations { get; }
 
+        /// <summary>The per-action toggle flags for this request (v2.7.1.0 F1).</summary>
+        public ClassifyOptions Options { get; }
+
         /// <summary>When true, originals are left in place (legacy "keep a copy").</summary>
-        public bool KeepCopy { get; }
+        public bool KeepCopy => Options.KeepCopy;
 
         /// <summary>When true, attachments are stripped from each item before filing.</summary>
-        public bool RemoveAttachments { get; }
+        public bool RemoveAttachments => Options.RemoveAttachments;
 
         /// <summary>
         /// When true, the filed copy of each flagged-incomplete item is marked
@@ -63,7 +58,7 @@ namespace RBLclass.Core
         /// building this request). Acts on the filed copy only, mirroring
         /// attachment removal - the original is left untouched.
         /// </summary>
-        public bool MarkTasksComplete { get; }
+        public bool MarkTasksComplete => Options.MarkTasksComplete;
 
         /// <summary>
         /// When true (and <see cref="KeepCopy"/> is off), each successfully
@@ -75,7 +70,7 @@ namespace RBLclass.Core
         /// BEFORE attachment stripping, so the guardrail copy keeps its
         /// attachments. A safety-copy failure never fails the classify.
         /// </summary>
-        public bool SafetyCopy { get; }
+        public bool SafetyCopy => Options.SafetyCopy;
 
         /// <summary>
         /// When non-empty, the learned external-sender banner is stripped from
@@ -110,6 +105,15 @@ namespace RBLclass.Core
         /// copy only - with "keep a copy" on, the kept original's read-state is
         /// untouched. Does not modify message content; S/MIME-safe.
         /// </summary>
-        public bool MarkAsRead { get; }
+        public bool MarkAsRead => Options.MarkAsRead;
+
+        /// <summary>
+        /// When false, the filing is NOT recorded in the classification history
+        /// (v2.7.1.0 B3). Routing moves - the post-send triage's move-to-inbox /
+        /// move-to-archive - must not become the conversation's "remembered
+        /// folder", or auto-class starts filing the whole conversation to the
+        /// inbox/archive instead of where the user actually classifies.
+        /// </summary>
+        public bool RecordHistory => Options.RecordHistory;
     }
 }

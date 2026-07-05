@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using FluentAssertions;
 using NSubstitute;
 using RBLclass.Core;
+using RBLclass.Core.Logging;
 using Xunit;
 
 namespace RBLclass.Core.Tests
@@ -40,8 +41,7 @@ namespace RBLclass.Core.Tests
             var result = sut.Classify(new ClassifyRequest(
                 new[] { Item("e1"), Item("e2") },
                 new[] { D1, D2 },
-                keepCopy: false,
-                removeAttachments: false));
+                ClassifyOptions.Default));
 
             // Per item: one copy to D1, then the original MOVES to D2 -
             // nothing is deleted (v2.2 move-based classify).
@@ -66,7 +66,7 @@ namespace RBLclass.Core.Tests
             var item = Item("e1");
             var result = sut.Classify(new ClassifyRequest(
                 new[] { item }, new[] { D1 },
-                keepCopy: false, removeAttachments: false));
+                ClassifyOptions.Default));
 
             // No transient copy, no delete - the Stormshield fix.
             store.Received(1).MoveItemToFolder(item, D1);
@@ -87,7 +87,7 @@ namespace RBLclass.Core.Tests
 
             sut.Classify(new ClassifyRequest(
                 new[] { item }, new[] { D1, D2 },
-                keepCopy: false, removeAttachments: false));
+                ClassifyOptions.Default));
 
             // The original is the copy source - it must still exist (i.e. not
             // yet have moved) when the copy is taken.
@@ -106,7 +106,7 @@ namespace RBLclass.Core.Tests
 
             var result = sut.Classify(new ClassifyRequest(
                 new[] { Item("e1") }, new[] { D1, D2 },
-                keepCopy: true, removeAttachments: false));
+                new ClassifyOptions(keepCopy: true)));
 
             store.Received(1).CopyItemToFolder(Arg.Any<MailItemRef>(), D1);
             store.Received(1).CopyItemToFolder(Arg.Any<MailItemRef>(), D2);
@@ -127,8 +127,7 @@ namespace RBLclass.Core.Tests
 
             sut.Classify(new ClassifyRequest(
                 new[] { Item("e1") }, new[] { D1 },
-                keepCopy: false, removeAttachments: true,
-                markTasksComplete: false, safetyCopy: true));
+                new ClassifyOptions(removeAttachments: true, safetyCopy: true)));
 
             // Copied from the moved item (at its destination) into Deleted
             // Items, and BEFORE stripping - the guardrail keeps attachments.
@@ -148,11 +147,10 @@ namespace RBLclass.Core.Tests
 
             sut.Classify(new ClassifyRequest(
                 new[] { Item("e1") }, new[] { D1 },
-                keepCopy: false, removeAttachments: false)); // safetyCopy default off
+                ClassifyOptions.Default)); // safetyCopy default off
             sut.Classify(new ClassifyRequest(
                 new[] { Item("e2") }, new[] { D1 },
-                keepCopy: true, removeAttachments: false,
-                markTasksComplete: false, safetyCopy: true)); // keep-copy wins: no move, no guardrail
+                new ClassifyOptions(keepCopy: true, safetyCopy: true))); // keep-copy wins: no move, no guardrail
 
             store.DidNotReceive().GetDeletedItemsFolder(Arg.Any<string>());
         }
@@ -169,8 +167,7 @@ namespace RBLclass.Core.Tests
 
             var result = sut.Classify(new ClassifyRequest(
                 new[] { Item("e1") }, new[] { D1 },
-                keepCopy: false, removeAttachments: false,
-                markTasksComplete: false, safetyCopy: true));
+                new ClassifyOptions(safetyCopy: true)));
 
             result.ItemsProcessed.Should().Be(1);
             result.OriginalsMoved.Should().Be(1);
@@ -190,7 +187,7 @@ namespace RBLclass.Core.Tests
 
             var result = sut.Classify(new ClassifyRequest(
                 new[] { Item("e1") }, new[] { D1, D2 },
-                keepCopy: false, removeAttachments: false, markTasksComplete: true));
+                new ClassifyOptions(markTasksComplete: true)));
 
             var plan = result.Undo;
             plan.Should().NotBeNull();
@@ -201,6 +198,46 @@ namespace RBLclass.Core.Tests
             plan.CompletedFlags.Select(f => f.EntryId)
                 .Should().BeEquivalentTo(new[] { "copy-d1", "moved-e1" });
             plan.AttachmentStrips.Should().Be(0);
+        }
+
+        [Fact]
+        public void Strip_all_throwing_does_not_double_count_the_filing_as_an_error()
+        {
+            var store = StoreWithWorkingMove();
+            store.GetParentFolder(Arg.Any<MailItemRef>()).Returns(Dest("src", "Inbox"));
+            store.When(s => s.RemoveAttachments(Arg.Any<MailItemRef>()))
+                 .Do(_ => throw new InvalidOperationException("COM fault"));
+            var sut = new ClassifierService(store);
+
+            var result = sut.Classify(new ClassifyRequest(new[] { Item("e1") }, new[] { D1 },
+                new ClassifyOptions(removeAttachments: true)));
+
+            // The filing succeeded; the strip fault must not surface as an
+            // error on top of the success (v2.7.1.0 B2).
+            result.ItemsProcessed.Should().Be(1);
+            result.OriginalsMoved.Should().Be(1);
+            result.Errors.Should().Be(0);
+            result.EncryptedStripSkips.Should().Be(0);
+        }
+
+        [Fact]
+        public void MarkTaskComplete_throwing_does_not_count_as_an_error()
+        {
+            var store = StoreWithWorkingMove();
+            store.GetParentFolder(Arg.Any<MailItemRef>()).Returns(Dest("src", "Inbox"));
+            store.IsFlaggedIncomplete(Arg.Any<MailItemRef>()).Returns(true);
+            store.When(s => s.MarkTaskComplete(Arg.Any<MailItemRef>()))
+                 .Do(_ => throw new InvalidOperationException("flag fault"));
+            var sut = new ClassifierService(store);
+
+            var result = sut.Classify(new ClassifyRequest(new[] { Item("e1") }, new[] { D1 },
+                new ClassifyOptions(markTasksComplete: true)));
+
+            result.ItemsProcessed.Should().Be(1);
+            result.OriginalsMoved.Should().Be(1);
+            result.Errors.Should().Be(0);
+            // The flag was never set, so Undo has nothing to un-complete.
+            result.Undo.CompletedFlags.Should().BeEmpty();
         }
 
         [Fact]
@@ -298,7 +335,7 @@ namespace RBLclass.Core.Tests
             var sut = new ClassifierService(store);
 
             sut.Classify(new ClassifyRequest(new[] { Item("e1") }, new[] { D1 },
-                keepCopy: false, removeAttachments: false, markAsRead: true));
+                new ClassifyOptions(markAsRead: true)));
 
             store.Received(1).MoveItemToFolder(Arg.Is<MailItemRef>(m => m.EntryId == "e1"), D1, true);
         }
@@ -310,7 +347,7 @@ namespace RBLclass.Core.Tests
             var sut = new ClassifierService(store);
 
             sut.Classify(new ClassifyRequest(new[] { Item("e1") }, new[] { D1 },
-                keepCopy: false, removeAttachments: false));
+                ClassifyOptions.Default));
 
             store.Received(1).MoveItemToFolder(Arg.Any<MailItemRef>(), D1, false);
             store.DidNotReceive().MoveItemToFolder(Arg.Any<MailItemRef>(), Arg.Any<FolderNode>(), true);
@@ -328,7 +365,7 @@ namespace RBLclass.Core.Tests
             var sut = new ClassifierService(store);
 
             sut.Classify(new ClassifyRequest(new[] { Item("e1") }, new[] { D1 },
-                keepCopy: true, removeAttachments: false, markAsRead: true));
+                new ClassifyOptions(keepCopy: true, markAsRead: true)));
 
             store.Received(1).CopyItemToFolder(Arg.Is<MailItemRef>(m => m.EntryId == "e1"), D1, true);
         }
@@ -343,7 +380,7 @@ namespace RBLclass.Core.Tests
 
             var result = sut.Classify(new ClassifyRequest(
                 new[] { Item("e1") }, new[] { D1 },
-                keepCopy: true, removeAttachments: false));
+                new ClassifyOptions(keepCopy: true)));
 
             result.Undo.Should().NotBeNull();
             result.Undo.Moves.Should().BeEmpty();
@@ -359,7 +396,7 @@ namespace RBLclass.Core.Tests
 
             var result = sut.Classify(new ClassifyRequest(
                 new[] { Item("e1") }, new[] { D1 },
-                keepCopy: false, removeAttachments: false));
+                ClassifyOptions.Default));
 
             result.Undo.Should().BeNull();
         }
@@ -374,7 +411,7 @@ namespace RBLclass.Core.Tests
 
             var result = sut.Classify(new ClassifyRequest(
                 new[] { Item("e1") }, new[] { D1 },
-                keepCopy: false, removeAttachments: true));
+                new ClassifyOptions(removeAttachments: true)));
 
             result.Undo.AttachmentStrips.Should().Be(1);
         }
@@ -397,7 +434,7 @@ namespace RBLclass.Core.Tests
 
             var result = sut.Classify(new ClassifyRequest(
                 new[] { item }, new[] { D1 },
-                keepCopy: false, removeAttachments: true,
+                new ClassifyOptions(removeAttachments: true),
                 attachmentDispositions: dispositions));
 
             store.DidNotReceive().RemoveAttachments(Arg.Any<MailItemRef>());
@@ -424,7 +461,7 @@ namespace RBLclass.Core.Tests
 
             var result = sut.Classify(new ClassifyRequest(
                 new[] { item }, new[] { D1 },
-                keepCopy: false, removeAttachments: true,
+                new ClassifyOptions(removeAttachments: true),
                 attachmentDispositions: dispositions));
 
             store.Received(1).RemoveAttachment(Arg.Is<MailItemRef>(m => m.EntryId == "moved-e1"), 1);
@@ -453,7 +490,7 @@ namespace RBLclass.Core.Tests
 
             sut.Classify(new ClassifyRequest(
                 new[] { item }, new[] { D1 },
-                keepCopy: false, removeAttachments: true,
+                new ClassifyOptions(removeAttachments: true),
                 attachmentDispositions: dispositions));
 
             store.Received(1).SaveAttachmentToFile(Arg.Is<MailItemRef>(m => m.EntryId == "moved-e1"), 1, @"C:\Docs");
@@ -480,7 +517,7 @@ namespace RBLclass.Core.Tests
 
             sut.Classify(new ClassifyRequest(
                 new[] { item }, new[] { D1 },
-                keepCopy: false, removeAttachments: true,
+                new ClassifyOptions(removeAttachments: true),
                 attachmentDispositions: dispositions, labelOptions: labelOptions));
 
             store.DidNotReceive().AppendHtmlNote(Arg.Any<MailItemRef>(), Arg.Any<string>());
@@ -507,7 +544,7 @@ namespace RBLclass.Core.Tests
 
             sut.Classify(new ClassifyRequest(
                 new[] { item }, new[] { D1 },
-                keepCopy: false, removeAttachments: true,
+                new ClassifyOptions(removeAttachments: true),
                 attachmentDispositions: dispositions, labelOptions: labelOptions));
 
             store.Received(1).AppendHtmlNote(
@@ -529,7 +566,7 @@ namespace RBLclass.Core.Tests
 
             var result = sut.Classify(new ClassifyRequest(
                 new[] { Item("e1"), Item("e2") }, new[] { D1 },
-                keepCopy: false, removeAttachments: false));
+                ClassifyOptions.Default));
 
             // One Record per distinct filed conversation, all under one batch id.
             history.Received(1).Record(Arg.Any<string>(), "conv-e1",
@@ -550,7 +587,7 @@ namespace RBLclass.Core.Tests
 
             sut.Classify(new ClassifyRequest(
                 new[] { Item("e1"), Item("e2") }, new[] { D1 },
-                keepCopy: false, removeAttachments: false));
+                ClassifyOptions.Default));
 
             history.Received(1).Record(Arg.Any<string>(), "same-thread",
                 Arg.Any<IEnumerable<FolderNode>>(), Arg.Any<DateTime>());
@@ -567,7 +604,7 @@ namespace RBLclass.Core.Tests
 
             var result = sut.Classify(new ClassifyRequest(
                 new[] { Item("e1") }, new[] { D1 },
-                keepCopy: false, removeAttachments: false));
+                ClassifyOptions.Default));
             sut.Undo(result.Undo);
 
             history.Received(1).DeleteBatches(Arg.Is<IEnumerable<string>>(
@@ -591,7 +628,7 @@ namespace RBLclass.Core.Tests
                 (s == "s1" && e == "d1") ? D1 : null;
 
             var result = sut.AutoClassify(new[] { item }, resolve,
-                keepCopy: false, removeAttachments: false, safetyCopy: false);
+                ClassifyOptions.Default);
 
             result.Filed.Should().Be(1);
             result.NoHistory.Should().Be(0);
@@ -610,7 +647,7 @@ namespace RBLclass.Core.Tests
             var sut = new ClassifierService(store, history);
 
             var result = sut.AutoClassify(new[] { Item("e1") }, (s, e) => D1,
-                keepCopy: false, removeAttachments: false, safetyCopy: false);
+                ClassifyOptions.Default);
 
             result.Filed.Should().Be(0);
             result.NoHistory.Should().Be(1);
@@ -629,7 +666,7 @@ namespace RBLclass.Core.Tests
 
             // Nothing resolves - the remembered folder no longer exists.
             var result = sut.AutoClassify(new[] { Item("e1") }, (s, e) => null,
-                keepCopy: false, removeAttachments: false, safetyCopy: false);
+                ClassifyOptions.Default);
 
             result.Filed.Should().Be(0);
             result.StaleFolders.Should().Be(1);
@@ -641,7 +678,7 @@ namespace RBLclass.Core.Tests
         {
             var sut = new ClassifierService(Substitute.For<IMailStore>()); // no history
             Action act = () => sut.AutoClassify(new[] { Item("e1") }, (s, e) => D1,
-                false, false, false);
+                ClassifyOptions.Default);
             act.Should().Throw<InvalidOperationException>();
         }
 
@@ -666,7 +703,7 @@ namespace RBLclass.Core.Tests
 
             var result = sut.AutoClassify(
                 new[] { item }, (s, e) => (s == "s1" && e == "d1") ? D1 : null,
-                keepCopy: false, removeAttachments: true, safetyCopy: false,
+                new ClassifyOptions(removeAttachments: true),
                 attachmentDispositions: dispositions);
 
             result.Filed.Should().Be(1);
@@ -689,7 +726,7 @@ namespace RBLclass.Core.Tests
 
             var result = sut.AutoClassify(
                 new[] { item }, (s, e) => (s == "s1" && e == "d1") ? D1 : null,
-                keepCopy: false, removeAttachments: true, safetyCopy: false);
+                new ClassifyOptions(removeAttachments: true));
 
             result.Filed.Should().Be(1);
             store.Received(1).RemoveAttachments(Arg.Any<MailItemRef>());
@@ -709,10 +746,213 @@ namespace RBLclass.Core.Tests
 
             var result = sut.AutoClassify(
                 new[] { item }, (s, e) => (s == "s1" && e == "d1") ? D1 : null,
-                keepCopy: false, removeAttachments: false, safetyCopy: false);
+                ClassifyOptions.Default);
 
             result.Filed.Should().Be(1);
             store.DidNotReceive().RemoveAttachments(Arg.Any<MailItemRef>());
+        }
+
+        [Fact]
+        public void AutoClassify_partial_destination_failure_is_surfaced_as_PartialErrors()
+        {
+            var store = StoreWithWorkingMove();
+            store.GetParentFolder(Arg.Any<MailItemRef>()).Returns(Dest("src", "Inbox"));
+            // D1 gets the copy slot (D2, last, is the move slot) - refuse it.
+            store.When(s => s.CopyItemToFolder(Arg.Any<MailItemRef>(), D1, Arg.Any<bool>()))
+                 .Do(_ => throw new InvalidOperationException("copy to D1 refused"));
+            var history = Substitute.For<IClassificationHistory>();
+            var item = Item("e1");
+            store.GetConversationKey(item).Returns("conv-1");
+            history.GetLatestDestinations("conv-1", Arg.Any<DateTime>())
+                   .Returns(new[] { new HistoryDestination("s1", "d1"), new HistoryDestination("s1", "d2") });
+            var sut = new ClassifierService(store, history);
+
+            var result = sut.AutoClassify(new[] { item },
+                (s, e) => e == "d1" ? D1 : e == "d2" ? D2 : null,
+                ClassifyOptions.Default);
+
+            // Filed to D2 but failed at D1: not a clean success (v2.7.1.0 B3).
+            result.Filed.Should().Be(1);
+            result.Errors.Should().Be(0);
+            result.PartialErrors.Should().Be(1);
+        }
+
+        [Fact]
+        public void AutoClassify_encrypted_strip_skip_is_surfaced_on_result()
+        {
+            var store = StoreWithWorkingMove();
+            store.GetParentFolder(Arg.Any<MailItemRef>()).Returns(Dest("src", "Inbox"));
+            store.RemoveAttachments(Arg.Any<MailItemRef>()).Returns(false); // S/MIME guard fires
+            var history = Substitute.For<IClassificationHistory>();
+            var item = Item("e1");
+            store.GetConversationKey(item).Returns("conv-1");
+            history.GetLatestDestinations("conv-1", Arg.Any<DateTime>())
+                   .Returns(new[] { new HistoryDestination("s1", "d1") });
+            var sut = new ClassifierService(store, history);
+
+            var result = sut.AutoClassify(new[] { item },
+                (s, e) => (s == "s1" && e == "d1") ? D1 : null,
+                new ClassifyOptions(removeAttachments: true));
+
+            result.Filed.Should().Be(1);
+            result.EncryptedStripSkips.Should().Be(1);
+            result.Errors.Should().Be(0);
+            result.PartialErrors.Should().Be(0);
+        }
+
+        [Fact]
+        public void AutoClassify_mail_already_in_its_remembered_folder_is_not_an_error()
+        {
+            var store = StoreWithWorkingMove();
+            var inbox = Dest("d1", "Inbox"); // remembered destination == current folder
+            store.GetParentFolder(Arg.Any<MailItemRef>()).Returns(inbox);
+            var history = Substitute.For<IClassificationHistory>();
+            var item = Item("e1");
+            store.GetConversationKey(item).Returns("conv-1");
+            history.GetLatestDestinations("conv-1", Arg.Any<DateTime>())
+                   .Returns(new[] { new HistoryDestination("s1", "d1") });
+            var sut = new ClassifierService(store, history);
+
+            var result = sut.AutoClassify(new[] { item },
+                (s, e) => (s == "s1" && e == "d1") ? inbox : null,
+                ClassifyOptions.Default);
+
+            // Outlook rejects a same-folder move; the mail is where its
+            // conversation lives, so report it, don't error (v2.7.1.0 B3).
+            result.Filed.Should().Be(0);
+            result.Errors.Should().Be(0);
+            result.AlreadyInPlace.Should().Be(1);
+            store.DidNotReceive().MoveItemToFolder(Arg.Any<MailItemRef>(), Arg.Any<FolderNode>(), Arg.Any<bool>());
+        }
+
+        // C1 (v2.8.0.0): PreflightAutoClass — the history check without filing.
+        [Fact]
+        public void PreflightAutoClass_processable_item_has_valid_live_history()
+        {
+            var store = StoreWithWorkingMove();
+            var history = Substitute.For<IClassificationHistory>();
+            var item = Item("e1");
+            store.GetConversationKey(item).Returns("conv-1");
+            store.GetParentFolder(Arg.Any<MailItemRef>()).Returns(Dest("src", "Inbox"));
+            history.GetLatestDestinations("conv-1", Arg.Any<DateTime>())
+                   .Returns(new[] { new HistoryDestination("s1", "d1") });
+            var sut = new ClassifierService(store, history);
+
+            var result = sut.PreflightAutoClass(new[] { item },
+                (s, e) => (s == "s1" && e == "d1") ? D1 : null);
+
+            result.Processable.Should().ContainSingle();
+            result.NoHistory.Should().Be(0);
+            result.StaleFolders.Should().Be(0);
+            result.AlreadyInPlace.Should().Be(0);
+            result.HasProcessableItems.Should().BeTrue();
+            store.DidNotReceive().MoveItemToFolder(Arg.Any<MailItemRef>(), Arg.Any<FolderNode>());
+        }
+
+        [Fact]
+        public void PreflightAutoClass_counts_item_with_no_history()
+        {
+            var store = StoreWithWorkingMove();
+            var history = Substitute.For<IClassificationHistory>();
+            store.GetConversationKey(Arg.Any<MailItemRef>()).Returns("conv-x");
+            history.GetLatestDestinations("conv-x", Arg.Any<DateTime>()).Returns(new HistoryDestination[0]);
+            var sut = new ClassifierService(store, history);
+
+            var result = sut.PreflightAutoClass(new[] { Item("e1") }, (s, e) => D1);
+
+            result.Processable.Should().BeEmpty();
+            result.NoHistory.Should().Be(1);
+            result.HasProcessableItems.Should().BeFalse();
+        }
+
+        [Fact]
+        public void PreflightAutoClass_counts_item_whose_remembered_folder_is_gone()
+        {
+            var store = StoreWithWorkingMove();
+            var history = Substitute.For<IClassificationHistory>();
+            store.GetConversationKey(Arg.Any<MailItemRef>()).Returns("conv-1");
+            history.GetLatestDestinations("conv-1", Arg.Any<DateTime>())
+                   .Returns(new[] { new HistoryDestination("s1", "gone") });
+            var sut = new ClassifierService(store, history);
+
+            var result = sut.PreflightAutoClass(new[] { Item("e1") }, (s, e) => null);
+
+            result.Processable.Should().BeEmpty();
+            result.StaleFolders.Should().Be(1);
+        }
+
+        [Fact]
+        public void PreflightAutoClass_counts_item_already_in_its_remembered_folder()
+        {
+            var store = StoreWithWorkingMove();
+            var inbox = Dest("d1", "Inbox");
+            store.GetParentFolder(Arg.Any<MailItemRef>()).Returns(inbox);
+            var history = Substitute.For<IClassificationHistory>();
+            var item = Item("e1");
+            store.GetConversationKey(item).Returns("conv-1");
+            history.GetLatestDestinations("conv-1", Arg.Any<DateTime>())
+                   .Returns(new[] { new HistoryDestination("s1", "d1") });
+            var sut = new ClassifierService(store, history);
+
+            var result = sut.PreflightAutoClass(new[] { item },
+                (s, e) => (s == "s1" && e == "d1") ? inbox : null);
+
+            result.Processable.Should().BeEmpty();
+            result.AlreadyInPlace.Should().Be(1);
+        }
+
+        [Fact]
+        public void PreflightAutoClass_splits_mixed_selection_correctly()
+        {
+            var store = StoreWithWorkingMove();
+            var history = Substitute.For<IClassificationHistory>();
+            var e1 = Item("e1"); var e2 = Item("e2"); var e3 = Item("e3");
+            store.GetParentFolder(Arg.Any<MailItemRef>()).Returns(Dest("src", "Inbox"));
+            store.GetConversationKey(e1).Returns("conv-1"); // processable
+            store.GetConversationKey(e2).Returns("conv-2"); // no history
+            store.GetConversationKey(e3).Returns("conv-3"); // stale
+            history.GetLatestDestinations("conv-1", Arg.Any<DateTime>())
+                   .Returns(new[] { new HistoryDestination("s1", "d1") });
+            history.GetLatestDestinations("conv-2", Arg.Any<DateTime>())
+                   .Returns(new HistoryDestination[0]);
+            history.GetLatestDestinations("conv-3", Arg.Any<DateTime>())
+                   .Returns(new[] { new HistoryDestination("s1", "gone") });
+            var sut = new ClassifierService(store, history);
+
+            var result = sut.PreflightAutoClass(new[] { e1, e2, e3 },
+                (s, e) => (s == "s1" && e == "d1") ? D1 : null);
+
+            result.Processable.Should().ContainSingle().Which.EntryId.Should().Be("e1");
+            result.NoHistory.Should().Be(1);
+            result.StaleFolders.Should().Be(1);
+            result.AlreadyInPlace.Should().Be(0);
+        }
+
+        [Fact]
+        public void PreflightAutoClass_requires_a_history_store()
+        {
+            var sut = new ClassifierService(Substitute.For<IMailStore>()); // no history
+            Action act = () => sut.PreflightAutoClass(new[] { Item("e1") }, (s, e) => D1);
+            act.Should().Throw<InvalidOperationException>();
+        }
+
+        [Fact]
+        public void Classify_with_recordHistory_false_files_but_writes_no_history()
+        {
+            var store = StoreWithWorkingMove();
+            store.GetParentFolder(Arg.Any<MailItemRef>()).Returns(Dest("src", "Inbox"));
+            store.GetConversationKey(Arg.Any<MailItemRef>()).Returns("conv-1");
+            var history = Substitute.For<IClassificationHistory>();
+            var sut = new ClassifierService(store, history);
+
+            // The sent-item triage's routing moves use this: they must never
+            // become the conversation's remembered folder (v2.7.1.0 B3).
+            var result = sut.Classify(new ClassifyRequest(new[] { Item("e1") }, new[] { D1 },
+                new ClassifyOptions(recordHistory: false)));
+
+            result.ItemsProcessed.Should().Be(1);
+            history.DidNotReceive().Record(Arg.Any<string>(), Arg.Any<string>(),
+                Arg.Any<IReadOnlyList<FolderNode>>(), Arg.Any<DateTime>());
         }
 
         [Fact]
@@ -723,7 +963,7 @@ namespace RBLclass.Core.Tests
 
             var result = sut.Classify(new ClassifyRequest(
                 new[] { Item("e1") }, new[] { D1 },
-                keepCopy: false, removeAttachments: false));
+                ClassifyOptions.Default));
 
             result.ItemsProcessed.Should().Be(0);
             result.OriginalsMoved.Should().Be(0);
@@ -743,7 +983,7 @@ namespace RBLclass.Core.Tests
             // keep a copy + remove attachments: original must keep its attachments.
             sut.Classify(new ClassifyRequest(
                 new[] { item }, new[] { D1 },
-                keepCopy: true, removeAttachments: true));
+                new ClassifyOptions(keepCopy: true, removeAttachments: true)));
 
             store.Received(1).RemoveAttachments(filedCopy);     // the copy is stripped
             store.DidNotReceive().RemoveAttachments(item);      // the original is NOT
@@ -766,7 +1006,7 @@ namespace RBLclass.Core.Tests
 
             sut.Classify(new ClassifyRequest(
                 new[] { item }, new[] { D1 },
-                keepCopy: false, removeAttachments: true));
+                new ClassifyOptions(removeAttachments: true)));
 
             // The filed item IS the moved original - stripped at its new home,
             // by its post-move reference.
@@ -784,7 +1024,7 @@ namespace RBLclass.Core.Tests
 
             var result = sut.Classify(new ClassifyRequest(
                 new[] { Item("e1") }, new[] { D1 },
-                keepCopy: false, removeAttachments: true));
+                new ClassifyOptions(removeAttachments: true)));
 
             result.EncryptedStripSkips.Should().Be(1);
             result.ItemsProcessed.Should().Be(1); // still filed, just not stripped
@@ -799,7 +1039,7 @@ namespace RBLclass.Core.Tests
 
             sut.Classify(new ClassifyRequest(
                 new[] { Item("e1") }, new[] { D1 },
-                keepCopy: false, removeAttachments: false));
+                ClassifyOptions.Default));
 
             store.DidNotReceive().RemoveAttachments(Arg.Any<MailItemRef>());
         }
@@ -813,8 +1053,7 @@ namespace RBLclass.Core.Tests
 
             sut.Classify(new ClassifyRequest(
                 new[] { item }, new[] { D1 },
-                keepCopy: false, removeAttachments: false,
-                markTasksComplete: false, safetyCopy: false,
+                ClassifyOptions.Default,
                 bannerSignature: "<table><tr><td>CAUTION external</td></tr></table>"));
 
             // Stripped on the moved (filed) reference, never the pre-move original.
@@ -832,7 +1071,7 @@ namespace RBLclass.Core.Tests
 
             sut.Classify(new ClassifyRequest(
                 new[] { Item("e1") }, new[] { D1 },
-                keepCopy: false, removeAttachments: false)); // bannerSignature null
+                ClassifyOptions.Default)); // bannerSignature null
 
             store.DidNotReceive().StripExternalBanner(Arg.Any<MailItemRef>(), Arg.Any<string>());
         }
@@ -903,6 +1142,21 @@ namespace RBLclass.Core.Tests
         }
 
         [Fact]
+        public void Preflight_with_widening_still_returns_original_item_when_GetConversationSiblings_throws()
+        {
+            // Regression guard (v2.8.0.0 C2): an adapter-level COM timeout while
+            // enumerating the conversation table must not abort the whole classify.
+            var store = Substitute.For<IMailStore>();
+            var e1 = Item("e1");
+            store.GetConversationSiblings(e1).Returns(_ => throw new InvalidOperationException("conversation timeout"));
+            var sut = new ClassifierService(store);
+
+            var preflight = sut.Preflight(new[] { e1 }, widenConversation: true);
+
+            preflight.Items.Should().ContainSingle().Which.EntryId.Should().Be("e1");
+        }
+
+        [Fact]
         public void Preflight_reports_the_flagged_incomplete_subset()
         {
             var store = Substitute.For<IMailStore>();
@@ -931,7 +1185,7 @@ namespace RBLclass.Core.Tests
 
             sut.Classify(new ClassifyRequest(
                 new[] { flagged, plain }, new[] { D1 },
-                keepCopy: false, removeAttachments: false, markTasksComplete: true));
+                new ClassifyOptions(markTasksComplete: true)));
 
             // Acts on the filed (moved) reference, never the pre-move original.
             store.Received(1).MarkTaskComplete(Arg.Is<MailItemRef>(m => m.EntryId == "moved-e1"));
@@ -949,7 +1203,7 @@ namespace RBLclass.Core.Tests
 
             sut.Classify(new ClassifyRequest(
                 new[] { flagged }, new[] { D1 },
-                keepCopy: false, removeAttachments: false, markTasksComplete: false));
+                ClassifyOptions.Default));
 
             store.DidNotReceive().MarkTaskComplete(Arg.Any<MailItemRef>());
         }
@@ -960,9 +1214,9 @@ namespace RBLclass.Core.Tests
             var store = Substitute.For<IMailStore>();
             var sut = new ClassifierService(store);
 
-            sut.Classify(new ClassifyRequest(new MailItemRef[0], new[] { D1 }, false, false))
+            sut.Classify(new ClassifyRequest(new MailItemRef[0], new[] { D1 }, ClassifyOptions.Default))
                .CopiesMade.Should().Be(0);
-            sut.Classify(new ClassifyRequest(new[] { Item("e1") }, new FolderNode[0], false, false))
+            sut.Classify(new ClassifyRequest(new[] { Item("e1") }, new FolderNode[0], ClassifyOptions.Default))
                .CopiesMade.Should().Be(0);
 
             store.DidNotReceive().CopyItemToFolder(Arg.Any<MailItemRef>(), Arg.Any<FolderNode>());
@@ -983,13 +1237,28 @@ namespace RBLclass.Core.Tests
 
             var result = sut.Classify(new ClassifyRequest(
                 new[] { item }, new[] { D1, D2 },
-                keepCopy: false, removeAttachments: false));
+                ClassifyOptions.Default));
 
             store.Received(1).MoveItemToFolder(item, D2); // the good destination still got it
             result.CopiesMade.Should().Be(0);
             result.OriginalsMoved.Should().Be(1);
             result.Errors.Should().Be(1);                 // the failing D1
             result.ItemsProcessed.Should().Be(1);
+        }
+
+        [Fact]
+        public void A_failing_destination_is_logged_as_a_warning()
+        {
+            var store = StoreWithWorkingMove();
+            var item = Item("e1");
+            store.When(s => s.CopyItemToFolder(item, D1))
+                 .Do(_ => throw new InvalidOperationException("root refuses items"));
+            var log = Substitute.For<IAppLog>();
+            var sut = new ClassifierService(store, log: log);
+
+            sut.Classify(new ClassifyRequest(new[] { item }, new[] { D1, D2 }, ClassifyOptions.Default));
+
+            log.Received(1).Warning(Arg.Any<Exception>(), Arg.Any<string>(), Arg.Any<object[]>());
         }
 
         [Fact]
@@ -1005,7 +1274,7 @@ namespace RBLclass.Core.Tests
 
             var result = sut.Classify(new ClassifyRequest(
                 new[] { item }, new[] { D1, D2 },
-                keepCopy: false, removeAttachments: false));
+                ClassifyOptions.Default));
 
             store.DidNotReceive().DeleteItem(item); // no data loss on a total failure
             result.Errors.Should().Be(2);
@@ -1024,7 +1293,7 @@ namespace RBLclass.Core.Tests
 
             var result = sut.Classify(new ClassifyRequest(
                 new[] { Item("e1"), Item("e2") }, new[] { D1 },
-                keepCopy: false, removeAttachments: false));
+                ClassifyOptions.Default));
 
             result.Errors.Should().Be(1);
             result.ItemsProcessed.Should().Be(1); // e2
@@ -1050,7 +1319,7 @@ namespace RBLclass.Core.Tests
 
             await sut.ClassifyAsync(new ClassifyRequest(
                     new[] { Item("e1"), Item("e2"), Item("e3") }, new[] { D1 },
-                    keepCopy: false, removeAttachments: false),
+                    ClassifyOptions.Default),
                 progress, NoYield);
 
             progress.Reports.Select(p => p.Completed).Should().Equal(1, 2, 3);
@@ -1066,7 +1335,7 @@ namespace RBLclass.Core.Tests
 
             await sut.ClassifyAsync(new ClassifyRequest(
                     new[] { Item("e1"), Item("e2"), Item("e3") }, new[] { D1 },
-                    keepCopy: false, removeAttachments: false),
+                    ClassifyOptions.Default),
                 null, () => { yields++; return Task.CompletedTask; });
 
             yields.Should().Be(2); // N-1: between items, never after the final one
@@ -1081,7 +1350,7 @@ namespace RBLclass.Core.Tests
 
             var result = await sut.ClassifyAsync(new ClassifyRequest(
                     new[] { Item("e1"), Item("e2") }, new[] { D1, D2 },
-                    keepCopy: false, removeAttachments: false),
+                    ClassifyOptions.Default),
                 null, NoYield);
 
             // Identical mechanics to Without_keep_copy_..., driven async.
@@ -1105,7 +1374,7 @@ namespace RBLclass.Core.Tests
 
             var result = await sut.ClassifyAsync(new ClassifyRequest(
                     new[] { Item("e1"), Item("e2") }, new[] { D1 },
-                    keepCopy: false, removeAttachments: false),
+                    ClassifyOptions.Default),
                 null, NoYield);
 
             history.Received(1).Record(Arg.Any<string>(), "conv-e1",
@@ -1124,7 +1393,7 @@ namespace RBLclass.Core.Tests
 
             var result = await sut.ClassifyAsync(new ClassifyRequest(
                     new[] { Item("e1") }, new[] { D1 },
-                    keepCopy: false, removeAttachments: true),
+                    new ClassifyOptions(removeAttachments: true)),
                 null, NoYield);
 
             result.EncryptedStripSkips.Should().Be(1);

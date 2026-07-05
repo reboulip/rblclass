@@ -159,5 +159,28 @@ namespace RBLclass.Core.Tests
             svc.Search("invoices").Results.Should().ContainSingle();
             scanner.DidNotReceive().GetDirectories(Arg.Any<string>(), Arg.Any<int>(), Arg.Any<int>());
         }
+
+        [Fact]
+        public void IsValidFavoritePath_accepts_a_normal_path()
+        {
+            FavoriteFolderService.IsValidFavoritePath(@"C:\Users\Alice\Documents")
+                .Should().BeTrue();
+        }
+
+        [Fact]
+        public void IsValidFavoritePath_rejects_a_path_with_a_semicolon()
+        {
+            // ';' is the settings list separator (v2.7.1.0 F3).
+            FavoriteFolderService.IsValidFavoritePath(@"C:\Contracts;Invoices\2024")
+                .Should().BeFalse();
+        }
+
+        [Theory]
+        [InlineData(null)]
+        [InlineData("")]
+        public void IsValidFavoritePath_rejects_null_or_empty(string path)
+        {
+            FavoriteFolderService.IsValidFavoritePath(path).Should().BeFalse();
+        }
     }
 }

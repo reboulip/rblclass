@@ -11,16 +11,16 @@ using System.Runtime.InteropServices;
 // ..."). If these diverge, mscoree cannot resolve the add-in class at COM
 // activation and Outlook silently fails to load it.
 //
-// 2.7.0.0 adds the v2.7.0.0 sprint: keyboard shortcuts (Ctrl+Z undo, open
-// pane / focus search / open folder), post-send classify dialog clarity +
-// vertical layout, configurable sent-items archive folder, multi-line
-// search-result path display option, opt-in keep-latest-conversation on
-// classify, update-notification investigation, and the end-user usage guide.
+// 2.8.0.0 is a feedback wave: a pane "Save as" button and a standalone
+// attachment-removal button, a "delete" action on the post-sent classify
+// notification, and two classify-reliability fixes (auto-class vs. the
+// attachment-disposition modal conflict, and the classify silent-failure/
+// freeze investigation).
 // Windows Installer ignores the 4th version field, so the bump to the third
 // field is what the MSI's MajorUpgrade sees as newer and auto-removes the
 // previous version.
-[assembly: AssemblyVersion("2.7.0.0")]
-[assembly: AssemblyFileVersion("2.7.0.0")]
+[assembly: AssemblyVersion("2.8.0.0")]
+[assembly: AssemblyFileVersion("2.8.0.0")]
 
 // The add-in class opts into COM visibility explicitly with [ComVisible(true)];
 // nothing else in the assembly should be exposed.

@@ -11,13 +11,18 @@ namespace RBLclass.Core
     public sealed class AutoClassifyResult
     {
         public AutoClassifyResult(int filed, int noHistory, int staleFolders,
-                                  int errors, ClassifyUndoPlan undo,
+                                  int errors, int partialErrors, int encryptedStripSkips,
+                                  int alreadyInPlace,
+                                  ClassifyUndoPlan undo,
                                   IReadOnlyList<FolderNode> filedDestinations = null)
         {
             Filed = filed;
             NoHistory = noHistory;
             StaleFolders = staleFolders;
             Errors = errors;
+            PartialErrors = partialErrors;
+            EncryptedStripSkips = encryptedStripSkips;
+            AlreadyInPlace = alreadyInPlace;
             Undo = undo;
             FiledDestinations = (filedDestinations ?? new FolderNode[0]).ToArray();
         }
@@ -36,6 +41,29 @@ namespace RBLclass.Core
 
         /// <summary>Mails that failed to file despite a valid remembered destination.</summary>
         public int Errors { get; }
+
+        /// <summary>
+        /// Per-destination failures inside conversations that were still filed
+        /// to at least one destination (v2.7.1.0 B3) - the inner
+        /// <see cref="ClassifyResult.Errors"/> aggregated over the filed runs,
+        /// so "filed to A, failed at B" is not reported as a clean success.
+        /// </summary>
+        public int PartialErrors { get; }
+
+        /// <summary>
+        /// Filed mails whose attachments were NOT stripped despite "remove
+        /// attachments" because they are S/MIME-encrypted/signed (v2.7.1.0 B3) -
+        /// <see cref="ClassifyResult.EncryptedStripSkips"/> aggregated over the
+        /// inner runs.
+        /// </summary>
+        public int EncryptedStripSkips { get; }
+
+        /// <summary>
+        /// Mails already sitting in their (only) remembered destination folder
+        /// (v2.7.1.0 B3). Nothing to do: Outlook rejects a same-folder move
+        /// (0x80020009), so these are reported instead of counted as errors.
+        /// </summary>
+        public int AlreadyInPlace { get; }
 
         /// <summary>
         /// The combined undo plan covering every filing this run did, or null

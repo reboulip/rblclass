@@ -1,4 +1,6 @@
 using System.Windows;
+using System.Windows.Controls;
+using System.Windows.Input;
 using RBLclass.AddIn.Theming;
 using RBLclass.AddIn.ViewModels;
 
@@ -18,7 +20,15 @@ namespace RBLclass.AddIn.Views
             ThemeService.Apply(this);
         }
 
-        private void Close_Click(object sender, RoutedEventArgs e) => Close();
+        private void Close_Click(object sender, RoutedEventArgs e)
+        {
+            // Enter (IsDefault) / Esc (IsCancel) click this button without moving
+            // focus off the TextBox, so its LostFocus-triggered binding never
+            // fired - commit it before closing so the edit isn't lost (v2.7.1.0 E1).
+            if (Keyboard.FocusedElement is TextBox tb)
+                tb.GetBindingExpression(TextBox.TextProperty)?.UpdateSource();
+            Close();
+        }
 
         private void LearnBanner_Click(object sender, RoutedEventArgs e) =>
             (DataContext as SettingsViewModel)?.LearnBannerFromSelection();

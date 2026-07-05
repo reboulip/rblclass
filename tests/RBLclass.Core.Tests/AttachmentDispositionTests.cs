@@ -47,7 +47,7 @@ namespace RBLclass.Core.Tests
             var sut = new ClassifierService(store);
 
             sut.Classify(new ClassifyRequest(new[] { Item("e1") }, new[] { D1 },
-                keepCopy: false, removeAttachments: true,
+                new ClassifyOptions(removeAttachments: true),
                 attachmentDispositions: new[] { Del(Item("e1"), 1) }));
 
             store.DidNotReceive().SaveAttachmentToFile(Arg.Any<MailItemRef>(), Arg.Any<int>(), Arg.Any<string>());
@@ -61,7 +61,7 @@ namespace RBLclass.Core.Tests
             var sut = new ClassifierService(store);
 
             sut.Classify(new ClassifyRequest(new[] { Item("e1") }, new[] { D1 },
-                keepCopy: false, removeAttachments: true,
+                new ClassifyOptions(removeAttachments: true),
                 attachmentDispositions: new[] { Save(Item("e1"), 1, @"C:\out") }));
 
             Received.InOrder(() =>
@@ -79,7 +79,7 @@ namespace RBLclass.Core.Tests
 
             // Disposition references a different item (e2); e1 has none.
             sut.Classify(new ClassifyRequest(new[] { Item("e1") }, new[] { D1 },
-                keepCopy: false, removeAttachments: true,
+                new ClassifyOptions(removeAttachments: true),
                 attachmentDispositions: new[] { Save(Item("e2"), 1, @"C:\out") }));
 
             store.DidNotReceive().SaveAttachmentToFile(
@@ -95,7 +95,7 @@ namespace RBLclass.Core.Tests
             var sut = new ClassifierService(store);
 
             var result = sut.Classify(new ClassifyRequest(new[] { Item("e1") }, new[] { D1 },
-                keepCopy: false, removeAttachments: true,
+                new ClassifyOptions(removeAttachments: true),
                 attachmentDispositions: new[] { Del(Item("e1"), 1) }));
 
             result.EncryptedStripSkips.Should().Be(1);
@@ -111,7 +111,7 @@ namespace RBLclass.Core.Tests
             var sut = new ClassifierService(store);
 
             var result = sut.Classify(new ClassifyRequest(new[] { Item("e1") }, new[] { D1 },
-                keepCopy: false, removeAttachments: true,
+                new ClassifyOptions(removeAttachments: true),
                 attachmentDispositions: new[] { Save(Item("e1"), 1, @"C:\out") }));
 
             // Strip must NOT run - the attachment stays on the mail, nothing lost.
@@ -128,7 +128,7 @@ namespace RBLclass.Core.Tests
                 "Former attachment:", "Former attachments:", "Saved to {0}", "Deleted on {0}", "yyyy-MM-dd");
 
             sut.Classify(new ClassifyRequest(new[] { Item("e1") }, new[] { D1 },
-                keepCopy: false, removeAttachments: true,
+                new ClassifyOptions(removeAttachments: true),
                 attachmentDispositions: new[] { Del(Item("e1"), 1) },
                 labelOptions: labelOptions));
 
@@ -147,7 +147,7 @@ namespace RBLclass.Core.Tests
                 "Former attachment:", "Former attachments:", "Saved to {0}", "Deleted on {0}", "yyyy-MM-dd");
 
             sut.Classify(new ClassifyRequest(new[] { Item("e1") }, new[] { D1 },
-                keepCopy: false, removeAttachments: true,
+                new ClassifyOptions(removeAttachments: true),
                 attachmentDispositions: new[] { Del(Item("e1"), 1) },
                 labelOptions: labelOptions));
 
@@ -163,7 +163,7 @@ namespace RBLclass.Core.Tests
             var sut = new ClassifierService(store);
 
             sut.Classify(new ClassifyRequest(new[] { Item("e1") }, new[] { D1 },
-                keepCopy: true, removeAttachments: true,
+                new ClassifyOptions(keepCopy: true, removeAttachments: true),
                 attachmentDispositions: new[] { Save(Item("e1"), 1, @"C:\out") }));
 
             // The save and strip act on the filed copy, never the kept original.

@@ -54,25 +54,36 @@ namespace RBLclass.AddIn
         {
             if (_view == null)
             {
-                _view = new MainPaneView();
-                if (TaskPaneServices.Search != null && TaskPaneServices.Classifier != null)
+                try
                 {
-                    var vm = new MainPaneViewModel(
-                        TaskPaneServices.Search,
-                        TaskPaneServices.Classifier,
-                        TaskPaneServices.GetSelection,
-                        TaskPaneServices.CreateSubfolder,
-                        TaskPaneServices.Navigate,
-                        TaskPaneServices.Settings,
-                        TaskPaneServices.ConfirmMarkTasksComplete,
-                        TaskPaneServices.PromptForName,
-                        TaskPaneServices.GetAllFolders);
-                    vm.SubscribeToIndexStatus(TaskPaneServices.FolderIndex);
-                    TaskPaneServices.PinMailForClassify = vm.PinMailForClassify;
-                    _view.DataContext = vm;
-                }
+                    _view = new MainPaneView();
+                    if (TaskPaneServices.Search != null && TaskPaneServices.Classifier != null)
+                    {
+                        var vm = new MainPaneViewModel(
+                            TaskPaneServices.Search,
+                            TaskPaneServices.Classifier,
+                            TaskPaneServices.GetSelection,
+                            TaskPaneServices.CreateSubfolder,
+                            TaskPaneServices.Navigate,
+                            TaskPaneServices.Settings,
+                            TaskPaneServices.ConfirmMarkTasksComplete,
+                            TaskPaneServices.PromptForName,
+                            TaskPaneServices.GetAllFolders);
+                        vm.SubscribeToIndexStatus(TaskPaneServices.FolderIndex);
+                        TaskPaneServices.PinMailForClassify = vm.PinMailForClassify;
+                        _view.DataContext = vm;
+                    }
 
-                _elementHost.Child = _view;
+                    _elementHost.Child = _view;
+                }
+                catch (Exception ex)
+                {
+                    // Reset so the next show retries construction instead of
+                    // leaving a permanently blank pane (v2.7.1.0 B1).
+                    try { Log.Error(ex, "EnsureView failed; will retry on next show."); } catch { }
+                    _view = null;
+                    return;
+                }
             }
 
             ApplyThemeAndSelection();
@@ -104,6 +115,24 @@ namespace RBLclass.AddIn
         public void ShowUpdateBanner(string version)
         {
             (_view?.DataContext as MainPaneViewModel)?.ShowUpdateBanner(version);
+        }
+
+        /// <summary>
+        /// Push a triage-outcome status message into the pane's rolling journal
+        /// (v2.7.1.0 C1). Silently ignored when the pane is not yet initialized.
+        /// </summary>
+        public void PushExternalStatus(string message)
+        {
+            (_view?.DataContext as MainPaneViewModel)?.PushExternalStatus(message);
+        }
+
+        /// <summary>
+        /// Re-seed the pane option defaults from settings after the Settings
+        /// dialog closes (v2.7.1.0 D3).
+        /// </summary>
+        public void ReloadOptionDefaults()
+        {
+            (_view?.DataContext as MainPaneViewModel)?.ReloadOptionDefaults();
         }
 
         private void ApplyThemeAndSelection()

@@ -148,6 +148,13 @@ namespace RBLclass.AddIn
         public static Func<FolderNode> PickOutlookFolder;
 
         /// <summary>
+        /// Resolve a folder by its (StoreId, EntryId) pair, or null when it no
+        /// longer exists (v2.7.1.0 C1: staleness check for the sent-item archive
+        /// target). Wired at startup; null until then. UI thread only.
+        /// </summary>
+        public static Func<string, string, FolderNode> GetFolderByEntryId;
+
+        /// <summary>
         /// Activate the pig easter egg in the main pane's Auto-Class button label.
         /// Wired at startup; null until then.
         /// </summary>
@@ -169,5 +176,47 @@ namespace RBLclass.AddIn
         public static Func<
             IReadOnlyList<(MailItemRef Item, IReadOnlyList<AttachmentInfo> Attachments, bool IsEncrypted)>,
             IReadOnlyList<AttachmentDisposition>> ShowAttachmentDisposition;
+
+        /// <summary>
+        /// Show the disposition modal for standalone attachment management
+        /// (v2.8.0.0 A2). Same modal as <see cref="ShowAttachmentDisposition"/>
+        /// but with the standalone intro text and the A3 "remove saved attachments"
+        /// toggle; returns the choices and the toggle state, or null when cancelled.
+        /// </summary>
+        public static Func<
+            IReadOnlyList<(MailItemRef Item, IReadOnlyList<AttachmentInfo> Attachments, bool IsEncrypted)>,
+            (IReadOnlyList<AttachmentDisposition> Dispositions, bool StripSavedAttachments)?>
+            ShowStandaloneAttachmentDisposition;
+
+        /// <summary>
+        /// Apply attachment dispositions in place on the referenced items
+        /// (v2.8.0.0 A2: standalone, no classify move). When
+        /// <c>stripSavedAttachments</c> is false, a Save-to attachment is saved but
+        /// kept on the mail (v2.8.0.0 A3). Backed by
+        /// <see cref="IClassifier.ApplyAttachmentDispositions"/>; UI thread only.
+        /// </summary>
+        public static Func<IReadOnlyList<AttachmentDisposition>, AttachmentLabelOptions, bool, AttachmentsAppliedResult>
+            ApplyAttachmentDispositions;
+
+        /// <summary>
+        /// Show the Save As directory-picker modal (reusing the favourite-folder
+        /// search + OS-browse UX) and return the chosen directory, or null when
+        /// the user cancels. Call on the Outlook UI thread. (v2.8.0.0 A1)
+        /// </summary>
+        public static Func<string> ShowSaveAsPicker;
+
+        /// <summary>
+        /// Save each item in <paramref name="items"/> as a .msg file into
+        /// <paramref name="directory"/>. Returns (Saved, Failed) counts. Touches
+        /// COM - call on the Outlook UI thread. (v2.8.0.0 A1)
+        /// </summary>
+        public static Func<IReadOnlyList<MailItemRef>, string, (int Saved, int Failed)> SaveMailsAsFiles;
+
+        /// <summary>
+        /// Delete a mail item — used by the pin-banner "Delete from Inbox" button
+        /// to remove the sent-and-moved-to-Inbox copy (v2.8.0.0 B1). Wired at
+        /// startup; null until then. UI thread only.
+        /// </summary>
+        public static Action<MailItemRef> DeleteMail;
     }
 }

@@ -55,9 +55,9 @@ namespace RBLclass.Core
         /// <see cref="FolderNode"/> for a (storeId, entryId), or null when that
         /// folder no longer exists in the index). Items with no history, or
         /// whose every remembered destination is stale, are skipped and counted.
-        /// Honours the same <paramref name="keepCopy"/>/<paramref name="removeAttachments"/>/<paramref name="safetyCopy"/>
-        /// options as a manual classify and produces one combined undo plan.
-        /// Requires that this service was constructed with a history store.
+        /// Honours the same per-action <paramref name="options"/> as a manual
+        /// classify and produces one combined undo plan. Requires that this
+        /// service was constructed with a history store.
         /// </summary>
         /// <param name="attachmentDispositions">
         /// Per-attachment choices collected by the caller's modal pre-flight.
@@ -67,11 +67,40 @@ namespace RBLclass.Core
         /// </param>
         AutoClassifyResult AutoClassify(IReadOnlyList<MailItemRef> items,
                                         Func<string, string, FolderNode> resolveLiveFolder,
-                                        bool keepCopy, bool removeAttachments, bool safetyCopy,
+                                        ClassifyOptions options = null,
                                         IReadOnlyList<AttachmentDisposition> attachmentDispositions = null,
                                         AttachmentLabelOptions labelOptions = null,
                                         int historyRetentionDays = 0,
-                                        string bannerSignature = null,
-                                        bool markAsRead = false);
+                                        string bannerSignature = null);
+
+        /// <summary>
+        /// History check without filing (v2.8.0.0 C1): determines which of
+        /// <paramref name="items"/> have a valid, live remembered destination and
+        /// can be auto-classed. Items with no history, a stale remembered folder,
+        /// or already in their remembered folder are counted and excluded from
+        /// <see cref="AutoClassPreflightResult.Processable"/>. Call this before
+        /// gathering attachments so the disposition modal is only shown for items
+        /// that will actually be filed.
+        /// </summary>
+        AutoClassPreflightResult PreflightAutoClass(
+            IReadOnlyList<MailItemRef> items,
+            Func<string, string, FolderNode> resolveLiveFolder,
+            int historyRetentionDays = 0);
+
+        /// <summary>
+        /// Apply <paramref name="dispositions"/> in place on the referenced items
+        /// (v2.8.0.0 A2: standalone attachment management without a classify move).
+        /// Saves SaveTo attachments first and blocks the strip if any save fails.
+        /// When <paramref name="stripSavedAttachments"/> is true a saved (SaveTo)
+        /// attachment is then removed from the mail; when false it is saved but
+        /// left on the mail (v2.8.0.0 A3). Delete rows are always removed and Keep
+        /// rows never are. Removes individually (highest id first) when any
+        /// attachment is being kept, else strip-all; appends the label note when
+        /// <paramref name="labelOptions"/> is non-null and attachments were removed.
+        /// </summary>
+        AttachmentsAppliedResult ApplyAttachmentDispositions(
+            IReadOnlyList<AttachmentDisposition> dispositions,
+            AttachmentLabelOptions labelOptions = null,
+            bool stripSavedAttachments = true);
     }
 }

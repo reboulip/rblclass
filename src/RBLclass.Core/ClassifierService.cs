@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using RBLclass.Core.Logging;
 
 namespace RBLclass.Core
 {
@@ -20,16 +21,19 @@ namespace RBLclass.Core
     {
         private readonly IMailStore _store;
         private readonly IClassificationHistory _history;
+        private readonly IAppLog _log;
 
         /// <param name="history">
         /// Optional: when provided, every successful filing is recorded against
         /// the item's conversation (feeding Auto-class) and Undo rolls those
         /// records back. Recording is best-effort - it never fails a classify.
         /// </param>
-        public ClassifierService(IMailStore store, IClassificationHistory history = null)
+        /// <param name="log">Optional: defaults to a no-op sink when not provided.</param>
+        public ClassifierService(IMailStore store, IClassificationHistory history = null, IAppLog log = null)
         {
             _store = store ?? throw new ArgumentNullException(nameof(store));
             _history = history;
+            _log = log ?? NullAppLog.Instance;
         }
 
         public ClassifyPreflight Preflight(IReadOnlyList<MailItemRef> items, bool widenConversation)
@@ -130,6 +134,8 @@ namespace RBLclass.Core
                 {
                     var destination = request.Destinations[d];
                     bool moveSlot = !request.KeepCopy && d == count - 1;
+                    _log.Debug(moveSlot ? "Classify: moving item -> {Path}" : "Classify: copying item -> {Path}",
+                        destination.FullPath);
 
                     // Isolate each destination: one that refuses the item
                     // (e.g. a store root that can't hold mail) must not abort
@@ -169,7 +175,11 @@ namespace RBLclass.Core
                                         if (safety != null) acc.CreatedCopies.Add(safety);
                                     }
                                 }
-                                catch { /* guardrail only; the adapter logs the cause */ }
+                                catch (Exception ex)
+                                {
+                                    // guardrail only; the filing itself already succeeded
+                                    _log.Warning(ex, "Classify safety-copy to Deleted Items failed for {Path}", destination.FullPath);
+                                }
                             }
                         }
                         else
@@ -199,16 +209,21 @@ namespace RBLclass.Core
                             }
                             if (markComplete)
                             {
-                                _store.MarkTaskComplete(filedRef);
-                                acc.Flags.Add(filedRef);
+                                try
+                                {
+                                    _store.MarkTaskComplete(filedRef);
+                                    // Record for Undo only when the flag was set.
+                                    acc.Flags.Add(filedRef);
+                                }
+                                catch { /* adapter logs; a flag failure never fails a successful filing */ }
                             }
                         }
                     }
-                    catch
+                    catch (Exception ex)
                     {
-                        // This destination failed; the adapter logs the cause.
                         // A failed move leaves the original in place - never
                         // any data loss on failure.
+                        _log.Warning(ex, "Classify item failed -> {Path}", destination.FullPath);
                         acc.Errors++;
                     }
                 }
@@ -255,7 +270,12 @@ namespace RBLclass.Core
                 {
                     bool saved;
                     try { saved = _store.SaveAttachmentToFile(filedRef, d.AttachmentId, d.TargetDirectory); }
-                    catch { saved = false; } // adapter logs the cause
+                    catch (Exception ex)
+                    {
+                        saved = false;
+                        _log.Warning(ex, "Save-to-file failed for attachment {AttachmentId} on {Subject}",
+                            d.AttachmentId, originalItem.Subject);
+                    }
                     if (!saved) allSavesSucceeded = false;
                 }
             }
@@ -266,6 +286,7 @@ namespace RBLclass.Core
             // in place and count it so the user is told to retry.
             if (rows.Count > 0 && !allSavesSucceeded)
             {
+                _log.Warning("Attachment removal skipped: prior save failed for {Subject}", originalItem.Subject);
                 acc.Errors++;
                 return;
             }
@@ -285,14 +306,31 @@ namespace RBLclass.Core
                 {
                     bool removed;
                     try { removed = _store.RemoveAttachment(filedRef, d.AttachmentId); }
-                    catch { removed = false; }
+                    catch (Exception ex)
+                    {
+                        removed = false;
+                        _log.Warning(ex, "Attachment {AttachmentId} removal failed for {Subject}",
+                            d.AttachmentId, originalItem.Subject);
+                    }
                     if (removed) stripped = true;
                 }
             }
             else
             {
-                stripped = _store.RemoveAttachments(filedRef);
-                if (!stripped) acc.EncryptedSkips++;
+                try
+                {
+                    stripped = _store.RemoveAttachments(filedRef);
+                    // false = the adapter's S/MIME guard fired, not a COM fault.
+                    if (!stripped) acc.EncryptedSkips++;
+                }
+                catch
+                {
+                    // COM fault during strip-all: the adapter logs the cause.
+                    // The filing itself succeeded - propagating would let the
+                    // per-destination catch double-count this action as both
+                    // filed and errored (v2.7.1.0 B2).
+                    stripped = false;
+                }
             }
 
             if (stripped) acc.Strips++;
@@ -316,6 +354,108 @@ namespace RBLclass.Core
         }
 
         /// <summary>
+        /// A2 (v2.8.0.0): apply attachment dispositions in place on the selected
+        /// items, with no classify move. Same rules as
+        /// <see cref="ApplyAttachmentRemoval"/> but the item is its own "filed"
+        /// ref (nothing was copied/moved). Each item is processed independently.
+        /// </summary>
+        public AttachmentsAppliedResult ApplyAttachmentDispositions(
+            IReadOnlyList<AttachmentDisposition> dispositions,
+            AttachmentLabelOptions labelOptions = null,
+            bool stripSavedAttachments = true)
+        {
+            var byItem = new Dictionary<string, KeyValuePair<MailItemRef, List<AttachmentDisposition>>>();
+            foreach (var d in dispositions ?? new AttachmentDisposition[0])
+            {
+                string key = d.Item.StoreId + " " + d.Item.EntryId;
+                if (!byItem.TryGetValue(key, out var entry))
+                {
+                    entry = new KeyValuePair<MailItemRef, List<AttachmentDisposition>>(
+                        d.Item, new List<AttachmentDisposition>());
+                    byItem[key] = entry;
+                }
+                entry.Value.Add(d);
+            }
+
+            int applied = 0, errors = 0, encryptedSkips = 0;
+
+            foreach (var kv in byItem)
+            {
+                var item = kv.Value.Key;
+                var rows = kv.Value.Value;
+
+                // Save the "Save to" attachments first; block the strip if any fail
+                // (the strip primitive removes all attachments, so a failed save
+                // would lose the very file the user asked to keep).
+                bool anySaved = false;
+                bool allSavesSucceeded = true;
+                foreach (var d in rows)
+                {
+                    if (d.Action == AttachmentDispositionAction.SaveTo
+                        && !string.IsNullOrWhiteSpace(d.TargetDirectory))
+                    {
+                        bool saved;
+                        try { saved = _store.SaveAttachmentToFile(item, d.AttachmentId, d.TargetDirectory); }
+                        catch { saved = false; }
+                        if (saved) anySaved = true; else allSavesSucceeded = false;
+                    }
+                }
+
+                if (!allSavesSucceeded) { errors++; continue; }
+
+                // A3: a saved (SaveTo) attachment is removed only when the caller
+                // asked to strip saved attachments; otherwise it is left on the mail
+                // (treated like Keep). Delete rows are always removed.
+                Func<AttachmentDisposition, bool> isRemoved = d =>
+                    d.Action == AttachmentDispositionAction.Delete
+                    || (d.Action == AttachmentDispositionAction.SaveTo && stripSavedAttachments);
+
+                var toRemove = rows.Where(isRemoved).ToList();
+                bool anyKept = rows.Any(d => !isRemoved(d));
+
+                bool stripped = false;
+                if (toRemove.Count > 0)
+                {
+                    if (anyKept)
+                    {
+                        // Some attachments stay: remove only the targeted ones,
+                        // highest id first (removing one shifts the indexes above it).
+                        foreach (var d in toRemove.OrderByDescending(d => d.AttachmentId))
+                        {
+                            bool removed;
+                            try { removed = _store.RemoveAttachment(item, d.AttachmentId); }
+                            catch { removed = false; }
+                            if (removed) stripped = true;
+                        }
+                    }
+                    else
+                    {
+                        try
+                        {
+                            stripped = _store.RemoveAttachments(item);
+                            if (!stripped) encryptedSkips++; // S/MIME guard fired
+                        }
+                        catch { stripped = false; }
+                    }
+                }
+
+                if (stripped || anySaved) applied++;
+
+                if (labelOptions != null && stripped)
+                {
+                    var block = AttachmentLabelFormatter.Format(toRemove, labelOptions, DateTime.Now);
+                    if (block != null)
+                    {
+                        try { _store.AppendHtmlNote(item, block); }
+                        catch { /* best-effort */ }
+                    }
+                }
+            }
+
+            return new AttachmentsAppliedResult(applied, errors, encryptedSkips);
+        }
+
+        /// <summary>
         /// Record the history for Auto-class: one batch for the whole classify
         /// action, one row per (filed conversation, destination). Best-effort -
         /// a history write never fails the classify. Returns the batch id(s).
@@ -323,7 +463,7 @@ namespace RBLclass.Core
         private List<string> WriteHistory(ClassifyRequest request, ClassifyAccumulator acc)
         {
             var historyBatchIds = new List<string>();
-            if (_history != null && acc.FiledConversationKeys.Count > 0)
+            if (request.RecordHistory && _history != null && acc.FiledConversationKeys.Count > 0)
             {
                 string batchId = Guid.NewGuid().ToString("N");
                 try
@@ -375,7 +515,11 @@ namespace RBLclass.Core
             foreach (var flagged in plan.CompletedFlags)
             {
                 try { _store.MarkTaskIncomplete(flagged); flagsRestored++; }
-                catch { errors++; }
+                catch (Exception ex)
+                {
+                    errors++;
+                    _log.Warning(ex, "Undo: flag-restore failed for {Subject}", flagged.Subject);
+                }
             }
 
             // Copies the classify created are removed outright ("undo
@@ -383,7 +527,11 @@ namespace RBLclass.Core
             foreach (var copy in plan.CreatedCopies)
             {
                 try { _store.DeleteItemPermanently(copy); copiesDeleted++; }
-                catch { errors++; }
+                catch (Exception ex)
+                {
+                    errors++;
+                    _log.Warning(ex, "Undo: copy-delete failed for {Subject}", copy.Subject);
+                }
             }
 
             // Finally put each moved original back where it came from, keeping the
@@ -403,7 +551,12 @@ namespace RBLclass.Core
                     else
                         errors++;
                 }
-                catch { errors++; }
+                catch (Exception ex)
+                {
+                    errors++;
+                    _log.Warning(ex, "Undo: move-restore failed for {Subject} -> {Path}",
+                        move.Current.Subject, move.SourceFolder.FullPath);
+                }
             }
 
             // Roll back what Auto-class learned from this classify (best-effort:
@@ -437,19 +590,20 @@ namespace RBLclass.Core
 
         public AutoClassifyResult AutoClassify(IReadOnlyList<MailItemRef> items,
                                                Func<string, string, FolderNode> resolveLiveFolder,
-                                               bool keepCopy, bool removeAttachments, bool safetyCopy,
+                                               ClassifyOptions options = null,
                                                IReadOnlyList<AttachmentDisposition> attachmentDispositions = null,
                                                AttachmentLabelOptions labelOptions = null,
                                                int historyRetentionDays = 0,
-                                               string bannerSignature = null,
-                                               bool markAsRead = false)
+                                               string bannerSignature = null)
         {
             if (items == null) throw new ArgumentNullException(nameof(items));
             if (resolveLiveFolder == null) throw new ArgumentNullException(nameof(resolveLiveFolder));
+            options = options ?? ClassifyOptions.Default;
             if (_history == null)
                 throw new InvalidOperationException("Auto-class requires a classification history store.");
 
-            int filed = 0, noHistory = 0, staleFolders = 0, errors = 0;
+            int filed = 0, noHistory = 0, staleFolders = 0, errors = 0,
+                partialErrors = 0, encryptedStripSkips = 0, alreadyInPlace = 0;
 
             DateTime cutoff = (historyRetentionDays > 0)
                 ? DateTime.UtcNow.AddDays(-historyRetentionDays)
@@ -490,15 +644,24 @@ namespace RBLclass.Core
 
                 if (live.Count == 0) { staleFolders++; continue; }
 
+                // Drop destinations the mail already sits in: Outlook rejects a
+                // same-folder move (0x80020009) and there is nothing to do anyway.
+                // A mail whose only remembered folder is its current one is
+                // "already in place", not an error (v2.7.1.0 B3).
+                FolderNode parent;
+                try { parent = _store.GetParentFolder(item); }
+                catch { parent = null; }
+                if (parent != null)
+                    live.RemoveAll(f => f.StoreId == parent.StoreId && f.EntryId == parent.EntryId);
+                if (live.Count == 0) { alreadyInPlace++; continue; }
+
                 // Reuse the full classify path - same move/copy/strip/history
                 // semantics, and it records a fresh batch that Undo rolls back.
                 var result = Classify(new ClassifyRequest(
-                    new[] { item }, live, keepCopy, removeAttachments,
-                    markTasksComplete: false, safetyCopy: safetyCopy,
+                    new[] { item }, live, options,
                     bannerSignature: bannerSignature,
                     attachmentDispositions: attachmentDispositions,
-                    labelOptions: labelOptions,
-                    markAsRead: markAsRead));
+                    labelOptions: labelOptions));
 
                 if (result.ItemsProcessed > 0)
                 {
@@ -514,6 +677,10 @@ namespace RBLclass.Core
                         strips += result.Undo.AttachmentStrips;
                         allBatchIds.AddRange(result.Undo.HistoryBatchIds);
                     }
+                    // Filed, but some destination may still have failed - carry
+                    // the partial failures instead of masking them (v2.7.1.0 B3).
+                    partialErrors += result.Errors;
+                    encryptedStripSkips += result.EncryptedStripSkips;
                 }
                 else
                 {
@@ -521,9 +688,71 @@ namespace RBLclass.Core
                 }
             }
 
+            _log.Debug("AutoClassify done: filed={Filed}, noHistory={NoHistory}, staleFolders={StaleFolders}, " +
+                       "alreadyInPlace={AlreadyInPlace}, errors={Errors}, partialErrors={PartialErrors}",
+                filed, noHistory, staleFolders, alreadyInPlace, errors, partialErrors);
+
             var plan = new ClassifyUndoPlan(allMoves, allCopies, allFlags, strips, allBatchIds);
             return new AutoClassifyResult(filed, noHistory, staleFolders, errors,
+                                          partialErrors, encryptedStripSkips, alreadyInPlace,
                                           plan.IsEmpty ? null : plan, filedDestinations);
+        }
+
+        /// <summary>
+        /// C1 (v2.8.0.0): the history/live-folder/already-in-place scan of
+        /// <see cref="AutoClassify"/> without any filing, so the pane can decide
+        /// which items are processable before it opens the attachment modal.
+        /// </summary>
+        public AutoClassPreflightResult PreflightAutoClass(
+            IReadOnlyList<MailItemRef> items,
+            Func<string, string, FolderNode> resolveLiveFolder,
+            int historyRetentionDays = 0)
+        {
+            if (items == null) throw new ArgumentNullException(nameof(items));
+            if (resolveLiveFolder == null) throw new ArgumentNullException(nameof(resolveLiveFolder));
+            if (_history == null)
+                throw new InvalidOperationException("Auto-class preflight requires a classification history store.");
+
+            int noHistory = 0, staleFolders = 0, alreadyInPlace = 0;
+            DateTime cutoff = (historyRetentionDays > 0)
+                ? DateTime.UtcNow.AddDays(-historyRetentionDays)
+                : DateTime.MinValue;
+
+            var processable = new List<MailItemRef>();
+
+            foreach (var item in Dedupe(items))
+            {
+                string key;
+                try { key = _store.GetConversationKey(item); }
+                catch { key = null; }
+
+                if (string.IsNullOrEmpty(key)) { noHistory++; continue; }
+
+                var recorded = _history.GetLatestDestinations(key, cutoff);
+                if (recorded.Count == 0) { noHistory++; continue; }
+
+                var live = new List<FolderNode>();
+                foreach (var dest in recorded)
+                {
+                    FolderNode node;
+                    try { node = resolveLiveFolder(dest.StoreId, dest.EntryId); }
+                    catch { node = null; }
+                    if (node != null) live.Add(node);
+                }
+
+                if (live.Count == 0) { staleFolders++; continue; }
+
+                FolderNode parent;
+                try { parent = _store.GetParentFolder(item); }
+                catch { parent = null; }
+                if (parent != null)
+                    live.RemoveAll(f => f.StoreId == parent.StoreId && f.EntryId == parent.EntryId);
+                if (live.Count == 0) { alreadyInPlace++; continue; }
+
+                processable.Add(item);
+            }
+
+            return new AutoClassPreflightResult(processable, noHistory, staleFolders, alreadyInPlace);
         }
 
         /// <summary>
@@ -551,7 +780,10 @@ namespace RBLclass.Core
             foreach (var item in items) AddIfNew(item);
             foreach (var item in items)
             {
-                var siblings = _store.GetConversationSiblings(item) ?? ConversationSiblings.Empty;
+                ConversationSiblings raw;
+                try { raw = _store.GetConversationSiblings(item); }
+                catch { raw = null; } // adapter failure tolerated; primary item(s) still file
+                var siblings = raw ?? ConversationSiblings.Empty;
                 foreach (var sibling in siblings.Processable) AddIfNew(sibling);
                 foreach (var subject in siblings.SkippedEncryptedSubjects)
                     if (skippedSeen.Add(subject)) skippedEncrypted.Add(subject);

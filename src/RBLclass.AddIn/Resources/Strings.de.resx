@@ -66,6 +66,18 @@
   <data name="MainPane_AutoClass_ToolTip" xml:space="preserve">
     <value>Die ausgewählte(n) E-Mail(s) in den Ordner(n) ablegen, in dem ihre Unterhaltung zuletzt klassiert wurde</value>
   </data>
+  <data name="MainPane_SaveAs_Button" xml:space="preserve">
+    <value>💾</value>
+  </data>
+  <data name="MainPane_SaveAs_ToolTip" xml:space="preserve">
+    <value>Die ausgewählte(n) E-Mail(s) als .msg-Dateien in einem Ordner speichern</value>
+  </data>
+  <data name="MainPane_ManageAttachments_Button" xml:space="preserve">
+    <value>📎</value>
+  </data>
+  <data name="MainPane_ManageAttachments_ToolTip" xml:space="preserve">
+    <value>Anlagen der ausgewählten E-Mail(s) verwalten: behalten, löschen oder in einem Ordner speichern</value>
+  </data>
   <data name="MainPane_QueryBox_ToolTip" xml:space="preserve">
     <value>Eingabe legt in den markierten Ordner ab; Strg+Eingabe öffnet ihn. Strg allein drücken, um „Alle passenden Ordner anzeigen“ umzuschalten</value>
   </data>
@@ -83,6 +95,9 @@
   </data>
   <data name="MainPane_StripBanner_CheckBox" xml:space="preserve">
     <value>Banner für externe Absender entfernen</value>
+  </data>
+  <data name="MainPane_MarkAsRead_CheckBox" xml:space="preserve">
+    <value>Als gelesen markieren</value>
   </data>
   <data name="Settings_PathDisplay_Label" xml:space="preserve">
     <value>Pfadanzeige der Suchergebnisse:</value>
@@ -123,6 +138,12 @@
   <data name="MainPane_Busy_Filing" xml:space="preserve">
     <value>Wird abgelegt…</value>
   </data>
+  <data name="MainPane_Busy_Saving" xml:space="preserve">
+    <value>Wird gespeichert…</value>
+  </data>
+  <data name="MainPane_Busy_ManagingAttachments" xml:space="preserve">
+    <value>Anlagen werden verwaltet…</value>
+  </data>
   <data name="Status_Classify_Progress_One" xml:space="preserve">
     <value>Ablage {0} von {1}…</value>
   </data>
@@ -131,6 +152,12 @@
   </data>
   <data name="MainPane_PinnedSentMail_Indicator" xml:space="preserve">
     <value>Ablage der soeben gesendeten E-Mail — suchen Sie einen Ordner und legen Sie sie ab:</value>
+  </data>
+  <data name="MainPane_PinnedSentMail_Delete_Button" xml:space="preserve">
+    <value>Aus Posteingang löschen</value>
+  </data>
+  <data name="MainPane_PinnedSentMail_Delete_ToolTip" xml:space="preserve">
+    <value>Die in den Posteingang verschobene Kopie dieser gesendeten E-Mail löschen</value>
   </data>
   <data name="MainPane_UpdateAvailable_Banner" xml:space="preserve">
     <value>Eine neuere Version von RBLclass ist verfügbar ({0}). Besuchen Sie die Installationsseite zum Aktualisieren.</value>
@@ -156,6 +183,18 @@
   <data name="Settings_FavoriteFolders_Note" xml:space="preserve">
     <value>Unterordner werden bis zu einer Tiefe von 4 indiziert (bis zu 2000 Verzeichnisse pro Stammordner).</value>
   </data>
+  <data name="Settings_ManageAttachments_Header" xml:space="preserve">
+    <value>Anlagen verwalten</value>
+  </data>
+  <data name="Settings_StripSavedAttachments_CheckBox" xml:space="preserve">
+    <value>Gespeicherte Anhänge standardmäßig aus der E-Mail entfernen</value>
+  </data>
+  <data name="Settings_StripSavedAttachments_Info" xml:space="preserve">
+    <value>Legt den Standardwert für das Kontrollkästchen „Gespeicherte Anhänge aus der E-Mail entfernen" im Anlagenverwaltungsfenster (📎) fest. Wenn aktiviert, wird ein „Speichern unter"-Anhang nach dem Speichern in einem Ordner aus der E-Mail entfernt; andernfalls wird er gespeichert, aber in der E-Mail belassen. Anhänge werden bei S/MIME-verschlüsselten E-Mails nie entfernt.</value>
+  </data>
+  <data name="Settings_FavoriteFolders_InvalidSemicolon" xml:space="preserve">
+    <value>Der gewählte Ordnerpfad enthält ein Semikolon (;), das als Listentrennzeichen verwendet wird und nicht gespeichert werden kann. Wählen Sie einen anderen Ordner.</value>
+  </data>
   <data name="Settings_FavoriteFolders_BrowseDescription" xml:space="preserve">
     <value>Wählen Sie einen Ordner für Ihre Favoriten aus</value>
   </data>
@@ -173,6 +212,9 @@
   </data>
   <data name="AttachDisp_Intro" xml:space="preserve">
     <value>Wählen Sie, was mit jeder Anlage geschehen soll, bevor die E-Mail abgelegt wird.</value>
+  </data>
+  <data name="AttachDisp_StandaloneIntro" xml:space="preserve">
+    <value>Wählen Sie, was mit jeder Anlage geschehen soll.</value>
   </data>
   <data name="AttachDisp_EncryptedExcluded_One" xml:space="preserve">
     <value>{0} verschlüsselte E-Mail ausgeschlossen — ihre Anlagen verbleiben bei der E-Mail.</value>
@@ -192,6 +234,9 @@
   <data name="AttachDisp_UseSameDirectory_CheckBox" xml:space="preserve">
     <value>Dasselbe Speicherverzeichnis für alle Anlagen verwenden</value>
   </data>
+  <data name="AttachDisp_StripSaved_CheckBox" xml:space="preserve">
+    <value>Gespeicherte Anhänge aus der E-Mail entfernen (deaktivieren, um eine Kopie zu speichern und sie in der E-Mail zu behalten)</value>
+  </data>
   <data name="AttachDisp_Delete_Radio" xml:space="preserve">
     <value>Löschen</value>
   </data>
@@ -209,6 +254,18 @@
   </data>
   <data name="AttachDisp_TargetPrefix" xml:space="preserve">
     <value>Speichern in: </value>
+  </data>
+  <data name="SaveAsPicker_Title" xml:space="preserve">
+    <value>E-Mail(s) als Dateien speichern</value>
+  </data>
+  <data name="SaveAsPicker_Intro" xml:space="preserve">
+    <value>Wählen Sie einen Ordner aus, in dem die ausgewählte(n) E-Mail(s) als .msg-Dateien gespeichert werden sollen.</value>
+  </data>
+  <data name="SaveAsPicker_Save_Button" xml:space="preserve">
+    <value>Speichern</value>
+  </data>
+  <data name="SaveAsPicker_Cancel_Button" xml:space="preserve">
+    <value>Abbrechen</value>
   </data>
   <data name="AttachDisp_Confirm_Button" xml:space="preserve">
     <value>Bestätigen</value>
@@ -421,6 +478,12 @@
   <data name="Settings_Updates_Header" xml:space="preserve">
     <value>Aktualisierungen</value>
   </data>
+  <data name="Settings_Startup_Header" xml:space="preserve">
+    <value>Start</value>
+  </data>
+  <data name="Settings_ShowPaneOnStartup_CheckBox" xml:space="preserve">
+    <value>Klassifizierungsbereich beim Start von Outlook automatisch anzeigen</value>
+  </data>
   <data name="Settings_UpdateCheck_Enable_CheckBox" xml:space="preserve">
     <value>Beim Start nach einer neueren Version suchen</value>
   </data>
@@ -429,6 +492,12 @@
   </data>
   <data name="Settings_UpdateCheck_Note" xml:space="preserve">
     <value>Standardmäßig deaktiviert. Wenn aktiviert, sendet RBLclass beim Start eine einzige Anfrage an diese URL, um die neueste Versionsnummer zu lesen. Es werden keine weiteren Daten gesendet.</value>
+  </data>
+  <data name="Settings_Diagnostics_Header" xml:space="preserve">
+    <value>Diagnose</value>
+  </data>
+  <data name="Settings_DiagnosticLogging_CheckBox" xml:space="preserve">
+    <value>Vollständige Diagnoseprotokollierung aktivieren (ausführliche Ablaufverfolgung pro Element)</value>
   </data>
   <data name="Settings_Nav_Search" xml:space="preserve">
     <value>Suche</value>
@@ -553,6 +622,36 @@
   <data name="Status_ClassifyCancelled" xml:space="preserve">
     <value>Klassieren abgebrochen.</value>
   </data>
+  <data name="Status_PinnedMail_Deleted" xml:space="preserve">
+    <value>Gesendete E-Mail aus dem Posteingang gelöscht.</value>
+  </data>
+  <data name="Status_PinnedMail_DeleteFailed" xml:space="preserve">
+    <value>Löschen fehlgeschlagen — E-Mail verbleibt im Posteingang.</value>
+  </data>
+  <data name="Status_SaveAs_Cancelled" xml:space="preserve">
+    <value>Speichern abgebrochen.</value>
+  </data>
+  <data name="Status_SaveAs_Result_One" xml:space="preserve">
+    <value>1 E-Mail gespeichert.</value>
+  </data>
+  <data name="Status_SaveAs_Result_Other" xml:space="preserve">
+    <value>{0} E-Mails gespeichert.</value>
+  </data>
+  <data name="Status_SaveAs_Failed" xml:space="preserve">
+    <value> ({0} fehlgeschlagen)</value>
+  </data>
+  <data name="Status_ManageAttachments_NoAttachments" xml:space="preserve">
+    <value>Die ausgewählte(n) E-Mail(s) haben keine zu verwaltenden Anlagen.</value>
+  </data>
+  <data name="Status_ManageAttachments_Cancelled" xml:space="preserve">
+    <value>Anlagenverwaltung abgebrochen.</value>
+  </data>
+  <data name="Status_ManageAttachments_Applied_One" xml:space="preserve">
+    <value>Anlagen von 1 E-Mail verwaltet.</value>
+  </data>
+  <data name="Status_ManageAttachments_Applied_Other" xml:space="preserve">
+    <value>Anlagen von {0} E-Mails verwaltet.</value>
+  </data>
   <data name="Status_AutoClassing" xml:space="preserve">
     <value>Auto-Klassierung läuft…</value>
   </data>
@@ -632,6 +731,18 @@
   <data name="Status_AutoClass_Errors_Other" xml:space="preserve">
     <value>{0} fehlgeschlagen</value>
   </data>
+  <data name="Status_AutoClass_PartialErrors_One" xml:space="preserve">
+    <value>{0} partieller Zielfehler</value>
+  </data>
+  <data name="Status_AutoClass_PartialErrors_Other" xml:space="preserve">
+    <value>{0} partielle Zielfehler</value>
+  </data>
+  <data name="Status_AutoClass_AlreadyInPlace_One" xml:space="preserve">
+    <value>{0} bereits im gemerkten Ordner</value>
+  </data>
+  <data name="Status_AutoClass_AlreadyInPlace_Other" xml:space="preserve">
+    <value>{0} bereits im gemerkten Ordner</value>
+  </data>
 
   <!-- MainPaneViewModel: Undo result -->
   <data name="Status_Undo_Result" xml:space="preserve">
@@ -692,6 +803,9 @@
   </data>
   <data name="Status_Classify_EncryptedInConversation_Other" xml:space="preserve">
     <value> {0} verschlüsselte Nachrichten der Unterhaltung wurden unverändert gelassen.</value>
+  </data>
+  <data name="Status_TriageArchiveFolderMissing" xml:space="preserve">
+    <value>Triage gesendeter Elemente: Archivordner nicht gefunden — Mail in Gesendete Elemente belassen.</value>
   </data>
 
   <!-- RblClassAddIn: MessageBox dialogs -->
