@@ -44,6 +44,12 @@ Classify each issue as one of:
 - **Enhancement** — improvement to existing functionality.
 - **Feature** — new capability.
 
+If a comment links a `github.com/user-attachments/files/...` attachment (e.g. a log
+file from `%LocalAppData%\RBLclass\logs\`), fetch its raw content with
+`curl -L -o <scratchpad-path> <url>` (or `gh api`), not `WebFetch` — WebFetch
+summarizes plain-text attachments through a small model and can drop the exact
+exception type/HRESULT/stack-trace lines needed to root-cause a bug.
+
 Also form a tentative triage suggestion for each issue:
 - Bugs → lean toward **implement** unless clearly out of scope.
 - Enhancements/Features → weigh scope, complexity, and fit. Large or speculative items lean toward **defer**.
