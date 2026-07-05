@@ -260,7 +260,7 @@ namespace RBLclass.Outlook.Adapter
                         }
                     }
 
-                    Log.Information(
+                    Log.Debug(
                         "GetSelectedItems: Selection.Count={Count}, items returned={Returned} (meetingItems={IncludeMeeting}).",
                         count, list.Count, includeMeetingItems);
                 }
@@ -337,7 +337,12 @@ namespace RBLclass.Outlook.Adapter
             {
                 object rawItem;
                 try { rawItem = session.Value.GetItemFromID(item.EntryId, item.StoreId); }
-                catch { return null; } // item no longer resolves - tolerate the miss
+                catch (Exception ex)
+                {
+                    // item no longer resolves - tolerate the miss
+                    Log.Debug(ex, "CopyItemToFolder: item {EntryId} no longer resolves.", item.EntryId);
+                    return null;
+                }
 
                 using (var comItem = new ComRef<object>(rawItem))
                 {
@@ -345,12 +350,20 @@ namespace RBLclass.Outlook.Adapter
                     var meeting = mail == null && item.IsMeetingItem
                                   ? comItem.Value as OutlookOM.MeetingItem
                                   : null;
-                    if (mail == null && meeting == null) return null;
+                    if (mail == null && meeting == null)
+                    {
+                        Log.Debug("CopyItemToFolder: item {EntryId} resolved to neither MailItem nor MeetingItem.", item.EntryId);
+                        return null;
+                    }
 
                     OutlookOM.Folder rawDest;
                     try { rawDest = (OutlookOM.Folder)session.Value.GetFolderFromID(
                         destination.EntryId, destination.StoreId); }
-                    catch { return null; }
+                    catch (Exception ex)
+                    {
+                        Log.Debug(ex, "CopyItemToFolder: destination folder {Path} no longer resolves.", destination.FullPath);
+                        return null;
+                    }
 
                     using (var destFolder = new ComRef<OutlookOM.Folder>(rawDest))
                     {
@@ -364,7 +377,11 @@ namespace RBLclass.Outlook.Adapter
 
                             var copyMail    = comCopy.Value as OutlookOM.MailItem;
                             var copyMeeting = copyMail == null ? comCopy.Value as OutlookOM.MeetingItem : null;
-                            if (copyMail == null && copyMeeting == null) return null;
+                            if (copyMail == null && copyMeeting == null)
+                            {
+                                Log.Warning("CopyItemToFolder: Copy() of item {EntryId} returned an unusable object; the copy may be stranded in the source folder.", item.EntryId);
+                                return null;
+                            }
 
                             // Mark the copy read before it is placed (v2.7.0.0 D2):
                             // setting UnRead on the not-yet-arrived copy is race-free,
@@ -387,9 +404,15 @@ namespace RBLclass.Outlook.Adapter
                                 string movedEntryId =
                                     movedMail    != null ? Safe(() => movedMail.EntryID, null) :
                                     movedMeeting != null ? Safe(() => movedMeeting.EntryID, null) : null;
-                                if (movedEntryId == null) return null;
+                                if (movedEntryId == null)
+                                {
+                                    Log.Warning(
+                                        "CopyItemToFolder: item {EntryId} copied to {Path} but the filed copy's EntryID could not be read; it won't be tracked for Undo/history.",
+                                        item.EntryId, destination.FullPath);
+                                    return null;
+                                }
                                 swPerf.Stop();
-                                Log.Information(
+                                Log.Debug(
                                     "PERF CopyItemToFolder {Ms} ms: item {EntryId} -> {Path}",
                                     swPerf.ElapsedMilliseconds, item.EntryId, destination.FullPath);
                                 return new MailItemRef(destination.StoreId, movedEntryId,
@@ -409,7 +432,12 @@ namespace RBLclass.Outlook.Adapter
                                     if (orphan != null) orphan.Delete();
                                     else (comCopy.Value as OutlookOM.MeetingItem)?.Delete();
                                 }
-                                catch { }
+                                catch (Exception cleanupEx)
+                                {
+                                    Log.Warning(cleanupEx,
+                                        "Orphaned copy of item {EntryId} could not be deleted after a failed move.",
+                                        item.EntryId);
+                                }
                             }
                             // Some folders (notably a store root) can reject items.
                             // Log the cause and rethrow so the classifier counts this
@@ -442,7 +470,11 @@ namespace RBLclass.Outlook.Adapter
             {
                 object rawItem;
                 try { rawItem = session.Value.GetItemFromID(item.EntryId, item.StoreId); }
-                catch { return null; } // item no longer resolves - tolerate the miss
+                catch (Exception ex)
+                {
+                    Log.Debug(ex, "MoveItemToFolder: item {EntryId} no longer resolves.", item.EntryId);
+                    return null;
+                }
 
                 using (var comItem = new ComRef<object>(rawItem))
                 {
@@ -450,12 +482,20 @@ namespace RBLclass.Outlook.Adapter
                     var meeting = mail == null && item.IsMeetingItem
                                   ? comItem.Value as OutlookOM.MeetingItem
                                   : null;
-                    if (mail == null && meeting == null) return null;
+                    if (mail == null && meeting == null)
+                    {
+                        Log.Debug("MoveItemToFolder: item {EntryId} resolved to neither MailItem nor MeetingItem.", item.EntryId);
+                        return null;
+                    }
 
                     OutlookOM.Folder rawDest;
                     try { rawDest = (OutlookOM.Folder)session.Value.GetFolderFromID(
                         destination.EntryId, destination.StoreId); }
-                    catch { return null; }
+                    catch (Exception ex)
+                    {
+                        Log.Debug(ex, "MoveItemToFolder: destination folder {Path} no longer resolves.", destination.FullPath);
+                        return null;
+                    }
 
                     using (var destFolder = new ComRef<OutlookOM.Folder>(rawDest))
                     {
@@ -465,10 +505,10 @@ namespace RBLclass.Outlook.Adapter
                             // around the COM move, so the multi-item-classify
                             // MAPI_E_NOT_FOUND from Stormshield's OnBeforeReadAsync
                             // can be correlated against when each item was moving.
-                            // Logged at Information so they appear in any build
-                            // installed on the (Stormshield) target.
+                            // Gated behind DiagnosticLogging (v2.8.0.0 logging
+                            // audit) - flip it on to get this trace on the target.
                             var sw = System.Diagnostics.Stopwatch.StartNew();
-                            Log.Information(
+                            Log.Debug(
                                 "Classify move BEGIN (D1): item {EntryId} -> {Path}",
                                 item.EntryId, destination.FullPath);
 
@@ -496,13 +536,19 @@ namespace RBLclass.Outlook.Adapter
                                 string movedEntryId =
                                     movedMail    != null ? Safe(() => movedMail.EntryID, null) :
                                     movedMeeting != null ? Safe(() => movedMeeting.EntryID, null) : null;
-                                if (movedEntryId == null) return null;
+                                if (movedEntryId == null)
+                                {
+                                    Log.Warning(
+                                        "MoveItemToFolder: item {EntryId} moved to {Path} but the moved item's EntryID could not be read; it won't be tracked for Undo/history.",
+                                        item.EntryId, destination.FullPath);
+                                    return null;
+                                }
                                 sw.Stop();
                                 swPerf.Stop();
-                                Log.Information(
+                                Log.Debug(
                                     "Classify move END (D1): item {EntryId} -> {Path} in {Ms} ms",
                                     item.EntryId, destination.FullPath, sw.ElapsedMilliseconds);
-                                Log.Information(
+                                Log.Debug(
                                     "PERF MoveItemToFolder {Ms} ms (move-only {MoveMs} ms): item {EntryId} -> {Path}",
                                     swPerf.ElapsedMilliseconds, sw.ElapsedMilliseconds,
                                     item.EntryId, destination.FullPath);
@@ -529,23 +575,34 @@ namespace RBLclass.Outlook.Adapter
         {
             if (item == null) return;
 
+            Log.Information("DeleteItem: deleting {EntryId}", item.EntryId);
+
             using (var session = new ComRef<OutlookOM.NameSpace>(_app.Session))
             {
                 object rawItem;
                 try { rawItem = session.Value.GetItemFromID(item.EntryId, item.StoreId); }
-                catch { return; }
+                catch (Exception ex)
+                {
+                    Log.Warning(ex, "DeleteItem: item {EntryId} no longer resolves.", item.EntryId);
+                    return;
+                }
 
                 using (var comItem = new ComRef<object>(rawItem))
                 {
                     var mail = comItem.Value as OutlookOM.MailItem;
                     if (mail != null)
                     {
-                        try { mail.Delete(); } catch { }
+                        try { mail.Delete(); Log.Information("DeleteItem: deleted {EntryId}", item.EntryId); }
+                        catch (Exception ex) { Log.Warning(ex, "DeleteItem: delete failed for {EntryId}", item.EntryId); }
                     }
                     else
                     {
                         var meeting = comItem.Value as OutlookOM.MeetingItem;
-                        if (meeting != null) { try { meeting.Delete(); } catch { } }
+                        if (meeting != null)
+                        {
+                            try { meeting.Delete(); Log.Information("DeleteItem: deleted {EntryId}", item.EntryId); }
+                            catch (Exception ex) { Log.Warning(ex, "DeleteItem: delete failed for {EntryId}", item.EntryId); }
+                        }
                     }
                 }
             }
@@ -589,7 +646,7 @@ namespace RBLclass.Outlook.Adapter
                         // purposes (a destination ref + logging) without a walk.
                         string fullPath = Safe(() => parent.Value.FolderPath, name);
                         swPerf.Stop();
-                        Log.Information("PERF GetParentFolder {Ms} ms: item {EntryId}",
+                        Log.Debug("PERF GetParentFolder {Ms} ms: item {EntryId}",
                                         swPerf.ElapsedMilliseconds, item.EntryId);
                         return new FolderNode(storeId, entryId, parentEntryId: null,
                                               name: name, fullPath: fullPath, isLeaf: false);
@@ -625,7 +682,7 @@ namespace RBLclass.Outlook.Adapter
                     // is off for the item's store.
                     string key = Safe(() => mail.ConversationID, null);
                     swPerf.Stop();
-                    Log.Information("PERF GetConversationKey {Ms} ms: item {EntryId}",
+                    Log.Debug("PERF GetConversationKey {Ms} ms: item {EntryId}",
                                     swPerf.ElapsedMilliseconds, item.EntryId);
                     return key;
                 }
@@ -738,7 +795,7 @@ namespace RBLclass.Outlook.Adapter
             ConversationSiblings Outcome()
             {
                 swPerf.Stop();
-                Log.Information(
+                Log.Debug(
                     "PERF GetConversationSiblings {Ms} ms: item {EntryId}, {Siblings} sibling(s), {Skipped} skipped",
                     swPerf.ElapsedMilliseconds, item?.EntryId, result.Count, skipped.Count);
                 return new ConversationSiblings(result, skipped);
@@ -918,7 +975,7 @@ namespace RBLclass.Outlook.Adapter
                         && Safe(() => mail.FlagStatus, OutlookOM.OlFlagStatus.olNoFlag)
                                == OutlookOM.OlFlagStatus.olFlagMarked;
                     swPerf.Stop();
-                    Log.Information("PERF IsFlaggedIncomplete {Ms} ms: item {EntryId}",
+                    Log.Debug("PERF IsFlaggedIncomplete {Ms} ms: item {EntryId}",
                                     swPerf.ElapsedMilliseconds, item.EntryId);
                     return flagged;
                 }
@@ -1001,7 +1058,10 @@ namespace RBLclass.Outlook.Adapter
                             {
                                 if (IsInlineAttachment(attRef.Value)) continue;
                                 try { attRef.Value.Delete(); removedAny = true; }
-                                catch { }
+                                catch (Exception ex)
+                                {
+                                    Log.Warning(ex, "RemoveAttachments: deleting one attachment failed for item {EntryId}.", item.EntryId);
+                                }
                             }
                         }
                         if (removedAny)
@@ -1009,7 +1069,7 @@ namespace RBLclass.Outlook.Adapter
                             try { mail.Save(); } catch { }
                         }
                         swPerf.Stop();
-                        Log.Information(
+                        Log.Debug(
                             "PERF RemoveAttachments {Ms} ms: item {EntryId}, {Count} attachment(s) scanned, removedAny={Removed}",
                             swPerf.ElapsedMilliseconds, item.EntryId, count, removedAny);
                     }
@@ -1095,19 +1155,24 @@ namespace RBLclass.Outlook.Adapter
                     // Never rewrite an encrypted/signed body (same rule as the banner strip).
                     string messageClass = Safe(() => mail.MessageClass, string.Empty);
                     if (messageClass.StartsWith("IPM.Note.SMIME", StringComparison.OrdinalIgnoreCase))
+                    {
+                        Log.Information(
+                            "AppendHtmlNote skipped an encrypted/signed item ({MessageClass}, {EntryId}).",
+                            messageClass, item.EntryId);
                         return false;
+                    }
 
                     string html = Safe(() => mail.HTMLBody, null) ?? string.Empty;
                     try
                     {
                         mail.HTMLBody = InsertAfterBodyTag(html, htmlBlock);
                         mail.Save();
-                        Log.Information("Appended attachment-disposition label to a filed mail.");
+                        Log.Information("Appended attachment-disposition label to filed mail {EntryId}.", item.EntryId);
                         return true;
                     }
                     catch (Exception ex)
                     {
-                        Log.Warning(ex, "Appending the attachment-disposition label failed.");
+                        Log.Warning(ex, "Appending the attachment-disposition label failed for {EntryId}.", item.EntryId);
                         return false;
                     }
                 }
@@ -1379,10 +1444,16 @@ namespace RBLclass.Outlook.Adapter
         {
             if (mail == null) return false;
 
+            string entryId = Safe(() => mail.EntryID, null) ?? "(unsaved draft)";
+
             // Never rewrite an encrypted/signed body - it would corrupt it.
             string messageClass = Safe(() => mail.MessageClass, string.Empty);
             if (messageClass.StartsWith("IPM.Note.SMIME", StringComparison.OrdinalIgnoreCase))
+            {
+                Log.Information("StripExternalBanner skipped an encrypted/signed item ({MessageClass}, {EntryId}).",
+                    messageClass, entryId);
                 return false;
+            }
 
             string html = Safe(() => mail.HTMLBody, null);
             if (string.IsNullOrEmpty(html)) return false;
@@ -1395,12 +1466,12 @@ namespace RBLclass.Outlook.Adapter
             {
                 mail.HTMLBody = updated;
                 mail.Save();
-                Log.Information("Stripped the external-sender banner from a mail body.");
+                Log.Information("Stripped the external-sender banner from mail body {EntryId}.", entryId);
                 return true;
             }
             catch (Exception ex)
             {
-                Log.Warning(ex, "Writing the banner-stripped body failed.");
+                Log.Warning(ex, "Writing the banner-stripped body failed for {EntryId}.", entryId);
                 return false;
             }
         }
@@ -1737,12 +1808,12 @@ namespace RBLclass.Outlook.Adapter
                     return;
                 }
                 try { mail.UnRead = false; mail.Save(); }
-                catch { }
+                catch (Exception ex) { Log.Warning(ex, "MarkAsRead failed for a filed mail."); }
             }
             else if (meeting != null)
             {
                 try { meeting.UnRead = false; meeting.Save(); }
-                catch { }
+                catch (Exception ex) { Log.Warning(ex, "MarkAsRead failed for a filed meeting item."); }
             }
         }
     }

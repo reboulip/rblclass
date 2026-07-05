@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
+using RBLclass.Core.Logging;
 
 namespace RBLclass.Core
 {
@@ -72,6 +73,7 @@ namespace RBLclass.Core
         public bool ShowPaneOnStartup { get; set; }
         public bool StripSavedAttachments { get; set; }
         public string PreferredUiLanguage { get; set; }
+        public bool DiagnosticLogging { get; set; }
 
         /// <summary>
         /// Read every key in one snapshot (a single connection via
@@ -139,7 +141,8 @@ namespace RBLclass.Core
                 UpdateCheckDismissedUtc = Str(SettingsKeys.UpdateCheckDismissedUtc, string.Empty),
                 ShowPaneOnStartup = Bool(SettingsKeys.ShowPaneOnStartup, true),
                 StripSavedAttachments = Bool(SettingsKeys.StripSavedAttachments, true),
-                PreferredUiLanguage = ParseUiLanguage(Str(SettingsKeys.PreferredUiLanguage))
+                PreferredUiLanguage = ParseUiLanguage(Str(SettingsKeys.PreferredUiLanguage)),
+                DiagnosticLogging = Bool(SettingsKeys.DiagnosticLogging, false)
             };
         }
 
@@ -184,7 +187,24 @@ namespace RBLclass.Core
                 Pair(SettingsKeys.ShowPaneOnStartup,            ShowPaneOnStartup ? "1" : "0"),
                 Pair(SettingsKeys.StripSavedAttachments,        StripSavedAttachments ? "1" : "0"),
                 Pair(SettingsKeys.PreferredUiLanguage,          PreferredUiLanguage),
+                Pair(SettingsKeys.DiagnosticLogging,            DiagnosticLogging ? "1" : "0"),
             });
+        }
+
+        /// <summary>
+        /// Same as <see cref="Save(ISettingsStore)"/>, plus one audit line
+        /// summarising the security-relevant settings (v2.8.0.0 logging audit) -
+        /// never the banner signature value. One line per Save, not per keystroke.
+        /// </summary>
+        public void Save(ISettingsStore store, IAppLog log)
+        {
+            Save(store);
+            log?.Information(
+                "Settings saved: sendExternalWarning={SendExternalWarning}, internalDomains={InternalDomains}, " +
+                "classifySafetyCopy={ClassifySafetyCopy}, archiveTarget={ArchiveTarget}, forgottenAttachmentKeywords={ForgottenAttachmentKeywords}",
+                SendExternalWarning, FormatList(InternalDomains), ClassifySafetyCopy,
+                string.IsNullOrEmpty(SentItemTriageArchivePath) ? "(none)" : SentItemTriageArchivePath,
+                FormatList(ForgottenAttachmentKeywords));
         }
 
         private static KeyValuePair<string, string> Pair(string key, string value)

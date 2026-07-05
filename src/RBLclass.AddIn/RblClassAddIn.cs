@@ -149,33 +149,37 @@ namespace RBLclass.AddIn
             try
             {
                 InitializeStoragePaths();
-                InitializeLogging();
+
+                // The settings store must exist before InitializeLogging() so the
+                // persistent DiagnosticLogging flag can gate the minimum log level.
+                string connectionString = "Data Source=" + _dbPath;
+                _settingsStore = new SqliteSettingsStore(connectionString);
+                _settingsStore.EnsureSchema();
+                var startupSettings = Settings.Load(_settingsStore);
+
+                InitializeLogging(startupSettings.DiagnosticLogging);
 
                 var version = Assembly.GetExecutingAssembly().GetName().Version;
                 Log.Information(
                     "RBLclass add-in starting (version {Version}, 64-bit process={Is64}).",
                     version, Environment.Is64BitProcess);
 
-                string connectionString = "Data Source=" + _dbPath;
                 _repository = new SqliteFolderRepository(connectionString);
                 _mailStore = new OutlookMailStore(_outlookApp);
                 _folderTree = new FolderIndexService(_mailStore, _repository);
                 _folderSearch = new FolderSearchService(_folderTree);
-                _settingsStore = new SqliteSettingsStore(connectionString);
-                _settingsStore.EnsureSchema();
 
                 // Resolve the UI language once, before any pane/window is
                 // created - LocExtension and ViewModel constructors read
                 // TaskPaneServices.Localization (CLAUDE.md / i18n plan).
-                var preferredLanguage = Settings.Load(_settingsStore).PreferredUiLanguage;
                 var outlookLanguage = new OutlookUiLanguageProvider(_outlookApp).GetOutlookUiLanguageCode();
-                var resolvedLanguage = UiLanguageResolver.Resolve(preferredLanguage, outlookLanguage);
+                var resolvedLanguage = UiLanguageResolver.Resolve(startupSettings.PreferredUiLanguage, outlookLanguage);
                 TaskPaneServices.Localization = new LocalizationService(resolvedLanguage);
 
                 _classificationHistory = new SqliteClassificationHistory(connectionString);
                 _classificationHistory.EnsureSchema();
 
-                _classifier = new ClassifierService(_mailStore, _classificationHistory);
+                _classifier = new ClassifierService(_mailStore, _classificationHistory, new Logging.SerilogAppLog());
 
                 // Publish services for the Custom Task Pane host control (which
                 // Office instantiates via COM and so can't be constructor-injected).
@@ -678,14 +682,14 @@ namespace RBLclass.AddIn
                 // trace shows how many mid-batch fires we suppressed.
                 if (TaskPaneServices.BatchInProgress)
                 {
-                    Log.Information("PERF SelectionChange suppressed (batch in progress)");
+                    Log.Debug("PERF SelectionChange suppressed (batch in progress)");
                     return;
                 }
 
                 var sw = System.Diagnostics.Stopwatch.StartNew();
                 int count = _mailStore.GetSelectedItems().Count;
                 sw.Stop();
-                Log.Information("PERF SelectionChange handled {Ms} ms: {Count} selected", sw.ElapsedMilliseconds, count);
+                Log.Debug("PERF SelectionChange handled {Ms} ms: {Count} selected", sw.ElapsedMilliseconds, count);
                 TaskPaneServices.Host?.SetSelectionCount(count);
             }
             catch (Exception ex)
@@ -711,8 +715,10 @@ namespace RBLclass.AddIn
                     SettingsKeys.ForgottenAttachmentKeywords, "attach;enclos;joint;PJ"));
                 if (_attachmentGuard.ShouldWarn(info.Body, info.AttachmentCount, keywords))
                 {
-                    if (TaskPaneServices.ConfirmSendWithoutAttachment != null &&
-                        !TaskPaneServices.ConfirmSendWithoutAttachment())
+                    bool proceed = TaskPaneServices.ConfirmSendWithoutAttachment == null
+                        || TaskPaneServices.ConfirmSendWithoutAttachment();
+                    Log.Information("Forgotten-attachment guard fired: {Action}", proceed ? "proceeded" : "cancelled");
+                    if (!proceed)
                     {
                         cancel = true;
                         return;
@@ -723,12 +729,17 @@ namespace RBLclass.AddIn
                 {
                     var domains = ParseList(_settingsStore.Get(SettingsKeys.InternalDomains, string.Empty));
                     var external = _externalGuard.FindExternal(info.Recipients, domains);
-                    if (external.Count > 0 &&
-                        TaskPaneServices.ConfirmSendToExternal != null &&
-                        !TaskPaneServices.ConfirmSendToExternal(external))
+                    if (external.Count > 0)
                     {
-                        cancel = true;
-                        return;
+                        bool proceed = TaskPaneServices.ConfirmSendToExternal == null
+                            || TaskPaneServices.ConfirmSendToExternal(external);
+                        Log.Information("External-recipient guard fired ({Count} external): {Action}",
+                            external.Count, proceed ? "proceeded" : "cancelled");
+                        if (!proceed)
+                        {
+                            cancel = true;
+                            return;
+                        }
                     }
                 }
             }
@@ -1016,7 +1027,8 @@ namespace RBLclass.AddIn
                 {
                     DataContext = new SettingsViewModel(
                         _settingsStore,
-                        () => _mailStore.GetSelectedItemHtmlBody())
+                        () => _mailStore.GetSelectedItemHtmlBody(),
+                        new Logging.SerilogAppLog())
                 }.ShowDialog();
 
                 // Re-seed the pane option defaults so the very next classify uses
@@ -1162,10 +1174,17 @@ namespace RBLclass.AddIn
             Directory.CreateDirectory(_logDirectory);
         }
 
-        private void InitializeLogging()
+        /// <summary>
+        /// Min level is Information by default (meaningful actions and errors
+        /// only); the persistent DiagnosticLogging setting raises it to Debug,
+        /// which re-enables the full per-item PERF/BEGIN/END trace used for
+        /// Stormshield-target investigation (v2.8.0.0 logging audit).
+        /// </summary>
+        private void InitializeLogging(bool diagnosticLogging)
         {
+            var level = diagnosticLogging ? Serilog.Events.LogEventLevel.Debug : Serilog.Events.LogEventLevel.Information;
             Log.Logger = new LoggerConfiguration()
-                .MinimumLevel.Information()
+                .MinimumLevel.Is(level)
                 .WriteTo.File(
                     Path.Combine(_logDirectory, "rblclass-.log"),
                     rollingInterval: Serilog.RollingInterval.Day,
@@ -1181,6 +1200,7 @@ namespace RBLclass.AddIn
 
         private static void ShowError(string title, Exception ex)
         {
+            TryLog(title, ex);
             try
             {
                 var loc = TaskPaneServices.Localization;

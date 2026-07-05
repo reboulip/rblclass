@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using FluentAssertions;
 using NSubstitute;
 using RBLclass.Core;
+using RBLclass.Core.Logging;
 using Xunit;
 
 namespace RBLclass.Core.Tests
@@ -1243,6 +1244,21 @@ namespace RBLclass.Core.Tests
             result.OriginalsMoved.Should().Be(1);
             result.Errors.Should().Be(1);                 // the failing D1
             result.ItemsProcessed.Should().Be(1);
+        }
+
+        [Fact]
+        public void A_failing_destination_is_logged_as_a_warning()
+        {
+            var store = StoreWithWorkingMove();
+            var item = Item("e1");
+            store.When(s => s.CopyItemToFolder(item, D1))
+                 .Do(_ => throw new InvalidOperationException("root refuses items"));
+            var log = Substitute.For<IAppLog>();
+            var sut = new ClassifierService(store, log: log);
+
+            sut.Classify(new ClassifyRequest(new[] { item }, new[] { D1, D2 }, ClassifyOptions.Default));
+
+            log.Received(1).Warning(Arg.Any<Exception>(), Arg.Any<string>(), Arg.Any<object[]>());
         }
 
         [Fact]

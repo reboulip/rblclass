@@ -7,6 +7,7 @@ using System.Runtime.CompilerServices;
 using RBLclass.AddIn.Localization;
 using RBLclass.AddIn.Mvvm;
 using RBLclass.Core;
+using RBLclass.Core.Logging;
 
 namespace RBLclass.AddIn.ViewModels
 {
@@ -24,6 +25,7 @@ namespace RBLclass.AddIn.ViewModels
         private readonly Settings _settings;
         private readonly Func<string> _captureSelectedHtml;
         private readonly ILocalizationService _loc;
+        private readonly IAppLog _log;
         private string _maxResultsText;
         private string _minSearchLengthText;
         private string _searchDebounceMsText;
@@ -37,10 +39,11 @@ namespace RBLclass.AddIn.ViewModels
         /// Returns the HTML body of the currently selected mail, for the "learn
         /// banner" capture (v2.2). Null/unset disables the Learn button.
         /// </param>
-        public SettingsViewModel(ISettingsStore store, Func<string> captureSelectedHtml = null)
+        public SettingsViewModel(ISettingsStore store, Func<string> captureSelectedHtml = null, IAppLog log = null)
         {
             _store = store ?? throw new ArgumentNullException(nameof(store));
             _captureSelectedHtml = captureSelectedHtml;
+            _log = log ?? NullAppLog.Instance;
             _loc = TaskPaneServices.Localization;
             _settings = Settings.Load(_store);
             _maxResultsText = _settings.MaxResults.ToString(CultureInfo.InvariantCulture);
@@ -107,7 +110,7 @@ namespace RBLclass.AddIn.ViewModels
         {
             if (_settings.AttachmentRemovalMode == mode) return;
             _settings.AttachmentRemovalMode = mode;
-            _settings.Save(_store);
+            _settings.Save(_store, _log);
             OnPropertyChanged(nameof(AttachmentRemovalModeIsModal));
             OnPropertyChanged(nameof(AttachmentRemovalModeIsDeleteSilently));
         }
@@ -135,7 +138,7 @@ namespace RBLclass.AddIn.ViewModels
         {
             if (_settings.AttachmentLabelLocation == location) return;
             _settings.AttachmentLabelLocation = location;
-            _settings.Save(_store);
+            _settings.Save(_store, _log);
             OnPropertyChanged(nameof(AttachmentLabelLocationIsBody));
             OnPropertyChanged(nameof(AttachmentLabelLocationIsInfoBar));
             OnPropertyChanged(nameof(AttachmentLabelLocationIsNone));
@@ -179,7 +182,7 @@ namespace RBLclass.AddIn.ViewModels
         private void PersistFavorites()
         {
             _settings.AttachmentFavoriteFolders = FavoriteFolders.ToArray();
-            _settings.Save(_store);
+            _settings.Save(_store, _log);
         }
 
         public bool OpenInNewWindow
@@ -222,7 +225,7 @@ namespace RBLclass.AddIn.ViewModels
         {
             if (_settings.SearchPathDisplayMode == mode) return;
             _settings.SearchPathDisplayMode = mode;
-            _settings.Save(_store);
+            _settings.Save(_store, _log);
             OnPropertyChanged(nameof(PathDisplayIsOneLine));
             OnPropertyChanged(nameof(PathDisplayIsWrapped));
             OnPropertyChanged(nameof(PathDisplayIsPerSegment));
@@ -256,7 +259,7 @@ namespace RBLclass.AddIn.ViewModels
                 if (int.TryParse(value, NumberStyles.Integer, CultureInfo.InvariantCulture, out parsed) && parsed >= 1)
                 {
                     _settings.MaxResults = parsed;
-                    _settings.Save(_store);
+                    _settings.Save(_store, _log);
                 }
             }
         }
@@ -278,7 +281,7 @@ namespace RBLclass.AddIn.ViewModels
                     && parsed >= 1 && parsed <= Settings.MaxMinSearchLength)
                 {
                     _settings.MinSearchLength = parsed;
-                    _settings.Save(_store);
+                    _settings.Save(_store, _log);
                 }
             }
         }
@@ -299,7 +302,7 @@ namespace RBLclass.AddIn.ViewModels
                     && parsed >= 0 && parsed <= Settings.MaxSearchDebounceMs)
                 {
                     _settings.SearchDebounceMs = parsed;
-                    _settings.Save(_store);
+                    _settings.Save(_store, _log);
                 }
             }
         }
@@ -316,7 +319,7 @@ namespace RBLclass.AddIn.ViewModels
                     && parsed >= 1 && parsed <= Settings.MaxAutoClassHistoryDays)
                 {
                     _settings.AutoClassHistoryDays = parsed;
-                    _settings.Save(_store);
+                    _settings.Save(_store, _log);
                 }
             }
         }
@@ -375,6 +378,16 @@ namespace RBLclass.AddIn.ViewModels
         {
             get => _settings.StripSavedAttachments;
             set => Apply(_settings.StripSavedAttachments, value, v => _settings.StripSavedAttachments = v);
+        }
+
+        /// <summary>
+        /// Full per-item PERF/BEGIN/END diagnostic trace (v2.8.0.0 logging audit,
+        /// default off). Takes effect after restarting Outlook.
+        /// </summary>
+        public bool DiagnosticLogging
+        {
+            get => _settings.DiagnosticLogging;
+            set => Apply(_settings.DiagnosticLogging, value, v => _settings.DiagnosticLogging = v);
         }
 
         /// <summary>Opt-in: check the configured URL for a newer version at startup (v2.7.0.0 E1, default off).</summary>
@@ -460,7 +473,7 @@ namespace RBLclass.AddIn.ViewModels
             }
 
             _settings.ExternalBannerSignature = block;
-            _settings.Save(_store);
+            _settings.Save(_store, _log);
             BannerStatus = DescribeBanner(block);
             OnPropertyChanged(nameof(HasBanner));
         }
@@ -506,7 +519,7 @@ namespace RBLclass.AddIn.ViewModels
             _settings.StripBannerOnReply = false;
             _settings.StripBannerOnClassify = false;
             _settings.StripBannerOnAutoClassify = false;
-            _settings.Save(_store);
+            _settings.Save(_store, _log);
             BannerStatus = DescribeBanner(string.Empty);
             BannerDiagnosticStatus = string.Empty;
             OnPropertyChanged(nameof(HasBanner));
@@ -576,7 +589,7 @@ namespace RBLclass.AddIn.ViewModels
             _settings.SentItemTriageArchiveEntryId = folder.EntryId;
             _settings.SentItemTriageArchivePath = folder.FullPath;
             _archiveFolderIsStale = false;
-            _settings.Save(_store);
+            _settings.Save(_store, _log);
             OnPropertyChanged(nameof(SentItemTriageArchiveFolderPath));
         }
 
@@ -587,7 +600,7 @@ namespace RBLclass.AddIn.ViewModels
             _settings.SentItemTriageArchiveEntryId = string.Empty;
             _settings.SentItemTriageArchivePath = string.Empty;
             _archiveFolderIsStale = false;
-            _settings.Save(_store);
+            _settings.Save(_store, _log);
             OnPropertyChanged(nameof(SentItemTriageArchiveFolderPath));
         }
 
@@ -620,7 +633,7 @@ namespace RBLclass.AddIn.ViewModels
 
             assign(value);
             OnPropertyChanged(propertyName);
-            _settings.Save(_store);
+            _settings.Save(_store, _log);
         }
     }
 }

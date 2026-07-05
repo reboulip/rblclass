@@ -197,5 +197,13 @@ namespace RBLclass.Core
 
         /// <summary>Default for the standalone attachment-management modal's "remove saved attachments" checkbox (v2.8.0.0 A3, default on = a Save-to attachment is stripped from the email after saving).</summary>
         public const string StripSavedAttachments = "StripSavedAttachments";
+
+        /// <summary>
+        /// Raise the minimum log level to Debug, restoring the full per-item
+        /// PERF/BEGIN/END trace (v2.8.0.0 logging audit, default off - the
+        /// steady-state log shows only meaningful actions and errors). Takes
+        /// effect after restarting Outlook, like the UI-language override.
+        /// </summary>
+        public const string DiagnosticLogging = "DiagnosticLogging";
     }
 }

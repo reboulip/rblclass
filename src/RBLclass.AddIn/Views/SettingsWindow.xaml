@@ -364,6 +364,18 @@
                             </StackPanel>
                         </GroupBox>
 
+                        <GroupBox Header="{loc:Loc Key=Settings_Diagnostics_Header}" Margin="0,0,0,8">
+                            <StackPanel Margin="6">
+                                <CheckBox IsChecked="{Binding DiagnosticLogging}">
+                                    <TextBlock TextWrapping="Wrap" MaxWidth="400"
+                                               Text="{loc:Loc Key=Settings_DiagnosticLogging_CheckBox}" />
+                                </CheckBox>
+                                <TextBlock Margin="0,6,0,0" TextWrapping="Wrap"
+                                           Style="{DynamicResource MutedText}"
+                                           Text="{loc:Loc Key=Settings_Language_RestartNote}" />
+                            </StackPanel>
+                        </GroupBox>
+
                         <TextBlock Margin="6,4,0,0" Style="{DynamicResource MutedText}"
                                    Text="{Binding AboutVersion}" />
                     </StackPanel>

@@ -493,6 +493,12 @@
   <data name="Settings_UpdateCheck_Note" xml:space="preserve">
     <value>Off by default. When enabled, RBLclass makes one request to this URL at startup to read the latest version number. No other data is sent.</value>
   </data>
+  <data name="Settings_Diagnostics_Header" xml:space="preserve">
+    <value>Diagnostics</value>
+  </data>
+  <data name="Settings_DiagnosticLogging_CheckBox" xml:space="preserve">
+    <value>Enable full diagnostic logging (verbose per-item trace)</value>
+  </data>
   <data name="Settings_Nav_Search" xml:space="preserve">
     <value>Search</value>
   </data>

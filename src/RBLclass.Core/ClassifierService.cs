@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using RBLclass.Core.Logging;
 
 namespace RBLclass.Core
 {
@@ -20,16 +21,19 @@ namespace RBLclass.Core
     {
         private readonly IMailStore _store;
         private readonly IClassificationHistory _history;
+        private readonly IAppLog _log;
 
         /// <param name="history">
         /// Optional: when provided, every successful filing is recorded against
         /// the item's conversation (feeding Auto-class) and Undo rolls those
         /// records back. Recording is best-effort - it never fails a classify.
         /// </param>
-        public ClassifierService(IMailStore store, IClassificationHistory history = null)
+        /// <param name="log">Optional: defaults to a no-op sink when not provided.</param>
+        public ClassifierService(IMailStore store, IClassificationHistory history = null, IAppLog log = null)
         {
             _store = store ?? throw new ArgumentNullException(nameof(store));
             _history = history;
+            _log = log ?? NullAppLog.Instance;
         }
 
         public ClassifyPreflight Preflight(IReadOnlyList<MailItemRef> items, bool widenConversation)
@@ -130,6 +134,8 @@ namespace RBLclass.Core
                 {
                     var destination = request.Destinations[d];
                     bool moveSlot = !request.KeepCopy && d == count - 1;
+                    _log.Debug(moveSlot ? "Classify: moving item -> {Path}" : "Classify: copying item -> {Path}",
+                        destination.FullPath);
 
                     // Isolate each destination: one that refuses the item
                     // (e.g. a store root that can't hold mail) must not abort
@@ -169,7 +175,11 @@ namespace RBLclass.Core
                                         if (safety != null) acc.CreatedCopies.Add(safety);
                                     }
                                 }
-                                catch { /* guardrail only; the adapter logs the cause */ }
+                                catch (Exception ex)
+                                {
+                                    // guardrail only; the filing itself already succeeded
+                                    _log.Warning(ex, "Classify safety-copy to Deleted Items failed for {Path}", destination.FullPath);
+                                }
                             }
                         }
                         else
@@ -209,11 +219,11 @@ namespace RBLclass.Core
                             }
                         }
                     }
-                    catch
+                    catch (Exception ex)
                     {
-                        // This destination failed; the adapter logs the cause.
                         // A failed move leaves the original in place - never
                         // any data loss on failure.
+                        _log.Warning(ex, "Classify item failed -> {Path}", destination.FullPath);
                         acc.Errors++;
                     }
                 }
@@ -260,7 +270,12 @@ namespace RBLclass.Core
                 {
                     bool saved;
                     try { saved = _store.SaveAttachmentToFile(filedRef, d.AttachmentId, d.TargetDirectory); }
-                    catch { saved = false; } // adapter logs the cause
+                    catch (Exception ex)
+                    {
+                        saved = false;
+                        _log.Warning(ex, "Save-to-file failed for attachment {AttachmentId} on {Subject}",
+                            d.AttachmentId, originalItem.Subject);
+                    }
                     if (!saved) allSavesSucceeded = false;
                 }
             }
@@ -271,6 +286,7 @@ namespace RBLclass.Core
             // in place and count it so the user is told to retry.
             if (rows.Count > 0 && !allSavesSucceeded)
             {
+                _log.Warning("Attachment removal skipped: prior save failed for {Subject}", originalItem.Subject);
                 acc.Errors++;
                 return;
             }
@@ -290,7 +306,12 @@ namespace RBLclass.Core
                 {
                     bool removed;
                     try { removed = _store.RemoveAttachment(filedRef, d.AttachmentId); }
-                    catch { removed = false; }
+                    catch (Exception ex)
+                    {
+                        removed = false;
+                        _log.Warning(ex, "Attachment {AttachmentId} removal failed for {Subject}",
+                            d.AttachmentId, originalItem.Subject);
+                    }
                     if (removed) stripped = true;
                 }
             }
@@ -494,7 +515,11 @@ namespace RBLclass.Core
             foreach (var flagged in plan.CompletedFlags)
             {
                 try { _store.MarkTaskIncomplete(flagged); flagsRestored++; }
-                catch { errors++; }
+                catch (Exception ex)
+                {
+                    errors++;
+                    _log.Warning(ex, "Undo: flag-restore failed for {Subject}", flagged.Subject);
+                }
             }
 
             // Copies the classify created are removed outright ("undo
@@ -502,7 +527,11 @@ namespace RBLclass.Core
             foreach (var copy in plan.CreatedCopies)
             {
                 try { _store.DeleteItemPermanently(copy); copiesDeleted++; }
-                catch { errors++; }
+                catch (Exception ex)
+                {
+                    errors++;
+                    _log.Warning(ex, "Undo: copy-delete failed for {Subject}", copy.Subject);
+                }
             }
 
             // Finally put each moved original back where it came from, keeping the
@@ -522,7 +551,12 @@ namespace RBLclass.Core
                     else
                         errors++;
                 }
-                catch { errors++; }
+                catch (Exception ex)
+                {
+                    errors++;
+                    _log.Warning(ex, "Undo: move-restore failed for {Subject} -> {Path}",
+                        move.Current.Subject, move.SourceFolder.FullPath);
+                }
             }
 
             // Roll back what Auto-class learned from this classify (best-effort:
@@ -653,6 +687,10 @@ namespace RBLclass.Core
                     errors++;
                 }
             }
+
+            _log.Debug("AutoClassify done: filed={Filed}, noHistory={NoHistory}, staleFolders={StaleFolders}, " +
+                       "alreadyInPlace={AlreadyInPlace}, errors={Errors}, partialErrors={PartialErrors}",
+                filed, noHistory, staleFolders, alreadyInPlace, errors, partialErrors);
 
             var plan = new ClassifyUndoPlan(allMoves, allCopies, allFlags, strips, allBatchIds);
             return new AutoClassifyResult(filed, noHistory, staleFolders, errors,

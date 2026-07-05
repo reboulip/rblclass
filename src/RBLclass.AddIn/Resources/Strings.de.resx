@@ -493,6 +493,12 @@
   <data name="Settings_UpdateCheck_Note" xml:space="preserve">
     <value>Standardmäßig deaktiviert. Wenn aktiviert, sendet RBLclass beim Start eine einzige Anfrage an diese URL, um die neueste Versionsnummer zu lesen. Es werden keine weiteren Daten gesendet.</value>
   </data>
+  <data name="Settings_Diagnostics_Header" xml:space="preserve">
+    <value>Diagnose</value>
+  </data>
+  <data name="Settings_DiagnosticLogging_CheckBox" xml:space="preserve">
+    <value>Vollständige Diagnoseprotokollierung aktivieren (ausführliche Ablaufverfolgung pro Element)</value>
+  </data>
   <data name="Settings_Nav_Search" xml:space="preserve">
     <value>Suche</value>
   </data>

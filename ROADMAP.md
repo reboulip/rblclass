@@ -248,6 +248,12 @@ each item is one coherent, testable change.
 - [x] **C1.** Fix auto-class + attachment-modal conflict: auto-class must check for a valid target folder in the conversation history *before* opening the attachment-disposition modal, so the modal never opens for an email it cannot process; when multiple emails are selected, only show attachments for the ones that will actually be processed; surface a clearer (non-modal) message when auto-class cannot process an element. [#36]
 - [x] **C2.** Investigate and fix the classify silent-failure/freeze reported on v2.6.0.0: ~30s "Classement en cours" then no move, reproducible after reinstall/reboot; log attached on the issue. Reporter notes meeting-invite classify is unaffected — only regular mail. [#35]
 
+### D — Logging audit & rework
+- [x] **D1.** Demote the per-item PERF/D1 BEGIN-END/selection-change chatter (`OutlookMailStore`, `RblClassAddIn`, `MainPaneViewModel`) from Information to Debug, gated by a new persistent `DiagnosticLogging` setting (Settings → Diagnostics, default off, takes effect after restart) that raises the minimum log level back to Debug on demand. The classify/auto-class outcome summary line stays at Information even with PERF demoted.
+- [x] **D2.** Add a narrow `IAppLog` logging seam to `RBLclass.Core` (`SerilogAppLog` forwarding in the AddIn), inject it into `ClassifierService`, and log the previously-silent swallowed failures (per-destination classify failures, safety-copy/attachment-removal/Undo faults, AutoClassify outcome tally).
+- [x] **D3.** Fill AddIn/adapter logging gaps: `ShowError` now logs every ribbon/lifecycle exception; the forgotten-attachment and external-recipient send-time guards log when they fire and whether the user proceeded or cancelled; `DeleteItem` and the silent adapter early-exits/S/MIME skips get entry/success/failure breadcrumbs; `Settings.Save` emits one audit line per save summarising the security-relevant settings (never the banner signature).
+- [x] Retention investigated: `retainedFileCountLimit: 14` already keeps the log well under 90 days — no change needed.
+
 ---
 
 ## Phase 6 — Pilot rollout (in progress)
