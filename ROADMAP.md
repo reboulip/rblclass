@@ -53,6 +53,35 @@ strip B3, meeting classify C1), and the **v2.9.0.0** feedback wave planned
       stale selection EntryID. Investigate on the real 32-bit target / a
       non-Gmail store before pilot; not reproducible as a code defect on the
       current dev account.
+- [ ] **Task pane rendered partly behind the navigation rail when docked
+      top/bottom.** Discovered during v2.9.0.0 A2 verification: when the CTP's
+      `DockPosition` is Top or Bottom, its left edge renders underneath
+      Outlook's left navigation icon rail (Mail/Calendar/People/Apps), both on
+      live redock and on a fresh Outlook restart with the position persisted
+      from a prior session — not a one-off repaint glitch. Left/Right docking
+      (the common case, used throughout normal dev/testing) is unaffected.
+      **A real, separate bug found and fixed along the way:** `EnsureTaskPane`
+      unconditionally set `_taskPane.Width = 360` regardless of dock position;
+      Office's `CustomTaskPane` only accepts `Width` while docked Left/Right
+      and only `Height` while docked Top/Bottom, so setting the wrong one
+      throws `COMException 0x80004005` — this crashed `OnStartupComplete`
+      whenever the persisted dock position was Top/Bottom. Fixed by
+      `ApplyDockSize` (`RblClassAddIn.cs`), which sets `Width` or `Height`
+      based on the pane's actual `DockPosition`; also invoked on every
+      `DockPositionStateChange` so live redocking gets correctly resized too.
+      **Ruled out for the remaining visual overlap** (crash fix alone did not
+      resolve it): deferring the initial `EnsureTaskPane()` + `Visible = true`
+      call to `DispatcherPriority.ApplicationIdle` in `OnStartupComplete`, on
+      the theory that showing the pane raced the Explorer's own nav-rail
+      layout — reverted, no effect, overlap reproduces identically on a cold
+      restart either way. Likely a genuine Office/Outlook limitation of the
+      classic (non-VSTO) `CustomTaskPane` docking API when combined with the
+      newer nav rail, which classic CTPs predate and may not have been
+      updated to account for; the API exposes no direct position/bounds
+      control beyond `DockPosition` + `Width`/`Height`. May be specific to
+      this ARM64/Prism-emulated dev machine — re-check on the real 32-bit
+      target before investing further. Cosmetic only; does not block using
+      the pane in its default Right-docked position.
 
 ---
 

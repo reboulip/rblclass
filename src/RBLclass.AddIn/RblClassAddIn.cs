@@ -926,18 +926,45 @@ namespace RBLclass.AddIn
             _taskPane = _ctpFactory.CreateCTP(
                 RblClassTaskPaneHost.ProgIdString, "RBLclass", Type.Missing);
             _taskPane.DockPosition = (Office.MsoCTPDockPosition)dockInt;
-            _taskPane.Width = 360;
+            ApplyDockSize(_taskPane);
             _taskPane.DockPositionStateChange += OnTaskPaneDockPositionStateChange;
         }
 
         /// <summary>
-        /// Persists the new dock position whenever the user moves the task pane.
+        /// Office's CustomTaskPane only accepts <c>Width</c> while docked Left/Right and
+        /// only <c>Height</c> while docked Top/Bottom - setting the other one throws
+        /// COMException 0x80004005 ("the specified width/height is not valid ... current
+        /// dock position"). Never guarded before (v2.4.0.0 A3 only ever set Width
+        /// unconditionally), which crashed OnStartupComplete whenever the persisted dock
+        /// position was Top/Bottom, and left Top/Bottom docking at whatever undersized
+        /// default Office falls back to when redocked live without a restart (v2.9.0.0 A2
+        /// follow-up).
+        /// </summary>
+        private static void ApplyDockSize(Office.CustomTaskPane pane)
+        {
+            switch (pane.DockPosition)
+            {
+                case Office.MsoCTPDockPosition.msoCTPDockPositionLeft:
+                case Office.MsoCTPDockPosition.msoCTPDockPositionRight:
+                    pane.Width = 360;
+                    break;
+                case Office.MsoCTPDockPosition.msoCTPDockPositionTop:
+                case Office.MsoCTPDockPosition.msoCTPDockPositionBottom:
+                    pane.Height = 300;
+                    break;
+            }
+        }
+
+        /// <summary>
+        /// Persists the new dock position whenever the user moves the task pane, and
+        /// re-applies the size for the new orientation (v2.9.0.0 A2 follow-up).
         /// Fires on the Outlook UI (STA) thread.
         /// </summary>
         private void OnTaskPaneDockPositionStateChange(Office.CustomTaskPane customTaskPaneInst)
         {
             try
             {
+                ApplyDockSize(customTaskPaneInst);
                 int pos = (int)customTaskPaneInst.DockPosition;
                 _settingsStore?.Set(SettingsKeys.PaneDockPosition,
                     pos.ToString(System.Globalization.CultureInfo.InvariantCulture));
