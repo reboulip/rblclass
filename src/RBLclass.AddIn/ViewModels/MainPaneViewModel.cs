@@ -39,6 +39,7 @@ namespace RBLclass.AddIn.ViewModels
         private bool _markAsRead;
         private bool _canStripBanner;
         private bool _isOptionsExpanded;
+        private bool _isHorizontalLayout;
         private SelectableFolder _selectedResult;
         private SearchPathDisplayMode _pathDisplayMode = SearchPathDisplayMode.OneLine;
         // Search-behaviour settings cached so the search path never loads the
@@ -146,6 +147,7 @@ namespace RBLclass.AddIn.ViewModels
             while (StatusLog.Count > StatusLogCapacity)
                 StatusLog.RemoveAt(StatusLog.Count - 1);
             OnPropertyChanged(nameof(HasStatusEntries));
+            OnPropertyChanged(nameof(CanShowJournalInVerticalMode));
         }
 
         /// <summary>
@@ -256,6 +258,27 @@ namespace RBLclass.AddIn.ViewModels
             get => _isOptionsExpanded;
             set => SetProperty(ref _isOptionsExpanded, value);
         }
+
+        /// <summary>
+        /// True when the task pane is wider than tall (horizontal docking).
+        /// Set by <see cref="Views.MainPaneView"/> on every SizeChanged; drives the
+        /// adaptive action-button bar (v2.9.0.0 A2).
+        /// </summary>
+        public bool IsHorizontalLayout
+        {
+            get => _isHorizontalLayout;
+            set
+            {
+                if (SetProperty(ref _isHorizontalLayout, value))
+                    OnPropertyChanged(nameof(CanShowJournalInVerticalMode));
+            }
+        }
+
+        /// <summary>
+        /// True when the Journal button should appear in the vertical (stacked)
+        /// layout — i.e. there are entries AND the pane is in portrait orientation.
+        /// </summary>
+        public bool CanShowJournalInVerticalMode => HasStatusEntries && !IsHorizontalLayout;
 
         public SelectableFolder SelectedResult
         {

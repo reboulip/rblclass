@@ -18,9 +18,20 @@ namespace RBLclass.AddIn.Views
         public MainPaneView()
         {
             InitializeComponent();
+            SizeChanged += MainPane_SizeChanged;
         }
 
         private MainPaneViewModel Vm => DataContext as MainPaneViewModel;
+
+        /// <summary>
+        /// Switches the action-button bar between the stacked (portrait) and
+        /// single-row (landscape) layouts based on the pane's own aspect ratio,
+        /// not a user setting (v2.9.0.0 A2).
+        /// </summary>
+        private void MainPane_SizeChanged(object sender, SizeChangedEventArgs e)
+        {
+            if (Vm != null) Vm.IsHorizontalLayout = e.NewSize.Width > e.NewSize.Height;
+        }
 
         /// <summary>
         /// Put keyboard focus in the search box (v2.7.0.0 A2), called whenever the

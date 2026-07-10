@@ -116,7 +116,7 @@ text as the specification.
       tooltip exactly as they are. This is a glyph swap only — the eye better
       conveys "look inside this folder" than the arrow. [#45]
 
-- [ ] **A2.** Adaptive layout for the pane action buttons (Options, Classify,
+- [x] **A2.** Adaptive layout for the pane action buttons (Options, Classify,
       Cancel, Journal): when the task pane is docked horizontally (pane wider
       than tall, e.g. docked above the inbox list), lay these buttons out side
       by side on one line instead of stacked vertically, reclaiming vertical
