@@ -54,10 +54,15 @@ For every test case in the brief's "xUnit tests" section:
 
 ## Step 5 — Build check
 
-Run a build to catch compilation errors before reloading into Outlook:
+`msbuild` is not on PATH on this machine — resolve it via `vswhere` first
+(same lookup `Reload-Addin.ps1` uses), then build to catch compilation
+errors before reloading into Outlook:
 
 ```powershell
-msbuild src\RBLclass.AddIn\RBLclass.AddIn.csproj /p:Configuration=Debug /p:Platform=AnyCPU /t:Build /v:minimal
+$vswhere = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe"
+$msbuild = & $vswhere -latest -prerelease -products * -requires Microsoft.Component.MSBuild -find "MSBuild\**\Bin\MSBuild.exe" | Select-Object -First 1
+if (-not $msbuild -or -not (Test-Path $msbuild)) { throw "MSBuild not found via vswhere." }
+& $msbuild "src\RBLclass.AddIn\RBLclass.AddIn.csproj" /p:Configuration=Debug "/p:Platform=Any CPU" /t:Build /v:minimal /nologo
 ```
 
 Fix any errors before continuing. Do not call /reload-addin until the build
