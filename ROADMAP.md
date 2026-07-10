@@ -82,6 +82,43 @@ strip B3, meeting classify C1), and the **v2.9.0.0** feedback wave planned
       this ARM64/Prism-emulated dev machine — re-check on the real 32-bit
       target before investing further. Cosmetic only; does not block using
       the pane in its default Right-docked position.
+      **Research findings (2026-07-10, web research session):** the icon rail
+      is Outlook's "app bar" / Hub Bar feature (feature flag
+      `Microsoft.Office.Outlook.Hub.HubBar`), added to classic Outlook in
+      Version 2211 (Nov 2022) — some 15 years after the classic CTP docking
+      API, which was never updated to account for it. The rail overlapping
+      third-party docked panes is a *known* complaint on ordinary x86/x64
+      machines (e.g. iManage's Outlook integration; Slipstick Systems
+      documents the rail "cuts into the full display of Outlook" and cannot
+      be narrowed) — so this is an Office-side layout limitation, **not**
+      ARM64/Prism-specific, and should be expected to reproduce on the 32-bit
+      Semi-Annual target as well (SAC builds have carried the rail since
+      2023). **No add-in-side code fix exists:** the classic
+      `_CustomTaskPane` COM interface has no position/bounds members, and the
+      only P/Invoke prior art (FindWindow `MsoCommandBar` + `MoveWindow`)
+      applies to *floating* CTPs only — for docked panes Outlook's docking
+      manager owns the geometry and re-applies it on every window resize, so
+      a `SetWindowPos` offset would be immediately undone (and raising the
+      CTP's z-order would merely hide the rail's icons instead — no better).
+      **Working user-level workaround** (verifiable on this dev machine):
+      File → Options → Advanced → "Outlook panes" → uncheck **"Show apps in
+      Outlook"**, restart Outlook — moves the navigation back to the bottom
+      of the folder pane, removing the rail and the overlap entirely. This is
+      the same workaround the iManage community uses. The checkbox is still
+      present in recent builds (confirmed in M365 Version 2502) but Microsoft
+      has removed it for some users/builds; the registry equivalent —
+      `Microsoft.Office.Outlook.Hub.HubBar` = `"false"` (REG_SZ) under
+      `HKCU\Software\Microsoft\Office\16.0\Common\ExperimentConfigs\ExternalFeatureOverrides\outlook`
+      or `HKCU\Software\Microsoft\Office\16.0\Common\ExperimentEcs\Overrides`
+      — is documented (Slipstick) but flagged as an experimental override
+      that may stop working in future builds. **Disposition:** treat as a
+      known, unfixable-in-code Office limitation; keep the default Right
+      dock; if a pilot user insists on Top/Bottom docking, offer the "Show
+      apps in Outlook" workaround (or its registry override where the
+      checkbox is absent) rather than attempting a code change.
+      Sources: slipstick.com/outlook/outlooks-left-navigation-bar/,
+      ablebits.com/office-addins-blog/outlook-customize-move-navigation-pane/,
+      aritrasaha.wordpress.com/2009/05/19/ (floating-CTP MoveWindow prior art).
 
 ---
 
