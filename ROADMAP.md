@@ -81,7 +81,7 @@ text as the specification.
 
 ### A — Pane & search UI
 
-- [ ] **A1.** In the folder-search result rows, replace the "open folder"
+- [x] **A1.** In the folder-search result rows, replace the "open folder"
       affordance's oblique-arrow glyph (top right of the row) with an eye
       glyph (👁), keeping the command, behaviour, placement, and localized
       tooltip exactly as they are. This is a glyph swap only — the eye better

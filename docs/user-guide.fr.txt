@@ -23,7 +23,7 @@ Saisissez des mots-clés dans le champ de recherche en haut du volet. Les résul
 * '''Entrée''' classe le message sélectionné dans le dossier en surbrillance.
 * '''Ctrl+Entrée''' ''ouvre'' le dossier en surbrillance dans Outlook au lieu de classer.
 * '''Double-clic''' sur une ligne pour classer immédiatement dans ce dossier.
-* Le bouton '''↗''' ouvre ce dossier dans Outlook.
+* Le bouton '''👁''' ouvre ce dossier dans Outlook.
 * Clic droit → '''Ajouter un sous-dossier…''' crée un sous-dossier.
 * Le bouton '''⤢''' fait défiler le mode d'affichage du chemin de cette ligne (voir « Affichage du chemin des résultats » dans les paramètres).
 
