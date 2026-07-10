@@ -139,7 +139,9 @@ text as the specification.
       verify that deferral actually covers reply/forward drafts, and cover
       inline replies composed in the explorer's reading pane
       (`Explorer.InlineResponse`), which never open an Inspector at all.
-      [#46]
+      [#46] - shipped, pending tests (not verifiable on the dev machine per
+      the testing strategy above; re-verify inline reply/forward, popout
+      reply/forward, and the sent-copy on the real target before pilot)
 
 - [ ] **B2.** Investigate and fix the dead Delete key after "go to folder"
       (the open-folder action on a search result, which navigates the

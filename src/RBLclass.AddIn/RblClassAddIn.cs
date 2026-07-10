@@ -394,14 +394,18 @@ namespace RBLclass.AddIn
                     catch (Exception ex) { TryLog("DeleteMail (pin banner) failed", ex); }
                 };
 
-                // Keep the classify pane's selection count live.
+                // Keep the classify pane's selection count live; also strip the
+                // external-sender banner from inline reply/forward drafts (B1).
                 try
                 {
                     _activeExplorer = _outlookApp.ActiveExplorer();
                     if (_activeExplorer != null)
+                    {
                         _activeExplorer.SelectionChange += OnExplorerSelectionChange;
+                        _activeExplorer.InlineResponse += OnExplorerInlineResponse;
+                    }
                 }
-                catch (Exception ex) { TryLog("SelectionChange subscribe failed", ex); }
+                catch (Exception ex) { TryLog("Explorer event subscribe failed", ex); }
 
                 // Send-time guards (legacy 6a-6b). Kept on _outlookApp, which is
                 // already held in a field for the add-in's lifetime (CLAUDE.md
@@ -537,6 +541,7 @@ namespace RBLclass.AddIn
                 if (_activeExplorer != null)
                 {
                     try { _activeExplorer.SelectionChange -= OnExplorerSelectionChange; } catch { }
+                    try { _activeExplorer.InlineResponse -= OnExplorerInlineResponse; } catch { }
                     try { Marshal.ReleaseComObject(_activeExplorer); } catch { }
                     _activeExplorer = null;
                 }
@@ -655,7 +660,12 @@ namespace RBLclass.AddIn
                         try { item = inspector.CurrentItem; } catch { }
                         if (item != null)
                         {
-                            try { _mailStore.StripBannerFromDraft(item, sig); }
+                            try
+                            {
+                                bool stripped = _mailStore.StripBannerFromDraft(item, sig);
+                                Log.Debug("Inspector.Activate banner strip: {Result}",
+                                    stripped ? "stripped" : "no banner found in body");
+                            }
                             finally { try { Marshal.ReleaseComObject(item); } catch { } }
                         }
                     }
@@ -666,6 +676,32 @@ namespace RBLclass.AddIn
             catch (Exception ex)
             {
                 TryLog("NewInspector banner strip setup failed", ex);
+            }
+        }
+
+        /// <summary>
+        /// Inline reply/forward banner strip (v2.9.0.0 B1): Outlook composes the
+        /// quoted body in the reading-pane compose area before firing
+        /// <c>Explorer.InlineResponse</c>, so the banner is present in the item's
+        /// HTMLBody and can be stripped immediately. The item COM reference belongs
+        /// to Outlook; do not release it. Best-effort and never throws into Outlook.
+        /// </summary>
+        private void OnExplorerInlineResponse(object item)
+        {
+            try
+            {
+                var settings = Settings.Load(_settingsStore);
+                if (!settings.StripBannerOnReply ||
+                    string.IsNullOrWhiteSpace(settings.ExternalBannerSignature))
+                    return;
+
+                bool stripped = _mailStore.StripBannerFromDraft(item, settings.ExternalBannerSignature);
+                Log.Debug("InlineResponse banner strip: {Result}",
+                    stripped ? "stripped" : "no banner found in body");
+            }
+            catch (Exception ex)
+            {
+                TryLog("InlineResponse banner strip failed", ex);
             }
         }
 
