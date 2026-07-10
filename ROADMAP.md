@@ -10,29 +10,16 @@ Reference docs from the legacy analysis:
 [docs/legacy-reimplementation-roadmap.md](docs/legacy-reimplementation-roadmap.md),
 [docs/parity-and-regression.md](docs/parity-and-regression.md).
 
-## Where we are (2026-06-26)
+## Where we are (2026-07-10)
 
 The rewritten add-in reached full legacy parity and shipped as **v2.0.0.0**,
-followed by feedback/refinement waves **v2.1.0.0**, **v2.2.0.0**, **v2.4.0.0**
-(classify performance/freeze fix, classify-after-send, attachment disposition),
-**v2.4.1.0**, **v2.5.0.0**, **v2.5.1.0** (diagnostic PERF logging), and
-**v2.5.2.0** (classify-time freeze fix: deferred post-classify refresh +
-mid-batch selection suppression) — all complete and recorded in
-[history](docs/roadmap-history.md).
+followed by feedback/refinement waves **v2.1.0.0** through **v2.8.0.0**
+(pane actions, sent-items handling, classify reliability, logging audit) —
+all complete and recorded in [history](docs/roadmap-history.md).
 
-- [x] **Classify-time freeze — FIXED & verified (v2.5.2.0).** The
-      selection-event storm during classify is gone: the 2026-06-26 production
-      logs show `SelectionChange suppressed (batch in progress)` on every
-      multi-item batch and a single deferred `RefreshSelection` (ran ≤56 ms)
-      after each classify; normal classify latency is ~80–650 ms total. This is
-      the freeze the user cared about. *(Separately observed, not this issue: two
-      ~80–90 s stalls on the attachment-save-to-SharePoint path, and a 1× auto-class
-      COMException moving into the account-root inbox — tracked as their own
-      follow-ups, not the classify freeze.)*
-
-The only remaining product item is the live re-verification of the
-external-sender banner strip (below — not reproducible on the dev machine).
-Phase 6 (pilot rollout) is in progress; Phases 7–9 are forward-looking.
+Open work: the two v2.6.0.0 items still pending live verification (banner
+strip B3, meeting classify C1), and the **v2.9.0.0** feedback wave planned
+2026-07-10 from the open GitHub issues. Phases 8–9 are forward-looking.
 
 ## Testing & validation strategy (applies to every item)
 
@@ -86,173 +73,138 @@ Phase 6 (pilot rollout) is in progress; Phases 7–9 are forward-looking.
 
 ---
 
-## v2.7.0.0 — feedback wave: shortcuts, sent-items, docs
+## v2.9.0.0 — feedback wave: UI polish, classify & banner fixes, attachments
 
-### A — Keyboard shortcuts
-- [x] **A1.** Add Ctrl+Z as a keyboard shortcut for the Undo action. [#30]
-- [x] **A2.** Add keyboard shortcuts to open the RBLclass pane, focus the search field when the pane is open, and open the searched folder (distinct from Enter, which classifies); specific bindings chosen with the user; add a startup option to auto-show the pane when Outlook opens. [#22] [#31]
+Planned 2026-07-10 from the open GitHub issues (`/gh-issues` triage). Each
+item embeds the implementation decisions made with the user — treat the item
+text as the specification.
 
-### B — Sent-items handling
-- [x] **B1.** Clarify the post-send classify dialog labels and lay the buttons out vertically so long labels render clearly in every language. [#24]
-- [x] **B2.** Add a configurable default archive folder into which sent messages are moved automatically. [#23]
+### A — Pane & search UI
 
-### C — Search result display
-- [x] **C1.** Add a Settings option for the expanded search-result path display, letting the user choose between the current one-line-per-folder layout and a multi-line full-path layout; default stays the one-liner. [#26]
+- [ ] **A1.** In the folder-search result rows, replace the "open folder"
+      affordance's oblique-arrow glyph (top right of the row) with an eye
+      glyph (👁), keeping the command, behaviour, placement, and localized
+      tooltip exactly as they are. This is a glyph swap only — the eye better
+      conveys "look inside this folder" than the arrow. [#45]
 
-### D — Classify
-- [~] **D1.** ~~Add an opt-in (off by default) to keep only the latest message of a conversation in the target folder on classify — deleting older ones but never those with attachments; use Outlook's built-in conversation clean-up if suitable.~~ **DEFERRED/DROPPED (v2.7.0.0):** Outlook exposes no programmatic conversation clean-up API (`MailItem.GetConversation()` has no `CleanUp`), and the only way to trigger the real feature — `CommandBars.ExecuteMso("CleanUpConversation")` — acts on the active explorer's selection/folder and respects the user's global clean-up settings, so it cannot be reliably targeted at a just-classified conversation without fragile UI automation. A prototype that manually deleted older siblings by date was rejected (it lacks Outlook's redundancy semantics). Recommend users apply Outlook's native **Clean Up Conversation** instead. [#27]
-- [x] **D2.** Add an opt-in setting (off by default) to mark classified mails as read automatically on classify. [#32]
+- [ ] **A2.** Adaptive layout for the pane action buttons (Options, Classify,
+      Cancel, Journal): when the task pane is docked horizontally (pane wider
+      than tall, e.g. docked above the inbox list), lay these buttons out side
+      by side on one line instead of stacked vertically, reclaiming vertical
+      space; keep the current stacked layout when the pane is docked
+      vertically. Decided: the switch is automatic, driven by the pane's
+      aspect ratio (WPF `SizeChanged`/trigger on the view), NOT a user
+      setting. [#47]
 
-### E — Update notification (investigation)
-- [x] **E1.** Investigate a startup check that detects a newer RBLclass release and surfaces an orange in-pane update banner; account for corporate-proxy constraints and the no-network-by-default posture — defer or drop if it proves too complex. [#25] **Implemented** as an opt-in (off by default), no default URL: a single startup GET to a user-configured HTTPS version marker via `HttpClient` (honours the system proxy), showing an orange in-pane banner when a newer version is available; dismissal snoozes it for 7 days. This introduces the first outbound network call; the Phase 9 "no outbound network calls" posture is documented accordingly in `docs/security.md` (opt-in, off by default, no data sent beyond the GET).
+### B — Bug fixes (banner on reply, Delete key, widening stall)
 
-### F — Documentation
-- [x] **F1.** Produce a simplified end-user usage guide (features, per-setting behaviour, how to suggest improvements) in both multi-language HTML and MediaWiki format (one .txt file per supported language). [#21]
+- [ ] **B1.** Fix external-sender banner stripping on reply/forward. Repro
+      (issue #46, reporter's banner is correctly detected — the Settings
+      "Diagnose selected mail" reports a match and the filed-copy strip
+      works): with the strip-on-reply/forward option ticked, the banner
+      remains both in the reply/forward draft and in the sent message.
+      Decided: the strip must be applied at draft creation, so the user sees
+      the banner disappear before sending. Note: v2.6.0.0 B3 (commit fd2574b)
+      already deferred the strip from `NewInspector` to `Inspector.Activate`
+      because NewInspector fires before Outlook composes the quoted body —
+      verify that deferral actually covers reply/forward drafts, and cover
+      inline replies composed in the explorer's reading pane
+      (`Explorer.InlineResponse`), which never open an Inspector at all.
+      [#46]
 
----
+- [ ] **B2.** Investigate and fix the dead Delete key after "go to folder"
+      (the open-folder action on a search result, which navigates the
+      explorer to the target folder): after that navigation, pressing Del no
+      longer deletes mail in the target folder; the key works again only
+      after the user manually switches to another folder. Known facts: it is
+      NOT a plain focus grab by the WPF pane — the maintainer verified that
+      even after changing the selection inside the target folder, Del stays
+      dead until a manual folder change. Root-cause first (how
+      `Explorer.CurrentFolder` is assigned, whether the explorer is activated
+      after navigation, whether Outlook's item list ever receives real
+      keyboard focus), then fix so Del works immediately after go-to-folder.
+      [#49]
 
-## v2.7.1.0 — code-review remediation sprint
+- [ ] **B3.** Root-cause and fix the ~30 s classify stall tied to
+      conversation widening. History: issue #35 reported "Classement en
+      cours" for ~30 s with no move on v2.6.0.0; the v2.8.0.0 C2 fix added
+      error handling around a conversation-index timeout, but the reporter
+      still reproduces on v2.8.0.0 and has now isolated it: classify is
+      near-instant with the "process the whole conversation" (widening)
+      option unticked and takes ~30 s (the internal ceiling) with it ticked.
+      His Inbox/Sent Items are nearly empty and his PSTs live under
+      `Documents\FICHIERS OUTLOOK`. **Root cause confirmed from his
+      2026-07-07 diagnostic log** (`C:\Users\romai\Downloads\
+      rblclass-20260707.log` on the dev machine — reporter's personal data,
+      never commit it): every widened classify fails identically in
+      `OutlookMailStore.GetConversationSiblings` — the Outlook
+      conversation-table enumeration (`TableClass.get_EndOfTable()`) throws
+      `COMException` "timeout while obtaining conversation results" (HRESULT
+      low word `0x4005`, high word varies) after exactly ~30 s **per item**
+      (a 3-item batch stalls 3 × 30 s), with 0 siblings ever collected; the
+      v2.8.0.0 C2 handler then logs `widening skipped` and the move itself
+      succeeds in ms. So on this profile the conversation-table API never
+      works and only burns the 30 s timeout — likely because the machine's
+      Windows Search / conversation index is unavailable for those stores.
+      Fix directions to evaluate: replace or front-run the conversation
+      table with a bounded manual sibling lookup (`Items.Restrict` on
+      `ConversationID`/topic over the source folder + candidate destination
+      folders, which is how the folder-scoped paths already work), and/or
+      after the first timeout in a session disable further widening attempts
+      with a user-visible pane notice instead of paying 30 s per item.
+      Never a silent 30 s hang. [#35]
 
-Fixes from the 2026-07-03 full code review (diff review of the v2.7.0.0 sprint
-+ whole-codebase review; 20 ranked findings + verified mentions). Grouped so
-each item is one coherent, testable change.
+### C — Sent & meeting items
 
-### A — Data integrity (classify & attachments)
-- [x] **A1.** Mark-as-read hardening in `OutlookMailStore`: extract the duplicated
-      `UnRead = false; Save()` block from `CopyItemToFolder`/`MoveItemToFolder`
-      into one shared helper that (a) skips `IPM.Note.SMIME*` items via the same
-      `StartsWith(OrdinalIgnoreCase)` guard every other content-mutating path
-      uses (Save on signed/encrypted mail risks corruption — the
-      `ClassifyRequest.MarkAsRead` doc comment already promises "S/MIME-safe"),
-      and (b) also marks `MeetingItem` objects read (they expose `UnRead`) so the
-      setting applies to meeting classify too.
-- [x] **A2.** Attachment disposition dialog: "use the same save directory" must
-      no longer override rows the user explicitly set to Delete/Keep —
-      `ApplySameDirectory` applies the chosen directory only to rows still in
-      their default state, never flipping an explicit non-SaveTo choice to SaveTo.
-      **Extended during verification:** the default-checked radio per row is now
-      *Save to* (non-destructive default) instead of *Delete*, per user feedback.
-- [x] **A3.** `OutlookMailStore` small integrity fixes: (a) when keep-copy filing
-      fails (`Copy()` succeeded, `Move()` threw), best-effort delete the
-      transient copy before rethrowing so no orphaned duplicate accumulates in
-      the source folder; (b) in `AddSiblingIfInScope`, replace the exact
-      `== "IPM.Note.SMIME"` check with the `StartsWith("IPM.Note.SMIME",
-      OrdinalIgnoreCase)` guard used everywhere else, so signed/encrypted
-      subtypes (e.g. `.MultipartSigned`) are reported as skipped siblings.
+- [ ] **C1.** Add a "copy to inbox" choice to the sent-items arrival
+      handling. Today Settings offers moving a newly-arrived sent message to
+      the Inbox (or archive / do nothing); add a mode that COPIES it to the
+      Inbox, leaving the original in Sent Items. The inbox copy gets the same
+      post-sent pin banner as a moved item — including the v2.8.0.0 B1
+      "Delete from Inbox" button, which is the escape hatch when the user
+      decides not to keep the copy. Rationale (issue #50): classify sent mail
+      and keep a copy at hand without toggling the "keep a copy" classify
+      option depending on whether the item is sent or received. Needs a new
+      settings enum value, a triage-handler branch, and localized labels in
+      all three languages (`Strings.resx`/`.fr`/`.de` — ResourceParityTests
+      enforces parity). [#50]
 
-### B — Exception safety & result accounting
-- [x] **B1.** Guard every unguarded UI entry point so no exception can escape to
-      the dispatcher inside Outlook: the Ctrl+Enter `OpenHighlighted()` branch in
-      `QueryBox_KeyDown`, `AutoClass_Click`, `Undo_Click`, and the update-banner
-      `BeginInvoke` action in `ScheduleUpdateCheck` (try/catch + `Log.Error`,
-      matching `Classify_Click`). Also make `RblClassTaskPaneHost.EnsureView`
-      recoverable: if ViewModel construction throws, reset `_view` to null so a
-      later show retries instead of leaving a permanently blank pane.
-- [x] **B2.** Fix classify strip-failure accounting: wrap the strip-all
-      `_store.RemoveAttachments(filedRef)` call (and `MarkTaskComplete`) in
-      try/catch like the sibling per-attachment calls, so a strip failure is
-      logged and reported as a strip failure instead of double-counting the same
-      action as both filed and errored; guard the `mail.Attachments`/`.Count`
-      enumeration inside `OutlookMailStore.RemoveAttachments` with the file's
-      `Safe()` pattern.
-- [x] **B3.** Surface partial auto-classify failures: carry the inner
-      `ClassifyResult.Errors`/`EncryptedStripSkips` into `AutoClassifyResult`
-      and reflect them in the auto-class status line, so "filed to A, failed at
-      B" is no longer reported as a clean success.
-      **Extended during verification (two root-cause fixes):** (a) auto-class
-      now skips destinations the mail already sits in (Outlook rejects a
-      same-folder move with 0x80020009) and reports them as "already in its
-      remembered folder"; (b) the post-send triage's move-to-inbox /
-      move-to-archive no longer record classification history
-      (`ClassifyRequest.RecordHistory = false`) — they had been overwriting
-      every conversation's remembered folder with the inbox/archive, silently
-      breaking auto-class for those conversations.
+- [ ] **C2.** Discoverability hint for meeting-invite classify: when the user
+      triggers Classify (or Auto-Class) on a selection containing a
+      MeetingItem while the opt-in "classify meeting items" setting
+      (v2.6.0.0 C1) is OFF, show a one-time informational dialog — "Did you
+      know? Classifying meeting invitations is available as an option" —
+      naming the exact Settings location, with a "don't show this again"
+      checkbox persisted via `ISettingsStore` (settings always persist across
+      restarts). The dialog must not interrupt the classify of the other
+      selected items — show it after the batch completes. Localized in all
+      three languages. [#28]
 
-### C — Sent-item triage hardening
-- [x] **C1.** Triage handler fixes (one change, three parts): (a) set the
-      re-entrancy suppression before `ShowDialog()` (reset in `finally`) so a
-      second sent item arriving during the open triage dialog cannot stack a
-      second modal; (b) surface stale archive-folder failures — Settings
-      re-resolves the configured folder's liveness so the existing "no longer
-      found" placeholder actually shows, and a failed MoveToArchive gives
-      user-visible feedback (pane status) instead of a log-only silent leave;
-      (c) pass the already-loaded `Settings` into `ApplySentItemTriage` instead
-      of reloading a second full snapshot in the MoveToArchive case.
+### D — Attachments
 
-### D — Startup & pane behaviour
-- [x] **D1.** Add the persisted setting (promised by v2.7.0.0 A2) gating the
-      startup auto-show of the pane — default ON to preserve current behaviour,
-      opt-out in Settings → General; localized in all three languages.
-- [x] **D2.** First-run folder walk must yield between stores
-      (`Dispatcher.Yield`, like the manual refresh path `RunFolderWalkAsync`)
-      so Outlook stays responsive during the initial index on multi-PST profiles.
-- [x] **D3.** Propagate mid-session settings changes to the pane immediately:
-      re-seed the pane option fields (keep copy, remove attachments, widen
-      conversation, strip banner, mark as read) and the path-display default
-      when the Settings window persists a change, so the very next classify uses
-      the new values (the user guide promises "applied immediately"). While
-      there, delete `ResolvePathDisplayMode`'s duplicated migration logic in
-      favour of the parsed value already in the `Settings` snapshot loaded by
-      `Refresh()`, and move the orphaned `AddResultRow` doc comment back to its
-      method.
+- [ ] **D1.** Make the saved-attachment location a clickable link. Wherever
+      the add-in reports where an attachment (or a saved-as mail file) was
+      written — the mail-body annotation added after a save, and any
+      pane/status surface showing the path — render the location as a
+      hyperlink instead of plain text. Decided: activating the link opens
+      Windows Explorer on the containing directory with the file
+      pre-selected (`explorer.exe /select,"<full path>"` from WPF surfaces; a
+      `file:///` link to the containing folder in the mail-body annotation,
+      since an HTML mail body cannot invoke explorer-select), NOT launching
+      the file itself. [#51]
 
-### E — Settings window & persistence
-- [x] **E1.** `SettingsWindow`: flush the focused TextBox's pending
-      LostFocus-triggered binding before closing, so Enter (IsDefault) or Esc
-      (IsCancel) no longer silently discards the last edit.
-- [x] **E2.** `SqliteSettingsStore` hardening: set `PRAGMA journal_mode=WAL`
-      like the other two stores (via one shared connection-open helper used by
-      all three); add batch `GetAll()`/`SetMany()` so `Settings.Load`/`Save`
-      use one connection instead of ~30; make the `Settings` table DDL
-      single-source so the copy in `SqliteFolderRepository.ApplyV1` cannot
-      silently drift (it is dead code today).
-- [x] **E3.** Hot-path costs on the search path: stop calling a full
-      `Settings.Load` per keystroke just to read `SearchDebounceMs` (cache it,
-      invalidated on settings save via D3's propagation), and cache each
-      folder's normalized path + word split (computed at index load/reindex)
-      so `Search()` no longer re-normalizes the entire tree per query.
-
-### F — API consistency, small fixes & docs
-- [x] **F1.** Consolidate the classify per-action toggles (`keepCopy`,
-      `removeAttachments`, `markTasksComplete`, `safetyCopy`, `markAsRead`, …)
-      into a `ClassifyOptions` object accepted by `ClassifyRequest` and the
-      `IMailStore` filing methods, ending the per-sprint positional-bool growth
-      (10-parameter ctor today); update all call sites and test fakes.
-- [x] **F2.** Add the missing "mark as read" checkbox to the pane's Options zone
-      as the fifth per-action override (seeded from settings, reset after each
-      classify, like the other four) so the shipped user guide's description of
-      five overrides becomes accurate.
-- [x] **F3.** Favourite attachment folders: validate on add that the chosen
-      directory path contains no `;` (the settings list separator) and reject
-      with a localized message, so a legal-but-unusual NTFS name cannot corrupt
-      the favourites list on reload.
-
-### G — Release stamp
-- [x] **G1.** Bump `AssemblyVersion`/`AssemblyFileVersion` (AssemblyInfo.cs) and
-      `release.config.json` to **2.7.1.0** with the sprint summary comment
-      (third-field bump so the MSI MajorUpgrade sees it as newer).
-
----
-
-## v2.8.0.0 — feedback wave: pane actions, sent-items, classify reliability
-
-### A — Pane actions
-- [x] **A1.** Add a "save as" button to the pane, next to the Auto-Class button, letting the user save the selected email(s) as files, reusing the attachment-disposition modal's directory picker for the target folder. [#40]
-- [x] **A2.** Add a manual attachment-removal button: opens the attachment-disposition modal for the selected email(s) without a classify move, so keep/delete/save-to can be applied standalone. [#38]
-- [x] **A3.** In the standalone attachment-management modal (A2's 📎 button), add a "remove saved attachments from the email" checkbox that controls whether a "Save to" attachment is stripped from the email after saving (ON = save then strip, OFF = save but keep it on the email). The checkbox default comes from a new setting in Settings → Attachments. S/MIME items are never stripped. The classify-time modal is unaffected.
-
-### B — Sent-items handling
-- [x] **B1.** Add a "delete" button to the post-sent classify notification, to allow one-click deletion of the sent-and-moved-to-Inbox copy. [#39]
-
-### C — Classify reliability
-- [x] **C1.** Fix auto-class + attachment-modal conflict: auto-class must check for a valid target folder in the conversation history *before* opening the attachment-disposition modal, so the modal never opens for an email it cannot process; when multiple emails are selected, only show attachments for the ones that will actually be processed; surface a clearer (non-modal) message when auto-class cannot process an element. [#36]
-- [x] **C2.** Investigate and fix the classify silent-failure/freeze reported on v2.6.0.0: ~30s "Classement en cours" then no move, reproducible after reinstall/reboot; log attached on the issue. Reporter notes meeting-invite classify is unaffected — only regular mail. [#35]
-
-### D — Logging audit & rework
-- [x] **D1.** Demote the per-item PERF/D1 BEGIN-END/selection-change chatter (`OutlookMailStore`, `RblClassAddIn`, `MainPaneViewModel`) from Information to Debug, gated by a new persistent `DiagnosticLogging` setting (Settings → Diagnostics, default off, takes effect after restart) that raises the minimum log level back to Debug on demand. The classify/auto-class outcome summary line stays at Information even with PERF demoted.
-- [x] **D2.** Add a narrow `IAppLog` logging seam to `RBLclass.Core` (`SerilogAppLog` forwarding in the AddIn), inject it into `ClassifierService`, and log the previously-silent swallowed failures (per-destination classify failures, safety-copy/attachment-removal/Undo faults, AutoClassify outcome tally).
-- [x] **D3.** Fill AddIn/adapter logging gaps: `ShowError` now logs every ribbon/lifecycle exception; the forgotten-attachment and external-recipient send-time guards log when they fire and whether the user proceeded or cancelled; `DeleteItem` and the silent adapter early-exits/S/MIME skips get entry/success/failure breadcrumbs; `Settings.Save` emits one audit line per save summarising the security-relevant settings (never the banner signature).
-- [x] Retention investigated: `retainedFileCountLimit: 14` already keeps the log well under 90 days — no change needed.
+- [ ] **D2.** Checksum-based duplicate skip on attachment save. Today, saving
+      an attachment into a directory that already contains a file with the
+      same name writes a "(1)", "(2)"… suffixed copy. New behaviour on every
+      attachment save path (classify-time disposition modal, standalone 📎
+      modal, save-as): when the target file name already exists, hash the
+      existing file and the attachment content (SHA-256, streamed — mind the
+      ~1 GB memory budget); if identical, skip the write entirely but still
+      record and annotate the attachment as saved exactly like a real save
+      (D1's link pointing at the existing file); if the hashes differ, keep
+      today's suffix behaviour unchanged. Log each dedupe skip at
+      Information level. The compare/decide logic lives in `RBLclass.Core`
+      with xUnit coverage. [#52]
 
 ---
 
