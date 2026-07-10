@@ -88,6 +88,12 @@ Always end with a last question: `Any other feedback?` with a free text response
 
 Wait for the answers before doing anything else.
 
+**Not verifiable on the dev machine.** CLAUDE.md documents a category of
+behavior that structurally cannot be exercised on this machine (e.g.
+S-MIME/Stormshield mail, the external-sender banner). If the user reports a
+question can't be answered for this reason, don't treat it as a fail and
+don't block the sprint on it — follow Step 8c instead.
+
 ## Step 8a — All pass → commit
 
 1. Edit `ROADMAP.md`: find the item's checkbox line in the active sprint
@@ -124,6 +130,18 @@ Wait for the answers before doing anything else.
 After **3 failed fix attempts**, stop the loop. Summarise what was tried,
 what each attempt changed, and what the user reported. Ask the user for
 guidance before attempting another fix.
+
+## Step 8c — Not verifiable on the dev machine → commit unverified
+
+Follow the precedent already in `ROADMAP.md` (v2.6.0.0 B3, C1; v2.9.0.0 B1):
+
+1. Same as Step 8a, except leave the checkbox as `- [ ]` instead of `- [x]`.
+2. Append `- shipped, pending tests (not verifiable on the dev machine per
+   the testing strategy above; re-verify <what to check> on the real target
+   before pilot)` to the item's text, naming the specific behavior that
+   still needs a real-target check.
+3. Commit and comment on the GH issue as in Step 8a, but note in the issue
+   comment that verification is pending real-target testing.
 
 ## Rules
 
