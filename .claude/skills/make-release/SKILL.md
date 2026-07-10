@@ -173,6 +173,24 @@ gh release create <version> `
 
 Print the release URL.
 
+### Archive the shipped roadmap section
+
+Shipping is the moment a roadmap section becomes history — `ROADMAP.md` must
+only hold **unshipped** work. After the tag and GH release are created:
+
+1. In `ROADMAP.md`, find every `## vX.X.X.X` section whose version is now
+   shipped (≤ the released version) and whose items are **all** resolved
+   (`- [x]`, or explicitly struck-through/deferred like v2.7.0.0 D1 was).
+   Sections with any genuinely open `- [ ]` item stay in `ROADMAP.md`
+   (e.g. items marked "shipped, pending tests" are still open).
+2. Move each such section **verbatim** to the end of
+   `docs/roadmap-history.md`, appending ` (shipped)` to its `##` header.
+   Keep version order in the history file; do not rewrite item text.
+3. Update the "Where we are" paragraph in `ROADMAP.md` (date + latest
+   shipped wave) so it stays accurate.
+4. Commit both files together on `develop` with a message like
+   `Archive shipped vX.X.X.X roadmap section to history`.
+
 ---
 
 ## Signing (optional)

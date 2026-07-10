@@ -27,7 +27,18 @@ Filter out any issue that already carries one of the following labels — those 
 
 Also scan `ROADMAP.md` for `[#N]` back-references. If an issue number appears there but lacks the `roadmap` label, it is effectively planned — add the label silently and skip it from the triage flow.
 
-If no unresolved issues remain after filtering, report that and stop.
+**Re-review already-labelled open issues.** Labelled issues (`roadmap`,
+`deferred`) that are still open are not necessarily settled: view each one
+(`gh issue view <n> --json ...,comments,updatedAt`) and check for comments
+added *after* the disposition was applied — new repro data, a fix that did
+not hold, a follow-up suggestion. Any issue with substantive news re-enters
+the flow: summarise what changed and ask the user (per issue, via
+`AskUserQuestion`) whether to (re-)plan it, keep its current disposition, or
+adjust labels. A `roadmap`-labelled issue whose planned fix shipped but
+demonstrably failed gets a **new** roadmap item; a `deferred` issue with a
+concrete new proposal may be promoted.
+
+If no unresolved issues remain after filtering and re-review, report that and stop.
 
 ---
 
@@ -125,6 +136,14 @@ For each *implement* issue (or group of related issues), propose:
 
 When target section is uncertain, use `AskUserQuestion` before proceeding. Keep each question focused: present the proposed placement and ask the user to confirm or redirect. Do not batch all disambiguation into one giant question — ask per uncertain group.
 
+**Ask implementation-approach questions.** For every *implement* issue with a
+real design choice — where a fix should hook in, whether behaviour is
+automatic or a setting, what a click/action does, how an edge case resolves —
+put the choice to the user via `AskUserQuestion` (batches of up to 4, with a
+recommended option first) *before* writing the roadmap. The answers are
+decisions and must be baked into the item text; only skip an issue whose
+implementation is genuinely unambiguous.
+
 ---
 
 ## Step 6 — Confirm the full plan
@@ -159,6 +178,15 @@ For each approved item, find the target section and append the item to its check
 
 The `[#N]` at the end is the mandatory back-reference. If multiple issues map to one item: `[#N] [#M]`.
 
+**Items are specifications, not summaries.** Each item must be a detailed,
+self-contained spec that a different model (feature-prep/Sonnet), with no
+access to this conversation, can implement efficiently: the observed
+behaviour / repro facts from the issue thread, every implementation decision
+the user made during triage, relevant prior-art references (earlier roadmap
+items, commits, related settings), edge cases, and the localization/test
+obligations the change triggers. Multi-sentence items are expected; a
+one-liner is only acceptable for a genuinely trivial change.
+
 If the target is a new version section, insert it after the active sprint section with an appropriate header, following the existing style (e.g. `## v2.5.0.0 — <theme>`).
 
 After writing, verify that the ROADMAP.md structure is intact (no broken section hierarchy).
@@ -184,6 +212,16 @@ gh issue comment <number> --body "This issue has been planned for development.
 
 **Roadmap:** <vX.X.X.X> → <Label> — <item text>"
 ```
+
+---
+
+## Step 10 — Commit the planning result
+
+Commit the run's changes on `develop` (authorised for this workflow — no
+need to ask). Keep it to the files this skill touched: `ROADMAP.md`, plus
+`docs/roadmap-history.md` and/or skill files if the run updated them. Use a
+message like `Plan GH issues #N, #M into ROADMAP (vX.X.X.X)`; put skill/doc
+process changes in a separate focused commit. Do not push unless asked.
 
 ---
 
