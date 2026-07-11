@@ -237,7 +237,7 @@ text as the specification.
       all three languages (`Strings.resx`/`.fr`/`.de` — ResourceParityTests
       enforces parity). [#50]
 
-- [ ] **C2.** Discoverability hint for meeting-invite classify: when the user
+- [x] **C2.** Discoverability hint for meeting-invite classify: when the user
       triggers Classify (or Auto-Class) on a selection containing a
       MeetingItem while the opt-in "classify meeting items" setting
       (v2.6.0.0 C1) is OFF, show a one-time informational dialog — "Did you

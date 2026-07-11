@@ -189,6 +189,17 @@ namespace RBLclass.AddIn
                 TaskPaneServices.GetSelection = () =>
                     _mailStore.GetSelectedItems(
                         _settingsStore.GetBool(SettingsKeys.ClassifyMeetingItems, false));
+                TaskPaneServices.CheckHasMeetingItemsInSelection = () =>
+                    !_settingsStore.GetBool(SettingsKeys.ClassifyMeetingItems, false)
+                    && _mailStore.GetSelectedItems(includeMeetingItems: true)
+                                 .Any(x => x.IsMeetingItem);
+                TaskPaneServices.ShowMeetingClassifyHint = () =>
+                {
+                    if (_settingsStore.GetBool(SettingsKeys.MeetingHintDismissed, false)) return;
+                    var hint = new Views.MeetingClassifyHintWindow();
+                    if (hint.ShowDialog() == true && hint.DontShowAgain)
+                        _settingsStore.SetBool(SettingsKeys.MeetingHintDismissed, true);
+                };
                 TaskPaneServices.GetAllFolders = () => _folderTree.GetAll();
                 TaskPaneServices.FolderIndex = _folderTree;
                 TaskPaneServices.CreateSubfolder = (parent, name) =>

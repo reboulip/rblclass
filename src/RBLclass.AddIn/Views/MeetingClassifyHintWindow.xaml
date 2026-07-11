@@ -1,0 +1,34 @@
+<Window x:Class="RBLclass.AddIn.Views.MeetingClassifyHintWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        mc:Ignorable="d"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:loc="clr-namespace:RBLclass.AddIn.Localization"
+        Title="{loc:Loc Key=MeetingHint_Title}" Height="230" Width="420"
+        WindowStartupLocation="CenterOwner" ResizeMode="NoResize"
+        ShowInTaskbar="False"
+        d:DesignHeight="230" d:DesignWidth="420">
+    <Grid Margin="16">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <TextBlock Grid.Row="0" TextWrapping="Wrap" FontWeight="Bold"
+                   Text="{loc:Loc Key=MeetingHint_Body_Line1}" />
+        <TextBlock Grid.Row="1" Margin="0,8,0,0" TextWrapping="Wrap"
+                   Text="{loc:Loc Key=MeetingHint_Body_Line2}" />
+
+        <CheckBox Grid.Row="2" Margin="0,12,0,0" x:Name="DontShowAgainBox"
+                  Content="{loc:Loc Key=MeetingHint_DontShowAgain}" />
+
+        <Button Grid.Row="3" Margin="0,12,0,0" Padding="18,4"
+                HorizontalAlignment="Right"
+                Content="{loc:Loc Key=MeetingHint_Ok_Button}"
+                IsDefault="True" IsCancel="True"
+                Click="Ok_Click" />
+    </Grid>
+</Window>

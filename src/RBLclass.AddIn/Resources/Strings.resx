@@ -580,6 +580,23 @@
     <value>Cancel</value>
   </data>
 
+  <!-- MeetingClassifyHintWindow: meeting-classify discoverability hint (v2.9.0.0 C2) -->
+  <data name="MeetingHint_Title" xml:space="preserve">
+    <value>RBLclass — Tip</value>
+  </data>
+  <data name="MeetingHint_Body_Line1" xml:space="preserve">
+    <value>Did you know? You can also classify meeting invitations alongside your mail.</value>
+  </data>
+  <data name="MeetingHint_Body_Line2" xml:space="preserve">
+    <value>To enable this, open Settings → Classify → "Classify meeting requests and responses".</value>
+  </data>
+  <data name="MeetingHint_DontShowAgain" xml:space="preserve">
+    <value>Don't show this again</value>
+  </data>
+  <data name="MeetingHint_Ok_Button" xml:space="preserve">
+    <value>OK</value>
+  </data>
+
   <!-- SentItemTriageWindow -->
   <data name="SentTriage_Title" xml:space="preserve">
     <value>RBLclass - Sent mail</value>

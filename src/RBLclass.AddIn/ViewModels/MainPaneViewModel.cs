@@ -32,6 +32,8 @@ namespace RBLclass.AddIn.ViewModels
         private readonly Func<int, bool?> _confirmMarkTasksComplete;
         private readonly Func<string, string> _promptForName;
         private readonly Func<IReadOnlyList<FolderNode>> _getAllFolders;
+        private readonly Func<bool> _checkHasMeetingItemsInSelection;
+        private readonly Action _showMeetingClassifyHint;
         private readonly ILocalizationService _loc;
 
         private string _query = string.Empty;
@@ -79,7 +81,9 @@ namespace RBLclass.AddIn.ViewModels
             ISettingsStore settings = null,
             Func<int, bool?> confirmMarkTasksComplete = null,
             Func<string, string> promptForName = null,
-            Func<IReadOnlyList<FolderNode>> getAllFolders = null)
+            Func<IReadOnlyList<FolderNode>> getAllFolders = null,
+            Func<bool> checkHasMeetingItemsInSelection = null,
+            Action showMeetingClassifyHint = null)
         {
             _search = search ?? throw new ArgumentNullException(nameof(search));
             _classifier = classifier ?? throw new ArgumentNullException(nameof(classifier));
@@ -90,6 +94,8 @@ namespace RBLclass.AddIn.ViewModels
             _confirmMarkTasksComplete = confirmMarkTasksComplete;
             _promptForName = promptForName;
             _getAllFolders = getAllFolders;
+            _checkHasMeetingItemsInSelection = checkHasMeetingItemsInSelection;
+            _showMeetingClassifyHint = showMeetingClassifyHint;
             _loc = TaskPaneServices.Localization;
             _selectionSummary = _loc.GetString("Status_NoMailSelectedSummary");
             _autoClassLabel = _loc.GetString("MainPane_AutoClass_Button");
@@ -148,6 +154,22 @@ namespace RBLclass.AddIn.ViewModels
                 StatusLog.RemoveAt(StatusLog.Count - 1);
             OnPropertyChanged(nameof(HasStatusEntries));
             OnPropertyChanged(nameof(CanShowJournalInVerticalMode));
+        }
+
+        /// <summary>
+        /// Show the meeting-classify discoverability hint after the current
+        /// action fully unwinds (v2.9.0.0 C2). Deferred to Background priority
+        /// so the modal opens after IsBusy is cleared and the pane has
+        /// repainted the classify outcome - never mid-batch.
+        /// </summary>
+        private void DeferMeetingClassifyHint()
+        {
+            if (_showMeetingClassifyHint == null) return;
+            Dispatcher.CurrentDispatcher.BeginInvoke(new Action(() =>
+            {
+                try { _showMeetingClassifyHint(); }
+                catch (Exception ex) { Log.Warning(ex, "Meeting-classify hint failed"); }
+            }), DispatcherPriority.Background);
         }
 
         /// <summary>
@@ -412,7 +434,14 @@ namespace RBLclass.AddIn.ViewModels
             _searchTimer?.Stop(); // don't let a pending search overwrite our results
 
             var items = _getSelection != null ? _getSelection() : new MailItemRef[0];
-            if (items.Count == 0) { PushStatus(_loc.GetString("Status_NoMailSelectedAction")); return; }
+            // C2 (v2.9.0.0): captured before the batch, surfaced after it.
+            bool hadSkippedMeetingItems = _checkHasMeetingItemsInSelection?.Invoke() ?? false;
+            if (items.Count == 0)
+            {
+                PushStatus(_loc.GetString("Status_NoMailSelectedAction"));
+                if (hadSkippedMeetingItems) DeferMeetingClassifyHint();
+                return;
+            }
 
             IsBusy = true;
             BusyStatus = _loc.GetString("Status_AutoClassing");
@@ -560,6 +589,8 @@ namespace RBLclass.AddIn.ViewModels
                 }
 
                 PushStatus(autoClassStatus);
+
+                if (hadSkippedMeetingItems) DeferMeetingClassifyHint();
 
                 if (result.Undo != null)
                 {
@@ -1114,7 +1145,18 @@ namespace RBLclass.AddIn.ViewModels
             var items = _pinnedItem != null
                 ? new[] { _pinnedItem }
                 : (_getSelection != null ? _getSelection() : new MailItemRef[0]);
-            if (items.Count == 0) { PushStatus(_loc.GetString("Status_NoMailSelectedAction")); return false; }
+            // C2 (v2.9.0.0): captured before the batch, surfaced after it - the
+            // hint must not interrupt the classify of the other selected items.
+            bool hadSkippedMeetingItems = _pinnedItem == null
+                && (_checkHasMeetingItemsInSelection?.Invoke() ?? false);
+            if (items.Count == 0)
+            {
+                PushStatus(_loc.GetString("Status_NoMailSelectedAction"));
+                // A selection of only meeting invites lands here with nothing
+                // filed at all - the hint is the only explanation the user gets.
+                if (hadSkippedMeetingItems) DeferMeetingClassifyHint();
+                return false;
+            }
 
             IsBusy = true;
             BusyStatus = _loc.GetString("MainPane_Busy_Filing");
@@ -1250,6 +1292,8 @@ namespace RBLclass.AddIn.ViewModels
                     classifyStatus.Append(_loc.Plural(preflight.SkippedEncrypted.Count, "Status_Classify_EncryptedInConversation_One", "Status_Classify_EncryptedInConversation_Other"));
 
                 PushStatus(classifyStatus.ToString());
+
+                if (hadSkippedMeetingItems) DeferMeetingClassifyHint();
 
                 _lastUndo = result.Undo; // a non-undoable run clears the slot (null)
                 OnPropertyChanged(nameof(CanUndo));

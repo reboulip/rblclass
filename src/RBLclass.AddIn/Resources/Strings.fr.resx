@@ -580,6 +580,23 @@
     <value>Annuler</value>
   </data>
 
+  <!-- MeetingClassifyHintWindow: meeting-classify discoverability hint (v2.9.0.0 C2) -->
+  <data name="MeetingHint_Title" xml:space="preserve">
+    <value>RBLclass — Astuce</value>
+  </data>
+  <data name="MeetingHint_Body_Line1" xml:space="preserve">
+    <value>Le saviez-vous ? Vous pouvez également classer les invitations aux réunions avec vos messages.</value>
+  </data>
+  <data name="MeetingHint_Body_Line2" xml:space="preserve">
+    <value>Pour l'activer : Paramètres → Classer → « Classer les demandes et réponses de réunion ».</value>
+  </data>
+  <data name="MeetingHint_DontShowAgain" xml:space="preserve">
+    <value>Ne plus afficher ce message</value>
+  </data>
+  <data name="MeetingHint_Ok_Button" xml:space="preserve">
+    <value>OK</value>
+  </data>
+
   <!-- SentItemTriageWindow -->
   <data name="SentTriage_Title" xml:space="preserve">
     <value>RBLclass - Message envoyé</value>
