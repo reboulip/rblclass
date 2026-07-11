@@ -1000,10 +1000,26 @@ namespace RBLclass.AddIn
         {
             try
             {
-                ApplyDockSize(customTaskPaneInst);
                 int pos = (int)customTaskPaneInst.DockPosition;
                 _settingsStore?.Set(SettingsKeys.PaneDockPosition,
                     pos.ToString(System.Globalization.CultureInfo.InvariantCulture));
+
+                // Office throws COMException 0x80004005 ("this property cannot be set
+                // while the object's event handler is executing") if Width/Height is
+                // set synchronously from inside this very event - defer it to run once
+                // Office is done dispatching. Discovered as a regression (v2.9.0.0 B2
+                // follow-up): the exception aborted this handler before the persist
+                // above ran, so a live redock silently stopped saving - the pane kept
+                // reopening at a stale position from before the crash fix that added
+                // this call.
+                var pane = customTaskPaneInst;
+                _ = Dispatcher.CurrentDispatcher.BeginInvoke(
+                    new Action(() =>
+                    {
+                        try { ApplyDockSize(pane); }
+                        catch (Exception ex) { TryLog("Deferred ApplyDockSize failed", ex); }
+                    }),
+                    DispatcherPriority.ApplicationIdle);
             }
             catch (Exception ex)
             {
