@@ -152,6 +152,13 @@ namespace RBLclass.Outlook.Adapter
                     using (var explorer = new ComRef<OutlookOM.Explorer>(rawExplorer))
                     {
                         explorer.Value.CurrentFolder = folder.Value;
+                        // Activate the explorer after a programmatic folder change so
+                        // Outlook fires its internal "explorer activated" event chain.
+                        // Without this, the explorer's keyboard handler (Delete, etc.)
+                        // remains dormant - the CTP button retained Win32 focus and
+                        // Outlook never saw the Explorer.Activate event that arms its
+                        // message-list accelerators (B2, v2.9.0.0).
+                        try { explorer.Value.Activate(); } catch { }
                     }
                 }
             }

@@ -180,7 +180,7 @@ text as the specification.
       the testing strategy above; re-verify inline reply/forward, popout
       reply/forward, and the sent-copy on the real target before pilot)
 
-- [ ] **B2.** Investigate and fix the dead Delete key after "go to folder"
+- [x] **B2.** Investigate and fix the dead Delete key after "go to folder"
       (the open-folder action on a search result, which navigates the
       explorer to the target folder): after that navigation, pressing Del no
       longer deletes mail in the target folder; the key works again only
