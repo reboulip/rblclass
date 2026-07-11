@@ -223,7 +223,9 @@ text as the specification.
       folders, which is how the folder-scoped paths already work), and/or
       after the first timeout in a session disable further widening attempts
       with a user-visible pane notice instead of paying 30 s per item.
-      Never a silent 30 s hang. [#35]
+      Never a silent 30 s hang. [#35] - pending reporter confirmation (root
+      cause fixed and verified in-repo; the reporter's specific broken
+      search-index profile needs their own v2.9.0.0 test to confirm)
 
 ### C — Sent & meeting items
 
@@ -249,7 +251,9 @@ text as the specification.
       checkbox persisted via `ISettingsStore` (settings always persist across
       restarts). The dialog must not interrupt the classify of the other
       selected items — show it after the batch completes. Localized in all
-      three languages. [#28]
+      three languages. [#28] - pending reporter confirmation (implemented
+      and built; not exercised interactively this session — reporter asked
+      to confirm in v2.9.0.0)
 
 ### D — Attachments
 
