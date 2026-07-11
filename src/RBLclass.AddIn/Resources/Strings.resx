@@ -157,7 +157,7 @@
     <value>Delete from Inbox</value>
   </data>
   <data name="MainPane_PinnedSentMail_Delete_ToolTip" xml:space="preserve">
-    <value>Delete this sent mail's copy that was moved to the Inbox</value>
+    <value>Delete this sent mail's copy from the Inbox</value>
   </data>
   <data name="MainPane_UpdateAvailable_Banner" xml:space="preserve">
     <value>A newer version of RBLclass is available ({0}). Visit the install page to update.</value>
@@ -166,7 +166,7 @@
     <value>Dismiss</value>
   </data>
   <data name="Settings_ClassifyAfterMoveToInbox_CheckBox" xml:space="preserve">
-    <value>After moving a sent mail to the Inbox, open the classify pane to file it</value>
+    <value>After moving or copying a sent mail to the Inbox, open the classify pane to file it</value>
   </data>
   <data name="Settings_FavoriteFolders_Header" xml:space="preserve">
     <value>Favourite attachment folders</value>
@@ -416,6 +416,9 @@
   <data name="Settings_TriageMode_MoveToInbox" xml:space="preserve">
     <value>Move to Inbox</value>
   </data>
+  <data name="Settings_TriageMode_CopyToInbox" xml:space="preserve">
+    <value>Copy to Inbox (keep original in Sent Items)</value>
+  </data>
   <data name="Settings_TriageMode_Delete" xml:space="preserve">
     <value>Delete</value>
   </data>
@@ -586,6 +589,9 @@
   </data>
   <data name="SentTriage_MoveToInbox_Button" xml:space="preserve">
     <value>Move to Inbox</value>
+  </data>
+  <data name="SentTriage_CopyToInbox_Button" xml:space="preserve">
+    <value>Copy to Inbox (keep original in Sent Items)</value>
   </data>
   <data name="SentTriage_Delete_Button" xml:space="preserve">
     <value>Delete from Sent Items</value>

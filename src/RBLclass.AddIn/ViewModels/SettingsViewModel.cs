@@ -69,6 +69,7 @@ namespace RBLclass.AddIn.ViewModels
             {
                 new TriageModeOption(SentItemTriageMode.AskEveryTime, _loc.GetString("Settings_TriageMode_AskEveryTime")),
                 new TriageModeOption(SentItemTriageMode.MoveToInbox, _loc.GetString("Settings_TriageMode_MoveToInbox")),
+                new TriageModeOption(SentItemTriageMode.CopyToInbox, _loc.GetString("Settings_TriageMode_CopyToInbox")),
                 new TriageModeOption(SentItemTriageMode.MoveToArchive, _loc.GetString("Settings_TriageMode_MoveToArchive")),
                 new TriageModeOption(SentItemTriageMode.Delete, _loc.GetString("Settings_TriageMode_Delete")),
                 new TriageModeOption(SentItemTriageMode.Leave, _loc.GetString("Settings_TriageMode_Leave")),

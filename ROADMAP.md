@@ -224,7 +224,7 @@ text as the specification.
 
 ### C — Sent & meeting items
 
-- [ ] **C1.** Add a "copy to inbox" choice to the sent-items arrival
+- [x] **C1.** Add a "copy to inbox" choice to the sent-items arrival
       handling. Today Settings offers moving a newly-arrived sent message to
       the Inbox (or archive / do nothing); add a mode that COPIES it to the
       Inbox, leaving the original in Sent Items. The inbox copy gets the same

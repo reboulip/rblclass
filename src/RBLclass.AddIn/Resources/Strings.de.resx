@@ -157,7 +157,7 @@
     <value>Aus Posteingang löschen</value>
   </data>
   <data name="MainPane_PinnedSentMail_Delete_ToolTip" xml:space="preserve">
-    <value>Die in den Posteingang verschobene Kopie dieser gesendeten E-Mail löschen</value>
+    <value>Die Kopie dieser gesendeten E-Mail aus dem Posteingang löschen</value>
   </data>
   <data name="MainPane_UpdateAvailable_Banner" xml:space="preserve">
     <value>Eine neuere Version von RBLclass ist verfügbar ({0}). Besuchen Sie die Installationsseite zum Aktualisieren.</value>
@@ -166,7 +166,7 @@
     <value>Verwerfen</value>
   </data>
   <data name="Settings_ClassifyAfterMoveToInbox_CheckBox" xml:space="preserve">
-    <value>Nach dem Verschieben einer gesendeten E-Mail in den Posteingang den Ablagebereich zum Ablegen öffnen</value>
+    <value>Nach dem Verschieben oder Kopieren einer gesendeten E-Mail in den Posteingang den Ablagebereich zum Ablegen öffnen</value>
   </data>
   <data name="Settings_FavoriteFolders_Header" xml:space="preserve">
     <value>Bevorzugte Anlagenordner</value>
@@ -416,6 +416,9 @@
   <data name="Settings_TriageMode_MoveToInbox" xml:space="preserve">
     <value>In den Posteingang verschieben</value>
   </data>
+  <data name="Settings_TriageMode_CopyToInbox" xml:space="preserve">
+    <value>In den Posteingang kopieren (Original in Gesendete Elemente behalten)</value>
+  </data>
   <data name="Settings_TriageMode_Delete" xml:space="preserve">
     <value>Löschen</value>
   </data>
@@ -586,6 +589,9 @@
   </data>
   <data name="SentTriage_MoveToInbox_Button" xml:space="preserve">
     <value>In den Posteingang verschieben</value>
+  </data>
+  <data name="SentTriage_CopyToInbox_Button" xml:space="preserve">
+    <value>In den Posteingang kopieren (Original in Gesendete Elemente behalten)</value>
   </data>
   <data name="SentTriage_Delete_Button" xml:space="preserve">
     <value>Aus gesendeten Elementen löschen</value>

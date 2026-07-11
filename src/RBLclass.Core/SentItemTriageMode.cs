@@ -22,6 +22,9 @@ namespace RBLclass.Core
         AskEveryTime = 3,
 
         /// <summary>Move the sent item to the user-configured archive folder automatically (v2.7.0.0 B2).</summary>
-        MoveToArchive = 4
+        MoveToArchive = 4,
+
+        /// <summary>Copy the sent item to the Inbox, leaving the original in Sent Items (v2.9.0.0 C1).</summary>
+        CopyToInbox = 5
     }
 }

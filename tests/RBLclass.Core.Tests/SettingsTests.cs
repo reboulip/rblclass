@@ -235,6 +235,17 @@ namespace RBLclass.Core.Tests
         }
 
         [Fact]
+        public void Save_then_Load_roundtrips_SentItemTriageMode_CopyToInbox()
+        {
+            var settings = Settings.Load(_store);
+            settings.SentItemTriageMode = SentItemTriageMode.CopyToInbox;
+
+            settings.Save(_store);
+
+            Settings.Load(_store).SentItemTriageMode.Should().Be(SentItemTriageMode.CopyToInbox);
+        }
+
+        [Fact]
         public void Save_trims_blank_entries_out_of_lists()
         {
             var settings = Settings.Load(_store);

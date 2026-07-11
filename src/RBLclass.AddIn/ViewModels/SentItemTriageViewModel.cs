@@ -26,6 +26,7 @@ namespace RBLclass.AddIn.ViewModels
                 : TaskPaneServices.Localization.GetString("SentTriage_MoveToArchive_Button_NoFolder");
 
             MoveToInboxCommand = new RelayCommand(_ => Choose(SentItemTriageAction.MoveToInbox));
+            CopyToInboxCommand = new RelayCommand(_ => Choose(SentItemTriageAction.CopyToInbox));
             DeleteCommand = new RelayCommand(_ => Choose(SentItemTriageAction.Delete));
             LeaveCommand = new RelayCommand(_ => Choose(SentItemTriageAction.Leave));
             MoveToArchiveCommand = new RelayCommand(_ => Choose(SentItemTriageAction.MoveToArchive));
@@ -44,6 +45,7 @@ namespace RBLclass.AddIn.ViewModels
         public string MoveToArchiveButtonLabel { get; }
 
         public ICommand MoveToInboxCommand { get; }
+        public ICommand CopyToInboxCommand { get; }
         public ICommand DeleteCommand { get; }
         public ICommand LeaveCommand { get; }
         public ICommand MoveToArchiveCommand { get; }

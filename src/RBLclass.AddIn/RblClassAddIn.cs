@@ -832,6 +832,10 @@ namespace RBLclass.AddIn
                     {
                         action = SentItemTriageAction.MoveToArchive;
                     }
+                    else if (mode == SentItemTriageMode.CopyToInbox)
+                    {
+                        action = SentItemTriageAction.CopyToInbox;
+                    }
                     else
                     {
                         action = SentItemTriageAction.MoveToInbox;
@@ -913,6 +917,29 @@ namespace RBLclass.AddIn
                     {
                         EnsureTaskPane();
                         TaskPaneServices.PinMailForClassify?.Invoke(result.Undo.Moves[0].Current);
+                        if (_taskPane != null) _taskPane.Visible = true;
+                        TaskPaneServices.Host?.RefreshOnShow();
+                    }
+                    break;
+
+                case SentItemTriageAction.CopyToInbox:
+                    // Direct store copy, not _classifier.Classify: a routing copy
+                    // needs no attachment handling, history, or undo plan, and the
+                    // original must stay in Sent Items (v2.9.0.0 C1).
+                    var inboxForCopy = _mailStore.GetInboxFolder();
+                    if (inboxForCopy == null)
+                    {
+                        Log.Warning("Sent-item triage: could not resolve the Inbox folder.");
+                        return;
+                    }
+                    var copyRef = _mailStore.CopyItemToFolder(item, inboxForCopy);
+                    Log.Information("Sent-item triage copied the sent mail to the Inbox ({Outcome}).",
+                        copyRef != null ? "success" : "copy failed");
+
+                    if (settings.ClassifyAfterMoveToInbox && copyRef != null)
+                    {
+                        EnsureTaskPane();
+                        TaskPaneServices.PinMailForClassify?.Invoke(copyRef);
                         if (_taskPane != null) _taskPane.Visible = true;
                         TaskPaneServices.Host?.RefreshOnShow();
                     }
