@@ -18,6 +18,8 @@ followed by feedback/refinement waves **v2.1.0.0** through **v2.8.0.0**
 all complete and recorded in [history](docs/roadmap-history.md). **v2.9.0.0**
 (UI polish, classify & banner fixes, attachments) shipped 2026-07-11 —
 [release](https://github.com/reboulip/rblclass/releases/tag/v2.9.0.0).
+**v2.9.1.0** (nav-rail freeze hotfix) shipped 2026-07-11 —
+[release](https://github.com/reboulip/rblclass/releases/tag/v2.9.1.0).
 
 Open work: the two v2.6.0.0 items still pending live verification (banner
 strip B3, meeting classify C1), and v2.9.0.0 B1 (banner strip on
