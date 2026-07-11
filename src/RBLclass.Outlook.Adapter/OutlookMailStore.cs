@@ -1467,18 +1467,70 @@ namespace RBLclass.Outlook.Adapter
                                 string fileName = Safe(() => att.Value.FileName, null);
                                 if (string.IsNullOrWhiteSpace(fileName))
                                     fileName = "attachment" + attachmentId;
+
+                                string basePath = System.IO.Path.Combine(destinationDirectory, fileName);
+                                if (!System.IO.File.Exists(basePath))
+                                {
+                                    try
+                                    {
+                                        att.Value.SaveAsFile(basePath);
+                                        Log.Information("Saved attachment {Id} to {Path}.", attachmentId, basePath);
+                                        return true;
+                                    }
+                                    catch (Exception ex)
+                                    {
+                                        Log.Error(ex, "SaveAttachmentToFile failed for attachment {Id} to {Path}.",
+                                            attachmentId, basePath);
+                                        return false;
+                                    }
+                                }
+
+                                // A same-name file already exists: write to a same-directory temp
+                                // first (same NTFS volume => the eventual rename is O(1)), then
+                                // hash-compare rather than blindly suffixing (v2.9.0.0 D2).
+                                string tempPath = System.IO.Path.Combine(destinationDirectory,
+                                    "__rblclass_tmp_" + System.IO.Path.GetRandomFileName());
+                                try
+                                {
+                                    att.Value.SaveAsFile(tempPath);
+                                }
+                                catch (Exception ex)
+                                {
+                                    try { if (System.IO.File.Exists(tempPath)) System.IO.File.Delete(tempPath); } catch { }
+                                    Log.Error(ex, "SaveAttachmentToFile: temp-write failed for attachment {Id}.", attachmentId);
+                                    return false;
+                                }
+
+                                bool identical;
+                                try { identical = AttachmentChecksumHelper.ContentEquals(basePath, tempPath); }
+                                catch (Exception ex)
+                                {
+                                    identical = false;
+                                    Log.Warning(ex, "SaveAttachmentToFile: hash compare failed for {Path}; using suffix fallback.", basePath);
+                                }
+
+                                if (identical)
+                                {
+                                    try { System.IO.File.Delete(tempPath); } catch { }
+                                    Log.Information(
+                                        "SaveAttachmentToFile: dedupe skip - attachment {Id} already exists at {Path} with identical content.",
+                                        attachmentId, basePath);
+                                    return true;
+                                }
+
                                 string destPath = AttachmentFilenameCollisionResolver.Resolve(
                                     destinationDirectory, fileName, System.IO.File.Exists);
                                 try
                                 {
-                                    att.Value.SaveAsFile(destPath);
+                                    System.IO.File.Move(tempPath, destPath);
                                     Log.Information("Saved attachment {Id} to {Path}.", attachmentId, destPath);
                                     return true;
                                 }
                                 catch (Exception ex)
                                 {
-                                    Log.Error(ex, "SaveAttachmentToFile failed for attachment {Id} to {Path}.",
-                                        attachmentId, destPath);
+                                    try { if (System.IO.File.Exists(tempPath)) System.IO.File.Delete(tempPath); } catch { }
+                                    Log.Error(ex, "SaveAttachmentToFile: rename temp to {Path} failed for attachment {Id}.",
+                                        destPath, attachmentId);
                                     return false;
                                 }
                             }
@@ -1517,17 +1569,64 @@ namespace RBLclass.Outlook.Adapter
                     if (string.IsNullOrWhiteSpace(baseName)) baseName = "email";
                     string fileName = baseName + ".msg";
 
+                    string basePath = System.IO.Path.Combine(destinationDirectory, fileName);
+                    if (!System.IO.File.Exists(basePath))
+                    {
+                        try
+                        {
+                            mail.SaveAs(basePath, OutlookOM.OlSaveAsType.olMSG);
+                            Log.Information("SaveMailAsFile: saved to {Path}", basePath);
+                            return true;
+                        }
+                        catch (Exception ex)
+                        {
+                            Log.Error(ex, "SaveMailAsFile: SaveAs failed for {Path}", basePath);
+                            return false;
+                        }
+                    }
+
+                    // Same dedupe-aware save as SaveAttachmentToFile (v2.9.0.0 D2).
+                    string tempPath = System.IO.Path.Combine(destinationDirectory,
+                        "__rblclass_tmp_" + System.IO.Path.GetRandomFileName());
+                    try
+                    {
+                        mail.SaveAs(tempPath, OutlookOM.OlSaveAsType.olMSG);
+                    }
+                    catch (Exception ex)
+                    {
+                        try { if (System.IO.File.Exists(tempPath)) System.IO.File.Delete(tempPath); } catch { }
+                        Log.Error(ex, "SaveMailAsFile: temp-write failed for {Path}", tempPath);
+                        return false;
+                    }
+
+                    bool identical;
+                    try { identical = AttachmentChecksumHelper.ContentEquals(basePath, tempPath); }
+                    catch (Exception ex)
+                    {
+                        identical = false;
+                        Log.Warning(ex, "SaveMailAsFile: hash compare failed for {Path}; using suffix fallback.", basePath);
+                    }
+
+                    if (identical)
+                    {
+                        try { System.IO.File.Delete(tempPath); } catch { }
+                        Log.Information(
+                            "SaveMailAsFile: dedupe skip - {Path} already exists with identical content.", basePath);
+                        return true;
+                    }
+
                     string destPath = AttachmentFilenameCollisionResolver.Resolve(
                         destinationDirectory, fileName, System.IO.File.Exists);
                     try
                     {
-                        mail.SaveAs(destPath, OutlookOM.OlSaveAsType.olMSG);
+                        System.IO.File.Move(tempPath, destPath);
                         Log.Information("SaveMailAsFile: saved to {Path}", destPath);
                         return true;
                     }
                     catch (Exception ex)
                     {
-                        Log.Error(ex, "SaveMailAsFile: SaveAs failed for {Path}", destPath);
+                        try { if (System.IO.File.Exists(tempPath)) System.IO.File.Delete(tempPath); } catch { }
+                        Log.Error(ex, "SaveMailAsFile: rename temp to {Path} failed.", destPath);
                         return false;
                     }
                 }

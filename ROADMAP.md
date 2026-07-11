@@ -261,7 +261,7 @@ text as the specification.
       since an HTML mail body cannot invoke explorer-select), NOT launching
       the file itself. [#51]
 
-- [ ] **D2.** Checksum-based duplicate skip on attachment save. Today, saving
+- [x] **D2.** Checksum-based duplicate skip on attachment save. Today, saving
       an attachment into a directory that already contains a file with the
       same name writes a "(1)", "(2)"… suffixed copy. New behaviour on every
       attachment save path (classify-time disposition modal, standalone 📎
