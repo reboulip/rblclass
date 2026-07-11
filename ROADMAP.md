@@ -10,16 +10,19 @@ Reference docs from the legacy analysis:
 [docs/legacy-reimplementation-roadmap.md](docs/legacy-reimplementation-roadmap.md),
 [docs/parity-and-regression.md](docs/parity-and-regression.md).
 
-## Where we are (2026-07-10)
+## Where we are (2026-07-11)
 
 The rewritten add-in reached full legacy parity and shipped as **v2.0.0.0**,
 followed by feedback/refinement waves **v2.1.0.0** through **v2.8.0.0**
 (pane actions, sent-items handling, classify reliability, logging audit) —
-all complete and recorded in [history](docs/roadmap-history.md).
+all complete and recorded in [history](docs/roadmap-history.md). **v2.9.0.0**
+(UI polish, classify & banner fixes, attachments) shipped 2026-07-11 —
+[release](https://github.com/reboulip/rblclass/releases/tag/v2.9.0.0).
 
 Open work: the two v2.6.0.0 items still pending live verification (banner
-strip B3, meeting classify C1), and the **v2.9.0.0** feedback wave planned
-2026-07-10 from the open GitHub issues. Phases 8–9 are forward-looking.
+strip B3, meeting classify C1), and v2.9.0.0 B1 (banner strip on
+reply/forward) likewise shipped pending live verification on the real
+target. Phases 8–9 are forward-looking.
 
 ## Testing & validation strategy (applies to every item)
 
@@ -220,7 +223,9 @@ text as the specification.
       folders, which is how the folder-scoped paths already work), and/or
       after the first timeout in a session disable further widening attempts
       with a user-visible pane notice instead of paying 30 s per item.
-      Never a silent 30 s hang. [#35]
+      Never a silent 30 s hang. [#35] - pending reporter confirmation (root
+      cause fixed and verified in-repo; the reporter's specific broken
+      search-index profile needs their own v2.9.0.0 test to confirm)
 
 ### C — Sent & meeting items
 
@@ -246,7 +251,9 @@ text as the specification.
       checkbox persisted via `ISettingsStore` (settings always persist across
       restarts). The dialog must not interrupt the classify of the other
       selected items — show it after the batch completes. Localized in all
-      three languages. [#28]
+      three languages. [#28] - pending reporter confirmation (implemented
+      and built; not exercised interactively this session — reporter asked
+      to confirm in v2.9.0.0)
 
 ### D — Attachments
 

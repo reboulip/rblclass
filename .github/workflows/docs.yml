@@ -1,0 +1,78 @@
+name: Docs
+
+# Builds and publishes the RBLclass documentation site (website/, MkDocs
+# Material) to GitHub Pages.
+#
+#   • Pull request -> main : build with --strict as a required check, so a PR
+#                            that breaks the docs (bad link, broken nav,
+#                            missing page) fails before it can merge. Nothing
+#                            is published from a PR.
+#   • Push -> main         : once the PR has merged, build and PUBLISH to Pages.
+#
+# One-time repo setup: Settings -> Pages -> Build and deployment ->
+# Source = "GitHub Actions". No gh-pages branch is used.
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'website/**'
+      - '.github/workflows/docs.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'website/**'
+      - '.github/workflows/docs.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: docs-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: Build (strict)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+          cache-dependency-path: website/requirements.txt
+
+      - name: Install toolchain
+        run: python -m pip install -r website/requirements.txt
+
+      - name: Build site (strict)
+        run: mkdocs build --strict -f website/mkdocs.yml
+
+      - name: Upload Pages artifact
+        if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: website/site
+
+  deploy:
+    name: Publish to GitHub Pages
+    # Publish only when the change has landed on main (or a manual run) —
+    # never from an unmerged pull request.
+    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

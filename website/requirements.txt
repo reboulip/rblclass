@@ -1,0 +1,6 @@
+# Documentation site toolchain (used by .github/workflows/docs.yml).
+# Kept intentionally minimal: the Material theme bundles the search plugin
+# and the pymdownx extensions the site relies on, so no other packages are
+# required. Compatible-release pin keeps CI reproducible while allowing
+# 9.x patch/minor updates.
+mkdocs-material>=9.5,<10

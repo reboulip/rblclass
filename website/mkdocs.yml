@@ -1,0 +1,86 @@
+site_name: RBLclass
+site_description: >-
+  RBLclass — a per-user Outlook COM add-in that files emails into folders across
+  your PST archives, with fast keyword search, attachment handling, and
+  send-time guards.
+site_author: Romain Reboulleau
+site_url: https://reboulip.github.io/rblclass/
+
+repo_url: https://github.com/reboulip/rblclass
+repo_name: reboulip/rblclass
+edit_uri: edit/develop/website/docs/
+
+copyright: Apache License 2.0 — internal tool, not for external distribution.
+
+docs_dir: docs
+
+theme:
+  name: material
+  language: en
+  features:
+    - navigation.sections
+    - navigation.top
+    - navigation.tracking
+    - navigation.indexes
+    - toc.follow
+    - content.code.copy
+    - content.action.edit
+    - search.suggest
+    - search.highlight
+  palette:
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/weather-night
+        name: Switch to dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/weather-sunny
+        name: Switch to light mode
+  icon:
+    repo: fontawesome/brands/github
+
+extra_css:
+  - stylesheets/extra.css
+
+markdown_extensions:
+  - admonition
+  - attr_list
+  - md_in_html
+  - tables
+  - footnotes
+  - pymdownx.details
+  - pymdownx.inlinehilite
+  - pymdownx.keys
+  - pymdownx.snippets
+  - pymdownx.superfences
+  - pymdownx.tabbed:
+      alternate_style: true
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - pymdownx.emoji:
+      emoji_index: !!python/name:material.extensions.emoji.twemoji
+      emoji_generator: !!python/name:material.extensions.emoji.to_svg
+  - toc:
+      permalink: true
+
+plugins:
+  - search
+
+nav:
+  - Home: index.md
+  - User Guide:
+      - Installation: user-guide/installation.md
+      - Quick start: user-guide/quick-start.md
+      - Complete walkthrough: user-guide/walkthrough.md
+  - Developer Guide:
+      - Tech stack: developer-guide/tech-stack.md
+      - Architecture: developer-guide/architecture.md
+      - Testing: developer-guide/testing.md
+      - Shipping: developer-guide/shipping.md
+  - Security: security.md
