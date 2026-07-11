@@ -107,71 +107,99 @@ Report to the user, for **both** artifacts:
   (the file is unsigned per CLAUDE.md "Signing is optional"), no admin
   rights required. `msiexec /i "<path>"` is the scriptable equivalent.
 
-If a stale MSI for a previous version exists in `installer\bin\`, point it
-out — it's easy to grab the wrong artifact by accident; clean it up if the
-user confirms it's no longer needed (the folder is gitignored, so this is
-just local-build-output hygiene, not a source change).
+### Clean up stale packaged artifacts (automatic, every release)
 
-## Create the ship PR and GitHub release
+Immediately after the MSI step succeeds, delete every `installer\bin\*.msi`
+and `*.wixpdb` that does **not** match the version just built (keep
+`install.log`). No confirmation needed — the folder is gitignored, so this
+is local-build-output hygiene, not a source change:
+
+```powershell
+Get-ChildItem "installer\bin\*" | Where-Object {
+    ($_.Extension -in '.msi', '.wixpdb') -and ($_.Name -notmatch [regex]::Escape($Version))
+} | Remove-Item -Force
+```
+
+## Ship to main, tag, and publish the GitHub release
 
 This step runs **after** the kit and MSI are successfully produced.
 
-### Find issues closed by this release
+### Merge develop into main
 
-Scan the `## vX.X.X.X` section in `ROADMAP.md` that matches the version
-being released. Collect every `[#N]` back-reference that appears on a
-**checked** item line (`- [x]`). These are the resolved issues.
-
-If unchecked items remain in that section, warn the user: the sprint is not
-complete and the PR body will only reference the implemented items.
-
-### Push and open the PR
-
-```powershell
-# Ensure develop is pushed
-git push origin develop
-
-# Build the PR body (one "Closes #N" per resolved issue)
-$closes = ($resolvedIssues | ForEach-Object { "Closes #$_" }) -join "`n"
-
-gh pr create `
-  --base main `
-  --head develop `
-  --title "Release <version>" `
-  --body "## Release <version>
-
-$closes"
-```
-
-Print the PR URL to the user and instruct them to review and merge it on
-GitHub. GitHub will auto-close the linked issues when the PR is merged into
-`main`.
-
-### Wait for the merge, then tag and publish
-
-Use `AskUserQuestion` with: **"PR merged — create tag and GH release"** /
-**"Not yet — I'll come back"**.
-
-On confirmation:
+Default for this solo repo is CLAUDE.md's direct-merge flow — no PR:
 
 ```powershell
 git checkout main
-git pull origin main
-
-# Annotated tag
-git tag -a <version> -m "Release <version>"
+git merge --no-ff develop -m "Ship <version> — <sprint theme>"
+git tag -a <version> -m "<version> — <sprint theme>"
+git push origin main
 git push origin <version>
+git checkout develop
+```
 
-# GitHub release — attach both artifacts
+Only use a PR instead (`gh pr create --base main --head develop`, wait for
+merge, *then* tag on the merged `main`) if the user explicitly asks for a
+reviewed merge. Don't do both — merging directly and then also opening a PR
+for the same content produces a redundant/empty PR.
+
+### Find issues resolved by this release
+
+Scan the `## vX.X.X.X` section in `ROADMAP.md` matching the version. For
+every `[#N]` back-reference on a **checked** (`- [x]`) item, sort it into
+one of two buckets by the item's trailing text:
+
+- **Pending** — the item carries a verification-pending note (the
+  established phrasing is `- shipped, pending tests` or `- pending
+  <reporter/target> confirmation`, e.g. "not verifiable on the dev
+  machine" or "reporter needs to confirm on their environment"). The fix
+  shipped but isn't confirmed working yet.
+- **Resolved** — everything else checked. Confirmed working (interactively
+  during the sprint, or by the automated test suite).
+
+Unchecked (`- [ ]`) items are not part of either bucket — warn the user the
+sprint isn't complete if any remain; their issues are untouched.
+
+### Publish the release
+
+```powershell
 gh release create <version> `
   --target main `
-  --title "Release <version>" `
-  --notes "See ROADMAP.md for the full change list." `
+  --title "<version> — <sprint theme>" `
+  --notes-file <release-notes-path> `
   "<path-to-kit.zip>" `
   "installer\bin\RBLclass-<AssemblyVersion>.msi"
 ```
 
-Print the release URL.
+Write real release notes (grouped Fixed/Added/Changed, per-item summaries
+from the roadmap text) to a scratchpad file first and pass it via
+`--notes-file` — don't ship with a placeholder note. Print the release URL.
+
+### Resolve GH issues (automatic, every release)
+
+No confirmation needed — this is a mechanical mapping from roadmap
+checkbox state (already reviewed by the user when each item was verified)
+to GH issue state:
+
+```powershell
+# Resolved bucket: close with a reference to the release
+foreach ($n in $resolvedIssues) {
+  gh issue comment $n --body "Resolved in [<version>](<release-url>)."
+  gh issue close $n
+}
+
+# Pending bucket: label + ask for confirmation, leave open
+gh label create awaiting-verification --color fbca04 `
+  --description "Fix shipped; awaiting reporter or real-target confirmation before closing" 2>$null
+foreach ($n in $pendingIssues) {
+  gh issue edit $n --add-label awaiting-verification
+  gh issue comment $n --body "Fix shipped in <version> — please confirm it resolves this on your end."
+}
+```
+
+If a PR-based merge was used instead of the direct merge, build the PR's
+`Closes #N` list from the **resolved bucket only** — never reference a
+pending-bucket issue with `Closes`, since merging would auto-close it
+before it's actually confirmed.
 
 ### Archive the shipped roadmap section
 
@@ -181,8 +209,12 @@ only hold **unshipped** work. After the tag and GH release are created:
 1. In `ROADMAP.md`, find every `## vX.X.X.X` section whose version is now
    shipped (≤ the released version) and whose items are **all** resolved
    (`- [x]`, or explicitly struck-through/deferred like v2.7.0.0 D1 was).
-   Sections with any genuinely open `- [ ]` item stay in `ROADMAP.md`
-   (e.g. items marked "shipped, pending tests" are still open).
+   Sections with any genuinely open `- [ ]` item stay in `ROADMAP.md` (e.g.
+   items marked "shipped, pending tests" are still open). A section with
+   every item checked but one or more still carrying a "pending reporter/
+   target confirmation" note (see the GH-issue step above — its issue is
+   still open with `awaiting-verification`) is a judgment call: archiving
+   is fine once the note is gone, but if in doubt, ask before moving it.
 2. Move each such section **verbatim** to the end of
    `docs/roadmap-history.md`, appending ` (shipped)` to its `##` header.
    Keep version order in the history file; do not rewrite item text.
