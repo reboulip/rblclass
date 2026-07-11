@@ -6,6 +6,19 @@ This page covers every feature and every setting. For a two-minute intro, see th
 RBLclass adds a **task pane** on the right of Outlook and an **RBLclass** tab on
 the ribbon.
 
+## Task pane position
+
+The pane opens docked to the right of the Outlook window by default. You can
+drag it to any edge (Left, Right, Top, or Bottom) using Outlook's standard
+splitter; the position is remembered across restarts.
+
+!!! note "Pane size after live-redocking"
+    If you drag the pane to a new edge during a session, it keeps whatever size
+    Outlook assigns it for that session. The standard size (360 px wide for
+    Left/Right docking, 300 px tall for Top/Bottom docking) is restored the
+    next time Outlook starts. You can resize the pane freely with the splitter
+    at any time.
+
 ## The ribbon tab
 
 If you close the pane, the **RBLclass** ribbon tab has four buttons:

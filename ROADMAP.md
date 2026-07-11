@@ -56,8 +56,10 @@ target. Phases 8–9 are forward-looking.
       stale selection EntryID. Investigate on the real 32-bit target / a
       non-Gmail store before pilot; not reproducible as a code defect on the
       current dev account.
-- [ ] **Task pane rendered partly behind the navigation rail when docked
-      top/bottom.** Discovered during v2.9.0.0 A2 verification: when the CTP's
+- [x] **Task pane rendered partly behind the navigation rail when docked
+      top/bottom.** RESOLVED 2026-07-11 (plus a hard-freeze regression fixed the
+      same day — see resolution block at the end of this item).
+      Discovered during v2.9.0.0 A2 verification: when the CTP's
       `DockPosition` is Top or Bottom, its left edge renders underneath
       Outlook's left navigation icon rail (Mail/Calendar/People/Apps), both on
       live redock and on a fresh Outlook restart with the position persisted
@@ -122,6 +124,45 @@ target. Phases 8–9 are forward-looking.
       Sources: slipstick.com/outlook/outlooks-left-navigation-bar/,
       ablebits.com/office-addins-blog/outlook-customize-move-navigation-pane/,
       aritrasaha.wordpress.com/2009/05/19/ (floating-CTP MoveWindow prior art).
+      **RESOLUTION (2026-07-11).** The "no add-in-side fix" disposition was
+      half-right: the *pane window* indeed cannot be moved, but the overlap is
+      fixable from inside it. Shipped fix, two parts:
+      (1) **Content inset** — `NavRailInset.MeasureLeftOverlapPixels`
+      (`RBLclass.AddIn/NavRailInset.cs`) geometrically detects any visible
+      narrow (≤150px), tall (≥⅓ Explorer height) direct child of the Explorer
+      frame covering the host's left edge (the rail is a `NetUINativeHWNDHost`
+      'NUIDocumentWindow' strip, ~48 DIP wide, spanning the full client height
+      *over* the docks) and `RblClassTaskPaneHost` applies the measured overlap
+      as left `Padding` around the `ElementHost` (recomputed, coalesced, on
+      every `Resize` + `RefreshOnShow`). Measures 0 — no padding — when docked
+      Left/Right, floating, or the rail is hidden, so it is self-adapting.
+      (2) **Title indent** — the Office-drawn CTP title strip cannot be padded
+      (Office renders it) and clipped "RBLclass" down to "ass"; the title is
+      fixed at `CreateCTP` time, so `EnsureTaskPane` prepends 14 spaces when
+      the persisted dock position is Top/Bottom (unconditional: the rail HWND
+      does not exist yet that early in startup, and a rail-less setup just gets
+      a harmless indent). A live redock to Top/Bottom keeps the unindented
+      title until the next restart.
+      **Hard-freeze regression, root-caused and fixed the same day:** the
+      earlier `DockPositionStateChange` → `ApplyDockSize` resize (6f3d723 /
+      621ebb3) froze Outlook whenever the pane was live-docked. Two distinct
+      failure modes observed: inline `Width`/`Height` set → Office rejects with
+      0x80004005 *"property cannot be set while the object's event handler is
+      executing"* and, deferred past the guard (`Dispatcher.BeginInvoke` at
+      `ApplicationIdle`, even with the event handler detached and value-guarded
+      sets), the set *wedges Outlook's docking manager instead*: message pump
+      stays alive (`Responding=True`, idle CPU, AppHang only in the inline
+      variant) but the whole UI stops taking input until the process is killed.
+      Differential evidence: Left/Right/Floating live redocks never froze
+      (width already 360 → value guard skipped the COM set); Top/Bottom froze
+      every time (height differed → set executed). **Standing rule: never set
+      `CustomTaskPane.Width`/`Height` after creation.** `ApplyDockSize` runs
+      only from `EnsureTaskPane` (pane not yet visible, handler not yet
+      attached — proven safe); the dock-change handler persists the position
+      and nothing else. Trade-off: a live redock keeps whatever size Office
+      assigns until the next Outlook start. Verified interactively 2026-07-11
+      (repeated Top/Bottom/Left/Right/floating redocks, no freeze; content and
+      title clear of the rail on a Top-docked cold start).
 
 ---
 
