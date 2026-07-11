@@ -23,7 +23,7 @@ Type keywords in the search box at the top of the pane. Results appear after a s
 * '''Enter''' files the selected mail into the highlighted folder.
 * '''Ctrl+Enter''' ''opens'' the highlighted folder in Outlook instead of filing.
 * '''Double-click''' a row to file into that folder immediately.
-* The '''↗''' button opens that folder in Outlook.
+* The '''👁''' button opens that folder in Outlook.
 * Right-click → '''Add subfolder…''' creates a sub-folder under it.
 * The '''⤢''' button cycles how that row shows its path (see "Search result path display" in Settings).
 

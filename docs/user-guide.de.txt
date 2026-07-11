@@ -23,7 +23,7 @@ Geben Sie Stichwörter in das Suchfeld oben im Bereich ein. Die Ergebnisse ersch
 * '''Eingabe''' legt die ausgewählte E-Mail in den markierten Ordner ab.
 * '''Strg+Eingabe''' ''öffnet'' den markierten Ordner in Outlook, statt abzulegen.
 * '''Doppelklick''' auf eine Zeile legt sofort in diesen Ordner ab.
-* Die Schaltfläche '''↗''' öffnet diesen Ordner in Outlook.
+* Die Schaltfläche '''👁''' öffnet diesen Ordner in Outlook.
 * Rechtsklick → '''Unterordner hinzufügen…''' erstellt einen Unterordner darunter.
 * Die Schaltfläche '''⤢''' wechselt die Pfadanzeige dieser Zeile (siehe „Pfadanzeige der Suchergebnisse" in den Einstellungen).
 

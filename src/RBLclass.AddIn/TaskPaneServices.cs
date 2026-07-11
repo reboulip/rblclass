@@ -218,5 +218,22 @@ namespace RBLclass.AddIn
         /// startup; null until then. UI thread only.
         /// </summary>
         public static Action<MailItemRef> DeleteMail;
+
+        /// <summary>
+        /// True when the current explorer selection contains at least one
+        /// MeetingItem AND the "classify meeting items" setting is off - i.e.
+        /// the next classify will silently skip them. Checked at classify /
+        /// auto-class start to decide whether to show the discoverability hint
+        /// afterward (v2.9.0.0 C2). UI thread only; null until wired.
+        /// </summary>
+        public static Func<bool> CheckHasMeetingItemsInSelection;
+
+        /// <summary>
+        /// Show the one-time "classifying meeting invitations is available"
+        /// hint dialog, unless permanently dismissed (v2.9.0.0 C2). Reads and
+        /// writes <see cref="SettingsKeys.MeetingHintDismissed"/>. Call after
+        /// the classify batch completes; no-op once dismissed.
+        /// </summary>
+        public static Action ShowMeetingClassifyHint;
     }
 }

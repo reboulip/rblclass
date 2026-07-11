@@ -189,6 +189,17 @@ namespace RBLclass.AddIn
                 TaskPaneServices.GetSelection = () =>
                     _mailStore.GetSelectedItems(
                         _settingsStore.GetBool(SettingsKeys.ClassifyMeetingItems, false));
+                TaskPaneServices.CheckHasMeetingItemsInSelection = () =>
+                    !_settingsStore.GetBool(SettingsKeys.ClassifyMeetingItems, false)
+                    && _mailStore.GetSelectedItems(includeMeetingItems: true)
+                                 .Any(x => x.IsMeetingItem);
+                TaskPaneServices.ShowMeetingClassifyHint = () =>
+                {
+                    if (_settingsStore.GetBool(SettingsKeys.MeetingHintDismissed, false)) return;
+                    var hint = new Views.MeetingClassifyHintWindow();
+                    if (hint.ShowDialog() == true && hint.DontShowAgain)
+                        _settingsStore.SetBool(SettingsKeys.MeetingHintDismissed, true);
+                };
                 TaskPaneServices.GetAllFolders = () => _folderTree.GetAll();
                 TaskPaneServices.FolderIndex = _folderTree;
                 TaskPaneServices.CreateSubfolder = (parent, name) =>
@@ -394,14 +405,18 @@ namespace RBLclass.AddIn
                     catch (Exception ex) { TryLog("DeleteMail (pin banner) failed", ex); }
                 };
 
-                // Keep the classify pane's selection count live.
+                // Keep the classify pane's selection count live; also strip the
+                // external-sender banner from inline reply/forward drafts (B1).
                 try
                 {
                     _activeExplorer = _outlookApp.ActiveExplorer();
                     if (_activeExplorer != null)
+                    {
                         _activeExplorer.SelectionChange += OnExplorerSelectionChange;
+                        _activeExplorer.InlineResponse += OnExplorerInlineResponse;
+                    }
                 }
-                catch (Exception ex) { TryLog("SelectionChange subscribe failed", ex); }
+                catch (Exception ex) { TryLog("Explorer event subscribe failed", ex); }
 
                 // Send-time guards (legacy 6a-6b). Kept on _outlookApp, which is
                 // already held in a field for the add-in's lifetime (CLAUDE.md
@@ -537,6 +552,7 @@ namespace RBLclass.AddIn
                 if (_activeExplorer != null)
                 {
                     try { _activeExplorer.SelectionChange -= OnExplorerSelectionChange; } catch { }
+                    try { _activeExplorer.InlineResponse -= OnExplorerInlineResponse; } catch { }
                     try { Marshal.ReleaseComObject(_activeExplorer); } catch { }
                     _activeExplorer = null;
                 }
@@ -655,7 +671,12 @@ namespace RBLclass.AddIn
                         try { item = inspector.CurrentItem; } catch { }
                         if (item != null)
                         {
-                            try { _mailStore.StripBannerFromDraft(item, sig); }
+                            try
+                            {
+                                bool stripped = _mailStore.StripBannerFromDraft(item, sig);
+                                Log.Debug("Inspector.Activate banner strip: {Result}",
+                                    stripped ? "stripped" : "no banner found in body");
+                            }
                             finally { try { Marshal.ReleaseComObject(item); } catch { } }
                         }
                     }
@@ -666,6 +687,32 @@ namespace RBLclass.AddIn
             catch (Exception ex)
             {
                 TryLog("NewInspector banner strip setup failed", ex);
+            }
+        }
+
+        /// <summary>
+        /// Inline reply/forward banner strip (v2.9.0.0 B1): Outlook composes the
+        /// quoted body in the reading-pane compose area before firing
+        /// <c>Explorer.InlineResponse</c>, so the banner is present in the item's
+        /// HTMLBody and can be stripped immediately. The item COM reference belongs
+        /// to Outlook; do not release it. Best-effort and never throws into Outlook.
+        /// </summary>
+        private void OnExplorerInlineResponse(object item)
+        {
+            try
+            {
+                var settings = Settings.Load(_settingsStore);
+                if (!settings.StripBannerOnReply ||
+                    string.IsNullOrWhiteSpace(settings.ExternalBannerSignature))
+                    return;
+
+                bool stripped = _mailStore.StripBannerFromDraft(item, settings.ExternalBannerSignature);
+                Log.Debug("InlineResponse banner strip: {Result}",
+                    stripped ? "stripped" : "no banner found in body");
+            }
+            catch (Exception ex)
+            {
+                TryLog("InlineResponse banner strip failed", ex);
             }
         }
 
@@ -796,6 +843,10 @@ namespace RBLclass.AddIn
                     {
                         action = SentItemTriageAction.MoveToArchive;
                     }
+                    else if (mode == SentItemTriageMode.CopyToInbox)
+                    {
+                        action = SentItemTriageAction.CopyToInbox;
+                    }
                     else
                     {
                         action = SentItemTriageAction.MoveToInbox;
@@ -881,6 +932,29 @@ namespace RBLclass.AddIn
                         TaskPaneServices.Host?.RefreshOnShow();
                     }
                     break;
+
+                case SentItemTriageAction.CopyToInbox:
+                    // Direct store copy, not _classifier.Classify: a routing copy
+                    // needs no attachment handling, history, or undo plan, and the
+                    // original must stay in Sent Items (v2.9.0.0 C1).
+                    var inboxForCopy = _mailStore.GetInboxFolder();
+                    if (inboxForCopy == null)
+                    {
+                        Log.Warning("Sent-item triage: could not resolve the Inbox folder.");
+                        return;
+                    }
+                    var copyRef = _mailStore.CopyItemToFolder(item, inboxForCopy);
+                    Log.Information("Sent-item triage copied the sent mail to the Inbox ({Outcome}).",
+                        copyRef != null ? "success" : "copy failed");
+
+                    if (settings.ClassifyAfterMoveToInbox && copyRef != null)
+                    {
+                        EnsureTaskPane();
+                        TaskPaneServices.PinMailForClassify?.Invoke(copyRef);
+                        if (_taskPane != null) _taskPane.Visible = true;
+                        TaskPaneServices.Host?.RefreshOnShow();
+                    }
+                    break;
             }
         }
 
@@ -926,12 +1000,38 @@ namespace RBLclass.AddIn
             _taskPane = _ctpFactory.CreateCTP(
                 RblClassTaskPaneHost.ProgIdString, "RBLclass", Type.Missing);
             _taskPane.DockPosition = (Office.MsoCTPDockPosition)dockInt;
-            _taskPane.Width = 360;
+            ApplyDockSize(_taskPane);
             _taskPane.DockPositionStateChange += OnTaskPaneDockPositionStateChange;
         }
 
         /// <summary>
-        /// Persists the new dock position whenever the user moves the task pane.
+        /// Office's CustomTaskPane only accepts <c>Width</c> while docked Left/Right and
+        /// only <c>Height</c> while docked Top/Bottom - setting the other one throws
+        /// COMException 0x80004005 ("the specified width/height is not valid ... current
+        /// dock position"). Never guarded before (v2.4.0.0 A3 only ever set Width
+        /// unconditionally), which crashed OnStartupComplete whenever the persisted dock
+        /// position was Top/Bottom, and left Top/Bottom docking at whatever undersized
+        /// default Office falls back to when redocked live without a restart (v2.9.0.0 A2
+        /// follow-up).
+        /// </summary>
+        private static void ApplyDockSize(Office.CustomTaskPane pane)
+        {
+            switch (pane.DockPosition)
+            {
+                case Office.MsoCTPDockPosition.msoCTPDockPositionLeft:
+                case Office.MsoCTPDockPosition.msoCTPDockPositionRight:
+                    pane.Width = 360;
+                    break;
+                case Office.MsoCTPDockPosition.msoCTPDockPositionTop:
+                case Office.MsoCTPDockPosition.msoCTPDockPositionBottom:
+                    pane.Height = 300;
+                    break;
+            }
+        }
+
+        /// <summary>
+        /// Persists the new dock position whenever the user moves the task pane, and
+        /// re-applies the size for the new orientation (v2.9.0.0 A2 follow-up).
         /// Fires on the Outlook UI (STA) thread.
         /// </summary>
         private void OnTaskPaneDockPositionStateChange(Office.CustomTaskPane customTaskPaneInst)
@@ -941,6 +1041,23 @@ namespace RBLclass.AddIn
                 int pos = (int)customTaskPaneInst.DockPosition;
                 _settingsStore?.Set(SettingsKeys.PaneDockPosition,
                     pos.ToString(System.Globalization.CultureInfo.InvariantCulture));
+
+                // Office throws COMException 0x80004005 ("this property cannot be set
+                // while the object's event handler is executing") if Width/Height is
+                // set synchronously from inside this very event - defer it to run once
+                // Office is done dispatching. Discovered as a regression (v2.9.0.0 B2
+                // follow-up): the exception aborted this handler before the persist
+                // above ran, so a live redock silently stopped saving - the pane kept
+                // reopening at a stale position from before the crash fix that added
+                // this call.
+                var pane = customTaskPaneInst;
+                _ = Dispatcher.CurrentDispatcher.BeginInvoke(
+                    new Action(() =>
+                    {
+                        try { ApplyDockSize(pane); }
+                        catch (Exception ex) { TryLog("Deferred ApplyDockSize failed", ex); }
+                    }),
+                    DispatcherPriority.ApplicationIdle);
             }
             catch (Exception ex)
             {

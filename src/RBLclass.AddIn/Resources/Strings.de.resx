@@ -157,7 +157,7 @@
     <value>Aus Posteingang löschen</value>
   </data>
   <data name="MainPane_PinnedSentMail_Delete_ToolTip" xml:space="preserve">
-    <value>Die in den Posteingang verschobene Kopie dieser gesendeten E-Mail löschen</value>
+    <value>Die Kopie dieser gesendeten E-Mail aus dem Posteingang löschen</value>
   </data>
   <data name="MainPane_UpdateAvailable_Banner" xml:space="preserve">
     <value>Eine neuere Version von RBLclass ist verfügbar ({0}). Besuchen Sie die Installationsseite zum Aktualisieren.</value>
@@ -166,7 +166,7 @@
     <value>Verwerfen</value>
   </data>
   <data name="Settings_ClassifyAfterMoveToInbox_CheckBox" xml:space="preserve">
-    <value>Nach dem Verschieben einer gesendeten E-Mail in den Posteingang den Ablagebereich zum Ablegen öffnen</value>
+    <value>Nach dem Verschieben oder Kopieren einer gesendeten E-Mail in den Posteingang den Ablagebereich zum Ablegen öffnen</value>
   </data>
   <data name="Settings_FavoriteFolders_Header" xml:space="preserve">
     <value>Bevorzugte Anlagenordner</value>
@@ -254,6 +254,9 @@
   </data>
   <data name="AttachDisp_TargetPrefix" xml:space="preserve">
     <value>Speichern in: </value>
+  </data>
+  <data name="AttachDisp_OpenFolder_ToolTip" xml:space="preserve">
+    <value>Im Datei-Explorer öffnen</value>
   </data>
   <data name="SaveAsPicker_Title" xml:space="preserve">
     <value>E-Mail(s) als Dateien speichern</value>
@@ -416,6 +419,9 @@
   <data name="Settings_TriageMode_MoveToInbox" xml:space="preserve">
     <value>In den Posteingang verschieben</value>
   </data>
+  <data name="Settings_TriageMode_CopyToInbox" xml:space="preserve">
+    <value>In den Posteingang kopieren (Original in Gesendete Elemente behalten)</value>
+  </data>
   <data name="Settings_TriageMode_Delete" xml:space="preserve">
     <value>Löschen</value>
   </data>
@@ -577,6 +583,23 @@
     <value>Abbrechen</value>
   </data>
 
+  <!-- MeetingClassifyHintWindow: meeting-classify discoverability hint (v2.9.0.0 C2) -->
+  <data name="MeetingHint_Title" xml:space="preserve">
+    <value>RBLclass — Hinweis</value>
+  </data>
+  <data name="MeetingHint_Body_Line1" xml:space="preserve">
+    <value>Wussten Sie? Sie können Besprechungseinladungen auch zusammen mit Ihren E-Mails ablegen.</value>
+  </data>
+  <data name="MeetingHint_Body_Line2" xml:space="preserve">
+    <value>Aktivieren: Einstellungen → Klassifizieren → „Besprechungsanfragen und -antworten ablegen".</value>
+  </data>
+  <data name="MeetingHint_DontShowAgain" xml:space="preserve">
+    <value>Diese Meldung nicht mehr anzeigen</value>
+  </data>
+  <data name="MeetingHint_Ok_Button" xml:space="preserve">
+    <value>OK</value>
+  </data>
+
   <!-- SentItemTriageWindow -->
   <data name="SentTriage_Title" xml:space="preserve">
     <value>RBLclass - Gesendete E-Mail</value>
@@ -586,6 +609,9 @@
   </data>
   <data name="SentTriage_MoveToInbox_Button" xml:space="preserve">
     <value>In den Posteingang verschieben</value>
+  </data>
+  <data name="SentTriage_CopyToInbox_Button" xml:space="preserve">
+    <value>In den Posteingang kopieren (Original in Gesendete Elemente behalten)</value>
   </data>
   <data name="SentTriage_Delete_Button" xml:space="preserve">
     <value>Aus gesendeten Elementen löschen</value>
@@ -803,6 +829,9 @@
   </data>
   <data name="Status_Classify_EncryptedInConversation_Other" xml:space="preserve">
     <value> {0} verschlüsselte Nachrichten der Unterhaltung wurden unverändert gelassen.</value>
+  </data>
+  <data name="Status_Widening_TableTimeout" xml:space="preserve">
+    <value>Der Outlook-Unterhaltungsindex ist für Ihre E-Mail-Dateien nicht verfügbar — die Unterhaltung wurde stattdessen über eine Ordnersuche einbezogen. Weitere Klassifizierungen in dieser Sitzung nutzen sie direkt, ohne die lange Wartezeit.</value>
   </data>
   <data name="Status_TriageArchiveFolderMissing" xml:space="preserve">
     <value>Triage gesendeter Elemente: Archivordner nicht gefunden — Mail in Gesendete Elemente belassen.</value>

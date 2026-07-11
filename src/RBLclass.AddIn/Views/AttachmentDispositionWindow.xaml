@@ -109,7 +109,11 @@
                                         Visibility="{Binding HasTarget, Converter={StaticResource BoolToVis}}">
                                     <TextBlock TextWrapping="Wrap">
                                         <Run Text="{loc:Loc Key=AttachDisp_TargetPrefix}" FontWeight="Bold" />
-                                        <Run Text="{Binding TargetDirectory}" />
+                                        <Hyperlink Click="TargetDirectory_Click"
+                                                   Foreground="{DynamicResource Theme.Foreground}"
+                                                   ToolTip="{loc:Loc Key=AttachDisp_OpenFolder_ToolTip}">
+                                            <Run Text="{Binding TargetDirectory}" />
+                                        </Hyperlink>
                                     </TextBlock>
                                 </Border>
                             </StackPanel>

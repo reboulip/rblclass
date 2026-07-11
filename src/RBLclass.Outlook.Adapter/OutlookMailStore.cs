@@ -26,6 +26,14 @@ namespace RBLclass.Outlook.Adapter
         private readonly OutlookOM.Application _app;
         private readonly FolderExclusionPolicy _policy;
 
+        // True after the first conversation-table timeout of the session
+        // (0x...4005 - Windows Search / conversation index unavailable for the
+        // active stores, ~30s stall per call). Subsequent GetConversationSiblings
+        // calls skip GetTable() and go straight to the MAPI folder scan, which
+        // needs no index (B3, v2.9.0.0). Instance-lifetime by design: resets on
+        // Outlook restart, when the index may have become available again.
+        private bool _wideningUnavailable;
+
         public OutlookMailStore(OutlookOM.Application app,
                                 FolderExclusionOptions exclusionOptions = null)
         {
@@ -152,6 +160,13 @@ namespace RBLclass.Outlook.Adapter
                     using (var explorer = new ComRef<OutlookOM.Explorer>(rawExplorer))
                     {
                         explorer.Value.CurrentFolder = folder.Value;
+                        // Activate the explorer after a programmatic folder change so
+                        // Outlook fires its internal "explorer activated" event chain.
+                        // Without this, the explorer's keyboard handler (Delete, etc.)
+                        // remains dormant - the CTP button retained Win32 focus and
+                        // Outlook never saw the Explorer.Activate event that arms its
+                        // message-list accelerators (B2, v2.9.0.0).
+                        try { explorer.Value.Activate(); } catch { }
                     }
                 }
             }
@@ -792,13 +807,15 @@ namespace RBLclass.Outlook.Adapter
             // slowness, since it touches the conversation index/server. Logged
             // on every exit path, with the sibling/skip counts it produced.
             var swPerf = System.Diagnostics.Stopwatch.StartNew();
+            bool wideningJustDisabled = false;
             ConversationSiblings Outcome()
             {
                 swPerf.Stop();
                 Log.Debug(
-                    "PERF GetConversationSiblings {Ms} ms: item {EntryId}, {Siblings} sibling(s), {Skipped} skipped",
-                    swPerf.ElapsedMilliseconds, item?.EntryId, result.Count, skipped.Count);
-                return new ConversationSiblings(result, skipped);
+                    "PERF GetConversationSiblings {Ms} ms: item {EntryId}, {Siblings} sibling(s), {Skipped} skipped, path={Path}",
+                    swPerf.ElapsedMilliseconds, item?.EntryId, result.Count, skipped.Count,
+                    _wideningUnavailable ? "folder-scan" : "conversation-table");
+                return new ConversationSiblings(result, skipped, wideningJustDisabled);
             }
 
             if (item == null) return Outcome();
@@ -814,6 +831,24 @@ namespace RBLclass.Outlook.Adapter
                     var mail = comItem.Value as OutlookOM.MailItem;
                     if (mail == null) return Outcome();
 
+                    // Scope to the default store's Inbox + Sent Items, the
+                    // legacy 5b-step-2 scope.
+                    string inboxEntryId = SafeNamespaceDefaultFolderEntryId(
+                        session.Value, OutlookOM.OlDefaultFolders.olFolderInbox);
+                    string sentEntryId = SafeNamespaceDefaultFolderEntryId(
+                        session.Value, OutlookOM.OlDefaultFolders.olFolderSentMail);
+                    if (inboxEntryId == null && sentEntryId == null) return Outcome();
+
+                    if (_wideningUnavailable)
+                    {
+                        // A previous call this session already proved the
+                        // conversation table times out on this profile - go
+                        // straight to the MAPI folder scan (B3, v2.9.0.0).
+                        CollectSiblingsViaFolderScan(session.Value, mail, item.EntryId,
+                            inboxEntryId, sentEntryId, result, skipped);
+                        return Outcome();
+                    }
+
                     OutlookOM.Conversation rawConversation;
                     try { rawConversation = mail.GetConversation(); }
                     catch { return Outcome(); } // conversation tracking unavailable - tolerate
@@ -822,19 +857,12 @@ namespace RBLclass.Outlook.Adapter
 
                     using (var conversation = new ComRef<OutlookOM.Conversation>(rawConversation))
                     {
-                        // Scope to the default store's Inbox + Sent Items, the
-                        // legacy 5b-step-2 scope. GetTable() gives Outlook's own
-                        // flattened, indexed view of every item in the
-                        // conversation (anywhere) - resolving and filtering that
-                        // small set is far cheaper and more robust than the
-                        // legacy approach of iterating every item in both
-                        // folders and string-comparing ConversationID.
-                        string inboxEntryId = SafeNamespaceDefaultFolderEntryId(
-                            session.Value, OutlookOM.OlDefaultFolders.olFolderInbox);
-                        string sentEntryId = SafeNamespaceDefaultFolderEntryId(
-                            session.Value, OutlookOM.OlDefaultFolders.olFolderSentMail);
-                        if (inboxEntryId == null && sentEntryId == null) return Outcome();
-
+                        // GetTable() gives Outlook's own flattened, indexed view
+                        // of every item in the conversation (anywhere) -
+                        // resolving and filtering that small set is far cheaper
+                        // and more robust than iterating every item in both
+                        // folders and string-comparing ConversationID... when
+                        // the conversation index is available at all (see catch).
                         OutlookOM.Table rawTable;
                         try { rawTable = conversation.Value.GetTable(); }
                         catch { return Outcome(); }
@@ -861,15 +889,25 @@ namespace RBLclass.Outlook.Adapter
                             }
                             catch (Exception ex)
                             {
-                                // Conversation table enumeration failed (e.g. 0x8A404005 -
-                                // conversation index server timeout, ~30s). Tolerate: return
-                                // whatever siblings were already collected, so the primary
-                                // item(s) still get filed instead of aborting the whole
-                                // classify (v2.8.0.0 C2).
+                                // Conversation table enumeration failed (0x...4005 -
+                                // conversation index unavailable, e.g. Windows Search
+                                // not indexing the PST path; burns the full ~30s
+                                // timeout per call with 0 rows). Auto-disable the
+                                // table for the rest of the session and redo this
+                                // item via the MAPI folder scan, discarding any
+                                // partial rows - the scan is authoritative for the
+                                // Inbox+Sent scope (B3, v2.9.0.0; supersedes the
+                                // v2.8.0.0 C2 log-and-tolerate).
+                                _wideningUnavailable = true;
+                                wideningJustDisabled = true;
                                 Log.Warning(ex,
-                                    "GetConversationSiblings: conversation table enumeration failed for item {EntryId}; " +
-                                    "widening skipped, {Siblings} sibling(s) collected before the failure.",
-                                    item?.EntryId, result.Count);
+                                    "GetConversationSiblings: conversation table timeout for item {EntryId}; " +
+                                    "widening table auto-disabled for this session, using MAPI folder scan.",
+                                    item?.EntryId);
+                                result.Clear();
+                                skipped.Clear();
+                                CollectSiblingsViaFolderScan(session.Value, mail, item.EntryId,
+                                    inboxEntryId, sentEntryId, result, skipped);
                             }
                         }
                     }
@@ -916,6 +954,103 @@ namespace RBLclass.Outlook.Adapter
                 }
 
                 result.Add(new MailItemRef(storeId, entryId, Safe(() => sibling.Subject, string.Empty)));
+            }
+        }
+
+        /// <summary>
+        /// MAPI-native sibling lookup, used when the conversation table is
+        /// unavailable (B3, v2.9.0.0): Restrict the Inbox and Sent Items by
+        /// PR_CONVERSATION_TOPIC (0x0070001E, a plain MAPI string property - no
+        /// Windows Search involved), then verify each candidate by exact
+        /// ConversationID match, since two unrelated threads can share a
+        /// normalized topic ("Re: Meeting"). Same S/MIME skip-and-report rule
+        /// as <see cref="AddSiblingIfInScope"/>.
+        /// </summary>
+        private static void CollectSiblingsViaFolderScan(
+            OutlookOM.NameSpace session,
+            OutlookOM.MailItem sourceMail,
+            string sourceEntryId,
+            string inboxEntryId,
+            string sentEntryId,
+            List<MailItemRef> result,
+            List<string> skipped)
+        {
+            string convId = Safe(() => sourceMail.ConversationID, null);
+            if (string.IsNullOrEmpty(convId)) return;
+
+            string topic = Safe(() => sourceMail.ConversationTopic, null);
+            string topicFilter = topic != null
+                ? "@SQL=\"http://schemas.microsoft.com/mapi/proptag/0x0070001E\" = '"
+                  + topic.Replace("'", "''") + "'"
+                : null;
+
+            var seen = new HashSet<string> { sourceEntryId };
+
+            foreach (var folderEntryId in new[] { inboxEntryId, sentEntryId })
+            {
+                if (folderEntryId == null) continue;
+
+                OutlookOM.Folder rawFolder;
+                try { rawFolder = (OutlookOM.Folder)session.GetFolderFromID(folderEntryId); }
+                catch { continue; }
+
+                using (var folder = new ComRef<OutlookOM.Folder>(rawFolder))
+                {
+                    string storeId = Safe(() => folder.Value.StoreID, null);
+                    if (storeId == null) continue;
+
+                    OutlookOM.Items rawItems;
+                    try { rawItems = folder.Value.Items; }
+                    catch { continue; }
+
+                    using (var itemsRef = new ComRef<OutlookOM.Items>(rawItems))
+                    {
+                        OutlookOM.Items rawRestricted = null;
+                        if (topicFilter != null)
+                        {
+                            try { rawRestricted = itemsRef.Value.Restrict(topicFilter); }
+                            catch { rawRestricted = null; } // fall back to full iteration
+                        }
+
+                        var restrictedRef = rawRestricted != null
+                            ? new ComRef<OutlookOM.Items>(rawRestricted)
+                            : null;
+                        try
+                        {
+                            OutlookOM.Items toScan = rawRestricted ?? itemsRef.Value;
+                            int count = Safe(() => toScan.Count, 0);
+                            for (int i = 1; i <= count; i++)
+                            {
+                                object rawSibling;
+                                try { rawSibling = toScan[i]; }
+                                catch { continue; }
+
+                                using (var comSibling = new ComRef<object>(rawSibling))
+                                {
+                                    var sibling = comSibling.Value as OutlookOM.MailItem;
+                                    if (sibling == null) continue;
+
+                                    string sibEntryId = Safe(() => sibling.EntryID, null);
+                                    if (sibEntryId == null || !seen.Add(sibEntryId)) continue;
+
+                                    string sibConvId = Safe(() => sibling.ConversationID, null);
+                                    if (sibConvId != convId) continue;
+
+                                    if (Safe(() => sibling.MessageClass, string.Empty)
+                                            .StartsWith("IPM.Note.SMIME", StringComparison.OrdinalIgnoreCase))
+                                    {
+                                        skipped.Add(Safe(() => sibling.Subject, "(encrypted message)"));
+                                        continue;
+                                    }
+
+                                    result.Add(new MailItemRef(storeId, sibEntryId,
+                                        Safe(() => sibling.Subject, string.Empty)));
+                                }
+                            }
+                        }
+                        finally { restrictedRef?.Dispose(); }
+                    }
+                }
             }
         }
 
@@ -1332,18 +1467,70 @@ namespace RBLclass.Outlook.Adapter
                                 string fileName = Safe(() => att.Value.FileName, null);
                                 if (string.IsNullOrWhiteSpace(fileName))
                                     fileName = "attachment" + attachmentId;
+
+                                string basePath = System.IO.Path.Combine(destinationDirectory, fileName);
+                                if (!System.IO.File.Exists(basePath))
+                                {
+                                    try
+                                    {
+                                        att.Value.SaveAsFile(basePath);
+                                        Log.Information("Saved attachment {Id} to {Path}.", attachmentId, basePath);
+                                        return true;
+                                    }
+                                    catch (Exception ex)
+                                    {
+                                        Log.Error(ex, "SaveAttachmentToFile failed for attachment {Id} to {Path}.",
+                                            attachmentId, basePath);
+                                        return false;
+                                    }
+                                }
+
+                                // A same-name file already exists: write to a same-directory temp
+                                // first (same NTFS volume => the eventual rename is O(1)), then
+                                // hash-compare rather than blindly suffixing (v2.9.0.0 D2).
+                                string tempPath = System.IO.Path.Combine(destinationDirectory,
+                                    "__rblclass_tmp_" + System.IO.Path.GetRandomFileName());
+                                try
+                                {
+                                    att.Value.SaveAsFile(tempPath);
+                                }
+                                catch (Exception ex)
+                                {
+                                    try { if (System.IO.File.Exists(tempPath)) System.IO.File.Delete(tempPath); } catch { }
+                                    Log.Error(ex, "SaveAttachmentToFile: temp-write failed for attachment {Id}.", attachmentId);
+                                    return false;
+                                }
+
+                                bool identical;
+                                try { identical = AttachmentChecksumHelper.ContentEquals(basePath, tempPath); }
+                                catch (Exception ex)
+                                {
+                                    identical = false;
+                                    Log.Warning(ex, "SaveAttachmentToFile: hash compare failed for {Path}; using suffix fallback.", basePath);
+                                }
+
+                                if (identical)
+                                {
+                                    try { System.IO.File.Delete(tempPath); } catch { }
+                                    Log.Information(
+                                        "SaveAttachmentToFile: dedupe skip - attachment {Id} already exists at {Path} with identical content.",
+                                        attachmentId, basePath);
+                                    return true;
+                                }
+
                                 string destPath = AttachmentFilenameCollisionResolver.Resolve(
                                     destinationDirectory, fileName, System.IO.File.Exists);
                                 try
                                 {
-                                    att.Value.SaveAsFile(destPath);
+                                    System.IO.File.Move(tempPath, destPath);
                                     Log.Information("Saved attachment {Id} to {Path}.", attachmentId, destPath);
                                     return true;
                                 }
                                 catch (Exception ex)
                                 {
-                                    Log.Error(ex, "SaveAttachmentToFile failed for attachment {Id} to {Path}.",
-                                        attachmentId, destPath);
+                                    try { if (System.IO.File.Exists(tempPath)) System.IO.File.Delete(tempPath); } catch { }
+                                    Log.Error(ex, "SaveAttachmentToFile: rename temp to {Path} failed for attachment {Id}.",
+                                        destPath, attachmentId);
                                     return false;
                                 }
                             }
@@ -1382,17 +1569,64 @@ namespace RBLclass.Outlook.Adapter
                     if (string.IsNullOrWhiteSpace(baseName)) baseName = "email";
                     string fileName = baseName + ".msg";
 
+                    string basePath = System.IO.Path.Combine(destinationDirectory, fileName);
+                    if (!System.IO.File.Exists(basePath))
+                    {
+                        try
+                        {
+                            mail.SaveAs(basePath, OutlookOM.OlSaveAsType.olMSG);
+                            Log.Information("SaveMailAsFile: saved to {Path}", basePath);
+                            return true;
+                        }
+                        catch (Exception ex)
+                        {
+                            Log.Error(ex, "SaveMailAsFile: SaveAs failed for {Path}", basePath);
+                            return false;
+                        }
+                    }
+
+                    // Same dedupe-aware save as SaveAttachmentToFile (v2.9.0.0 D2).
+                    string tempPath = System.IO.Path.Combine(destinationDirectory,
+                        "__rblclass_tmp_" + System.IO.Path.GetRandomFileName());
+                    try
+                    {
+                        mail.SaveAs(tempPath, OutlookOM.OlSaveAsType.olMSG);
+                    }
+                    catch (Exception ex)
+                    {
+                        try { if (System.IO.File.Exists(tempPath)) System.IO.File.Delete(tempPath); } catch { }
+                        Log.Error(ex, "SaveMailAsFile: temp-write failed for {Path}", tempPath);
+                        return false;
+                    }
+
+                    bool identical;
+                    try { identical = AttachmentChecksumHelper.ContentEquals(basePath, tempPath); }
+                    catch (Exception ex)
+                    {
+                        identical = false;
+                        Log.Warning(ex, "SaveMailAsFile: hash compare failed for {Path}; using suffix fallback.", basePath);
+                    }
+
+                    if (identical)
+                    {
+                        try { System.IO.File.Delete(tempPath); } catch { }
+                        Log.Information(
+                            "SaveMailAsFile: dedupe skip - {Path} already exists with identical content.", basePath);
+                        return true;
+                    }
+
                     string destPath = AttachmentFilenameCollisionResolver.Resolve(
                         destinationDirectory, fileName, System.IO.File.Exists);
                     try
                     {
-                        mail.SaveAs(destPath, OutlookOM.OlSaveAsType.olMSG);
+                        System.IO.File.Move(tempPath, destPath);
                         Log.Information("SaveMailAsFile: saved to {Path}", destPath);
                         return true;
                     }
                     catch (Exception ex)
                     {
-                        Log.Error(ex, "SaveMailAsFile: SaveAs failed for {Path}", destPath);
+                        try { if (System.IO.File.Exists(tempPath)) System.IO.File.Delete(tempPath); } catch { }
+                        Log.Error(ex, "SaveMailAsFile: rename temp to {Path} failed.", destPath);
                         return false;
                     }
                 }

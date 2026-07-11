@@ -54,10 +54,15 @@ For every test case in the brief's "xUnit tests" section:
 
 ## Step 5 — Build check
 
-Run a build to catch compilation errors before reloading into Outlook:
+`msbuild` is not on PATH on this machine — resolve it via `vswhere` first
+(same lookup `Reload-Addin.ps1` uses), then build to catch compilation
+errors before reloading into Outlook:
 
 ```powershell
-msbuild src\RBLclass.AddIn\RBLclass.AddIn.csproj /p:Configuration=Debug /p:Platform=AnyCPU /t:Build /v:minimal
+$vswhere = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe"
+$msbuild = & $vswhere -latest -prerelease -products * -requires Microsoft.Component.MSBuild -find "MSBuild\**\Bin\MSBuild.exe" | Select-Object -First 1
+if (-not $msbuild -or -not (Test-Path $msbuild)) { throw "MSBuild not found via vswhere." }
+& $msbuild "src\RBLclass.AddIn\RBLclass.AddIn.csproj" /p:Configuration=Debug "/p:Platform=Any CPU" /t:Build /v:minimal /nologo
 ```
 
 Fix any errors before continuing. Do not call /reload-addin until the build
@@ -82,6 +87,12 @@ question offer at minimum: `Yes — works as expected` and
 Always end with a last question: `Any other feedback?` with a free text response, to catch anything the user notices that the specific verification questions missed.
 
 Wait for the answers before doing anything else.
+
+**Not verifiable on the dev machine.** CLAUDE.md documents a category of
+behavior that structurally cannot be exercised on this machine (e.g.
+S-MIME/Stormshield mail, the external-sender banner). If the user reports a
+question can't be answered for this reason, don't treat it as a fail and
+don't block the sprint on it — follow Step 8c instead.
 
 ## Step 8a — All pass → commit
 
@@ -119,6 +130,18 @@ Wait for the answers before doing anything else.
 After **3 failed fix attempts**, stop the loop. Summarise what was tried,
 what each attempt changed, and what the user reported. Ask the user for
 guidance before attempting another fix.
+
+## Step 8c — Not verifiable on the dev machine → commit unverified
+
+Follow the precedent already in `ROADMAP.md` (v2.6.0.0 B3, C1; v2.9.0.0 B1):
+
+1. Same as Step 8a, except leave the checkbox as `- [ ]` instead of `- [x]`.
+2. Append `- shipped, pending tests (not verifiable on the dev machine per
+   the testing strategy above; re-verify <what to check> on the real target
+   before pilot)` to the item's text, naming the specific behavior that
+   still needs a real-target check.
+3. Commit and comment on the GH issue as in Step 8a, but note in the issue
+   comment that verification is pending real-target testing.
 
 ## Rules
 

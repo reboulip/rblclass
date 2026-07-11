@@ -157,7 +157,7 @@
     <value>Delete from Inbox</value>
   </data>
   <data name="MainPane_PinnedSentMail_Delete_ToolTip" xml:space="preserve">
-    <value>Delete this sent mail's copy that was moved to the Inbox</value>
+    <value>Delete this sent mail's copy from the Inbox</value>
   </data>
   <data name="MainPane_UpdateAvailable_Banner" xml:space="preserve">
     <value>A newer version of RBLclass is available ({0}). Visit the install page to update.</value>
@@ -166,7 +166,7 @@
     <value>Dismiss</value>
   </data>
   <data name="Settings_ClassifyAfterMoveToInbox_CheckBox" xml:space="preserve">
-    <value>After moving a sent mail to the Inbox, open the classify pane to file it</value>
+    <value>After moving or copying a sent mail to the Inbox, open the classify pane to file it</value>
   </data>
   <data name="Settings_FavoriteFolders_Header" xml:space="preserve">
     <value>Favourite attachment folders</value>
@@ -254,6 +254,9 @@
   </data>
   <data name="AttachDisp_TargetPrefix" xml:space="preserve">
     <value>Save to: </value>
+  </data>
+  <data name="AttachDisp_OpenFolder_ToolTip" xml:space="preserve">
+    <value>Open in File Explorer</value>
   </data>
   <data name="SaveAsPicker_Title" xml:space="preserve">
     <value>Save email(s) as files</value>
@@ -416,6 +419,9 @@
   <data name="Settings_TriageMode_MoveToInbox" xml:space="preserve">
     <value>Move to Inbox</value>
   </data>
+  <data name="Settings_TriageMode_CopyToInbox" xml:space="preserve">
+    <value>Copy to Inbox (keep original in Sent Items)</value>
+  </data>
   <data name="Settings_TriageMode_Delete" xml:space="preserve">
     <value>Delete</value>
   </data>
@@ -577,6 +583,23 @@
     <value>Cancel</value>
   </data>
 
+  <!-- MeetingClassifyHintWindow: meeting-classify discoverability hint (v2.9.0.0 C2) -->
+  <data name="MeetingHint_Title" xml:space="preserve">
+    <value>RBLclass — Tip</value>
+  </data>
+  <data name="MeetingHint_Body_Line1" xml:space="preserve">
+    <value>Did you know? You can also classify meeting invitations alongside your mail.</value>
+  </data>
+  <data name="MeetingHint_Body_Line2" xml:space="preserve">
+    <value>To enable this, open Settings → Classify → "Classify meeting requests and responses".</value>
+  </data>
+  <data name="MeetingHint_DontShowAgain" xml:space="preserve">
+    <value>Don't show this again</value>
+  </data>
+  <data name="MeetingHint_Ok_Button" xml:space="preserve">
+    <value>OK</value>
+  </data>
+
   <!-- SentItemTriageWindow -->
   <data name="SentTriage_Title" xml:space="preserve">
     <value>RBLclass - Sent mail</value>
@@ -586,6 +609,9 @@
   </data>
   <data name="SentTriage_MoveToInbox_Button" xml:space="preserve">
     <value>Move to Inbox</value>
+  </data>
+  <data name="SentTriage_CopyToInbox_Button" xml:space="preserve">
+    <value>Copy to Inbox (keep original in Sent Items)</value>
   </data>
   <data name="SentTriage_Delete_Button" xml:space="preserve">
     <value>Delete from Sent Items</value>
@@ -803,6 +829,9 @@
   </data>
   <data name="Status_Classify_EncryptedInConversation_Other" xml:space="preserve">
     <value> {0} encrypted messages in the conversation were left in place.</value>
+  </data>
+  <data name="Status_Widening_TableTimeout" xml:space="preserve">
+    <value>The Outlook conversation index is unavailable for your mail files — a folder scan was used to include the conversation instead. Classifications for the rest of this session will use it directly, without the long wait.</value>
   </data>
   <data name="Status_TriageArchiveFolderMissing" xml:space="preserve">
     <value>Sent-item triage: archive folder not found — mail left in Sent Items.</value>

@@ -32,6 +32,8 @@ namespace RBLclass.AddIn.ViewModels
         private readonly Func<int, bool?> _confirmMarkTasksComplete;
         private readonly Func<string, string> _promptForName;
         private readonly Func<IReadOnlyList<FolderNode>> _getAllFolders;
+        private readonly Func<bool> _checkHasMeetingItemsInSelection;
+        private readonly Action _showMeetingClassifyHint;
         private readonly ILocalizationService _loc;
 
         private string _query = string.Empty;
@@ -39,6 +41,7 @@ namespace RBLclass.AddIn.ViewModels
         private bool _markAsRead;
         private bool _canStripBanner;
         private bool _isOptionsExpanded;
+        private bool _isHorizontalLayout;
         private SelectableFolder _selectedResult;
         private SearchPathDisplayMode _pathDisplayMode = SearchPathDisplayMode.OneLine;
         // Search-behaviour settings cached so the search path never loads the
@@ -78,7 +81,9 @@ namespace RBLclass.AddIn.ViewModels
             ISettingsStore settings = null,
             Func<int, bool?> confirmMarkTasksComplete = null,
             Func<string, string> promptForName = null,
-            Func<IReadOnlyList<FolderNode>> getAllFolders = null)
+            Func<IReadOnlyList<FolderNode>> getAllFolders = null,
+            Func<bool> checkHasMeetingItemsInSelection = null,
+            Action showMeetingClassifyHint = null)
         {
             _search = search ?? throw new ArgumentNullException(nameof(search));
             _classifier = classifier ?? throw new ArgumentNullException(nameof(classifier));
@@ -89,6 +94,8 @@ namespace RBLclass.AddIn.ViewModels
             _confirmMarkTasksComplete = confirmMarkTasksComplete;
             _promptForName = promptForName;
             _getAllFolders = getAllFolders;
+            _checkHasMeetingItemsInSelection = checkHasMeetingItemsInSelection;
+            _showMeetingClassifyHint = showMeetingClassifyHint;
             _loc = TaskPaneServices.Localization;
             _selectionSummary = _loc.GetString("Status_NoMailSelectedSummary");
             _autoClassLabel = _loc.GetString("MainPane_AutoClass_Button");
@@ -146,6 +153,23 @@ namespace RBLclass.AddIn.ViewModels
             while (StatusLog.Count > StatusLogCapacity)
                 StatusLog.RemoveAt(StatusLog.Count - 1);
             OnPropertyChanged(nameof(HasStatusEntries));
+            OnPropertyChanged(nameof(CanShowJournalInVerticalMode));
+        }
+
+        /// <summary>
+        /// Show the meeting-classify discoverability hint after the current
+        /// action fully unwinds (v2.9.0.0 C2). Deferred to Background priority
+        /// so the modal opens after IsBusy is cleared and the pane has
+        /// repainted the classify outcome - never mid-batch.
+        /// </summary>
+        private void DeferMeetingClassifyHint()
+        {
+            if (_showMeetingClassifyHint == null) return;
+            Dispatcher.CurrentDispatcher.BeginInvoke(new Action(() =>
+            {
+                try { _showMeetingClassifyHint(); }
+                catch (Exception ex) { Log.Warning(ex, "Meeting-classify hint failed"); }
+            }), DispatcherPriority.Background);
         }
 
         /// <summary>
@@ -256,6 +280,27 @@ namespace RBLclass.AddIn.ViewModels
             get => _isOptionsExpanded;
             set => SetProperty(ref _isOptionsExpanded, value);
         }
+
+        /// <summary>
+        /// True when the task pane is wider than tall (horizontal docking).
+        /// Set by <see cref="Views.MainPaneView"/> on every SizeChanged; drives the
+        /// adaptive action-button bar (v2.9.0.0 A2).
+        /// </summary>
+        public bool IsHorizontalLayout
+        {
+            get => _isHorizontalLayout;
+            set
+            {
+                if (SetProperty(ref _isHorizontalLayout, value))
+                    OnPropertyChanged(nameof(CanShowJournalInVerticalMode));
+            }
+        }
+
+        /// <summary>
+        /// True when the Journal button should appear in the vertical (stacked)
+        /// layout — i.e. there are entries AND the pane is in portrait orientation.
+        /// </summary>
+        public bool CanShowJournalInVerticalMode => HasStatusEntries && !IsHorizontalLayout;
 
         public SelectableFolder SelectedResult
         {
@@ -389,7 +434,14 @@ namespace RBLclass.AddIn.ViewModels
             _searchTimer?.Stop(); // don't let a pending search overwrite our results
 
             var items = _getSelection != null ? _getSelection() : new MailItemRef[0];
-            if (items.Count == 0) { PushStatus(_loc.GetString("Status_NoMailSelectedAction")); return; }
+            // C2 (v2.9.0.0): captured before the batch, surfaced after it.
+            bool hadSkippedMeetingItems = _checkHasMeetingItemsInSelection?.Invoke() ?? false;
+            if (items.Count == 0)
+            {
+                PushStatus(_loc.GetString("Status_NoMailSelectedAction"));
+                if (hadSkippedMeetingItems) DeferMeetingClassifyHint();
+                return;
+            }
 
             IsBusy = true;
             BusyStatus = _loc.GetString("Status_AutoClassing");
@@ -537,6 +589,8 @@ namespace RBLclass.AddIn.ViewModels
                 }
 
                 PushStatus(autoClassStatus);
+
+                if (hadSkippedMeetingItems) DeferMeetingClassifyHint();
 
                 if (result.Undo != null)
                 {
@@ -1091,7 +1145,18 @@ namespace RBLclass.AddIn.ViewModels
             var items = _pinnedItem != null
                 ? new[] { _pinnedItem }
                 : (_getSelection != null ? _getSelection() : new MailItemRef[0]);
-            if (items.Count == 0) { PushStatus(_loc.GetString("Status_NoMailSelectedAction")); return false; }
+            // C2 (v2.9.0.0): captured before the batch, surfaced after it - the
+            // hint must not interrupt the classify of the other selected items.
+            bool hadSkippedMeetingItems = _pinnedItem == null
+                && (_checkHasMeetingItemsInSelection?.Invoke() ?? false);
+            if (items.Count == 0)
+            {
+                PushStatus(_loc.GetString("Status_NoMailSelectedAction"));
+                // A selection of only meeting invites lands here with nothing
+                // filed at all - the hint is the only explanation the user gets.
+                if (hadSkippedMeetingItems) DeferMeetingClassifyHint();
+                return false;
+            }
 
             IsBusy = true;
             BusyStatus = _loc.GetString("MainPane_Busy_Filing");
@@ -1111,6 +1176,13 @@ namespace RBLclass.AddIn.ViewModels
                 swPreflight.Stop();
                 Log.Debug("PERF Classify preflight {Ms} ms: {Items} item(s) after widen/dedupe",
                                 swPreflight.ElapsedMilliseconds, preflight.Items.Count);
+
+                // B3 (v2.9.0.0): one-time notice when the conversation table timed
+                // out and the store switched to its folder-scan fallback, so the
+                // 30s wait the user just sat through is explained and they know
+                // the rest of the session won't pay it again.
+                if (preflight.WideningTableDisabledThisSession)
+                    PushStatus(_loc.GetString("Status_Widening_TableTimeout"));
 
                 bool markTasksComplete = false;
                 if (preflight.FlaggedIncomplete.Count > 0 && _confirmMarkTasksComplete != null)
@@ -1220,6 +1292,8 @@ namespace RBLclass.AddIn.ViewModels
                     classifyStatus.Append(_loc.Plural(preflight.SkippedEncrypted.Count, "Status_Classify_EncryptedInConversation_One", "Status_Classify_EncryptedInConversation_Other"));
 
                 PushStatus(classifyStatus.ToString());
+
+                if (hadSkippedMeetingItems) DeferMeetingClassifyHint();
 
                 _lastUndo = result.Undo; // a non-undoable run clears the slot (null)
                 OnPropertyChanged(nameof(CanUndo));

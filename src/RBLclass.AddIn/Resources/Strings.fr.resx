@@ -157,7 +157,7 @@
     <value>Supprimer de la boîte de réception</value>
   </data>
   <data name="MainPane_PinnedSentMail_Delete_ToolTip" xml:space="preserve">
-    <value>Supprimer la copie de ce message envoyé qui a été déplacée dans la boîte de réception</value>
+    <value>Supprimer la copie de ce message envoyé de la boîte de réception</value>
   </data>
   <data name="MainPane_UpdateAvailable_Banner" xml:space="preserve">
     <value>Une nouvelle version de RBLclass est disponible ({0}). Consultez la page d'installation pour mettre à jour.</value>
@@ -166,7 +166,7 @@
     <value>Ignorer</value>
   </data>
   <data name="Settings_ClassifyAfterMoveToInbox_CheckBox" xml:space="preserve">
-    <value>Après le déplacement d'un message envoyé vers la boîte de réception, ouvrir le volet de classement pour le classer</value>
+    <value>Après le déplacement ou la copie d'un message envoyé vers la boîte de réception, ouvrir le volet de classement pour le classer</value>
   </data>
   <data name="Settings_FavoriteFolders_Header" xml:space="preserve">
     <value>Dossiers de pièces jointes favoris</value>
@@ -254,6 +254,9 @@
   </data>
   <data name="AttachDisp_TargetPrefix" xml:space="preserve">
     <value>Enregistrer dans : </value>
+  </data>
+  <data name="AttachDisp_OpenFolder_ToolTip" xml:space="preserve">
+    <value>Ouvrir dans l'Explorateur de fichiers</value>
   </data>
   <data name="SaveAsPicker_Title" xml:space="preserve">
     <value>Enregistrer le(s) message(s) sous forme de fichiers</value>
@@ -416,6 +419,9 @@
   <data name="Settings_TriageMode_MoveToInbox" xml:space="preserve">
     <value>Déplacer vers la boîte de réception</value>
   </data>
+  <data name="Settings_TriageMode_CopyToInbox" xml:space="preserve">
+    <value>Copier dans la boîte de réception (conserver l'original dans les Éléments envoyés)</value>
+  </data>
   <data name="Settings_TriageMode_Delete" xml:space="preserve">
     <value>Supprimer</value>
   </data>
@@ -577,6 +583,23 @@
     <value>Annuler</value>
   </data>
 
+  <!-- MeetingClassifyHintWindow: meeting-classify discoverability hint (v2.9.0.0 C2) -->
+  <data name="MeetingHint_Title" xml:space="preserve">
+    <value>RBLclass — Astuce</value>
+  </data>
+  <data name="MeetingHint_Body_Line1" xml:space="preserve">
+    <value>Le saviez-vous ? Vous pouvez également classer les invitations aux réunions avec vos messages.</value>
+  </data>
+  <data name="MeetingHint_Body_Line2" xml:space="preserve">
+    <value>Pour l'activer : Paramètres → Classer → « Classer les demandes et réponses de réunion ».</value>
+  </data>
+  <data name="MeetingHint_DontShowAgain" xml:space="preserve">
+    <value>Ne plus afficher ce message</value>
+  </data>
+  <data name="MeetingHint_Ok_Button" xml:space="preserve">
+    <value>OK</value>
+  </data>
+
   <!-- SentItemTriageWindow -->
   <data name="SentTriage_Title" xml:space="preserve">
     <value>RBLclass - Message envoyé</value>
@@ -586,6 +609,9 @@
   </data>
   <data name="SentTriage_MoveToInbox_Button" xml:space="preserve">
     <value>Déplacer vers la boîte de réception</value>
+  </data>
+  <data name="SentTriage_CopyToInbox_Button" xml:space="preserve">
+    <value>Copier dans la boîte de réception (conserver l'original dans les Éléments envoyés)</value>
   </data>
   <data name="SentTriage_Delete_Button" xml:space="preserve">
     <value>Supprimer des éléments envoyés</value>
@@ -803,6 +829,9 @@
   </data>
   <data name="Status_Classify_EncryptedInConversation_Other" xml:space="preserve">
     <value> {0} messages chiffrés de la conversation ont été laissés en place.</value>
+  </data>
+  <data name="Status_Widening_TableTimeout" xml:space="preserve">
+    <value>L'index de conversation d'Outlook est indisponible pour vos fichiers de courrier — une analyse des dossiers a été utilisée pour inclure la conversation. Les classements suivants de cette session l'utiliseront directement, sans la longue attente.</value>
   </data>
   <data name="Status_TriageArchiveFolderMissing" xml:space="preserve">
     <value>Triage des éléments envoyés : dossier d'archive introuvable — mail laissé dans les Éléments envoyés.</value>

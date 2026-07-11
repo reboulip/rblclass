@@ -1,5 +1,7 @@
+using System.Diagnostics;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Documents;
 using RBLclass.AddIn.Theming;
 using RBLclass.AddIn.ViewModels;
 
@@ -34,6 +36,14 @@ namespace RBLclass.AddIn.Views
             var list = sender as ListBox;
             if (list?.SelectedItem is string path && list.DataContext is AttachmentRowViewModel row)
                 row.ChooseDirectory(path);
+        }
+
+        private void TargetDirectory_Click(object sender, RoutedEventArgs e)
+        {
+            var row = (sender as Hyperlink)?.DataContext as AttachmentRowViewModel;
+            if (string.IsNullOrWhiteSpace(row?.TargetDirectory)) return;
+            try { Process.Start("explorer.exe", "\"" + row.TargetDirectory + "\""); }
+            catch { }
         }
     }
 }

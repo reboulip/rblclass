@@ -76,6 +76,18 @@ namespace RBLclass.Core.Tests
         }
 
         [Fact]
+        public void MeetingHintDismissed_defaults_to_false_and_persists_across_instances()
+        {
+            // v2.9.0.0 C2: the "don't show again" choice must survive restarts.
+            _store.GetBool(SettingsKeys.MeetingHintDismissed, false).Should().BeFalse();
+
+            _store.SetBool(SettingsKeys.MeetingHintDismissed, true);
+
+            var reopened = new SqliteSettingsStore("Data Source=" + _dbPath);
+            reopened.GetBool(SettingsKeys.MeetingHintDismissed, false).Should().BeTrue();
+        }
+
+        [Fact]
         public void Open_sets_WAL_journal_mode()
         {
             // EnsureSchema (ctor) already opened a connection; WAL is persisted

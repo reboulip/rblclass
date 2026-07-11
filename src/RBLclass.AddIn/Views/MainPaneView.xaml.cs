@@ -18,9 +18,20 @@ namespace RBLclass.AddIn.Views
         public MainPaneView()
         {
             InitializeComponent();
+            SizeChanged += MainPane_SizeChanged;
         }
 
         private MainPaneViewModel Vm => DataContext as MainPaneViewModel;
+
+        /// <summary>
+        /// Switches the action-button bar between the stacked (portrait) and
+        /// single-row (landscape) layouts based on the pane's own aspect ratio,
+        /// not a user setting (v2.9.0.0 A2).
+        /// </summary>
+        private void MainPane_SizeChanged(object sender, SizeChangedEventArgs e)
+        {
+            if (Vm != null) Vm.IsHorizontalLayout = e.NewSize.Width > e.NewSize.Height;
+        }
 
         /// <summary>
         /// Put keyboard focus in the search box (v2.7.0.0 A2), called whenever the
@@ -49,10 +60,21 @@ namespace RBLclass.AddIn.Views
             if (e.Key == Key.Enter && (Keyboard.Modifiers & ModifierKeys.Control) != 0)
             {
                 // Ctrl+Enter opens the highlighted folder (v2.7.0.0 A2), distinct
-                // from plain Enter which files into it.
+                // from plain Enter which files into it. Deferred to ApplicationIdle
+                // (B2, v2.9.0.0): called synchronously here, the TextBox still holds
+                // Win32 keyboard focus and Ctrl is still physically down mid-keystroke,
+                // which was silently swallowing the downstream Explorer.Activate() COM
+                // call and leaving Delete dead in the message list. The per-row open
+                // button doesn't hit this - by the time a Button.Click handler runs,
+                // the click gesture has already fully settled.
                 e.Handled = true;
-                try { Vm?.OpenHighlighted(); }
-                catch (Exception ex) { Log.Error(ex, "OpenHighlighted failed."); }
+                _ = Dispatcher.BeginInvoke(
+                    new Action(() =>
+                    {
+                        try { Vm?.OpenHighlighted(); }
+                        catch (Exception ex) { Log.Error(ex, "OpenHighlighted failed."); }
+                    }),
+                    System.Windows.Threading.DispatcherPriority.ApplicationIdle);
                 return;
             }
 

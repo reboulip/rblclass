@@ -12,10 +12,12 @@ namespace RBLclass.Core
     public sealed class ConversationSiblings
     {
         public ConversationSiblings(IReadOnlyList<MailItemRef> processable,
-                                    IReadOnlyList<string> skippedEncryptedSubjects)
+                                    IReadOnlyList<string> skippedEncryptedSubjects,
+                                    bool wideningTableDisabledThisSession = false)
         {
             Processable = processable ?? new MailItemRef[0];
             SkippedEncryptedSubjects = skippedEncryptedSubjects ?? new string[0];
+            WideningTableDisabledThisSession = wideningTableDisabledThisSession;
         }
 
         /// <summary>Conversation siblings (in scope) that can be filed/moved.</summary>
@@ -23,6 +25,14 @@ namespace RBLclass.Core
 
         /// <summary>Subjects of in-scope siblings skipped because they are encrypted/signed.</summary>
         public IReadOnlyList<string> SkippedEncryptedSubjects { get; }
+
+        /// <summary>
+        /// True on the first call in a session where the Outlook conversation
+        /// table timed out (e.g. Windows Search unavailable for the PST stores).
+        /// The store has switched to a folder-scan fallback for the rest of the
+        /// session; the caller should surface a one-time notice (B3, v2.9.0.0).
+        /// </summary>
+        public bool WideningTableDisabledThisSession { get; }
 
         public static ConversationSiblings Empty { get; } =
             new ConversationSiblings(new MailItemRef[0], new string[0]);
