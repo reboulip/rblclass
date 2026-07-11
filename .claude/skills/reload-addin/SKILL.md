@@ -66,3 +66,23 @@ is reconciled with the real `RBLclass.AddIn` `[Guid]`/`[ProgId]`.
 Tell the user the add-in was reloaded and Outlook is restarting, and what
 to look for (the RBLclass ribbon tab and the specific behaviour you just
 changed), so they can confirm it matches expectations.
+
+## Seeing the result yourself (screenshot)
+
+For visually verifiable changes (pane layout, theming, ribbon), don't rely
+solely on the user's description — capture the Outlook window and inspect
+it with the Read tool:
+
+```powershell
+.\.claude\skills\reload-addin\Capture-Outlook.ps1                      # -> %TEMP%\outlook-capture.png
+.\.claude\skills\reload-addin\Capture-Outlook.ps1 -OutFile <path.png>
+```
+
+Wait ~15s after the restart before capturing so the pane is fully
+initialized. The capture uses `PrintWindow` with `PW_RENDERFULLCONTENT`,
+so it works even while Outlook is covered by other windows (e.g. the
+user's editor) or in the background. It only captures the main Explorer
+window — states that need user interaction first (a live redock, a modal
+dialog) still need the user to set them up before you capture. Proven
+useful: it caught a mis-rendered pane title that geometry probes said was
+fine (2026-07-11 nav-rail session).

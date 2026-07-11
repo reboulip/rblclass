@@ -29,6 +29,8 @@ namespace RBLclass.AddIn
 
         private readonly ElementHost _elementHost;
         private MainPaneView _view;
+        // Coalesces nav-rail inset recomputes queued from OnResize.
+        private bool _railInsetPending;
 
         public RblClassTaskPaneHost()
         {
@@ -98,7 +100,54 @@ namespace RBLclass.AddIn
         public void RefreshOnShow()
         {
             EnsureView();
+            QueueNavRailInsetUpdate();
             _view?.FocusSearch();
+        }
+
+        /// <summary>
+        /// Office gives a Top/Bottom-docked task pane the full Explorer client
+        /// width, then paints the left navigation icon rail over its leftmost
+        /// ~48px (carried-over v2.9.0.0 A2 finding; the classic CTP API cannot
+        /// move the pane itself). Measure the covered strip and pad the WPF
+        /// content right by that amount so nothing renders underneath the rail.
+        /// Resize fires on every dock change, pane show, and Explorer resize,
+        /// so the inset tracks the live geometry; it measures 0 (no padding)
+        /// when docked Left/Right, floating, or when the rail is hidden.
+        /// </summary>
+        protected override void OnResize(EventArgs e)
+        {
+            base.OnResize(e);
+            QueueNavRailInsetUpdate();
+        }
+
+        private void QueueNavRailInsetUpdate()
+        {
+            if (_railInsetPending || !IsHandleCreated) return;
+            _railInsetPending = true;
+            try
+            {
+                BeginInvoke(new Action(() =>
+                {
+                    _railInsetPending = false;
+                    try
+                    {
+                        var pad = new Padding(
+                            NavRailInset.MeasureLeftOverlapPixels(Handle), 0, 0, 0);
+                        if (Padding != pad)
+                        {
+                            Padding = pad;
+                            Log.Information(
+                                "Nav-rail inset applied: left padding {Pixels}px.",
+                                pad.Left);
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        try { Log.Debug(ex, "Nav-rail inset measurement failed."); } catch { }
+                    }
+                }));
+            }
+            catch { _railInsetPending = false; }
         }
 
         /// <summary>Push a live selection count into the pane view model.</summary>

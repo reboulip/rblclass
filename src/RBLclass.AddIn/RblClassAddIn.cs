@@ -996,9 +996,24 @@ namespace RBLclass.AddIn
                               out dockInt))
                 dockInt = (int)Office.MsoCTPDockPosition.msoCTPDockPositionRight;
 
+            // The Office-drawn title strip of a Top/Bottom-docked pane runs underneath
+            // the left navigation icon rail and cannot be repositioned (the WPF content
+            // below it is padded clear by RblClassTaskPaneHost, but the title is
+            // Office's own rendering and clipped "RBLclass" down to "ass"). Title is
+            // fixed at CreateCTP time and the rail window does not exist yet this early
+            // in startup, so the indent is unconditional for a Top/Bottom start: with
+            // the rail (the norm on current builds) the text lands just past it; on a
+            // rail-less setup a slightly indented title is harmless.
+            string title = "RBLclass";
+            bool startsHorizontal =
+                dockInt == (int)Office.MsoCTPDockPosition.msoCTPDockPositionTop ||
+                dockInt == (int)Office.MsoCTPDockPosition.msoCTPDockPositionBottom;
+            if (startsHorizontal)
+                title = new string(' ', 14) + title;
+
             // CreateCTP instantiates the COM-registered host control by ProgId.
             _taskPane = _ctpFactory.CreateCTP(
-                RblClassTaskPaneHost.ProgIdString, "RBLclass", Type.Missing);
+                RblClassTaskPaneHost.ProgIdString, title, Type.Missing);
             _taskPane.DockPosition = (Office.MsoCTPDockPosition)dockInt;
             ApplyDockSize(_taskPane);
             _taskPane.DockPositionStateChange += OnTaskPaneDockPositionStateChange;
@@ -1010,9 +1025,18 @@ namespace RBLclass.AddIn
         /// COMException 0x80004005 ("the specified width/height is not valid ... current
         /// dock position"). Never guarded before (v2.4.0.0 A3 only ever set Width
         /// unconditionally), which crashed OnStartupComplete whenever the persisted dock
-        /// position was Top/Bottom, and left Top/Bottom docking at whatever undersized
-        /// default Office falls back to when redocked live without a restart (v2.9.0.0 A2
-        /// follow-up).
+        /// position was Top/Bottom.
+        ///
+        /// MUST only be called from EnsureTaskPane, before the pane is shown and before
+        /// the DockPositionStateChange handler is attached. Setting Width/Height on a
+        /// pane the user just live-redocked wedges Outlook's docking manager on current
+        /// builds: the message pump stays alive but the whole Outlook UI stops responding
+        /// to input until the process is killed (2026-07-11 hotfix; reproduced with the
+        /// set done synchronously in the dock event, deferred to ApplicationIdle, and
+        /// deferred with the event handler detached - Top/Bottom froze every time while
+        /// Left/Right survived only because the width already matched and no COM set
+        /// actually executed). A live redock therefore keeps whatever size Office
+        /// assigns; the canonical size is re-applied on the next Outlook start.
         /// </summary>
         private static void ApplyDockSize(Office.CustomTaskPane pane)
         {
@@ -1020,19 +1044,27 @@ namespace RBLclass.AddIn
             {
                 case Office.MsoCTPDockPosition.msoCTPDockPositionLeft:
                 case Office.MsoCTPDockPosition.msoCTPDockPositionRight:
-                    pane.Width = 360;
+                    if (pane.Width != 360) pane.Width = 360;
                     break;
                 case Office.MsoCTPDockPosition.msoCTPDockPositionTop:
                 case Office.MsoCTPDockPosition.msoCTPDockPositionBottom:
-                    pane.Height = 300;
+                    if (pane.Height != 300) pane.Height = 300;
                     break;
             }
         }
 
         /// <summary>
-        /// Persists the new dock position whenever the user moves the task pane, and
-        /// re-applies the size for the new orientation (v2.9.0.0 A2 follow-up).
+        /// Persists the new dock position whenever the user moves the task pane.
         /// Fires on the Outlook UI (STA) thread.
+        ///
+        /// Persist only - deliberately NO Width/Height access here. The v2.9.0.0 B2
+        /// follow-up re-applied the canonical size from this event (first inline,
+        /// which Office rejects with COMException 0x80004005 "this property cannot
+        /// be set while the object's event handler is executing" and which silently
+        /// broke the persist; then deferred to ApplicationIdle, which passed Office's
+        /// guard but wedged its docking manager instead - Outlook kept pumping
+        /// messages yet ignored all input until killed, every time the pane was
+        /// live-redocked Top/Bottom). See ApplyDockSize for the full post-mortem.
         /// </summary>
         private void OnTaskPaneDockPositionStateChange(Office.CustomTaskPane customTaskPaneInst)
         {
@@ -1041,23 +1073,8 @@ namespace RBLclass.AddIn
                 int pos = (int)customTaskPaneInst.DockPosition;
                 _settingsStore?.Set(SettingsKeys.PaneDockPosition,
                     pos.ToString(System.Globalization.CultureInfo.InvariantCulture));
-
-                // Office throws COMException 0x80004005 ("this property cannot be set
-                // while the object's event handler is executing") if Width/Height is
-                // set synchronously from inside this very event - defer it to run once
-                // Office is done dispatching. Discovered as a regression (v2.9.0.0 B2
-                // follow-up): the exception aborted this handler before the persist
-                // above ran, so a live redock silently stopped saving - the pane kept
-                // reopening at a stale position from before the crash fix that added
-                // this call.
-                var pane = customTaskPaneInst;
-                _ = Dispatcher.CurrentDispatcher.BeginInvoke(
-                    new Action(() =>
-                    {
-                        try { ApplyDockSize(pane); }
-                        catch (Exception ex) { TryLog("Deferred ApplyDockSize failed", ex); }
-                    }),
-                    DispatcherPriority.ApplicationIdle);
+                Log.Information("Task pane dock position changed to {DockPosition}; persisted.",
+                    (Office.MsoCTPDockPosition)pos);
             }
             catch (Exception ex)
             {

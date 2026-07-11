@@ -427,6 +427,9 @@ above).
 
 ### Hygiene
 
+- When committing from PowerShell, always write the message to a temp file
+  and use `git commit -F <file>` — PowerShell 5.1 mangles embedded double
+  quotes in `-m` here-strings passed to native executables.
 - Commit or push only when asked.
 - Keep commits focused. Do not sweep unrelated working-tree changes into a
   commit (e.g. stray `.gitignore`, `docs/`, or `ROADMAP.md` edits) unless
