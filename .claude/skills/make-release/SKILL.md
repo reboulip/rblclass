@@ -126,10 +126,22 @@ This step runs **after** the kit and MSI are successfully produced.
 
 ### Merge develop into main
 
-Default for this solo repo is CLAUDE.md's direct-merge flow — no PR:
+Default for this solo repo is CLAUDE.md's direct-merge flow — no PR.
+
+**Sync first.** `main` may have moved on the remote without a local fetch —
+e.g. a prior release shipped via a GitHub PR merge instead of this direct
+flow. Merging against a stale local `main` produces a divergent merge
+commit and a rejected push. Fetch and fast-forward before merging:
 
 ```powershell
+git fetch origin
 git checkout main
+git merge --ff-only origin/main   # fails loudly if local main has unique commits — stop and ask if so
+```
+
+Then merge and ship:
+
+```powershell
 git merge --no-ff develop -m "Ship <version> — <sprint theme>"
 git tag -a <version> -m "<version> — <sprint theme>"
 git push origin main
