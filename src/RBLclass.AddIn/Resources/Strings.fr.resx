@@ -255,6 +255,9 @@
   <data name="AttachDisp_TargetPrefix" xml:space="preserve">
     <value>Enregistrer dans : </value>
   </data>
+  <data name="AttachDisp_OpenFolder_ToolTip" xml:space="preserve">
+    <value>Ouvrir dans l'Explorateur de fichiers</value>
+  </data>
   <data name="SaveAsPicker_Title" xml:space="preserve">
     <value>Enregistrer le(s) message(s) sous forme de fichiers</value>
   </data>

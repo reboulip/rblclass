@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Windows;
 using System.Windows.Controls;
 using RBLclass.AddIn.Theming;
@@ -31,6 +32,14 @@ namespace RBLclass.AddIn.Views
             var list = sender as ListBox;
             if (list?.SelectedItem is string path)
                 Vm?.ChooseDirectory(path);
+        }
+
+        private void TargetDirectory_Click(object sender, RoutedEventArgs e)
+        {
+            var dir = Vm?.TargetDirectory;
+            if (string.IsNullOrWhiteSpace(dir)) return;
+            try { Process.Start("explorer.exe", "\"" + dir + "\""); }
+            catch { }
         }
     }
 }

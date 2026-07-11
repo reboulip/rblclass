@@ -35,7 +35,9 @@ namespace RBLclass.Core.Tests
             html.Should().Contain("Former attachment:");
             html.Should().NotContain("Former attachments:");
             html.Should().Contain("report.pdf");
-            html.Should().Contain(@"Saved to C:\Docs");
+            html.Should().Contain("Saved to ");
+            html.Should().Contain("href=\"file:///C:/Docs\"");
+            html.Should().Contain(@">C:\Docs</a>");
         }
 
         [Fact]
@@ -45,8 +47,20 @@ namespace RBLclass.Core.Tests
                 new[] { Saved("a.pdf", @"C:\X"), Deleted("b.pdf") }, Options, When);
 
             html.Should().Contain("Former attachments:");
-            html.Should().Contain(@"Saved to C:\X");
+            html.Should().Contain("href=\"file:///C:/X\"");
+            html.Should().Contain(@">C:\X</a>");
             html.Should().Contain("Deleted on 2026-06-21");
+        }
+
+        [Fact]
+        public void SaveTo_path_is_rendered_as_a_file_uri_hyperlink()
+        {
+            var html = AttachmentLabelFormatter.Format(
+                new[] { Saved("invoice.pdf", @"C:\Archive\2026") }, Options, When);
+
+            html.Should().Contain("href=\"file:///C:/Archive/2026\"");
+            html.Should().Contain(@">C:\Archive\2026</a>");
+            html.Should().NotContain(@"Saved to C:\Archive\2026");
         }
 
         [Fact]

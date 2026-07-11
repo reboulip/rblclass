@@ -255,6 +255,9 @@
   <data name="AttachDisp_TargetPrefix" xml:space="preserve">
     <value>Speichern in: </value>
   </data>
+  <data name="AttachDisp_OpenFolder_ToolTip" xml:space="preserve">
+    <value>Im Datei-Explorer öffnen</value>
+  </data>
   <data name="SaveAsPicker_Title" xml:space="preserve">
     <value>E-Mail(s) als Dateien speichern</value>
   </data>

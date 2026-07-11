@@ -250,7 +250,7 @@ text as the specification.
 
 ### D — Attachments
 
-- [ ] **D1.** Make the saved-attachment location a clickable link. Wherever
+- [x] **D1.** Make the saved-attachment location a clickable link. Wherever
       the add-in reports where an attachment (or a saved-as mail file) was
       written — the mail-body annotation added after a save, and any
       pane/status surface showing the path — render the location as a
