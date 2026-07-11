@@ -804,6 +804,9 @@
   <data name="Status_Classify_EncryptedInConversation_Other" xml:space="preserve">
     <value> {0} messages chiffrés de la conversation ont été laissés en place.</value>
   </data>
+  <data name="Status_Widening_TableTimeout" xml:space="preserve">
+    <value>L'index de conversation d'Outlook est indisponible pour vos fichiers de courrier — une analyse des dossiers a été utilisée pour inclure la conversation. Les classements suivants de cette session l'utiliseront directement, sans la longue attente.</value>
+  </data>
   <data name="Status_TriageArchiveFolderMissing" xml:space="preserve">
     <value>Triage des éléments envoyés : dossier d'archive introuvable — mail laissé dans les Éléments envoyés.</value>
   </data>

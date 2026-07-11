@@ -1135,6 +1135,13 @@ namespace RBLclass.AddIn.ViewModels
                 Log.Debug("PERF Classify preflight {Ms} ms: {Items} item(s) after widen/dedupe",
                                 swPreflight.ElapsedMilliseconds, preflight.Items.Count);
 
+                // B3 (v2.9.0.0): one-time notice when the conversation table timed
+                // out and the store switched to its folder-scan fallback, so the
+                // 30s wait the user just sat through is explained and they know
+                // the rest of the session won't pay it again.
+                if (preflight.WideningTableDisabledThisSession)
+                    PushStatus(_loc.GetString("Status_Widening_TableTimeout"));
+
                 bool markTasksComplete = false;
                 if (preflight.FlaggedIncomplete.Count > 0 && _confirmMarkTasksComplete != null)
                 {

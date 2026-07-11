@@ -804,6 +804,9 @@
   <data name="Status_Classify_EncryptedInConversation_Other" xml:space="preserve">
     <value> {0} verschlüsselte Nachrichten der Unterhaltung wurden unverändert gelassen.</value>
   </data>
+  <data name="Status_Widening_TableTimeout" xml:space="preserve">
+    <value>Der Outlook-Unterhaltungsindex ist für Ihre E-Mail-Dateien nicht verfügbar — die Unterhaltung wurde stattdessen über eine Ordnersuche einbezogen. Weitere Klassifizierungen in dieser Sitzung nutzen sie direkt, ohne die lange Wartezeit.</value>
+  </data>
   <data name="Status_TriageArchiveFolderMissing" xml:space="preserve">
     <value>Triage gesendeter Elemente: Archivordner nicht gefunden — Mail in Gesendete Elemente belassen.</value>
   </data>

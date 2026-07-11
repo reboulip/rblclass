@@ -1157,6 +1157,57 @@ namespace RBLclass.Core.Tests
         }
 
         [Fact]
+        public void Preflight_propagates_widening_table_disabled_signal()
+        {
+            // B3 (v2.9.0.0): the store reports the one-time conversation-table
+            // timeout through ConversationSiblings; Preflight must surface it.
+            var store = Substitute.For<IMailStore>();
+            var e1 = Item("e1");
+            store.GetConversationSiblings(e1).Returns(
+                new ConversationSiblings(new MailItemRef[0], new string[0],
+                                         wideningTableDisabledThisSession: true));
+            var sut = new ClassifierService(store);
+
+            var preflight = sut.Preflight(new[] { e1 }, widenConversation: true);
+
+            preflight.WideningTableDisabledThisSession.Should().BeTrue();
+        }
+
+        [Fact]
+        public void Preflight_widening_table_disabled_false_when_all_siblings_ok()
+        {
+            var store = Substitute.For<IMailStore>();
+            var e1 = Item("e1");
+            var sibling = new MailItemRef("s1", "sib", "reply");
+            store.GetConversationSiblings(e1).Returns(
+                new ConversationSiblings(new[] { sibling }, new string[0]));
+            var sut = new ClassifierService(store);
+
+            var preflight = sut.Preflight(new[] { e1 }, widenConversation: true);
+
+            preflight.WideningTableDisabledThisSession.Should().BeFalse();
+        }
+
+        [Fact]
+        public void Preflight_widening_table_disabled_signal_still_returns_scanned_siblings()
+        {
+            // The flag means "path changed", not "widening failed": the fallback
+            // scan's siblings must still be filed alongside the original.
+            var store = Substitute.For<IMailStore>();
+            var e1 = Item("e1");
+            var sibling = new MailItemRef("s1", "sib", "reply");
+            store.GetConversationSiblings(e1).Returns(
+                new ConversationSiblings(new[] { sibling }, new string[0],
+                                         wideningTableDisabledThisSession: true));
+            var sut = new ClassifierService(store);
+
+            var preflight = sut.Preflight(new[] { e1 }, widenConversation: true);
+
+            preflight.Items.Select(i => i.EntryId).Should().BeEquivalentTo(new[] { "e1", "sib" });
+            preflight.WideningTableDisabledThisSession.Should().BeTrue();
+        }
+
+        [Fact]
         public void Preflight_reports_the_flagged_incomplete_subset()
         {
             var store = Substitute.For<IMailStore>();

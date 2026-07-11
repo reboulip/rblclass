@@ -41,11 +41,14 @@ namespace RBLclass.Core
             if (items == null) throw new ArgumentNullException(nameof(items));
 
             var skippedEncrypted = new List<string>();
-            var widened = widenConversation ? Widen(items, skippedEncrypted) : Dedupe(items);
+            bool wideningTableDisabled = false;
+            var widened = widenConversation
+                ? Widen(items, skippedEncrypted, out wideningTableDisabled)
+                : Dedupe(items);
 
             var flagged = widened.Where(i => SafeIsFlaggedIncomplete(i)).ToArray();
 
-            return new ClassifyPreflight(widened, flagged, skippedEncrypted);
+            return new ClassifyPreflight(widened, flagged, skippedEncrypted, wideningTableDisabled);
         }
 
         public ClassifyResult Classify(ClassifyRequest request)
@@ -762,10 +765,12 @@ namespace RBLclass.Core
         /// them back.
         /// </summary>
         private IReadOnlyList<MailItemRef> Widen(IReadOnlyList<MailItemRef> items,
-                                                 List<string> skippedEncrypted)
+                                                 List<string> skippedEncrypted,
+                                                 out bool wideningTableDisabled)
         {
             var seen = new HashSet<(string StoreId, string EntryId)>();
             var result = new List<MailItemRef>();
+            wideningTableDisabled = false;
 
             void AddIfNew(MailItemRef candidate)
             {
@@ -784,6 +789,7 @@ namespace RBLclass.Core
                 try { raw = _store.GetConversationSiblings(item); }
                 catch { raw = null; } // adapter failure tolerated; primary item(s) still file
                 var siblings = raw ?? ConversationSiblings.Empty;
+                if (siblings.WideningTableDisabledThisSession) wideningTableDisabled = true;
                 foreach (var sibling in siblings.Processable) AddIfNew(sibling);
                 foreach (var subject in siblings.SkippedEncryptedSubjects)
                     if (skippedSeen.Add(subject)) skippedEncrypted.Add(subject);

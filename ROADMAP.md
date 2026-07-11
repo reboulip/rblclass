@@ -193,7 +193,7 @@ text as the specification.
       keyboard focus), then fix so Del works immediately after go-to-folder.
       [#49]
 
-- [ ] **B3.** Root-cause and fix the ~30 s classify stall tied to
+- [x] **B3.** Root-cause and fix the ~30 s classify stall tied to
       conversation widening. History: issue #35 reported "Classement en
       cours" for ~30 s with no move on v2.6.0.0; the v2.8.0.0 C2 fix added
       error handling around a conversation-index timeout, but the reporter

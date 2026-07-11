@@ -804,6 +804,9 @@
   <data name="Status_Classify_EncryptedInConversation_Other" xml:space="preserve">
     <value> {0} encrypted messages in the conversation were left in place.</value>
   </data>
+  <data name="Status_Widening_TableTimeout" xml:space="preserve">
+    <value>The Outlook conversation index is unavailable for your mail files — a folder scan was used to include the conversation instead. Classifications for the rest of this session will use it directly, without the long wait.</value>
+  </data>
   <data name="Status_TriageArchiveFolderMissing" xml:space="preserve">
     <value>Sent-item triage: archive folder not found — mail left in Sent Items.</value>
   </data>

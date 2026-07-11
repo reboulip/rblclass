@@ -12,11 +12,13 @@ namespace RBLclass.Core
     {
         public ClassifyPreflight(IReadOnlyList<MailItemRef> items,
                                  IReadOnlyList<MailItemRef> flaggedIncomplete,
-                                 IReadOnlyList<string> skippedEncrypted = null)
+                                 IReadOnlyList<string> skippedEncrypted = null,
+                                 bool wideningTableDisabledThisSession = false)
         {
             Items = items;
             FlaggedIncomplete = flaggedIncomplete;
             SkippedEncrypted = skippedEncrypted ?? new string[0];
+            WideningTableDisabledThisSession = wideningTableDisabledThisSession;
         }
 
         /// <summary>
@@ -40,5 +42,13 @@ namespace RBLclass.Core
         /// the caller should warn the user these were left in place.
         /// </summary>
         public IReadOnlyList<string> SkippedEncrypted { get; }
+
+        /// <summary>
+        /// True on the first preflight in a session where the Outlook
+        /// conversation table timed out and the store switched to its
+        /// folder-scan fallback - the caller should surface a one-time notice
+        /// (B3, v2.9.0.0).
+        /// </summary>
+        public bool WideningTableDisabledThisSession { get; }
     }
 }
