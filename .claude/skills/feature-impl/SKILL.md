@@ -99,16 +99,34 @@ don't block the sprint on it — follow Step 8c instead.
 1. Edit `ROADMAP.md`: find the item's checkbox line in the active sprint
    section (matches `- [ ] **[Label].`, e.g. `- [ ] **A1.`) and change
    `[ ]` to `[x]`.
-2. Stage all changed files: source, tests, localization resources, ROADMAP.md.
-3. Commit with a message following the existing commit style:
+2. **Update the documentation site.** If this item changed anything
+   user-visible (behaviour, a setting, a default, a shortcut), the
+   architecture / tech stack / a coding rule, the test/ship process, or the
+   security posture, dispatch the `docs-writer` subagent to update the
+   online docs (`website/`) so they ship with the change:
+   ```
+   Agent({
+     subagent_type: "docs-writer",
+     description: "Update docs for [sprint] [label]",
+     prompt: "Change just implemented: [sprint version] [label] — [title].\n\n[what changed, in a few sentences]\n\nDiff of this change:\n[output of `git diff` for the item's changes]"
+   })
+   ```
+   Review the pages it reports back. If the item was purely internal with no
+   documentable surface and `docs-writer` reports "no change needed", skip
+   the doc edit. (See CLAUDE.md → Documentation for the mapping of change
+   types to pages.)
+3. Stage all changed files: source, tests, localization resources,
+   ROADMAP.md, **and any `website/` (and `docs/security.md`) pages
+   `docs-writer` touched**.
+4. Commit with a message following the existing commit style:
    ```
    [Imperative summary] ([sprint version] [label])
 
    Co-Authored-By: Claude Sonnet 4.6 <noreply@anthropic.com>
    ```
    Example: `Clear search field after classify (v2.4.0.0 A1)`
-4. Do **not** push — that is a separate user action.
-5. **GH issue comment (if applicable).** Scan the roadmap item's full text
+5. Do **not** push — that is a separate user action.
+6. **GH issue comment (if applicable).** Scan the roadmap item's full text
    for `[#N]` back-references (regex `\[#(\d+)\]`). If any are found:
    ```powershell
    $sha = git rev-parse HEAD
@@ -147,6 +165,8 @@ Follow the precedent already in `ROADMAP.md` (v2.6.0.0 B3, C1; v2.9.0.0 B1):
 
 - Never commit until **all** verification questions pass.
 - Never commit without including the ROADMAP.md `[ ]` → `[x]` update.
+- Never commit a documentable change without the `docs-writer` doc update in
+  the same commit (Step 8a.2) — docs ship with the code.
 - Never push to remote — push is a separate user action.
 - xUnit must pass (Step 4) before calling /reload-addin (Step 6).
 - Build must succeed (Step 5) before calling /reload-addin (Step 6).

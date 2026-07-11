@@ -98,6 +98,21 @@ interop and lifetime conventions, threading, bitness, SQLite schema
 policy, etc.) and [ROADMAP.md](ROADMAP.md) for the delivery phases and
 current status.
 
+## Documentation
+
+Full documentation is published to GitHub Pages:
+**<https://reboulip.github.io/rblclass/>** — a
+[user guide](https://reboulip.github.io/rblclass/user-guide/installation/)
+(install, quick start, walkthrough), a
+[developer guide](https://reboulip.github.io/rblclass/developer-guide/tech-stack/)
+(tech stack, architecture, testing, shipping), and the
+[security model](https://reboulip.github.io/rblclass/security/).
+
+The site source is under [`website/`](website/) (MkDocs Material). CI builds it
+with `--strict` on pull requests to `main` and publishes on merge
+([`.github/workflows/docs.yml`](.github/workflows/docs.yml)). Docs are updated
+alongside every change — see [CLAUDE.md](CLAUDE.md#documentation).
+
 ## Project layout
 
 ```
@@ -108,6 +123,7 @@ current status.
 /installer                    WiX MSI project
 /tests
   /RBLclass.Core.Tests        xUnit
+/website                      online documentation site (MkDocs Material)
 /docs                         architecture notes, install guide, roadmap detail
 ```
 

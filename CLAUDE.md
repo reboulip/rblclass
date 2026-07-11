@@ -320,6 +320,41 @@ steps are in the skill.
 - Distribution: internal HTTPS share documented in
   `docs/deployment.md`.
 
+## Documentation
+
+The product has an online documentation site published to GitHub Pages,
+built with **MkDocs Material**. Its source is `website/` (Markdown pages
+under `website/docs/`, navigation in `website/mkdocs.yml`). It has four
+areas — **Home**, **User Guide** (installation, quick start, walkthrough),
+**Developer Guide** (tech stack, architecture, testing, shipping), and
+**Security**.
+
+**Documentation ships with the code, not after it.** Every change that
+alters any of the following MUST be accompanied by the matching docs update
+**in the same commit**:
+
+- user-visible behaviour, a setting, a default, or a keyboard shortcut →
+  `website/docs/user-guide/` (the walkthrough settings tables are the
+  source of truth) and, if a feature is added/removed/renamed, the Home
+  feature bullets;
+- the architecture, a coding rule, the tech stack, a dependency, or a
+  build/test/ship process → `website/docs/developer-guide/`;
+- the security posture (new data persisted, a network call, a new trust
+  boundary, a closed hardening item) → **both** `website/docs/security.md`
+  (published) and `docs/security.md` (canonical internal threat model).
+
+Do not hand-write these updates inline. Delegate them to the
+**`docs-writer` subagent** (`.claude/agents/docs-writer.md`, Sonnet, medium
+reasoning effort): give it the change description (and the diff or roadmap
+item), let it edit the affected pages, then stage its output into the same
+commit as the change. `/feature-impl` does this automatically; for a manual
+change, invoke it the same way before committing.
+
+CI (`.github/workflows/docs.yml`) builds the site with `--strict` on every
+pull request to `main` (a broken link or a page missing from `nav:` fails
+the check) and **publishes** to GitHub Pages on push to `main` (i.e. once
+the PR merges). Keep internal links valid so the strict build passes.
+
 ## Sprint development workflow
 
 Feature work is driven by three skills/subagents that form a pipeline:

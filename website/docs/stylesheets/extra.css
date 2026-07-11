@@ -1,0 +1,21 @@
+/* RBLclass documentation — small presentational tweaks on top of the
+   Material theme. Keep this file lightweight; prefer theme options in
+   mkdocs.yml over custom CSS. */
+
+/* Slightly wider content column so the wide reference tables in the
+   walkthrough and security pages don't wrap awkwardly. */
+.md-grid {
+  max-width: 68rem;
+}
+
+/* Let long tables (settings reference, threat model) scroll horizontally
+   on narrow viewports instead of breaking the layout. */
+.md-typeset table:not([class]) {
+  display: block;
+  overflow-x: auto;
+}
+
+/* Give keyboard-shortcut <kbd> a bit more presence in the walkthrough. */
+.md-typeset kbd {
+  font-size: 0.85em;
+}
