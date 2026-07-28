@@ -12,17 +12,31 @@ namespace RBLclass.AddIn.Views
     /// </summary>
     public partial class NamePromptWindow : Window
     {
-        public NamePromptWindow(string parentFolderName = null)
+        public NamePromptWindow(string parentFolderName = null, string renamedFolderCurrentName = null)
         {
             InitializeComponent();
             DialogPlacement.OwnByOutlook(this);
             ThemeService.Apply(this);
 
-            if (!string.IsNullOrEmpty(parentFolderName))
+            if (!string.IsNullOrEmpty(renamedFolderCurrentName))
+            {
+                Title = TaskPaneServices.Localization.GetString("NamePrompt_Rename_Title");
+                PromptLabel.Text = TaskPaneServices.Localization.GetString(
+                    "NamePrompt_Rename_Label", renamedFolderCurrentName);
+                NameBox.Text = renamedFolderCurrentName;
+                OkButton.Content = TaskPaneServices.Localization.GetString("NamePrompt_Rename_Button");
+            }
+            else if (!string.IsNullOrEmpty(parentFolderName))
+            {
                 PromptLabel.Text = TaskPaneServices.Localization.GetString(
                     "NamePrompt_Label_WithParent", parentFolderName);
+            }
 
-            Loaded += (s, e) => NameBox.Focus();
+            Loaded += (s, e) =>
+            {
+                NameBox.Focus();
+                NameBox.SelectAll();
+            };
         }
 
         /// <summary>The text entered once <see cref="Window.DialogResult"/> is true.</summary>

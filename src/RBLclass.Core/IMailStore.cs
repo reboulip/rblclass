@@ -236,6 +236,16 @@ namespace RBLclass.Core
         FolderNode CreateSubfolder(FolderNode parent, string name);
 
         /// <summary>
+        /// Rename <paramref name="folder"/> to <paramref name="newName"/> in the
+        /// live Outlook store. Returns true on success, false on failure (duplicate
+        /// name, Outlook refusing a special/reserved folder, etc.) — the COMException
+        /// is caught and logged internally, never rethrown. Store-root folders must
+        /// not be passed here; the UI disables the action for them. Touches COM -
+        /// call on the Outlook UI thread. (v2.10.0.0 A1)
+        /// </summary>
+        bool RenameFolder(FolderNode folder, string newName);
+
+        /// <summary>
         /// Extract what the send-time guards (legacy 6a-6b) need - body text,
         /// attachment count, recipient addresses - from a live mail item that's
         /// about to go out. <paramref name="item"/> is the raw <c>object</c>

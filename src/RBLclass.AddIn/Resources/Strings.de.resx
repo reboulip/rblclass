@@ -117,6 +117,9 @@
   <data name="MainPane_NewSubfolder_MenuItem" xml:space="preserve">
     <value>Unterordner hinzufügen…</value>
   </data>
+  <data name="MainPane_RenameFolder_MenuItem" xml:space="preserve">
+    <value>Ordner umbenennen…</value>
+  </data>
   <data name="MainPane_ExpandPath_ToolTip" xml:space="preserve">
     <value>Den vollständigen Pfad mehrzeilig anzeigen</value>
   </data>
@@ -582,6 +585,15 @@
   <data name="NamePrompt_Cancel_Button" xml:space="preserve">
     <value>Abbrechen</value>
   </data>
+  <data name="NamePrompt_Rename_Title" xml:space="preserve">
+    <value>RBLclass - Ordner umbenennen</value>
+  </data>
+  <data name="NamePrompt_Rename_Label" xml:space="preserve">
+    <value>Neuer Name für „{0}“:</value>
+  </data>
+  <data name="NamePrompt_Rename_Button" xml:space="preserve">
+    <value>Umbenennen</value>
+  </data>
 
   <!-- MeetingClassifyHintWindow: meeting-classify discoverability hint (v2.9.0.0 C2) -->
   <data name="MeetingHint_Title" xml:space="preserve">
@@ -644,6 +656,12 @@
   </data>
   <data name="Status_FolderCreated" xml:space="preserve">
     <value>„{0}“ unter {1} erstellt.</value>
+  </data>
+  <data name="Status_CouldNotRenameFolder" xml:space="preserve">
+    <value>Der Ordner konnte nicht umbenannt werden.</value>
+  </data>
+  <data name="Status_FolderRenamed" xml:space="preserve">
+    <value>Ordner in „{0}“ umbenannt.</value>
   </data>
   <data name="Status_ClassifyCancelled" xml:space="preserve">
     <value>Klassieren abgebrochen.</value>

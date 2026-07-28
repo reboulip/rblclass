@@ -72,7 +72,9 @@ namespace RBLclass.AddIn
                             TaskPaneServices.PromptForName,
                             TaskPaneServices.GetAllFolders,
                             TaskPaneServices.CheckHasMeetingItemsInSelection,
-                            TaskPaneServices.ShowMeetingClassifyHint);
+                            TaskPaneServices.ShowMeetingClassifyHint,
+                            TaskPaneServices.PromptForRename,
+                            TaskPaneServices.RenameFolder);
                         vm.SubscribeToIndexStatus(TaskPaneServices.FolderIndex);
                         TaskPaneServices.PinMailForClassify = vm.PinMailForClassify;
                         _view.DataContext = vm;

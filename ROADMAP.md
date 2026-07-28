@@ -342,7 +342,7 @@ text as the specification.
 
 ### A — Folder context menu
 
-- [ ] **A1.** Add "Rename folder" to the folder-tree row context menu
+- [x] **A1.** Add "Rename folder" to the folder-tree row context menu
       (right-click), as a sibling menu item to the existing "New subfolder"
       (`MainPaneView.xaml:149-154`, `NewSubfolder_Click` at
       `MainPaneView.xaml.cs:241`). Reuse the existing `_promptForName`

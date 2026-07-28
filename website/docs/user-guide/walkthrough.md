@@ -48,6 +48,12 @@ short pause. For each result row:
 - The **👁** button opens that folder in Outlook.
 - Right-click → **Add subfolder…** creates a sub-folder under it (with a targeted
   re-index so it's searchable straight away).
+- Right-click → **Rename folder…** opens a small dialog pre-filled with the
+  folder's current name; on confirm, the folder is renamed in the live Outlook
+  store and the index is refreshed. This item is grayed out on a store's root
+  folder (the top-level PST entry) — store roots cannot be renamed. Any other
+  folder or sub-folder can be renamed. If Outlook refuses the name (for example,
+  a duplicate or a reserved name), a status message is shown instead of a crash.
 - The **⤢** button cycles how that row shows its path (see *Search result path
   display* in Settings).
 

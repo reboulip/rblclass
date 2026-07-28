@@ -150,6 +150,9 @@
                                 <ContextMenu>
                                     <MenuItem Header="{loc:Loc Key=MainPane_NewSubfolder_MenuItem}"
                                               Click="NewSubfolder_Click" />
+                                    <MenuItem Header="{loc:Loc Key=MainPane_RenameFolder_MenuItem}"
+                                              Click="RenameFolder_Click"
+                                              IsEnabled="{Binding IsRenameEnabled}" />
                                 </ContextMenu>
                             </DockPanel.ContextMenu>
                             <Button DockPanel.Dock="Right" Content="👁" Width="22" Padding="0" VerticalAlignment="Top"

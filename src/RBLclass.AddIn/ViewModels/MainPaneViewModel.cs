@@ -34,6 +34,8 @@ namespace RBLclass.AddIn.ViewModels
         private readonly Func<IReadOnlyList<FolderNode>> _getAllFolders;
         private readonly Func<bool> _checkHasMeetingItemsInSelection;
         private readonly Action _showMeetingClassifyHint;
+        private readonly Func<string, string> _promptForRename;
+        private readonly Func<FolderNode, string, bool> _renameFolder;
         private readonly ILocalizationService _loc;
 
         private string _query = string.Empty;
@@ -83,7 +85,9 @@ namespace RBLclass.AddIn.ViewModels
             Func<string, string> promptForName = null,
             Func<IReadOnlyList<FolderNode>> getAllFolders = null,
             Func<bool> checkHasMeetingItemsInSelection = null,
-            Action showMeetingClassifyHint = null)
+            Action showMeetingClassifyHint = null,
+            Func<string, string> promptForRename = null,
+            Func<FolderNode, string, bool> renameFolder = null)
         {
             _search = search ?? throw new ArgumentNullException(nameof(search));
             _classifier = classifier ?? throw new ArgumentNullException(nameof(classifier));
@@ -96,6 +100,8 @@ namespace RBLclass.AddIn.ViewModels
             _getAllFolders = getAllFolders;
             _checkHasMeetingItemsInSelection = checkHasMeetingItemsInSelection;
             _showMeetingClassifyHint = showMeetingClassifyHint;
+            _promptForRename = promptForRename;
+            _renameFolder = renameFolder;
             _loc = TaskPaneServices.Localization;
             _selectionSummary = _loc.GetString("Status_NoMailSelectedSummary");
             _autoClassLabel = _loc.GetString("MainPane_AutoClass_Button");
@@ -1126,6 +1132,28 @@ namespace RBLclass.AddIn.ViewModels
             if (created == null) { PushStatus(_loc.GetString("Status_CouldNotCreateFolder")); return; }
 
             PushStatus(_loc.GetString("Status_FolderCreated", created.Name, parent.Name));
+            Refresh();
+        }
+
+        /// <summary>
+        /// Prompt the user for a new name and rename the given folder in
+        /// Outlook (context-menu "Rename folder…"). No-op for store-root
+        /// folders (the menu item is disabled in the UI). (v2.10.0.0 A1)
+        /// </summary>
+        public void RenameFolder(FolderNode folder)
+        {
+            if (_isBusy || folder == null || folder.IsStoreRoot) return;
+            if (_promptForRename == null || _renameFolder == null) return;
+
+            string newName = _promptForRename(folder.Name);
+            if (string.IsNullOrWhiteSpace(newName)) return;
+            newName = newName.Trim();
+            if (newName == folder.Name) return;
+
+            bool ok = _renameFolder(folder, newName);
+            if (!ok) { PushStatus(_loc.GetString("Status_CouldNotRenameFolder")); return; }
+
+            PushStatus(_loc.GetString("Status_FolderRenamed", newName));
             Refresh();
         }
 

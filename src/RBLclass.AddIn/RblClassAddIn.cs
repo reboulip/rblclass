@@ -217,6 +217,26 @@ namespace RBLclass.AddIn
                         return null;
                     }
                 };
+                TaskPaneServices.PromptForRename = currentName =>
+                {
+                    var prompt = new NamePromptWindow(renamedFolderCurrentName: currentName);
+                    return prompt.ShowDialog() == true ? prompt.EnteredName : null;
+                };
+                TaskPaneServices.RenameFolder = (folder, newName) =>
+                {
+                    try
+                    {
+                        bool ok = _mailStore.RenameFolder(folder, newName);
+                        if (ok)
+                            _folderTree.ReindexStore(folder.StoreId);
+                        return ok;
+                    }
+                    catch (Exception ex)
+                    {
+                        Log.Error(ex, "RenameFolder failed for {Path}", folder.FullPath);
+                        return false;
+                    }
+                };
                 TaskPaneServices.Navigate = (folder, newWindow) =>
                 {
                     try

@@ -67,6 +67,21 @@ namespace RBLclass.AddIn
         public static Func<FolderNode, string, FolderNode> CreateSubfolder;
 
         /// <summary>
+        /// Prompt the user for a new folder name, pre-filled with the folder's
+        /// current name. Returns the entered text (trimmed) or null when
+        /// cancelled. A small modal dialog under the hood - kept out of the
+        /// WPF-agnostic view model as a plain delegate. (v2.10.0.0 A1)
+        /// </summary>
+        public static Func<string, string> PromptForRename;
+
+        /// <summary>
+        /// Rename a folder to the given new name and re-index that store.
+        /// Returns true on success. Touches COM - invoke on the Outlook UI
+        /// thread. (v2.10.0.0 A1)
+        /// </summary>
+        public static Func<FolderNode, string, bool> RenameFolder;
+
+        /// <summary>
         /// Navigate Outlook to a folder. Args: target folder, open-in-new-window.
         /// Runs on the Outlook UI thread (invoked from the pane's WPF handlers).
         /// </summary>
