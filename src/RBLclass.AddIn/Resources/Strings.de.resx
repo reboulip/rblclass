@@ -78,6 +78,18 @@
   <data name="MainPane_ManageAttachments_ToolTip" xml:space="preserve">
     <value>Anlagen der ausgewählten E-Mail(s) verwalten: behalten, löschen oder in einem Ordner speichern</value>
   </data>
+  <data name="MainPane_Settings_Button" xml:space="preserve">
+    <value>⚙️</value>
+  </data>
+  <data name="MainPane_Settings_ToolTip" xml:space="preserve">
+    <value>Konfigurieren Sie Ordnersuche, Klassieren, Sende-Sicherungen und die Triage gesendeter Objekte. Jede Änderung wird sofort angewendet und gespeichert.</value>
+  </data>
+  <data name="MainPane_UpdateFolders_Button" xml:space="preserve">
+    <value>🔄</value>
+  </data>
+  <data name="MainPane_UpdateFolders_ToolTip" xml:space="preserve">
+    <value>Durchsucht Ihre PST-Speicher erneut, damit Ordner, die direkt in Outlook erstellt oder umbenannt wurden, in der Suche erscheinen. Nach dem manuellen Anlegen von Ordnern ausführen.</value>
+  </data>
   <data name="MainPane_QueryBox_ToolTip" xml:space="preserve">
     <value>Eingabe legt in den markierten Ordner ab; Strg+Eingabe öffnet ihn. Strg allein drücken, um „Alle passenden Ordner anzeigen“ umzuschalten</value>
   </data>

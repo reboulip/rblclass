@@ -78,6 +78,18 @@
   <data name="MainPane_ManageAttachments_ToolTip" xml:space="preserve">
     <value>Manage attachments of the selected email(s): keep, delete, or save to a folder</value>
   </data>
+  <data name="MainPane_Settings_Button" xml:space="preserve">
+    <value>⚙️</value>
+  </data>
+  <data name="MainPane_Settings_ToolTip" xml:space="preserve">
+    <value>Configure folder search, classify, sending guards and sent-item triage. Every change applies and persists immediately.</value>
+  </data>
+  <data name="MainPane_UpdateFolders_Button" xml:space="preserve">
+    <value>🔄</value>
+  </data>
+  <data name="MainPane_UpdateFolders_ToolTip" xml:space="preserve">
+    <value>Re-scan your PST stores so folders you created or renamed directly in Outlook show up in search. Run this after adding folders by hand.</value>
+  </data>
   <data name="MainPane_QueryBox_ToolTip" xml:space="preserve">
     <value>Enter files into the highlighted folder; Ctrl+Enter opens it. Press Ctrl alone to toggle 'List every matching folder'</value>
   </data>

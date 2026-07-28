@@ -78,6 +78,18 @@
   <data name="MainPane_ManageAttachments_ToolTip" xml:space="preserve">
     <value>Gérer les pièces jointes du/des message(s) sélectionné(s) : conserver, supprimer ou enregistrer dans un dossier</value>
   </data>
+  <data name="MainPane_Settings_Button" xml:space="preserve">
+    <value>⚙️</value>
+  </data>
+  <data name="MainPane_Settings_ToolTip" xml:space="preserve">
+    <value>Configurer la recherche de dossiers, le classement, les garde-fous d'envoi et le triage des éléments envoyés. Chaque modification s'applique et est conservée immédiatement.</value>
+  </data>
+  <data name="MainPane_UpdateFolders_Button" xml:space="preserve">
+    <value>🔄</value>
+  </data>
+  <data name="MainPane_UpdateFolders_ToolTip" xml:space="preserve">
+    <value>Réanalyse vos magasins PST afin que les dossiers créés ou renommés directement dans Outlook apparaissent dans la recherche. À exécuter après avoir ajouté des dossiers manuellement.</value>
+  </data>
   <data name="MainPane_QueryBox_ToolTip" xml:space="preserve">
     <value>Entrée classe dans le dossier en surbrillance ; Ctrl+Entrée l'ouvre. Appuyez sur Ctrl seul pour activer/désactiver « Lister tous les dossiers correspondants »</value>
   </data>

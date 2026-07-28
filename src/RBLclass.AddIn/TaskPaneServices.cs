@@ -271,5 +271,19 @@ namespace RBLclass.AddIn
         /// the classify batch completes; no-op once dismissed.
         /// </summary>
         public static Action ShowMeetingClassifyHint;
+
+        /// <summary>
+        /// Open the Settings dialog (v2.10.0.0 B1): moved from the ribbon into
+        /// the pane's icon-button row. Wired at startup; null until then. UI
+        /// thread only.
+        /// </summary>
+        public static Action OpenSettings;
+
+        /// <summary>
+        /// Re-walk PST stores and refresh the folder index (v2.10.0.0 B1):
+        /// moved from the ribbon into the pane's icon-button row. Wired at
+        /// startup; null until then. UI thread only.
+        /// </summary>
+        public static Action RefreshFolders;
     }
 }

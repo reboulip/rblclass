@@ -232,6 +232,18 @@ namespace RBLclass.AddIn.Views
             catch (Exception ex) { Log.Error(ex, "ManageAttachmentsSelected failed."); }
         }
 
+        private void Settings_Click(object sender, RoutedEventArgs e)
+        {
+            try { Vm?.OpenSettings(); }
+            catch (Exception ex) { Log.Error(ex, "Settings_Click failed."); }
+        }
+
+        private void UpdateFolders_Click(object sender, RoutedEventArgs e)
+        {
+            try { Vm?.RefreshFolders(); }
+            catch (Exception ex) { Log.Error(ex, "UpdateFolders_Click failed."); }
+        }
+
         private void OpenFolder_Click(object sender, RoutedEventArgs e)
         {
             var folder = (sender as FrameworkElement)?.DataContext as SelectableFolder;

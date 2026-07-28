@@ -388,7 +388,7 @@ text as the specification.
 
 ### B — Pane UI
 
-- [ ] **B1.** Move the "Settings" and "Update folders" actions from the
+- [x] **B1.** Move the "Settings" and "Update folders" actions from the
       RBLclass ribbon (`Ribbon.xml:15-28`, `SettingsButton` /
       `RefreshFoldersButton`, `OnSettingsClick` / `OnRefreshFoldersClick`)
       into the RBLclass pane, removing them from the ribbon (`TogglePaneButton`

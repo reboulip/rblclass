@@ -200,6 +200,8 @@ namespace RBLclass.AddIn
                     if (hint.ShowDialog() == true && hint.DontShowAgain)
                         _settingsStore.SetBool(SettingsKeys.MeetingHintDismissed, true);
                 };
+                TaskPaneServices.OpenSettings = ExecuteSettings;
+                TaskPaneServices.RefreshFolders = ExecuteRefreshFolders;
                 TaskPaneServices.GetAllFolders = () => _folderTree.GetAll();
                 TaskPaneServices.FolderIndex = _folderTree;
                 TaskPaneServices.CreateSubfolder = (parent, name) =>
@@ -1139,13 +1141,14 @@ namespace RBLclass.AddIn
         }
 
         /// <summary>
-        /// Ribbon "Refresh folders": re-walk the live stores on demand so folders
-        /// created or renamed directly in Outlook (not via our own "New subfolder"
-        /// action) surface in search. Fires and forgets an async walk that yields
-        /// the STA message pump between stores so the yellow indicator paints and
+        /// Pane "Update folders" (moved from the ribbon in v2.10.0.0 B1):
+        /// re-walk the live stores on demand so folders created or renamed
+        /// directly in Outlook (not via our own "New subfolder" action) surface
+        /// in search. Fires and forgets an async walk that yields the STA
+        /// message pump between stores so the yellow indicator paints and
         /// Outlook stays interactive throughout the walk.
         /// </summary>
-        public void OnRefreshFoldersClick(Office.IRibbonControl control)
+        private void ExecuteRefreshFolders()
         {
             try
             {
@@ -1208,8 +1211,8 @@ namespace RBLclass.AddIn
             }
         }
 
-        /// <summary>Ribbon "Settings": modal dialog over every user-facing option (legacy §7). Live-applies on every change.</summary>
-        public void OnSettingsClick(Office.IRibbonControl control)
+        /// <summary>Pane "Settings" (moved from the ribbon in v2.10.0.0 B1): modal dialog over every user-facing option (legacy §7). Live-applies on every change.</summary>
+        private void ExecuteSettings()
         {
             try
             {

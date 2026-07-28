@@ -21,17 +21,29 @@ splitter; the position is remembered across restarts.
 
 ## The ribbon tab
 
-If you close the pane, the **RBLclass** ribbon tab has four buttons:
+The **RBLclass** ribbon tab has two buttons:
 
 - **RBLclass pane** — show or hide the pane.
-- **Refresh folders** — re-scan your mailboxes so folders you created or renamed
-  directly in Outlook show up in search.
-- **Settings** — all options (see the [Settings reference](#settings-reference)).
 - **About** — version, author and technical information.
+
+**Settings** and **Update folders** have moved into the pane itself (see
+[the icon-button row](#pane-icon-buttons) below).
 
 !!! tip "Keyboard access to the pane"
     Press ++alt++, then ++r++ (the RBLclass tab), then ++r++ again (the pane
     button).
+
+## Pane icon buttons
+
+The top row of the task pane contains a set of icon buttons:
+
+- **⚙️** (Settings) — opens the Settings dialog (see the
+  [Settings reference](#settings-reference)).
+- **🔄** (Update folders) — re-scans your mailboxes so folders you created or
+  renamed directly in Outlook appear in search. The index-status dot turns yellow
+  while the scan runs and green when it finishes.
+- **Auto-class**, **Save As**, and **Manage attachments** icon buttons (described
+  under [Classify](#classify) and [Attachment management](#attachment-management)).
 
 ## Features
 
@@ -139,8 +151,9 @@ and forwards, and from filed copies.
 
 ## Settings reference
 
-Open **Settings** from the RBLclass ribbon group. Every change applies and
-persists immediately — there is no "Apply" button, and closing is always safe.
+Open **Settings** by clicking the **⚙️** button in the top icon row of the
+RBLclass pane. Every change applies and persists immediately — there is no
+"Apply" button, and closing is always safe.
 
 ### Folder search
 
@@ -225,7 +238,8 @@ override it to English, Français or Deutsch.
 
 The folder index is built automatically in the background when Outlook starts. If
 you create or rename a folder directly in Outlook and it doesn't appear in
-search, click **Refresh folders** on the ribbon.
+search, click the **🔄** (Update folders) button in the top icon row of the
+RBLclass pane.
 
 ## Suggesting improvements / reporting problems
 

@@ -756,6 +756,28 @@ namespace RBLclass.AddIn.ViewModels
             }
         }
 
+        /// <summary>
+        /// Open the Settings dialog from the pane's icon-button row
+        /// (v2.10.0.0 B1). Delegates to the add-in shell via
+        /// <see cref="TaskPaneServices.OpenSettings"/>.
+        /// </summary>
+        public void OpenSettings()
+        {
+            try { TaskPaneServices.OpenSettings?.Invoke(); }
+            catch (Exception ex) { Log.Error(ex, "OpenSettings failed."); }
+        }
+
+        /// <summary>
+        /// Re-scan PST stores and refresh the folder index (v2.10.0.0 B1).
+        /// Delegates to the add-in shell via
+        /// <see cref="TaskPaneServices.RefreshFolders"/>.
+        /// </summary>
+        public void RefreshFolders()
+        {
+            try { TaskPaneServices.RefreshFolders?.Invoke(); }
+            catch (Exception ex) { Log.Error(ex, "RefreshFolders failed."); }
+        }
+
         private static string DescribeAutoClass(AutoClassifyResult r, ILocalizationService loc)
         {
             // Nothing filed and the only reason is "never classified before".
