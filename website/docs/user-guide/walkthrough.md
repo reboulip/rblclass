@@ -165,7 +165,7 @@ RBLclass pane. Every change applies and persists immediately — there is no
 | Search result path display | Single line | How each result row shows its folder path: a single left-trimmed line, the full path wrapped to the pane width, or the full path with one sub-folder per line. The per-row ⤢ button cycles all three for that row. |
 | Maximum results to display | 50 | Cap on the number of result rows. |
 | Search after at least N characters | 2 | Avoids searching on a single letter. Range 1–10. |
-| Pause before searching (ms) | 200 | Search fires this many milliseconds after your last keystroke. Range 0–2000. |
+| Pause before searching (ms) | 200 | Search fires this many milliseconds after your last keystroke. The same delay is also used to debounce the "N selected" mail counter in the pane, so a burst of rapid Outlook selection changes collapses into a single update. Range 0–2000. |
 
 ### Classify
 

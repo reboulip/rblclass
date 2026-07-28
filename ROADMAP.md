@@ -411,7 +411,7 @@ text as the specification.
 
 ### C — Performance
 
-- [ ] **C1.** Fix the long delay in the pane's "N selected" indicator on
+- [x] **C1.** Fix the long delay in the pane's "N selected" indicator on
       large Outlook selections. Root cause: `OnExplorerSelectionChange`
       (`RblClassAddIn.cs:720-746`) synchronously re-walks the full COM
       `Selection` via `GetSelectedItems()` (`OutlookMailStore.cs:219-274`,

@@ -91,6 +91,12 @@ namespace RBLclass.AddIn
         // Held in a field for the add-in's lifetime (GC rule - CLAUDE.md).
         private OutlookOM.Inspectors _inspectors;
 
+        // Debounces SelectionChange bursts (e.g. shift-drag across 1000+ rows)
+        // using the same SearchDebounceMs setting as folder search (C1).
+        // Timer created lazily on first event; always ticked on the STA dispatcher.
+        private SelectionChangeDebouncer _selectionDebouncer;
+        private DispatcherTimer _selectionTimer;
+
         private string _dbPath;
         private string _logDirectory;
 
@@ -463,6 +469,11 @@ namespace RBLclass.AddIn
                     catch (Exception ex) { TryLog("DeleteMail (pin banner) failed", ex); }
                 };
 
+                // Selection-change debounce (C1): coalesce rapid SelectionChange
+                // bursts into a single COM walk. Reuses SearchDebounceMs (default
+                // 200 ms, user-adjustable).
+                _selectionDebouncer = new SelectionChangeDebouncer(startupSettings.SearchDebounceMs);
+
                 // Keep the classify pane's selection count live; also strip the
                 // external-sender banner from inline reply/forward drafts (B1).
                 try
@@ -605,6 +616,12 @@ namespace RBLclass.AddIn
                     _firstRunWalkTimer.Stop();
                     _firstRunWalkTimer.Dispose();
                     _firstRunWalkTimer = null;
+                }
+
+                if (_selectionTimer != null)
+                {
+                    try { _selectionTimer.Stop(); } catch { }
+                    _selectionTimer = null;
                 }
 
                 if (_activeExplorer != null)
@@ -774,7 +791,15 @@ namespace RBLclass.AddIn
             }
         }
 
-        /// <summary>Keep the classify pane's "N mails selected" label in sync with Outlook.</summary>
+        /// <summary>
+        /// Keep the classify pane's "N mails selected" label in sync with
+        /// Outlook. Debounced (C1): a rapid burst of SelectionChange events
+        /// (e.g. shift-drag across 1000+ rows) is coalesced into a single COM
+        /// walk after the user pauses for SearchDebounceMs milliseconds, so the
+        /// STA thread never blocks mid-drag. The DispatcherTimer fires on the
+        /// same STA dispatcher thread, satisfying the COM-from-STA rule
+        /// (CLAUDE.md).
+        /// </summary>
         private void OnExplorerSelectionChange()
         {
             try
@@ -791,15 +816,57 @@ namespace RBLclass.AddIn
                     return;
                 }
 
-                var sw = System.Diagnostics.Stopwatch.StartNew();
-                int count = _mailStore.GetSelectedItems().Count;
-                sw.Stop();
-                Log.Debug("PERF SelectionChange handled {Ms} ms: {Count} selected", sw.ElapsedMilliseconds, count);
-                TaskPaneServices.Host?.SetSelectionCount(count);
+                _selectionDebouncer?.Signal();
+
+                if (_selectionTimer == null)
+                {
+                    _selectionTimer = new DispatcherTimer(DispatcherPriority.Input);
+                    _selectionTimer.Interval =
+                        TimeSpan.FromMilliseconds(_selectionDebouncer?.DebounceMs ?? Settings.DefaultSearchDebounceMs);
+                    _selectionTimer.Tick += OnSelectionTimerTick;
+                }
+
+                _selectionTimer.Stop();
+                _selectionTimer.Start();
             }
             catch (Exception ex)
             {
                 TryLog("SelectionChange handler failed", ex);
+            }
+        }
+
+        /// <summary>
+        /// Fires SearchDebounceMs after the last SelectionChange event in a
+        /// burst. Calls GetSelectedItems() once (the only COM walk per burst)
+        /// and updates the pane's selection count. Best-effort; never throws
+        /// into Outlook. (v2.10.0.0 C1)
+        /// </summary>
+        private void OnSelectionTimerTick(object sender, EventArgs e)
+        {
+            try
+            {
+                _selectionTimer.Stop();
+
+                // Safety: if a new signal arrived in the interval (OS timer
+                // jitter), re-arm rather than fire on a mid-burst snapshot.
+                if (!(_selectionDebouncer?.HasSettled() ?? true))
+                {
+                    _selectionTimer.Start();
+                    return;
+                }
+
+                _selectionDebouncer?.Reset();
+
+                var sw = System.Diagnostics.Stopwatch.StartNew();
+                int count = _mailStore.GetSelectedItems().Count;
+                sw.Stop();
+                Log.Debug("PERF SelectionChange (debounced) handled {Ms} ms: {Count} selected",
+                    sw.ElapsedMilliseconds, count);
+                TaskPaneServices.Host?.SetSelectionCount(count);
+            }
+            catch (Exception ex)
+            {
+                TryLog("SelectionChange timer tick failed", ex);
             }
         }
 
