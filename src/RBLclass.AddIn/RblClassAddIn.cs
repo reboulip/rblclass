@@ -237,6 +237,42 @@ namespace RBLclass.AddIn
                         return false;
                     }
                 };
+                TaskPaneServices.CountFolderContents = folder =>
+                {
+                    try { return _mailStore.CountFolderContents(folder); }
+                    catch (Exception ex)
+                    {
+                        Log.Warning(ex, "CountFolderContents failed for {Path}", folder?.FullPath);
+                        return 0;
+                    }
+                };
+                TaskPaneServices.ConfirmDeleteFolder = count =>
+                {
+                    var loc = TaskPaneServices.Localization;
+                    string body = loc.Plural(count,
+                        "MsgBox_ConfirmDeleteFolder_Body_One",
+                        "MsgBox_ConfirmDeleteFolder_Body_Other");
+                    var answer = MessageBox.Show(
+                        body,
+                        loc.GetString("MsgBox_ConfirmDeleteFolder_Title"),
+                        MessageBoxButtons.YesNo, MessageBoxIcon.Warning);
+                    return answer == DialogResult.Yes ? (bool?)true : null;
+                };
+                TaskPaneServices.DeleteFolder = folder =>
+                {
+                    try
+                    {
+                        bool ok = _mailStore.DeleteFolder(folder);
+                        if (ok)
+                            _folderTree.ReindexStore(folder.StoreId);
+                        return ok;
+                    }
+                    catch (Exception ex)
+                    {
+                        Log.Error(ex, "DeleteFolder failed for {Path}", folder.FullPath);
+                        return false;
+                    }
+                };
                 TaskPaneServices.Navigate = (folder, newWindow) =>
                 {
                     try

@@ -153,6 +153,9 @@
                                     <MenuItem Header="{loc:Loc Key=MainPane_RenameFolder_MenuItem}"
                                               Click="RenameFolder_Click"
                                               IsEnabled="{Binding IsRenameEnabled}" />
+                                    <MenuItem Header="{loc:Loc Key=MainPane_DeleteFolder_MenuItem}"
+                                              Click="DeleteFolder_Click"
+                                              IsEnabled="{Binding IsDeleteEnabled}" />
                                 </ContextMenu>
                             </DockPanel.ContextMenu>
                             <Button DockPanel.Dock="Right" Content="👁" Width="22" Padding="0" VerticalAlignment="Top"

@@ -82,6 +82,27 @@ namespace RBLclass.AddIn
         public static Func<FolderNode, string, bool> RenameFolder;
 
         /// <summary>
+        /// Count the direct child items (mail + subfolders) of a folder; used
+        /// to populate the delete-confirmation dialog. Touches COM - UI thread.
+        /// (v2.10.0.0 A2)
+        /// </summary>
+        public static Func<FolderNode, int> CountFolderContents;
+
+        /// <summary>
+        /// Show the delete-confirmation dialog for a folder deletion; arg is
+        /// the combined direct-item count from <see cref="CountFolderContents"/>.
+        /// Returns true = proceed, null = cancel. Same shape as
+        /// <see cref="ConfirmMarkTasksComplete"/>. (v2.10.0.0 A2)
+        /// </summary>
+        public static Func<int, bool?> ConfirmDeleteFolder;
+
+        /// <summary>
+        /// Delete a folder in the live Outlook store and re-index that store.
+        /// Returns true on success. Touches COM - UI thread. (v2.10.0.0 A2)
+        /// </summary>
+        public static Func<FolderNode, bool> DeleteFolder;
+
+        /// <summary>
         /// Navigate Outlook to a folder. Args: target folder, open-in-new-window.
         /// Runs on the Outlook UI thread (invoked from the pane's WPF handlers).
         /// </summary>

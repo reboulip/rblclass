@@ -367,7 +367,7 @@ text as the specification.
       `RBLclass.Core` (the COM rename itself is untestable off a live
       Outlook). [#54]
 
-- [ ] **A2.** Add "Delete subfolder" to the same context menu, as the
+- [x] **A2.** Add "Delete subfolder" to the same context menu, as the
       inverse of "New subfolder". Add `IMailStore.DeleteFolder(FolderNode
       folder)` next to `RenameFolder`/`CreateSubfolder` in `IMailStore.cs`
       and `OutlookMailStore.cs`, calling Outlook's `Folder.Delete()`

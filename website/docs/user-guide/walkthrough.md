@@ -54,6 +54,14 @@ short pause. For each result row:
   folder (the top-level PST entry) — store roots cannot be renamed. Any other
   folder or sub-folder can be renamed. If Outlook refuses the name (for example,
   a duplicate or a reserved name), a status message is shown instead of a crash.
+- Right-click → **Delete folder** removes the folder from the Outlook store. A
+  confirmation dialog first tells you how many mail items and direct sub-folders
+  the folder contains; clicking **Yes** proceeds even when the folder is
+  non-empty. Outlook's soft-delete semantics apply: the folder is moved to
+  *Deleted Items* unless it is already inside *Deleted Items*, in which case it
+  is permanently deleted. This item is grayed out on a store's root folder, the
+  same restriction as **Rename folder**. On failure, a status message is shown in
+  the pane instead of a crash.
 - The **⤢** button cycles how that row shows its path (see *Search result path
   display* in Settings).
 

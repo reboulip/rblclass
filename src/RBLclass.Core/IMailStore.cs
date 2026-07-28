@@ -246,6 +246,26 @@ namespace RBLclass.Core
         bool RenameFolder(FolderNode folder, string newName);
 
         /// <summary>
+        /// Return the count of direct child items (mail messages) plus direct
+        /// child sub-folders inside <paramref name="folder"/>. Used to populate
+        /// the delete-confirmation dialog before <see cref="DeleteFolder"/> is
+        /// called. Touches COM - call on the Outlook UI thread. (v2.10.0.0 A2)
+        /// </summary>
+        int CountFolderContents(FolderNode folder);
+
+        /// <summary>
+        /// Delete <paramref name="folder"/> from the live Outlook store using
+        /// Outlook's default soft-delete semantics (<c>Folder.Delete()</c>):
+        /// the folder is moved to the store's Deleted Items unless it is
+        /// already there, in which case it is permanently deleted. Returns
+        /// true on success, false on failure (the COMException is caught and
+        /// logged internally, never rethrown). Store-root folders must not be
+        /// passed here; the UI disables the action for them. Touches COM -
+        /// call on the Outlook UI thread. (v2.10.0.0 A2)
+        /// </summary>
+        bool DeleteFolder(FolderNode folder);
+
+        /// <summary>
         /// Extract what the send-time guards (legacy 6a-6b) need - body text,
         /// attachment count, recipient addresses - from a live mail item that's
         /// about to go out. <paramref name="item"/> is the raw <c>object</c>

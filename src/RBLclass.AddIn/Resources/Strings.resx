@@ -120,6 +120,9 @@
   <data name="MainPane_RenameFolder_MenuItem" xml:space="preserve">
     <value>Rename folder…</value>
   </data>
+  <data name="MainPane_DeleteFolder_MenuItem" xml:space="preserve">
+    <value>Delete folder</value>
+  </data>
   <data name="MainPane_ExpandPath_ToolTip" xml:space="preserve">
     <value>Show the full path on multiple lines</value>
   </data>
@@ -663,6 +666,12 @@
   <data name="Status_FolderRenamed" xml:space="preserve">
     <value>Renamed folder to "{0}".</value>
   </data>
+  <data name="Status_CouldNotDeleteFolder" xml:space="preserve">
+    <value>Could not delete the folder.</value>
+  </data>
+  <data name="Status_FolderDeleted" xml:space="preserve">
+    <value>Deleted folder "{0}".</value>
+  </data>
   <data name="Status_ClassifyCancelled" xml:space="preserve">
     <value>Classify cancelled.</value>
   </data>
@@ -868,6 +877,19 @@ Mark them complete in the destination folder?</value>
     <value>{0} selected items are flagged as incomplete tasks.
 
 Mark them complete in the destination folder?</value>
+  </data>
+  <data name="MsgBox_ConfirmDeleteFolder_Title" xml:space="preserve">
+    <value>RBLclass - Delete folder</value>
+  </data>
+  <data name="MsgBox_ConfirmDeleteFolder_Body_One" xml:space="preserve">
+    <value>This folder contains {0} item.
+
+Deleting it will move the folder and all its contents to Deleted Items. Proceed?</value>
+  </data>
+  <data name="MsgBox_ConfirmDeleteFolder_Body_Other" xml:space="preserve">
+    <value>This folder contains {0} items and subfolders.
+
+Deleting it will move the folder and all its contents to Deleted Items. Proceed?</value>
   </data>
   <data name="MsgBox_ConfirmSendWithoutAttachment_Title" xml:space="preserve">
     <value>RBLclass - Send</value>

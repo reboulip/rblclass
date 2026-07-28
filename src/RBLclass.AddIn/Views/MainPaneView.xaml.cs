@@ -250,6 +250,12 @@ namespace RBLclass.AddIn.Views
             if (folder != null) Vm?.RenameFolder(folder.Folder);
         }
 
+        private void DeleteFolder_Click(object sender, RoutedEventArgs e)
+        {
+            var folder = (sender as FrameworkElement)?.DataContext as SelectableFolder;
+            if (folder != null) Vm?.DeleteFolder(folder.Folder);
+        }
+
         private void ExpandPath_Click(object sender, RoutedEventArgs e)
         {
             var folder = (sender as FrameworkElement)?.DataContext as SelectableFolder;

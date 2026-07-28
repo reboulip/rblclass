@@ -120,6 +120,9 @@
   <data name="MainPane_RenameFolder_MenuItem" xml:space="preserve">
     <value>Renommer le dossier…</value>
   </data>
+  <data name="MainPane_DeleteFolder_MenuItem" xml:space="preserve">
+    <value>Supprimer le dossier</value>
+  </data>
   <data name="MainPane_ExpandPath_ToolTip" xml:space="preserve">
     <value>Afficher le chemin complet sur plusieurs lignes</value>
   </data>
@@ -663,6 +666,12 @@
   <data name="Status_FolderRenamed" xml:space="preserve">
     <value>Dossier renommé en « {0} ».</value>
   </data>
+  <data name="Status_CouldNotDeleteFolder" xml:space="preserve">
+    <value>Impossible de supprimer le dossier.</value>
+  </data>
+  <data name="Status_FolderDeleted" xml:space="preserve">
+    <value>Dossier « {0} » supprimé.</value>
+  </data>
   <data name="Status_ClassifyCancelled" xml:space="preserve">
     <value>Classement annulé.</value>
   </data>
@@ -868,6 +877,19 @@ Le marquer comme terminé dans le dossier de destination ?</value>
     <value>{0} éléments sélectionnés sont marqués comme tâches inachevées.
 
 Les marquer comme terminés dans le dossier de destination ?</value>
+  </data>
+  <data name="MsgBox_ConfirmDeleteFolder_Title" xml:space="preserve">
+    <value>RBLclass - Supprimer le dossier</value>
+  </data>
+  <data name="MsgBox_ConfirmDeleteFolder_Body_One" xml:space="preserve">
+    <value>Ce dossier contient {0} élément.
+
+La suppression déplacera le dossier et tout son contenu dans les éléments supprimés. Continuer ?</value>
+  </data>
+  <data name="MsgBox_ConfirmDeleteFolder_Body_Other" xml:space="preserve">
+    <value>Ce dossier contient {0} éléments et sous-dossiers.
+
+La suppression déplacera le dossier et tout son contenu dans les éléments supprimés. Continuer ?</value>
   </data>
   <data name="MsgBox_ConfirmSendWithoutAttachment_Title" xml:space="preserve">
     <value>RBLclass - Envoi</value>

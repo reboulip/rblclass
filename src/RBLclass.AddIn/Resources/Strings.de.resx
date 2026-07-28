@@ -120,6 +120,9 @@
   <data name="MainPane_RenameFolder_MenuItem" xml:space="preserve">
     <value>Ordner umbenennen…</value>
   </data>
+  <data name="MainPane_DeleteFolder_MenuItem" xml:space="preserve">
+    <value>Ordner löschen</value>
+  </data>
   <data name="MainPane_ExpandPath_ToolTip" xml:space="preserve">
     <value>Den vollständigen Pfad mehrzeilig anzeigen</value>
   </data>
@@ -663,6 +666,12 @@
   <data name="Status_FolderRenamed" xml:space="preserve">
     <value>Ordner in „{0}“ umbenannt.</value>
   </data>
+  <data name="Status_CouldNotDeleteFolder" xml:space="preserve">
+    <value>Der Ordner konnte nicht gelöscht werden.</value>
+  </data>
+  <data name="Status_FolderDeleted" xml:space="preserve">
+    <value>Ordner „{0}“ gelöscht.</value>
+  </data>
   <data name="Status_ClassifyCancelled" xml:space="preserve">
     <value>Klassieren abgebrochen.</value>
   </data>
@@ -868,6 +877,19 @@ Im Zielordner als abgeschlossen markieren?</value>
     <value>{0} ausgewählte Elemente sind als unvollständige Aufgaben markiert.
 
 Im Zielordner als abgeschlossen markieren?</value>
+  </data>
+  <data name="MsgBox_ConfirmDeleteFolder_Title" xml:space="preserve">
+    <value>RBLclass - Ordner löschen</value>
+  </data>
+  <data name="MsgBox_ConfirmDeleteFolder_Body_One" xml:space="preserve">
+    <value>Dieser Ordner enthält {0} Element.
+
+Durch Löschen wird der Ordner und sein gesamter Inhalt in den gelöschten Elementen abgelegt. Fortfahren?</value>
+  </data>
+  <data name="MsgBox_ConfirmDeleteFolder_Body_Other" xml:space="preserve">
+    <value>Dieser Ordner enthält {0} Elemente und Unterordner.
+
+Durch Löschen wird der Ordner und sein gesamter Inhalt in den gelöschten Elementen abgelegt. Fortfahren?</value>
   </data>
   <data name="MsgBox_ConfirmSendWithoutAttachment_Title" xml:space="preserve">
     <value>RBLclass - Senden</value>
