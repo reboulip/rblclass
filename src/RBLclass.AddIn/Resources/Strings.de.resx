@@ -78,6 +78,18 @@
   <data name="MainPane_ManageAttachments_ToolTip" xml:space="preserve">
     <value>Anlagen der ausgewählten E-Mail(s) verwalten: behalten, löschen oder in einem Ordner speichern</value>
   </data>
+  <data name="MainPane_Settings_Button" xml:space="preserve">
+    <value>⚙️</value>
+  </data>
+  <data name="MainPane_Settings_ToolTip" xml:space="preserve">
+    <value>Konfigurieren Sie Ordnersuche, Klassieren, Sende-Sicherungen und die Triage gesendeter Objekte. Jede Änderung wird sofort angewendet und gespeichert.</value>
+  </data>
+  <data name="MainPane_UpdateFolders_Button" xml:space="preserve">
+    <value>🔄</value>
+  </data>
+  <data name="MainPane_UpdateFolders_ToolTip" xml:space="preserve">
+    <value>Durchsucht Ihre PST-Speicher erneut, damit Ordner, die direkt in Outlook erstellt oder umbenannt wurden, in der Suche erscheinen. Nach dem manuellen Anlegen von Ordnern ausführen.</value>
+  </data>
   <data name="MainPane_QueryBox_ToolTip" xml:space="preserve">
     <value>Eingabe legt in den markierten Ordner ab; Strg+Eingabe öffnet ihn. Strg allein drücken, um „Alle passenden Ordner anzeigen“ umzuschalten</value>
   </data>
@@ -116,6 +128,12 @@
   </data>
   <data name="MainPane_NewSubfolder_MenuItem" xml:space="preserve">
     <value>Unterordner hinzufügen…</value>
+  </data>
+  <data name="MainPane_RenameFolder_MenuItem" xml:space="preserve">
+    <value>Ordner umbenennen…</value>
+  </data>
+  <data name="MainPane_DeleteFolder_MenuItem" xml:space="preserve">
+    <value>Ordner löschen</value>
   </data>
   <data name="MainPane_ExpandPath_ToolTip" xml:space="preserve">
     <value>Den vollständigen Pfad mehrzeilig anzeigen</value>
@@ -395,6 +413,15 @@
   <data name="Settings_Banner_Diag_Unavailable" xml:space="preserve">
     <value>Diagnose nicht verfügbar (keine Auswahlquelle).</value>
   </data>
+  <data name="Settings_Banner_SaveDiag_Button" xml:space="preserve">
+    <value>Diagnosedatei speichern</value>
+  </data>
+  <data name="Settings_Banner_SaveDiag_Saved" xml:space="preserve">
+    <value>Gespeichert unter: {0}</value>
+  </data>
+  <data name="Settings_Banner_SaveDiag_Error" xml:space="preserve">
+    <value>Speichern fehlgeschlagen: {0}</value>
+  </data>
   <data name="Settings_SendingGuards_Header" xml:space="preserve">
     <value>Sende-Sicherungen</value>
   </data>
@@ -582,6 +609,15 @@
   <data name="NamePrompt_Cancel_Button" xml:space="preserve">
     <value>Abbrechen</value>
   </data>
+  <data name="NamePrompt_Rename_Title" xml:space="preserve">
+    <value>RBLclass - Ordner umbenennen</value>
+  </data>
+  <data name="NamePrompt_Rename_Label" xml:space="preserve">
+    <value>Neuer Name für „{0}“:</value>
+  </data>
+  <data name="NamePrompt_Rename_Button" xml:space="preserve">
+    <value>Umbenennen</value>
+  </data>
 
   <!-- MeetingClassifyHintWindow: meeting-classify discoverability hint (v2.9.0.0 C2) -->
   <data name="MeetingHint_Title" xml:space="preserve">
@@ -644,6 +680,18 @@
   </data>
   <data name="Status_FolderCreated" xml:space="preserve">
     <value>„{0}“ unter {1} erstellt.</value>
+  </data>
+  <data name="Status_CouldNotRenameFolder" xml:space="preserve">
+    <value>Der Ordner konnte nicht umbenannt werden.</value>
+  </data>
+  <data name="Status_FolderRenamed" xml:space="preserve">
+    <value>Ordner in „{0}“ umbenannt.</value>
+  </data>
+  <data name="Status_CouldNotDeleteFolder" xml:space="preserve">
+    <value>Der Ordner konnte nicht gelöscht werden.</value>
+  </data>
+  <data name="Status_FolderDeleted" xml:space="preserve">
+    <value>Ordner „{0}“ gelöscht.</value>
   </data>
   <data name="Status_ClassifyCancelled" xml:space="preserve">
     <value>Klassieren abgebrochen.</value>
@@ -850,6 +898,19 @@ Im Zielordner als abgeschlossen markieren?</value>
     <value>{0} ausgewählte Elemente sind als unvollständige Aufgaben markiert.
 
 Im Zielordner als abgeschlossen markieren?</value>
+  </data>
+  <data name="MsgBox_ConfirmDeleteFolder_Title" xml:space="preserve">
+    <value>RBLclass - Ordner löschen</value>
+  </data>
+  <data name="MsgBox_ConfirmDeleteFolder_Body_One" xml:space="preserve">
+    <value>Dieser Ordner enthält {0} Element.
+
+Durch Löschen wird der Ordner und sein gesamter Inhalt in den gelöschten Elementen abgelegt. Fortfahren?</value>
+  </data>
+  <data name="MsgBox_ConfirmDeleteFolder_Body_Other" xml:space="preserve">
+    <value>Dieser Ordner enthält {0} Elemente und Unterordner.
+
+Durch Löschen wird der Ordner und sein gesamter Inhalt in den gelöschten Elementen abgelegt. Fortfahren?</value>
   </data>
   <data name="MsgBox_ConfirmSendWithoutAttachment_Title" xml:space="preserve">
     <value>RBLclass - Senden</value>

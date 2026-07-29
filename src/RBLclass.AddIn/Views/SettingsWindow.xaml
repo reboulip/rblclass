@@ -246,6 +246,8 @@
                                         IsEnabled="{Binding HasBanner}" Click="ClearBanner_Click" />
                                 <Button DockPanel.Dock="Left" Content="{loc:Loc Key=Settings_DiagnoseBanner_Button}" Padding="8,2" Margin="6,0,0,0"
                                         IsEnabled="{Binding CanLearnBanner}" Click="DiagnoseBanner_Click" />
+                                <Button DockPanel.Dock="Left" Content="{loc:Loc Key=Settings_Banner_SaveDiag_Button}" Padding="8,2" Margin="6,0,0,0"
+                                        IsEnabled="{Binding CanLearnBanner}" Click="SaveDiagBanner_Click" />
                             </DockPanel>
                             <TextBlock Margin="0,2,0,0" TextWrapping="Wrap"
                                        Style="{DynamicResource MutedText}" Text="{Binding BannerStatus}" />

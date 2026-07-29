@@ -78,6 +78,18 @@
   <data name="MainPane_ManageAttachments_ToolTip" xml:space="preserve">
     <value>Manage attachments of the selected email(s): keep, delete, or save to a folder</value>
   </data>
+  <data name="MainPane_Settings_Button" xml:space="preserve">
+    <value>⚙️</value>
+  </data>
+  <data name="MainPane_Settings_ToolTip" xml:space="preserve">
+    <value>Configure folder search, classify, sending guards and sent-item triage. Every change applies and persists immediately.</value>
+  </data>
+  <data name="MainPane_UpdateFolders_Button" xml:space="preserve">
+    <value>🔄</value>
+  </data>
+  <data name="MainPane_UpdateFolders_ToolTip" xml:space="preserve">
+    <value>Re-scan your PST stores so folders you created or renamed directly in Outlook show up in search. Run this after adding folders by hand.</value>
+  </data>
   <data name="MainPane_QueryBox_ToolTip" xml:space="preserve">
     <value>Enter files into the highlighted folder; Ctrl+Enter opens it. Press Ctrl alone to toggle 'List every matching folder'</value>
   </data>
@@ -116,6 +128,12 @@
   </data>
   <data name="MainPane_NewSubfolder_MenuItem" xml:space="preserve">
     <value>Add subfolder…</value>
+  </data>
+  <data name="MainPane_RenameFolder_MenuItem" xml:space="preserve">
+    <value>Rename folder…</value>
+  </data>
+  <data name="MainPane_DeleteFolder_MenuItem" xml:space="preserve">
+    <value>Delete folder</value>
   </data>
   <data name="MainPane_ExpandPath_ToolTip" xml:space="preserve">
     <value>Show the full path on multiple lines</value>
@@ -395,6 +413,15 @@
   <data name="Settings_Banner_Diag_Unavailable" xml:space="preserve">
     <value>Diagnostics unavailable (no selection source).</value>
   </data>
+  <data name="Settings_Banner_SaveDiag_Button" xml:space="preserve">
+    <value>Save diagnostic file</value>
+  </data>
+  <data name="Settings_Banner_SaveDiag_Saved" xml:space="preserve">
+    <value>Saved to: {0}</value>
+  </data>
+  <data name="Settings_Banner_SaveDiag_Error" xml:space="preserve">
+    <value>Save failed: {0}</value>
+  </data>
   <data name="Settings_SendingGuards_Header" xml:space="preserve">
     <value>Sending guards</value>
   </data>
@@ -582,6 +609,15 @@
   <data name="NamePrompt_Cancel_Button" xml:space="preserve">
     <value>Cancel</value>
   </data>
+  <data name="NamePrompt_Rename_Title" xml:space="preserve">
+    <value>RBLclass - Rename folder</value>
+  </data>
+  <data name="NamePrompt_Rename_Label" xml:space="preserve">
+    <value>New name for "{0}":</value>
+  </data>
+  <data name="NamePrompt_Rename_Button" xml:space="preserve">
+    <value>Rename</value>
+  </data>
 
   <!-- MeetingClassifyHintWindow: meeting-classify discoverability hint (v2.9.0.0 C2) -->
   <data name="MeetingHint_Title" xml:space="preserve">
@@ -644,6 +680,18 @@
   </data>
   <data name="Status_FolderCreated" xml:space="preserve">
     <value>Created "{0}" under {1}.</value>
+  </data>
+  <data name="Status_CouldNotRenameFolder" xml:space="preserve">
+    <value>Could not rename the folder.</value>
+  </data>
+  <data name="Status_FolderRenamed" xml:space="preserve">
+    <value>Renamed folder to "{0}".</value>
+  </data>
+  <data name="Status_CouldNotDeleteFolder" xml:space="preserve">
+    <value>Could not delete the folder.</value>
+  </data>
+  <data name="Status_FolderDeleted" xml:space="preserve">
+    <value>Deleted folder "{0}".</value>
   </data>
   <data name="Status_ClassifyCancelled" xml:space="preserve">
     <value>Classify cancelled.</value>
@@ -850,6 +898,19 @@ Mark them complete in the destination folder?</value>
     <value>{0} selected items are flagged as incomplete tasks.
 
 Mark them complete in the destination folder?</value>
+  </data>
+  <data name="MsgBox_ConfirmDeleteFolder_Title" xml:space="preserve">
+    <value>RBLclass - Delete folder</value>
+  </data>
+  <data name="MsgBox_ConfirmDeleteFolder_Body_One" xml:space="preserve">
+    <value>This folder contains {0} item.
+
+Deleting it will move the folder and all its contents to Deleted Items. Proceed?</value>
+  </data>
+  <data name="MsgBox_ConfirmDeleteFolder_Body_Other" xml:space="preserve">
+    <value>This folder contains {0} items and subfolders.
+
+Deleting it will move the folder and all its contents to Deleted Items. Proceed?</value>
   </data>
   <data name="MsgBox_ConfirmSendWithoutAttachment_Title" xml:space="preserve">
     <value>RBLclass - Send</value>

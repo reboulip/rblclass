@@ -27,6 +27,18 @@ namespace RBLclass.AddIn.ViewModels
         public FolderNode Folder => Result.Folder;
         public string DisplayPath => Result.DisplayPath;
 
+        /// <summary>
+        /// True when this folder can be renamed (not the store root). Drives
+        /// the context menu IsEnabled binding (v2.10.0.0 A1).
+        /// </summary>
+        public bool IsRenameEnabled => !Folder.IsStoreRoot;
+
+        /// <summary>
+        /// True when this folder can be deleted (not the store root). Drives
+        /// the context-menu IsEnabled binding (v2.10.0.0 A2).
+        /// </summary>
+        public bool IsDeleteEnabled => !Folder.IsStoreRoot;
+
         /// <summary>Path split into segments for the per-row expanded multi-line view (v2.4 C1).</summary>
         public string[] PathSegments => Result.PathSegments;
 

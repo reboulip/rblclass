@@ -18,11 +18,18 @@ followed by feedback/refinement waves **v2.1.0.0** through **v2.8.0.0**
 all complete and recorded in [history](docs/roadmap-history.md). **v2.9.0.0**
 (UI polish, classify & banner fixes, attachments) shipped 2026-07-11 —
 [release](https://github.com/reboulip/rblclass/releases/tag/v2.9.0.0).
+**v2.9.1.0** (nav-rail freeze hotfix) shipped 2026-07-11 —
+[release](https://github.com/reboulip/rblclass/releases/tag/v2.9.1.0).
 
 Open work: the two v2.6.0.0 items still pending live verification (banner
 strip B3, meeting classify C1), and v2.9.0.0 B1 (banner strip on
 reply/forward) likewise shipped pending live verification on the real
-target. Phases 8–9 are forward-looking.
+target — **confirmed still broken on the real target on 2026-07-28**
+(issue #46: detection works, stripping doesn't); v2.10.0.0 D1 adds the
+diagnostic capability needed to root-cause it. **v2.10.0.0** (folder
+context-menu completeness, pane consolidation, selection-lag fix, banner
+diagnostics) is planned from the 2026-07-28 `/gh-issues` triage. Phases 8–9
+are forward-looking.
 
 ## Testing & validation strategy (applies to every item)
 
@@ -220,9 +227,12 @@ text as the specification.
       verify that deferral actually covers reply/forward drafts, and cover
       inline replies composed in the explorer's reading pane
       (`Explorer.InlineResponse`), which never open an Inspector at all.
-      [#46] - shipped, pending tests (not verifiable on the dev machine per
-      the testing strategy above; re-verify inline reply/forward, popout
-      reply/forward, and the sent-copy on the real target before pilot)
+      [#46] - shipped, **confirmed still broken on the real target
+      (2026-07-28)**: detection works (Settings "Diagnose selected mail"
+      still reports a match), but the strip itself still doesn't take
+      effect on reply/forward there. Root cause not yet identified — see
+      v2.10.0.0 D1, which adds a diagnostic-artifact dump to pin down why
+      before attempting a further fix here.
 
 - [x] **B2.** Investigate and fix the dead Delete key after "go to folder"
       (the open-folder action on a search result, which navigates the
@@ -321,6 +331,146 @@ text as the specification.
       today's suffix behaviour unchanged. Log each dedupe skip at
       Information level. The compare/decide logic lives in `RBLclass.Core`
       with xUnit coverage. [#52]
+
+---
+
+## v2.10.0.0 — feedback wave: folder management, pane consolidation, performance, diagnostics
+
+Planned 2026-07-28 from the open GitHub issues (`/gh-issues` triage). Each
+item embeds the implementation decisions made with the user — treat the item
+text as the specification.
+
+### A — Folder context menu
+
+- [x] **A1.** Add "Rename folder" to the folder-tree row context menu
+      (right-click), as a sibling menu item to the existing "New subfolder"
+      (`MainPaneView.xaml:149-154`, `NewSubfolder_Click` at
+      `MainPaneView.xaml.cs:241`). Reuse the existing `_promptForName`
+      (`Func<string,string>`) prompt-dialog pattern used by
+      `CreateSubfolderUnder` (`MainPaneViewModel.cs:1118-1130`), seeded with
+      the folder's current name instead of empty. On confirm, call a new
+      `IMailStore.RenameFolder(FolderNode folder, string newName)` (declared
+      next to `CreateSubfolder` in `IMailStore.cs:236`), implemented in
+      `OutlookMailStore.cs` next to `CreateSubfolder` (line 287) using the
+      same `ComRef`/`GetFolderFromID` pattern — set `Folder.Name` on the live
+      Outlook folder, catching `COMException` (duplicate name, or Outlook
+      refusing a special/reserved folder) and reporting it via the existing
+      status-line pattern rather than throwing. On success, reindex via
+      `FolderIndexService.ReindexStore(folder.StoreId)`, mirroring the
+      "update folders index" step already done for create-subfolder
+      (`RblClassAddIn.cs:205-219`). Decided: disable/hide "Rename" when the
+      target is a store's root folder (PST root) — renaming a store root is
+      unusual and can confuse Outlook's store list; any other
+      folder/subfolder is renamable. New resource key + FR/DE translation
+      for the menu label and any new status strings (`ResourceParityTests`).
+      Cover the root-rename-blocking check with an xUnit test in
+      `RBLclass.Core` (the COM rename itself is untestable off a live
+      Outlook). [#54]
+
+- [x] **A2.** Add "Delete subfolder" to the same context menu, as the
+      inverse of "New subfolder". Add `IMailStore.DeleteFolder(FolderNode
+      folder)` next to `RenameFolder`/`CreateSubfolder` in `IMailStore.cs`
+      and `OutlookMailStore.cs`, calling Outlook's `Folder.Delete()`
+      (default semantics: moves the folder to Deleted Items unless it's
+      already there). Decided: before deleting, show a confirmation dialog
+      reusing the existing confirm-dialog pattern (`Func<int, bool?>`, same
+      shape as `_confirmMarkTasksComplete`, `MainPaneViewModel.cs:32`) whose
+      text states how many mail items and subfolders will be removed; if the
+      user confirms, proceed with the delete even when the folder is
+      non-empty — the count shown in the confirmation is the safety
+      mechanism, there is no separate hard block on non-empty folders.
+      Reindex the store via `FolderIndexService.ReindexStore` on success,
+      exactly as A1. Disable/hide "Delete" for a store's root folder (same
+      restriction as A1). New resource keys (menu label, confirmation
+      dialog text with a `{n}` item-count placeholder using the
+      `_One`/`_Other` plural pattern) translated in FR/DE, checked by
+      `ResourceParityTests`. [#57]
+
+### B — Pane UI
+
+- [x] **B1.** Move the "Settings" and "Update folders" actions from the
+      RBLclass ribbon (`Ribbon.xml:15-28`, `SettingsButton` /
+      `RefreshFoldersButton`, `OnSettingsClick` / `OnRefreshFoldersClick`)
+      into the RBLclass pane, removing them from the ribbon (`TogglePaneButton`
+      and `AboutButton` stay — only these two move). Decided: they join the
+      existing icon-button row at the top of the pane
+      (`MainPaneView.xaml:80-119`, the `DockPanel LastChildFill="False"`
+      currently holding AutoClass / SaveAs / ManageAttachments and the
+      index-status `Ellipse`), as two more docked-right icon buttons using
+      the same `FontFamily="Segoe UI Emoji"` styling as SaveAs /
+      ManageAttachments. Settings renders as a gearbox emoji (⚙️),
+      Update-folders as a circle-arrow emoji (🔄); clicking them invokes the
+      same logic currently wired to `OnSettingsClick` / `OnRefreshFoldersClick`
+      (extract to shared methods callable from both the new pane
+      code-behind Click handlers and the ribbon callbacks — the ribbon
+      buttons are being removed, so these become the only call site). New
+      tooltip resource keys mirroring the ribbon's existing
+      `screentip`/`supertip` text, translated in FR/DE (`ResourceParityTests`
+      already covers `Ribbon.xml`/`.fr.xml`/`.de.xml` parity — verify the new
+      pane-side keys are covered too). [#55]
+
+### C — Performance
+
+- [x] **C1.** Fix the long delay in the pane's "N selected" indicator on
+      large Outlook selections. Root cause: `OnExplorerSelectionChange`
+      (`RblClassAddIn.cs:720-746`) synchronously re-walks the full COM
+      `Selection` via `GetSelectedItems()` (`OutlookMailStore.cs:219-274`,
+      one per-item COM marshalling call per selected item) on every
+      `SelectionChange` event, on the STA/UI thread, with no throttling —
+      for large selections (hundreds to thousands of items) this blocks
+      Outlook's UI without feedback. Decided fix: debounce only, no hard cap
+      on the number of items processed — apply the existing
+      `SearchDebounceMs`-style coalescing already used for folder search
+      (`Settings.cs` / `SettingsKeys.cs:43`, default 200 ms, clamped to
+      `MaxSearchDebounceMs` = 2000 ms) to `Explorer.SelectionChange` events,
+      so a burst of rapid selection changes (e.g. shift-click-dragging
+      across thousands of rows) collapses into a single walk after the user
+      pauses, instead of one full walk per intermediate event. The debounce
+      timer must run off the STA thread's own dispatcher (not a
+      thread-pool timer calling back into COM), per the add-in's threading
+      rule. Add xUnit coverage in `RBLclass.Core` for the debounce-decision
+      logic (a small class deciding "have enough events settled to fire"
+      given an injectable clock), and manually verify by selecting large
+      ranges (1000+ items) in the dev Outlook and confirming the pane no
+      longer stalls the UI. [#56]
+
+### D — Banner diagnostics
+
+- [ ] **D1.** Add a diagnostic-artifact dump to the existing "Diagnose
+      selected mail" Settings action (`SettingsViewModel.DiagnoseSelectedMail`,
+      `SettingsViewModel.cs:482-513`), to unblock root-causing why v2.9.0.0
+      B1's reply/forward banner strip (issue #46) detects the banner
+      correctly but still fails to strip it on the real 32-bit target.
+      Today `ExternalBannerStripper.Diagnose` (`ExternalBannerStripper.cs:135`)
+      returns only `BannerDiagnosticOutcome` / `SignatureLength`, no
+      substring or position — extend it (or add a sibling method) to also
+      surface the matched range: the ordinal index (`Strip`'s exact-match
+      path, `ExternalBannerStripper.cs:143-145`) or the regex `Match.Index` /
+      `Length` (tolerant path, lines 102-118), so a caller can slice the
+      original body. Decided: add a manual "Save diagnostic" action next to
+      the existing Diagnose button/result in Settings — on-demand only, not
+      auto-captured on every live strip attempt — that writes a timestamped
+      `.html` file to a new `%LocalAppData%\RBLclass\diagnostics\` folder
+      (mirroring the existing `logs` / SQLite-under-`%LocalAppData%\RBLclass\`
+      convention, `RblClassAddIn.cs:1300-1328`). The file contains the
+      complete original HTML body with the matched banner substring (if any)
+      wrapped in a visibly distinct inline style (e.g. a red dashed border),
+      plus a small metadata comment block (match outcome, exact-vs-tolerant,
+      signature length, timestamp), so the reporter can send back one
+      self-contained file showing exactly what would/wouldn't be stripped.
+      This persists mail body content to disk for the first time outside
+      the SQLite index — flag it in the security-posture doc pass
+      (`docs/security.md` + `website/docs/security.md`, via the
+      `docs-writer` subagent): new data written to disk, on-demand and
+      user-triggered only, local machine, same trust boundary as the
+      existing log files. New resource keys for the "Save diagnostic"
+      button/tooltip and a save-confirmation status message, translated
+      FR/DE. [#46] - shipped, pending tests (not verifiable on the dev
+      machine per the testing strategy above; no live transport-rule
+      banner is injected into mail on this dev account, so the "Save
+      diagnostic file" action, its highlighted-match rendering, and the
+      lazy `diagnostics\` folder creation need a real-target re-check
+      before pilot)
 
 ---
 

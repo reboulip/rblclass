@@ -4,9 +4,9 @@
 > found **no critical or high-severity vulnerabilities**. This file records the
 > trust boundaries, the data handled, and the security-relevant posture of the
 > add-in so a corporate security review has an explicit trail. It is updated
-> whenever a change alters that posture — most recently for the **v2.7.0.0**
-> opt-in update check (E1), which introduced the product's first outbound
-> network call (see [Network posture](#network-posture)).
+> whenever a change alters that posture — most recently for **v2.10.0.0** D1
+> (banner diagnostics artifact dump), which introduced the first on-demand
+> write of mail body content to disk (see [Data handled](#data-handled)).
 
 ## What RBLclass is
 
@@ -39,13 +39,24 @@ administrator rights** and runs **inside the Outlook process**.
   text are inspected in memory by the send-time guards (forgotten-attachment and
   external-recipient checks) and discarded when the send completes. They are
   **not** written to disk or to the log.
-- **Mail content (never persisted):** classify operations move/copy items via the
-  Outlook Object Model; mail bodies and attachments are handled by Outlook, never
-  copied into RBLclass storage.
+- **Mail content (not persisted by classify operations):** classify operations
+  move/copy items via the Outlook Object Model; mail bodies and attachments are
+  handled by Outlook, never copied into RBLclass storage.
+- **Banner diagnostic artifact (persisted on demand):** when the user explicitly
+  clicks *"Save diagnostic file"* in **Settings → External sender banner**, the
+  full HTML body of the currently selected mail is written to
+  `%LocalAppData%\RBLclass\diagnostics\banner-diag-<timestamp>.html`, with any
+  matched banner substring visually highlighted and a metadata comment (match
+  outcome, signature length, timestamp). This is the **only** path that writes
+  mail body content to disk. It is never triggered automatically; the
+  `diagnostics\` directory is created lazily on first use; files accumulate until
+  the user manually deletes them (no rolling retention, unlike the log files).
 
 ## Data at rest
 
-- Location: `%LocalAppData%\RBLclass\` (SQLite database + rolling Serilog logs).
+- Location: `%LocalAppData%\RBLclass\` — SQLite database, rolling Serilog logs
+  under `logs\`, and on-demand banner diagnostic HTML files under
+  `diagnostics\`.
 - Protection: standard per-user `%LocalAppData%` NTFS ACL — the correct OS trust
   boundary for non-secret, per-user data.
 - **No application-level encryption** (accepted by design): the contents (folder

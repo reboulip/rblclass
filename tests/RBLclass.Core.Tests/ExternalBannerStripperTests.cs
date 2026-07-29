@@ -203,5 +203,51 @@ namespace RBLclass.Core.Tests
             result.Outcome.Should().Be(BannerDiagnosticOutcome.NotFound);
             result.SignatureLength.Should().Be(Banner.Trim().Length);
         }
+
+        [Fact]
+        public void Diagnose_populates_MatchIndex_and_MatchLength_for_exact_match()
+        {
+            var html = Body(Banner + "<p>content</p>");
+            var expectedIdx = html.IndexOf(Banner, System.StringComparison.Ordinal);
+
+            var result = ExternalBannerStripper.Diagnose(html, Banner);
+
+            result.MatchIndex.Should().Be(expectedIdx);
+            result.MatchLength.Should().Be(Banner.Length);
+        }
+
+        [Fact]
+        public void Diagnose_populates_MatchIndex_and_MatchLength_for_tolerant_match()
+        {
+            var whitespaceSignature =
+                "<table border=\"0\">\r\n  <tr>\r\n    <td>External sender.</td>\r\n  </tr>\r\n</table>";
+            var html = Body("<table border=\"0\"><tr><td>External sender.</td></tr></table><p>hi</p>");
+
+            var result = ExternalBannerStripper.Diagnose(html, whitespaceSignature);
+
+            result.MatchIndex.Should().BeGreaterOrEqualTo(0);
+            result.MatchLength.Should().BeGreaterThan(0);
+            html.Substring(result.MatchIndex, result.MatchLength).Should().Contain("External sender.");
+        }
+
+        [Fact]
+        public void Diagnose_returns_negative_MatchIndex_when_not_found()
+        {
+            var html = Body("<p>No banner here.</p>");
+
+            var result = ExternalBannerStripper.Diagnose(html, Banner);
+
+            result.MatchIndex.Should().Be(-1);
+            result.MatchLength.Should().Be(0);
+        }
+
+        [Fact]
+        public void Diagnose_returns_negative_MatchIndex_when_no_signature()
+        {
+            var result = ExternalBannerStripper.Diagnose("<html><body><p>hi</p></body></html>", null);
+
+            result.MatchIndex.Should().Be(-1);
+            result.MatchLength.Should().Be(0);
+        }
     }
 }

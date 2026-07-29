@@ -34,6 +34,11 @@ namespace RBLclass.AddIn.ViewModels
         private readonly Func<IReadOnlyList<FolderNode>> _getAllFolders;
         private readonly Func<bool> _checkHasMeetingItemsInSelection;
         private readonly Action _showMeetingClassifyHint;
+        private readonly Func<string, string> _promptForRename;
+        private readonly Func<FolderNode, string, bool> _renameFolder;
+        private readonly Func<FolderNode, int> _countFolderContents;
+        private readonly Func<int, bool?> _confirmDeleteFolder;
+        private readonly Func<FolderNode, bool> _deleteFolder;
         private readonly ILocalizationService _loc;
 
         private string _query = string.Empty;
@@ -83,7 +88,12 @@ namespace RBLclass.AddIn.ViewModels
             Func<string, string> promptForName = null,
             Func<IReadOnlyList<FolderNode>> getAllFolders = null,
             Func<bool> checkHasMeetingItemsInSelection = null,
-            Action showMeetingClassifyHint = null)
+            Action showMeetingClassifyHint = null,
+            Func<string, string> promptForRename = null,
+            Func<FolderNode, string, bool> renameFolder = null,
+            Func<FolderNode, int> countFolderContents = null,
+            Func<int, bool?> confirmDeleteFolder = null,
+            Func<FolderNode, bool> deleteFolder = null)
         {
             _search = search ?? throw new ArgumentNullException(nameof(search));
             _classifier = classifier ?? throw new ArgumentNullException(nameof(classifier));
@@ -96,6 +106,11 @@ namespace RBLclass.AddIn.ViewModels
             _getAllFolders = getAllFolders;
             _checkHasMeetingItemsInSelection = checkHasMeetingItemsInSelection;
             _showMeetingClassifyHint = showMeetingClassifyHint;
+            _promptForRename = promptForRename;
+            _renameFolder = renameFolder;
+            _countFolderContents = countFolderContents;
+            _confirmDeleteFolder = confirmDeleteFolder;
+            _deleteFolder = deleteFolder;
             _loc = TaskPaneServices.Localization;
             _selectionSummary = _loc.GetString("Status_NoMailSelectedSummary");
             _autoClassLabel = _loc.GetString("MainPane_AutoClass_Button");
@@ -741,6 +756,28 @@ namespace RBLclass.AddIn.ViewModels
             }
         }
 
+        /// <summary>
+        /// Open the Settings dialog from the pane's icon-button row
+        /// (v2.10.0.0 B1). Delegates to the add-in shell via
+        /// <see cref="TaskPaneServices.OpenSettings"/>.
+        /// </summary>
+        public void OpenSettings()
+        {
+            try { TaskPaneServices.OpenSettings?.Invoke(); }
+            catch (Exception ex) { Log.Error(ex, "OpenSettings failed."); }
+        }
+
+        /// <summary>
+        /// Re-scan PST stores and refresh the folder index (v2.10.0.0 B1).
+        /// Delegates to the add-in shell via
+        /// <see cref="TaskPaneServices.RefreshFolders"/>.
+        /// </summary>
+        public void RefreshFolders()
+        {
+            try { TaskPaneServices.RefreshFolders?.Invoke(); }
+            catch (Exception ex) { Log.Error(ex, "RefreshFolders failed."); }
+        }
+
         private static string DescribeAutoClass(AutoClassifyResult r, ILocalizationService loc)
         {
             // Nothing filed and the only reason is "never classified before".
@@ -1126,6 +1163,50 @@ namespace RBLclass.AddIn.ViewModels
             if (created == null) { PushStatus(_loc.GetString("Status_CouldNotCreateFolder")); return; }
 
             PushStatus(_loc.GetString("Status_FolderCreated", created.Name, parent.Name));
+            Refresh();
+        }
+
+        /// <summary>
+        /// Prompt the user for a new name and rename the given folder in
+        /// Outlook (context-menu "Rename folder…"). No-op for store-root
+        /// folders (the menu item is disabled in the UI). (v2.10.0.0 A1)
+        /// </summary>
+        public void RenameFolder(FolderNode folder)
+        {
+            if (_isBusy || folder == null || folder.IsStoreRoot) return;
+            if (_promptForRename == null || _renameFolder == null) return;
+
+            string newName = _promptForRename(folder.Name);
+            if (string.IsNullOrWhiteSpace(newName)) return;
+            newName = newName.Trim();
+            if (newName == folder.Name) return;
+
+            bool ok = _renameFolder(folder, newName);
+            if (!ok) { PushStatus(_loc.GetString("Status_CouldNotRenameFolder")); return; }
+
+            PushStatus(_loc.GetString("Status_FolderRenamed", newName));
+            Refresh();
+        }
+
+        /// <summary>
+        /// Count folder contents, confirm with the user, then delete the
+        /// given folder in Outlook (context-menu "Delete folder"). No-op
+        /// for store-root folders (the menu item is disabled in the UI).
+        /// (v2.10.0.0 A2)
+        /// </summary>
+        public void DeleteFolder(FolderNode folder)
+        {
+            if (_isBusy || folder == null || folder.IsStoreRoot) return;
+            if (_confirmDeleteFolder == null || _deleteFolder == null) return;
+
+            int count = _countFolderContents?.Invoke(folder) ?? 0;
+            var answer = _confirmDeleteFolder(count);
+            if (answer != true) return;
+
+            bool ok = _deleteFolder(folder);
+            if (!ok) { PushStatus(_loc.GetString("Status_CouldNotDeleteFolder")); return; }
+
+            PushStatus(_loc.GetString("Status_FolderDeleted", folder.Name));
             Refresh();
         }
 

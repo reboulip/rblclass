@@ -314,6 +314,83 @@ namespace RBLclass.Outlook.Adapter
             }
         }
 
+        public bool RenameFolder(FolderNode folder, string newName)
+        {
+            if (folder == null || string.IsNullOrWhiteSpace(newName)) return false;
+
+            using (var session = new ComRef<OutlookOM.NameSpace>(_app.Session))
+            {
+                OutlookOM.Folder rawFolder;
+                try { rawFolder = (OutlookOM.Folder)session.Value.GetFolderFromID(
+                    folder.EntryId, folder.StoreId); }
+                catch { return false; }
+
+                using (var f = new ComRef<OutlookOM.Folder>(rawFolder))
+                {
+                    try
+                    {
+                        f.Value.Name = newName;
+                        return true;
+                    }
+                    catch (COMException ex)
+                    {
+                        Log.Warning(ex, "RenameFolder: Outlook refused rename of {Path} to \"{NewName}\" (HRESULT {Hr:X8}).",
+                            folder.FullPath, newName, ex.HResult);
+                        return false;
+                    }
+                }
+            }
+        }
+
+        public int CountFolderContents(FolderNode folder)
+        {
+            if (folder == null) return 0;
+
+            using (var session = new ComRef<OutlookOM.NameSpace>(_app.Session))
+            {
+                OutlookOM.Folder rawFolder;
+                try { rawFolder = (OutlookOM.Folder)session.Value.GetFolderFromID(
+                    folder.EntryId, folder.StoreId); }
+                catch { return 0; }
+
+                using (var f = new ComRef<OutlookOM.Folder>(rawFolder))
+                using (var items = new ComRef<OutlookOM.Items>(f.Value.Items))
+                using (var subfolders = new ComRef<OutlookOM.Folders>(f.Value.Folders))
+                {
+                    return Safe(() => items.Value.Count, 0)
+                         + Safe(() => subfolders.Value.Count, 0);
+                }
+            }
+        }
+
+        public bool DeleteFolder(FolderNode folder)
+        {
+            if (folder == null) return false;
+
+            using (var session = new ComRef<OutlookOM.NameSpace>(_app.Session))
+            {
+                OutlookOM.Folder rawFolder;
+                try { rawFolder = (OutlookOM.Folder)session.Value.GetFolderFromID(
+                    folder.EntryId, folder.StoreId); }
+                catch { return false; }
+
+                using (var f = new ComRef<OutlookOM.Folder>(rawFolder))
+                {
+                    try
+                    {
+                        f.Value.Delete();
+                        return true;
+                    }
+                    catch (COMException ex)
+                    {
+                        Log.Warning(ex, "DeleteFolder: Outlook refused delete of {Path} (HRESULT {Hr:X8}).",
+                            folder.FullPath, ex.HResult);
+                        return false;
+                    }
+                }
+            }
+        }
+
         /// <summary>Store id of the folder containing a mail item (via its parent).</summary>
         private static string GetItemStoreId(OutlookOM.MailItem mail)
         {

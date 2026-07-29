@@ -100,6 +100,16 @@
                             FontFamily="Segoe UI Emoji" FontSize="14"
                             Click="ManageAttachments_Click"
                             ToolTip="{loc:Loc Key=MainPane_ManageAttachments_ToolTip}" />
+                    <Button DockPanel.Dock="Right" Padding="6,1" Margin="0,0,6,0"
+                            Content="{loc:Loc Key=MainPane_UpdateFolders_Button}"
+                            FontFamily="Segoe UI Emoji" FontSize="14"
+                            Click="UpdateFolders_Click"
+                            ToolTip="{loc:Loc Key=MainPane_UpdateFolders_ToolTip}" />
+                    <Button DockPanel.Dock="Right" Padding="6,1" Margin="0,0,6,0"
+                            Content="{loc:Loc Key=MainPane_Settings_Button}"
+                            FontFamily="Segoe UI Emoji" FontSize="14"
+                            Click="Settings_Click"
+                            ToolTip="{loc:Loc Key=MainPane_Settings_ToolTip}" />
                     <Ellipse DockPanel.Dock="Right" Width="10" Height="10" Margin="0,0,6,0"
                              VerticalAlignment="Center" ToolTip="{Binding IndexStatusToolTip}">
                         <Ellipse.Style>
@@ -150,6 +160,12 @@
                                 <ContextMenu>
                                     <MenuItem Header="{loc:Loc Key=MainPane_NewSubfolder_MenuItem}"
                                               Click="NewSubfolder_Click" />
+                                    <MenuItem Header="{loc:Loc Key=MainPane_RenameFolder_MenuItem}"
+                                              Click="RenameFolder_Click"
+                                              IsEnabled="{Binding IsRenameEnabled}" />
+                                    <MenuItem Header="{loc:Loc Key=MainPane_DeleteFolder_MenuItem}"
+                                              Click="DeleteFolder_Click"
+                                              IsEnabled="{Binding IsDeleteEnabled}" />
                                 </ContextMenu>
                             </DockPanel.ContextMenu>
                             <Button DockPanel.Dock="Right" Content="👁" Width="22" Padding="0" VerticalAlignment="Top"

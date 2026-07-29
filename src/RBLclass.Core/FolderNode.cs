@@ -45,6 +45,14 @@ namespace RBLclass.Core
         /// </summary>
         public string ParentEntryId { get; }
 
+        /// <summary>
+        /// True when this folder is the store's top-level root
+        /// (<see cref="ParentEntryId"/> is null). Renaming a store root is
+        /// blocked in the UI to avoid confusing Outlook's store list
+        /// (v2.10.0.0 A1).
+        /// </summary>
+        public bool IsStoreRoot => ParentEntryId == null;
+
         /// <summary>Display name of this folder (leaf segment).</summary>
         public string Name { get; }
 

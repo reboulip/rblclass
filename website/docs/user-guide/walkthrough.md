@@ -21,17 +21,29 @@ splitter; the position is remembered across restarts.
 
 ## The ribbon tab
 
-If you close the pane, the **RBLclass** ribbon tab has four buttons:
+The **RBLclass** ribbon tab has two buttons:
 
 - **RBLclass pane** — show or hide the pane.
-- **Refresh folders** — re-scan your mailboxes so folders you created or renamed
-  directly in Outlook show up in search.
-- **Settings** — all options (see the [Settings reference](#settings-reference)).
 - **About** — version, author and technical information.
+
+**Settings** and **Update folders** have moved into the pane itself (see
+[the icon-button row](#pane-icon-buttons) below).
 
 !!! tip "Keyboard access to the pane"
     Press ++alt++, then ++r++ (the RBLclass tab), then ++r++ again (the pane
     button).
+
+## Pane icon buttons
+
+The top row of the task pane contains a set of icon buttons:
+
+- **⚙️** (Settings) — opens the Settings dialog (see the
+  [Settings reference](#settings-reference)).
+- **🔄** (Update folders) — re-scans your mailboxes so folders you created or
+  renamed directly in Outlook appear in search. The index-status dot turns yellow
+  while the scan runs and green when it finishes.
+- **Auto-class**, **Save As**, and **Manage attachments** icon buttons (described
+  under [Classify](#classify) and [Attachment management](#attachment-management)).
 
 ## Features
 
@@ -48,6 +60,20 @@ short pause. For each result row:
 - The **👁** button opens that folder in Outlook.
 - Right-click → **Add subfolder…** creates a sub-folder under it (with a targeted
   re-index so it's searchable straight away).
+- Right-click → **Rename folder…** opens a small dialog pre-filled with the
+  folder's current name; on confirm, the folder is renamed in the live Outlook
+  store and the index is refreshed. This item is grayed out on a store's root
+  folder (the top-level PST entry) — store roots cannot be renamed. Any other
+  folder or sub-folder can be renamed. If Outlook refuses the name (for example,
+  a duplicate or a reserved name), a status message is shown instead of a crash.
+- Right-click → **Delete folder** removes the folder from the Outlook store. A
+  confirmation dialog first tells you how many mail items and direct sub-folders
+  the folder contains; clicking **Yes** proceeds even when the folder is
+  non-empty. Outlook's soft-delete semantics apply: the folder is moved to
+  *Deleted Items* unless it is already inside *Deleted Items*, in which case it
+  is permanently deleted. This item is grayed out on a store's root folder, the
+  same restriction as **Rename folder**. On failure, a status message is shown in
+  the pane instead of a crash.
 - The **⤢** button cycles how that row shows its path (see *Search result path
   display* in Settings).
 
@@ -125,8 +151,9 @@ and forwards, and from filed copies.
 
 ## Settings reference
 
-Open **Settings** from the RBLclass ribbon group. Every change applies and
-persists immediately — there is no "Apply" button, and closing is always safe.
+Open **Settings** by clicking the **⚙️** button in the top icon row of the
+RBLclass pane. Every change applies and persists immediately — there is no
+"Apply" button, and closing is always safe.
 
 ### Folder search
 
@@ -138,7 +165,7 @@ persists immediately — there is no "Apply" button, and closing is always safe.
 | Search result path display | Single line | How each result row shows its folder path: a single left-trimmed line, the full path wrapped to the pane width, or the full path with one sub-folder per line. The per-row ⤢ button cycles all three for that row. |
 | Maximum results to display | 50 | Cap on the number of result rows. |
 | Search after at least N characters | 2 | Avoids searching on a single letter. Range 1–10. |
-| Pause before searching (ms) | 200 | Search fires this many milliseconds after your last keystroke. Range 0–2000. |
+| Pause before searching (ms) | 200 | Search fires this many milliseconds after your last keystroke. The same delay is also used to debounce the "N selected" mail counter in the pane, so a burst of rapid Outlook selection changes collapses into a single update. Range 0–2000. |
 
 ### Classify
 
@@ -155,9 +182,13 @@ persists immediately — there is no "Apply" button, and closing is always safe.
 ### External-sender banner
 
 *Learn from selected mail* captures the banner from the currently selected mail;
-*Forget* clears it; *Diagnose* reports whether the current mail matches. Then
-three toggles (all off by default, and only useful once a banner is learned):
-strip on reply/forward, strip on classify, and strip during Auto-class.
+*Forget* clears it; *Diagnose* reports whether the current mail matches;
+*Save diagnostic file* writes a self-contained HTML file to
+`%LocalAppData%\RBLclass\diagnostics\` — the mail body with the matched banner
+highlighted — useful for sending to your support contact when diagnosing why a
+banner is not stripped correctly. Then three toggles (all off by default, and
+only useful once a banner is learned): strip on reply/forward, strip on classify,
+and strip during Auto-class.
 
 ### Sending guards
 
@@ -211,7 +242,8 @@ override it to English, Français or Deutsch.
 
 The folder index is built automatically in the background when Outlook starts. If
 you create or rename a folder directly in Outlook and it doesn't appear in
-search, click **Refresh folders** on the ribbon.
+search, click the **🔄** (Update folders) button in the top icon row of the
+RBLclass pane.
 
 ## Suggesting improvements / reporting problems
 

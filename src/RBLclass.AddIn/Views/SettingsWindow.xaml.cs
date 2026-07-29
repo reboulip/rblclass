@@ -39,6 +39,9 @@ namespace RBLclass.AddIn.Views
         private void DiagnoseBanner_Click(object sender, RoutedEventArgs e) =>
             (DataContext as SettingsViewModel)?.DiagnoseSelectedMail();
 
+        private void SaveDiagBanner_Click(object sender, RoutedEventArgs e) =>
+            (DataContext as SettingsViewModel)?.SaveDiagnosticArtifact();
+
         private void AddFavoriteFolder_Click(object sender, RoutedEventArgs e) =>
             (DataContext as SettingsViewModel)?.AddFavoriteFolder();
 
