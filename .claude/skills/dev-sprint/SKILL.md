@@ -63,8 +63,12 @@ Planned changes:
 Proposed version: <roadmap version>
 ```
 
-Options: **"Confirm <roadmap version>"** / the user may select "Other" to
-provide a different version string.
+Call `AskUserQuestion` with at least **two explicit options** — the tool
+rejects a single-entry `options` array, so don't rely on an implicit "Other"
+affordance:
+- `"Confirm <roadmap version>"` (recommended)
+- `"Other — provide a different version"` (generic escape hatch; the user
+  can free-type a specific version string via the tool's own "Other" input)
 
 ### 0c — Stamp version files (if needed)
 
@@ -80,7 +84,7 @@ If the confirmed version differs from the current `AssemblyVersion` in
    ```
    Bump version to <version>
 
-   Co-Authored-By: Claude Sonnet 4.6 <noreply@anthropic.com>
+   Co-Authored-By: Claude Sonnet 5 <noreply@anthropic.com>
    ```
 
 If the versions already match, skip the file edits and the commit — just

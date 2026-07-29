@@ -90,9 +90,15 @@ Wait for the answers before doing anything else.
 
 **Not verifiable on the dev machine.** CLAUDE.md documents a category of
 behavior that structurally cannot be exercised on this machine (e.g.
-S-MIME/Stormshield mail, the external-sender banner). If the user reports a
-question can't be answered for this reason, don't treat it as a fail and
-don't block the sprint on it — follow Step 8c instead.
+S-MIME/Stormshield mail, the external-sender banner) — the dev machine never
+receives such mail; only a real target environment does. Do **not** ask the
+user to live-test any verification question that depends on receiving an
+S-MIME/Stormshield message or an external-sender-banner mail — skip those
+questions proactively rather than asking and waiting for the user to say
+they can't answer. Go straight to Step 8c for the item (or the affected
+sub-parts of it). Any other verification question in the same brief that
+does *not* depend on that kind of mail (e.g. a UI change, a setting, logic
+exercisable on ordinary mail) still goes through the normal Step 7 ask.
 
 ## Step 8a — All pass → commit
 
@@ -159,7 +165,14 @@ Follow the precedent already in `ROADMAP.md` (v2.6.0.0 B3, C1; v2.9.0.0 B1):
    before pilot)` to the item's text, naming the specific behavior that
    still needs a real-target check.
 3. Commit and comment on the GH issue as in Step 8a, but note in the issue
-   comment that verification is pending real-target testing.
+   comment that verification is pending real-target testing, and label it
+   so it's not lost track of (mirrors `/make-release`'s pending-bucket
+   handling):
+   ```powershell
+   gh label create awaiting-verification --color fbca04 `
+     --description "Fix shipped; awaiting reporter or real-target confirmation before closing" 2>$null
+   gh issue edit <N> --add-label awaiting-verification
+   ```
 
 ## Rules
 
