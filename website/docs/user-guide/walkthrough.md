@@ -182,9 +182,13 @@ RBLclass pane. Every change applies and persists immediately — there is no
 ### External-sender banner
 
 *Learn from selected mail* captures the banner from the currently selected mail;
-*Forget* clears it; *Diagnose* reports whether the current mail matches. Then
-three toggles (all off by default, and only useful once a banner is learned):
-strip on reply/forward, strip on classify, and strip during Auto-class.
+*Forget* clears it; *Diagnose* reports whether the current mail matches;
+*Save diagnostic file* writes a self-contained HTML file to
+`%LocalAppData%\RBLclass\diagnostics\` — the mail body with the matched banner
+highlighted — useful for sending to your support contact when diagnosing why a
+banner is not stripped correctly. Then three toggles (all off by default, and
+only useful once a banner is learned): strip on reply/forward, strip on classify,
+and strip during Auto-class.
 
 ### Sending guards
 

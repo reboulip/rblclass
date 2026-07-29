@@ -465,7 +465,12 @@ text as the specification.
       user-triggered only, local machine, same trust boundary as the
       existing log files. New resource keys for the "Save diagnostic"
       button/tooltip and a save-confirmation status message, translated
-      FR/DE. [#46]
+      FR/DE. [#46] - shipped, pending tests (not verifiable on the dev
+      machine per the testing strategy above; no live transport-rule
+      banner is injected into mail on this dev account, so the "Save
+      diagnostic file" action, its highlighted-match rendering, and the
+      lazy `diagnostics\` folder creation need a real-target re-check
+      before pilot)
 
 ---
 

@@ -413,6 +413,15 @@
   <data name="Settings_Banner_Diag_Unavailable" xml:space="preserve">
     <value>Diagnose nicht verfügbar (keine Auswahlquelle).</value>
   </data>
+  <data name="Settings_Banner_SaveDiag_Button" xml:space="preserve">
+    <value>Diagnosedatei speichern</value>
+  </data>
+  <data name="Settings_Banner_SaveDiag_Saved" xml:space="preserve">
+    <value>Gespeichert unter: {0}</value>
+  </data>
+  <data name="Settings_Banner_SaveDiag_Error" xml:space="preserve">
+    <value>Speichern fehlgeschlagen: {0}</value>
+  </data>
   <data name="Settings_SendingGuards_Header" xml:space="preserve">
     <value>Sende-Sicherungen</value>
   </data>

@@ -12,8 +12,19 @@ namespace RBLclass.Core
         public BannerDiagnosticOutcome Outcome { get; }
         public int SignatureLength { get; }
         public bool MatchedExact { get; }
-        public BannerDiagnosticResult(BannerDiagnosticOutcome outcome, int sigLen, bool exact)
-        { Outcome = outcome; SignatureLength = sigLen; MatchedExact = exact; }
+
+        /// <summary>Zero-based index of the matched banner substring in the original HTML body, or -1 when there is no match. (v2.10.0.0 D1)</summary>
+        public int MatchIndex { get; }
+
+        /// <summary>Length of the matched banner substring in the original HTML body, or 0 when there is no match. (v2.10.0.0 D1)</summary>
+        public int MatchLength { get; }
+
+        public BannerDiagnosticResult(BannerDiagnosticOutcome outcome, int sigLen, bool exact,
+                                       int matchIndex = -1, int matchLength = 0)
+        {
+            Outcome = outcome; SignatureLength = sigLen; MatchedExact = exact;
+            MatchIndex = matchIndex; MatchLength = matchLength;
+        }
     }
 
     /// <summary>
@@ -142,7 +153,8 @@ namespace RBLclass.Core
             string needle = bannerSignature.Trim();
             int idx = htmlBody.IndexOf(needle, StringComparison.Ordinal);
             if (idx >= 0)
-                return new BannerDiagnosticResult(BannerDiagnosticOutcome.Found, needle.Length, true);
+                return new BannerDiagnosticResult(BannerDiagnosticOutcome.Found, needle.Length, true,
+                                                   matchIndex: idx, matchLength: needle.Length);
 
             var pattern = BuildWhitespaceTolerantPattern(needle);
             if (pattern != null)
@@ -151,7 +163,8 @@ namespace RBLclass.Core
                 {
                     var m = Regex.Match(htmlBody, pattern, RegexOptions.None, MatchTimeout);
                     if (m.Success)
-                        return new BannerDiagnosticResult(BannerDiagnosticOutcome.Found, needle.Length, false);
+                        return new BannerDiagnosticResult(BannerDiagnosticOutcome.Found, needle.Length, false,
+                                                           matchIndex: m.Index, matchLength: m.Length);
                 }
                 catch (RegexMatchTimeoutException) { }
             }

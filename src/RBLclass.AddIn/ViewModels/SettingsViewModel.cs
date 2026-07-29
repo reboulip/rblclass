@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Globalization;
+using System.IO;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using RBLclass.AddIn.Localization;
@@ -34,16 +35,23 @@ namespace RBLclass.AddIn.ViewModels
         private string _bannerDiagnosticStatus = string.Empty;
         private bool _archiveFolderIsStale;
         private string _favoriteFolderStatus = string.Empty;
+        private readonly string _diagnosticsDirectory;
 
         /// <param name="captureSelectedHtml">
         /// Returns the HTML body of the currently selected mail, for the "learn
         /// banner" capture (v2.2). Null/unset disables the Learn button.
         /// </param>
-        public SettingsViewModel(ISettingsStore store, Func<string> captureSelectedHtml = null, IAppLog log = null)
+        /// <param name="diagnosticsDirectory">
+        /// Directory to write banner diagnostic artifacts into (v2.10.0.0 D1).
+        /// Null/unset disables the "Save diagnostic file" action.
+        /// </param>
+        public SettingsViewModel(ISettingsStore store, Func<string> captureSelectedHtml = null,
+                                 IAppLog log = null, string diagnosticsDirectory = null)
         {
             _store = store ?? throw new ArgumentNullException(nameof(store));
             _captureSelectedHtml = captureSelectedHtml;
             _log = log ?? NullAppLog.Instance;
+            _diagnosticsDirectory = diagnosticsDirectory;
             _loc = TaskPaneServices.Localization;
             _settings = Settings.Load(_store);
             _maxResultsText = _settings.MaxResults.ToString(CultureInfo.InvariantCulture);
@@ -511,6 +519,101 @@ namespace RBLclass.AddIn.ViewModels
                     BannerDiagnosticStatus = string.Empty;
                     break;
             }
+        }
+
+        /// <summary>
+        /// Capture the selected mail's HTML body, run banner detection, and write
+        /// an annotated diagnostic HTML file to the diagnostics folder. Updates
+        /// <see cref="BannerDiagnosticStatus"/> with the saved path on success or
+        /// an error description on failure. No-op when there is no selection
+        /// source or no diagnostics directory configured. (v2.10.0.0 D1)
+        /// </summary>
+        public void SaveDiagnosticArtifact()
+        {
+            if (_captureSelectedHtml == null)
+            {
+                BannerDiagnosticStatus = _loc.GetString("Settings_Banner_Diag_Unavailable");
+                return;
+            }
+            if (string.IsNullOrEmpty(_diagnosticsDirectory))
+            {
+                BannerDiagnosticStatus = _loc.GetString("Settings_Banner_SaveDiag_Error", "Diagnostics directory not configured.");
+                return;
+            }
+
+            string html = _captureSelectedHtml();
+            string sig = _settings.ExternalBannerSignature;
+            var result = ExternalBannerStripper.Diagnose(html, sig);
+
+            string annotated = BuildAnnotatedHtml(html, result);
+            string timestamp = DateTime.Now.ToString("yyyyMMdd-HHmmss", CultureInfo.InvariantCulture);
+            string fileName = "banner-diag-" + timestamp + ".html";
+            string filePath = Path.Combine(_diagnosticsDirectory, fileName);
+
+            try
+            {
+                Directory.CreateDirectory(_diagnosticsDirectory);
+                File.WriteAllText(filePath, annotated, System.Text.Encoding.UTF8);
+                BannerDiagnosticStatus = _loc.GetString("Settings_Banner_SaveDiag_Saved", filePath);
+                _log.Information("Banner diagnostic artifact saved to {Path}", filePath);
+            }
+            catch (Exception ex)
+            {
+                _log.Warning(ex, "SaveDiagnosticArtifact failed");
+                BannerDiagnosticStatus = _loc.GetString("Settings_Banner_SaveDiag_Error", ex.Message);
+            }
+        }
+
+        /// <summary>
+        /// Produce a self-contained HTML string: the original body with the
+        /// matched banner range wrapped in a red-dashed inline style, plus a
+        /// leading metadata comment block. When there is no match the body is
+        /// included unmodified so the reporter can still see what the mail body
+        /// actually contains. (v2.10.0.0 D1)
+        /// </summary>
+        private static string BuildAnnotatedHtml(string htmlBody, BannerDiagnosticResult result)
+        {
+            string ts = DateTime.UtcNow.ToString("yyyy-MM-ddTHH:mm:ssZ", CultureInfo.InvariantCulture);
+            string matchType = result.Outcome == BannerDiagnosticOutcome.Found
+                ? (result.MatchedExact ? "exact" : "whitespace-tolerant")
+                : "n/a";
+
+            string meta = string.Format(
+                CultureInfo.InvariantCulture,
+                "<!-- RBLclass Banner Diagnostic\r\n" +
+                "     Timestamp   : {0}\r\n" +
+                "     Outcome     : {1}\r\n" +
+                "     MatchType   : {2}\r\n" +
+                "     SigLength   : {3}\r\n" +
+                "     MatchIndex  : {4}\r\n" +
+                "     MatchLength : {5}\r\n" +
+                "-->",
+                ts, result.Outcome, matchType,
+                result.SignatureLength, result.MatchIndex, result.MatchLength);
+
+            if (string.IsNullOrEmpty(htmlBody))
+                return meta + "\r\n<!-- (no mail body) -->";
+
+            string body = htmlBody;
+            if (result.Outcome == BannerDiagnosticOutcome.Found
+                && result.MatchIndex >= 0
+                && result.MatchLength > 0
+                && result.MatchIndex + result.MatchLength <= body.Length)
+            {
+                string pre = body.Substring(0, result.MatchIndex);
+                string match = body.Substring(result.MatchIndex, result.MatchLength);
+                string post = body.Substring(result.MatchIndex + result.MatchLength);
+                body = pre
+                     + "<span style=\"outline:2px dashed red;display:inline-block\">"
+                     + match
+                     + "</span>"
+                     + post;
+            }
+
+            int htmlAt = body.IndexOf("<html", StringComparison.OrdinalIgnoreCase);
+            if (htmlAt >= 0)
+                return body.Substring(0, htmlAt) + meta + "\r\n" + body.Substring(htmlAt);
+            return meta + "\r\n" + body;
         }
 
         /// <summary>Forget the learned banner (and turn the strip options off, since they'd be inert).</summary>

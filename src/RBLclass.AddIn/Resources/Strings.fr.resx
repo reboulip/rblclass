@@ -413,6 +413,15 @@
   <data name="Settings_Banner_Diag_Unavailable" xml:space="preserve">
     <value>Diagnostic indisponible (pas de source de sélection).</value>
   </data>
+  <data name="Settings_Banner_SaveDiag_Button" xml:space="preserve">
+    <value>Enregistrer le fichier de diagnostic</value>
+  </data>
+  <data name="Settings_Banner_SaveDiag_Saved" xml:space="preserve">
+    <value>Enregistré dans : {0}</value>
+  </data>
+  <data name="Settings_Banner_SaveDiag_Error" xml:space="preserve">
+    <value>Échec de l'enregistrement : {0}</value>
+  </data>
   <data name="Settings_SendingGuards_Header" xml:space="preserve">
     <value>Garde-fous à l'envoi</value>
   </data>

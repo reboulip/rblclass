@@ -38,14 +38,23 @@ administrator rights** and runs **inside the Outlook process**.
 - **Transient send-time metadata (not persisted):** recipient addresses and body
   text are inspected in memory by the send-time guards and discarded when the
   send completes. They are **not** written to disk or to the log.
-- **Mail content (never persisted):** classify operations move/copy items via the
-  Outlook Object Model; bodies and attachments are handled by Outlook, never
-  copied into RBLclass storage.
+- **Mail content (not persisted by classify operations):** classify operations
+  move/copy items via the Outlook Object Model; bodies and attachments are handled
+  by Outlook, never copied into RBLclass storage.
+- **Banner diagnostic artifact (persisted on demand):** when the user explicitly
+  clicks *"Save diagnostic file"* in **Settings → External sender banner**, the
+  full HTML body of the currently selected mail is written to
+  `%LocalAppData%\RBLclass\diagnostics\banner-diag-<timestamp>.html`, with any
+  matched banner substring visually highlighted and a metadata comment. This is
+  the **only** path that writes mail body content to disk. It is never triggered
+  automatically; the `diagnostics\` directory is created on first use; files
+  accumulate until the user manually deletes them (no rolling retention).
 
 ## Data at rest
 
-- **Location:** `%LocalAppData%\RBLclass\` (SQLite database + rolling Serilog
-  logs).
+- **Location:** `%LocalAppData%\RBLclass\` — SQLite database, rolling Serilog
+  logs under `logs\`, and on-demand banner diagnostic HTML files under
+  `diagnostics\`.
 - **Protection:** the standard per-user `%LocalAppData%` NTFS ACL — the correct
   OS trust boundary for non-secret, per-user data.
 - **No application-level encryption** (accepted by design): the contents (folder

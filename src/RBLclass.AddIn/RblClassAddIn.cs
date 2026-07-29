@@ -99,6 +99,7 @@ namespace RBLclass.AddIn
 
         private string _dbPath;
         private string _logDirectory;
+        private string _diagnosticsDirectory;
 
         public void OnConnection(object application,
                                  ext_ConnectMode connectMode,
@@ -1288,7 +1289,8 @@ namespace RBLclass.AddIn
                     DataContext = new SettingsViewModel(
                         _settingsStore,
                         () => _mailStore.GetSelectedItemHtmlBody(),
-                        new Logging.SerilogAppLog())
+                        new Logging.SerilogAppLog(),
+                        _diagnosticsDirectory)
                 }.ShowDialog();
 
                 // Re-seed the pane option defaults so the very next classify uses
@@ -1432,6 +1434,9 @@ namespace RBLclass.AddIn
             _dbPath = Path.Combine(dataDir, "rblclass.db");
             _logDirectory = Path.Combine(dataDir, "logs");
             Directory.CreateDirectory(_logDirectory);
+
+            // Created lazily by SaveDiagnosticArtifact on first use (v2.10.0.0 D1).
+            _diagnosticsDirectory = Path.Combine(dataDir, "diagnostics");
         }
 
         /// <summary>

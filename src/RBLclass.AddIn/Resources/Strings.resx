@@ -413,6 +413,15 @@
   <data name="Settings_Banner_Diag_Unavailable" xml:space="preserve">
     <value>Diagnostics unavailable (no selection source).</value>
   </data>
+  <data name="Settings_Banner_SaveDiag_Button" xml:space="preserve">
+    <value>Save diagnostic file</value>
+  </data>
+  <data name="Settings_Banner_SaveDiag_Saved" xml:space="preserve">
+    <value>Saved to: {0}</value>
+  </data>
+  <data name="Settings_Banner_SaveDiag_Error" xml:space="preserve">
+    <value>Save failed: {0}</value>
+  </data>
   <data name="Settings_SendingGuards_Header" xml:space="preserve">
     <value>Sending guards</value>
   </data>
