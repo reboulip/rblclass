@@ -67,14 +67,19 @@ tags on `main` with `gh release create vX.Y.Z`, attaching the install kit from
 
 Documentation ships **with the code, not after it**. This is a project rule, not
 a nicety: every change that affects user-facing behaviour, architecture, the
-tech stack, the testing/shipping process, or the security posture must include
-the matching update to this site **in the same commit**.
+tech stack, the testing/shipping process, or the security posture must be
+accompanied by the matching update to this site — **in the same commit** for
+a change made outside a sprint, and in the **sprint's single docs commit** for
+a change made by `/dev-pipeline`.
 
 - **Source:** `website/` (MkDocs Material). Pages are plain Markdown under
   `website/docs/`.
-- **Who writes it:** the `docs-writer` subagent (Sonnet, medium reasoning
-  effort) produces the update as part of the feature commit; `/feature-impl`
-  dispatches it after verification passes. See
+- **During a sprint:** `/dev-pipeline` hands each committed wave to the global
+  **`doc-keeper` subagent**, which lands all doc updates in one docs-only commit
+  at the end of the sprint, before the branch is merged.
+- **Outside a sprint:** delegate to the same **`doc-keeper` subagent** — give it
+  the change description and the diff, let it edit the affected pages, then stage
+  the result into the same commit as the change. See
   [`CLAUDE.md` → Documentation](https://github.com/reboulip/rblclass/blob/main/CLAUDE.md).
 - **CI:** `.github/workflows/docs.yml`
     - On a **pull request to `main`**, it builds the site with `--strict`, so a

@@ -331,7 +331,8 @@ areas — **Home**, **User Guide** (installation, quick start, walkthrough),
 
 **Documentation ships with the code, not after it.** Every change that
 alters any of the following MUST be accompanied by the matching docs update
-**in the same commit**:
+— **in the same commit** for a change made outside a sprint, and in the
+sprint's single docs commit for a change made by `/dev-pipeline` (see below):
 
 - user-visible behaviour, a setting, a default, or a keyboard shortcut →
   `website/docs/user-guide/` (the walkthrough settings tables are the
@@ -343,12 +344,39 @@ alters any of the following MUST be accompanied by the matching docs update
   boundary, a closed hardening item) → **both** `website/docs/security.md`
   (published) and `docs/security.md` (canonical internal threat model).
 
-Do not hand-write these updates inline. Delegate them to the
-**`docs-writer` subagent** (`.claude/agents/docs-writer.md`, Sonnet, medium
-reasoning effort): give it the change description (and the diff or roadmap
-item), let it edit the affected pages, then stage its output into the same
-commit as the change. `/feature-impl` does this automatically; for a manual
-change, invoke it the same way before committing.
+Do not hand-write these updates inline: delegate them to the global
+**`doc-keeper` subagent**. During a sprint, `/dev-pipeline` hands it each
+committed wave and lands its work in one docs-only commit before the merge.
+For a manual change outside a sprint, give it the change description and the
+diff, then stage its output into the same commit as the change.
+
+### Documentation Ownership
+
+The docs directories are `website/docs/` and `docs/security.md`, with nav in
+`website/mkdocs.yml`. A new page must be added to `nav:` in the same edit.
+
+| Page | Covers | Update it when… |
+|------|--------|-----------------|
+| `website/docs/index.md` | Landing page: pitch, feature bullets, requirements at a glance | A feature is added/removed/renamed, or a top-level requirement changes |
+| `website/docs/user-guide/installation.md` | Prerequisites, install, first run, data locations, update, uninstall | Install/uninstall flow, prerequisites, data paths, or the update mechanism change |
+| `website/docs/user-guide/quick-start.md` | The two-minute "file your first email" path | The core classify/search flow or its default keys change |
+| `website/docs/user-guide/walkthrough.md` | Full feature and **settings reference** tables, keyboard shortcuts | Any user-visible behaviour, setting, default, or shortcut changes |
+| `website/docs/developer-guide/tech-stack.md` | Runtimes, key components, dependency constraints, dev prerequisites | The stack, a dependency, a framework target, or a build prerequisite changes |
+| `website/docs/developer-guide/architecture.md` | Layering, COM/lifetime/threading rules, storage/SQLite, events, perf targets | The architecture, a coding rule, the schema policy, or a perf target changes |
+| `website/docs/developer-guide/testing.md` | What's auto-tested vs. hand-validated, CI, the feature pipeline | The test strategy, CI, or resource-parity enforcement changes |
+| `website/docs/developer-guide/shipping.md` | Branching, ship flow, packaging, signing, distribution, the docs pipeline | The branching/release/packaging/signing process changes |
+| `website/docs/security.md` | Trust boundaries, data handled, network posture, accepted-by-design, hardening backlog | The **security posture** changes (new data persisted, a network call, a new trust boundary, a hardening item closed) |
+
+- The **walkthrough settings tables** are the source of truth for user-facing
+  settings and defaults. When one changes, update the exact table row and check
+  whether `index.md` or `quick-start.md` also mention it.
+- A security-posture change goes in BOTH `website/docs/security.md` and the
+  canonical internal `docs/security.md`, kept consistent.
+- The developer pages paraphrase this file: mirror a changed rule in the matching
+  page, and do not invent rules that are not here.
+- Match the existing voice: concise, second person for user docs, present tense,
+  Material admonitions (`!!! note`, `!!! warning`, `!!! danger`) where the pages
+  already use them. Prefer extending a page over adding one.
 
 CI (`.github/workflows/docs.yml`) builds the site with `--strict` on every
 pull request to `main` (a broken link or a page missing from `nav:` fails
@@ -357,28 +385,82 @@ the PR merges). Keep internal links valid so the strict build passes.
 
 ## Sprint development workflow
 
-Feature work is driven by three skills/subagents that form a pipeline:
+Sprints run through the generic **`/dev-pipeline`** skill and issue triage
+through **`/gh-issues`**, both from the global config
+(`~/.claude/skills/`, repo `reboulip/claude-config`). The only project skills
+are `/make-release` and `/reload-addin`. The generic skills defer to
+`CLAUDE.md` for project conventions; these are RBLclass's, and they override
+the generic defaults wherever the two disagree.
 
-- **`feature-prep` subagent** (`.claude/agents/feature-prep.md`,
-  Sonnet 4.6, read-only) — given a roadmap item, searches the codebase
-  and produces a structured Implementation Brief: affected files with
-  line references, required changes, localization keys, xUnit test cases,
-  and verification questions. Never writes anything.
-- **`/feature-impl` skill** (`.claude/skills/feature-impl/`) — consumes
-  an Implementation Brief from context and implements it end-to-end:
-  code changes → localization → xUnit → build check → `/reload-addin` →
-  `AskUserQuestion` for user verification → commit (with the ROADMAP.md
-  checkbox update). Loops on failure; stops and asks for guidance after
-  3 failed fix attempts.
-- **`/dev-sprint` skill** (`.claude/skills/dev-sprint/`) — runs the full
-  active sprint (highest `vX.X.X` section with unchecked items in
-  `ROADMAP.md`) by orchestrating the two above: preparation for item N+1
-  starts in the background while item N is being implemented.
+### ROADMAP conventions
 
-Invoke `/dev-sprint` to work through a sprint automatically. Invoke
-`/feature-impl` directly (with a brief in context, or it will call
-`feature-prep` first) for a single item. Never commit a feature without
-a passing user verification — this is enforced by `/feature-impl`.
+- Sprint milestones are `## vX.X.X.X — <theme>` sections, with items
+  `- [ ] **A1.** …` grouped under `### A — <topic>` headings.
+- **The active milestone is the highest-versioned `## vX.X.X.X` section with
+  an unchecked item**, not the first open one. Older sections keep unchecked
+  items tagged `- shipped, pending tests`: those await a real-target re-check
+  and are out of sprint scope, as are `## Phase N` sections and the open
+  carried-over items.
+- An item is a **self-contained detailed spec**, implementable by a smaller
+  model without the planning conversation — not a one-liner. Dependencies use
+  `(requires: <label>)` and GitHub issues `[#N]`.
+
+### Toolchain
+
+- **Test command:** `dotnet test tests/RBLclass.Core.Tests/ --verbosity minimal`.
+  Full suite: under 1s of test time for 344 tests, measured 2026-11-05, so
+  always run all of it.
+- **Formatter:** none is enforced (`.editorconfig` only, no format CI gate);
+  skip the pipeline's format steps.
+- **Sprint branch:** `feature/<milestone-slug>` off `develop`, merged back with
+  `--ff-only`. The integration branch is `develop`, the release branch `main`.
+- **Release:** `/make-release`, not the generic `/release`.
+- **Docs build:** `mkdocs build --strict -f website/mkdocs.yml` (CI runs it; run
+  it locally only if `mkdocs` is installed).
+
+### Sprint start: version stamp
+
+Before branching, confirm the target version with the user, then update
+`AssemblyVersion` and `AssemblyFileVersion` in
+`src/RBLclass.AddIn/Properties/AssemblyInfo.cs` and `AssemblyVersion` in
+`.claude/skills/make-release/release.config.json`, and commit `Bump version to
+<version>`. A changed `AssemblyVersion` changes the COM strong name, so target
+workstations need a reinstall: remind the user. Skip this on a resumed sprint.
+
+### Per-wave gate, between the green tests and the wave commit
+
+**Never commit a wave without a passing user verification.** After
+`/test-select` is green:
+
+1. Build the add-in. `msbuild` is not on PATH, and the lookup must require the
+   SDK component or it picks a Build Tools instance that cannot resolve
+   `Microsoft.NET.Sdk`:
+   ```powershell
+   $vswhere = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe"
+   $msbuild = & $vswhere -latest -prerelease -products * -requires Microsoft.Component.MSBuild Microsoft.NetCore.Component.SDK -find "MSBuild\**\Bin\MSBuild.exe" | Select-Object -First 1
+   & $msbuild "src\RBLclass.AddIn\RBLclass.AddIn.csproj" /p:Configuration=Debug "/p:Platform=Any CPU" /t:Build /v:minimal /nologo
+   ```
+2. Run `/reload-addin`, warning the user that it closes Outlook, and say what
+   to look for.
+3. Ask the wave's verification questions through `AskUserQuestion` (at most 4
+   per call, each offering at least `Yes — works as expected` and
+   `No — something is wrong`), ending with a free-text `Any other feedback?`.
+4. On any failure, diagnose, fix and repeat from step 1. After 3 failed fix
+   attempts, pause and ask the user for guidance.
+
+**Not verifiable on the dev machine.** Never ask the user to live-test anything
+that depends on receiving S/MIME/Stormshield mail or an external-sender banner:
+this machine never gets such mail. Commit those parts anyway, but leave the
+checkbox `- [ ]` and append `- shipped, pending tests (not verifiable on the dev
+machine per the testing strategy above; re-verify <what to check> on the real
+target before pilot)`, then add the `awaiting-verification` label to the issue.
+Anything else in the same item still goes through the normal questions.
+
+### After each wave commit
+
+For every `[#N]` in a committed item, post `Implemented in commit <sha link>.
+Forecasted release: <version>.` with `gh issue comment`, noting any pending
+real-target verification. Do not push: that remains a separate user action.
 
 ## Repository management
 

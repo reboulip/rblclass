@@ -69,16 +69,28 @@ documentation site** — see [Shipping → Documentation](shipping.md#documentat
 
 ## The feature pipeline
 
-Feature work runs through a three-part Claude-assisted pipeline that bakes
-testing and verification in:
+Feature work runs through the generic **`/dev-pipeline`** skill (global,
+`~/.claude/skills/`) and issue triage through **`/gh-issues`** (also global).
+The only project-local skills are `/make-release` and `/reload-addin`.
 
-1. **`feature-prep`** (read-only subagent) turns a roadmap item into an
-   Implementation Brief, including the exact **xUnit test cases** to add.
-2. **`/feature-impl`** implements the brief, adds those tests, runs
-   `dotnet test`, builds, reloads into Outlook, and then asks the human the
-   brief's **verification questions** — a feature is never committed until every
-   verification passes (or is explicitly marked not-verifiable-on-dev).
-3. **`/dev-sprint`** orchestrates the two across a whole sprint.
+A sprint runs in dependency-ordered **waves**:
 
-The rule *"never commit a feature without a passing user verification"* is
-enforced inside `/feature-impl`.
+1. A `sprint-planner` subagent groups roadmap items into waves at the start
+   of the sprint.
+2. `feature-forecast` subagents produce Implementation Briefs (including the
+   **xUnit test cases** to add) one wave ahead, in parallel with the previous
+   wave's implementation.
+3. Each wave is implemented, then tested with `/test-select` (`dotnet test`).
+4. **Per-wave gate** — before the wave is committed:
+    - Build the add-in with MSBuild.
+    - Run `/reload-addin` to reload it into a live Outlook session.
+    - Ask the wave's **verification questions** via `AskUserQuestion`; a wave
+      is never committed until every verification passes.
+5. The wave lands as **one commit** on a `feature/<milestone-slug>` branch off
+   `develop`, merged back with `--ff-only`.
+
+**Not verifiable on the dev machine.** Items that depend on receiving
+S/MIME (Stormshield) mail or an external-sender banner are committed with the
+checkbox left open and a `- shipped, pending tests` note, and the linked issue
+gets the `awaiting-verification` label. Everything else in the same item still
+goes through the normal verification questions.
