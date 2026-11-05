@@ -142,7 +142,7 @@ if (-not (Test-Path $vswhere)) {
 }
 
 $msbuild = & $vswhere -latest -prerelease -products * `
-    -requires Microsoft.Component.MSBuild `
+    -requires Microsoft.Component.MSBuild Microsoft.NetCore.Component.SDK `
     -find "MSBuild\**\Bin\MSBuild.exe" | Select-Object -First 1
 if (-not $msbuild -or -not (Test-Path $msbuild)) {
     throw "MSBuild not found via vswhere."

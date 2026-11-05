@@ -60,7 +60,7 @@ errors before reloading into Outlook:
 
 ```powershell
 $vswhere = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe"
-$msbuild = & $vswhere -latest -prerelease -products * -requires Microsoft.Component.MSBuild -find "MSBuild\**\Bin\MSBuild.exe" | Select-Object -First 1
+$msbuild = & $vswhere -latest -prerelease -products * -requires Microsoft.Component.MSBuild Microsoft.NetCore.Component.SDK -find "MSBuild\**\Bin\MSBuild.exe" | Select-Object -First 1
 if (-not $msbuild -or -not (Test-Path $msbuild)) { throw "MSBuild not found via vswhere." }
 & $msbuild "src\RBLclass.AddIn\RBLclass.AddIn.csproj" /p:Configuration=Debug "/p:Platform=Any CPU" /t:Build /v:minimal /nologo
 ```

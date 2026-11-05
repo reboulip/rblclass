@@ -124,7 +124,7 @@ $env:PATH = [System.Environment]::GetEnvironmentVariable("PATH", "Machine") + ";
 $vswhere = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe"
 if (-not (Test-Path $vswhere)) { throw "vswhere.exe not found at '$vswhere'. Install Visual Studio 2022." }
 $msbuild = & $vswhere -latest -prerelease -products * `
-    -requires Microsoft.Component.MSBuild `
+    -requires Microsoft.Component.MSBuild Microsoft.NetCore.Component.SDK `
     -find "MSBuild\**\Bin\MSBuild.exe" | Select-Object -First 1
 if (-not $msbuild -or -not (Test-Path $msbuild)) { throw "MSBuild not found via vswhere." }
 
