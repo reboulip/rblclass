@@ -10,7 +10,7 @@ Reference docs from the legacy analysis:
 [docs/legacy-reimplementation-roadmap.md](docs/legacy-reimplementation-roadmap.md),
 [docs/parity-and-regression.md](docs/parity-and-regression.md).
 
-## Where we are (2026-07-11)
+## Where we are (2026-11-05)
 
 The rewritten add-in reached full legacy parity and shipped as **v2.0.0.0**,
 followed by feedback/refinement waves **v2.1.0.0** through **v2.8.0.0**
@@ -20,16 +20,19 @@ all complete and recorded in [history](docs/roadmap-history.md). **v2.9.0.0**
 [release](https://github.com/reboulip/rblclass/releases/tag/v2.9.0.0).
 **v2.9.1.0** (nav-rail freeze hotfix) shipped 2026-07-11 —
 [release](https://github.com/reboulip/rblclass/releases/tag/v2.9.1.0).
+**v2.10.0.0** (folder context-menu completeness, pane consolidation,
+selection-lag fix, banner diagnostics) shipped 2026-07-29 —
+[release](https://github.com/reboulip/rblclass/releases/tag/2.10.0.0).
 
 Open work: the two v2.6.0.0 items still pending live verification (banner
 strip B3, meeting classify C1), and v2.9.0.0 B1 (banner strip on
 reply/forward) likewise shipped pending live verification on the real
 target — **confirmed still broken on the real target on 2026-07-28**
 (issue #46: detection works, stripping doesn't); v2.10.0.0 D1 adds the
-diagnostic capability needed to root-cause it. **v2.10.0.0** (folder
-context-menu completeness, pane consolidation, selection-lag fix, banner
-diagnostics) is planned from the 2026-07-28 `/gh-issues` triage. Phases 8–9
-are forward-looking.
+diagnostic capability needed to root-cause it, itself shipped pending a
+real-target re-check. **v2.11.0.0** (install & encryption diagnostics,
+keyboard flow, attachments) is planned from the 2026-11-05 `/gh-issues`
+triage. Phases 8–9 are forward-looking.
 
 ## Testing & validation strategy (applies to every item)
 
@@ -170,6 +173,20 @@ are forward-looking.
       assigns until the next Outlook start. Verified interactively 2026-07-11
       (repeated Top/Bottom/Left/Right/floating redocks, no freeze; content and
       title clear of the rail on a Top-docked cold start).
+- [ ] **Fix the MSI "installer is no longer responding" failure** (requires:
+      v2.11.0.0 A2, plus a real log or a positive repro — blocked on field
+      data, so kept out of the sprint section). Root-cause analysis so far
+      (2026-11-05): the failure is not in RBLclass code, the package has no
+      custom action and no service, only files and HKCU keys. Leading
+      hypothesis: Outlook open during a major upgrade, holding
+      `RBLclass.AddIn.dll` and `e_sqlite3.dll` while
+      `MajorUpgrade Schedule="afterInstallInitialize"` removes the old files,
+      with no running-Outlook check and no files-in-use UI in the package.
+      Alternatives: EDR/antivirus slowing `msiexec` on an unsigned package;
+      Windows Installer service busy or degraded. None is proven. Apply the
+      fix the log points to. If it is the Outlook lock, a pre-install check
+      probably needs the `WixToolset.Util` extension — a new build
+      dependency, so ask before adding it. [#66]
 
 ---
 
@@ -471,6 +488,130 @@ text as the specification.
       diagnostic file" action, its highlighted-match rendering, and the
       lazy `diagnostics\` folder creation need a real-target re-check
       before pilot)
+
+---
+
+## v2.11.0.0 — feedback wave: install & encryption diagnostics, keyboard flow, attachments
+
+Planned 2026-11-05 from the open GitHub issues (`/gh-issues` triage). Each
+item embeds the implementation decisions made with the user — treat the item
+text as the specification.
+
+### A — Fixes & diagnostics
+
+- [ ] **A1.** Fix the saved-attachment folder link for paths containing
+      accented characters. `AttachmentLabelFormatter.PathToFileUri`
+      (`AttachmentLabelFormatter.cs:68`) uses `Uri.AbsoluteUri`, which
+      percent-encodes non-ASCII as UTF-8 (`é` → `%C3%A9`); the likely fault
+      is the Windows shell decoding such `file:` URLs with the local code
+      page. Decided: keep Unicode characters raw in the href and percent-encode
+      only spaces and URI-reserved characters (`%`, `#`, `?`), still
+      HTML-encoded for the attribute. Add xUnit cases with accented paths,
+      spaces and a UNC path (existing tests are ASCII-only). The in-modal link
+      goes through `Process.Start("explorer.exe", ...)` and is not affected.
+      Confirm the root cause by clicking a generated link on Windows. [#64]
+
+- [ ] **A2.** Make MSI failures diagnosable and correct the install guide.
+      Set the `MsiLogging` property in `installer/Package.wxs` so every
+      install writes a verbose log to `%TEMP%` with no command-line switch.
+      Add an install-troubleshooting section to
+      `website/docs/user-guide/installation.md`: the log location, the
+      `msiexec /i <msi> /l*vx <log>` command, the `MsiInstaller` entries in
+      Event Viewer, and the PowerShell install kit as a fallback. Fix that
+      page's install steps: add "close Outlook first" (today only
+      `docs/installation-guide.html` says so) and drop "Next → Install →
+      Finish" (the package has no `WixUI` wizard). Run the discriminating
+      test on Windows and record the result on the issue: install 2.9.1.0,
+      leave Outlook open, run the 2.10.0.0 MSI with `/l*vx`. The actual fix
+      is the carried-over item above. [#66]
+
+- [ ] **A3.** Harden and instrument encrypted-mail handling during classify.
+      Analysis (2026-11-05): the default single-destination classify is a pure
+      `mail.Move()` and cannot remove encryption from the code's side, but
+      two gaps exist. (1) `MarkTaskComplete` (`OutlookMailStore.cs:1197`,
+      reached from classify) and `MarkTaskIncomplete` (`:820`) call
+      `mail.Save()` with no S/MIME guard. (2) Every other guard relies only on
+      `MessageClass` starting with `IPM.Note.SMIME`; if Stormshield exposes
+      another class, none fires and even mark-as-read saves the item.
+      Decided: one shared protected-mail check in the adapter
+      (`MessageClass` plus `PR_SECURITY_FLAGS` via `PropertyAccessor` —
+      validate that property on the target first) replacing the scattered
+      `StartsWith` checks; guard both task-flag saves; add a trace gated by
+      `DiagnosticLogging` recording the class and security flags before and
+      after classify, plus which path ran (move, copy, safety copy). No
+      re-encryption and no user prompt in this item: decide those only if the
+      trace implicates RBLclass. Update `docs/security.md` and
+      `website/docs/security.md` through `docs-writer`. Not verifiable on
+      the dev machine per the testing strategy above; re-check on the real
+      target. [#62]
+
+### B — Pane & keyboard
+
+- [ ] **B1.** Remove the selection-count label at the bottom of the pane:
+      the row 8 `TextBlock` in `MainPaneView.xaml`, `SelectionSummary`, and
+      the `Status_MailSelected_One`/`_Other` and
+      `Status_NoMailSelectedSummary` keys in all three `.resx` files. Keep
+      `ClearPin()` firing on a selection change, and keep the banner
+      availability refresh in `RefreshSelection`. Drop the
+      `GetSelectedItems().Count` COM call from the debounced selection tick
+      if nothing else needs it. [#58]
+
+- [ ] **B2.** Expose the online documentation
+      (`https://reboulip.github.io/rblclass/`, English only) from a link in
+      the About window and a "?" button in the pane header next to Settings,
+      opened in the default browser. New label/tooltip resource keys,
+      translated FR/DE. [#59]
+
+- [ ] **B3.** Return keyboard focus to the search box after pane actions and
+      add a `/` shortcut. Replace `FocusSearchAfterClassify` with one shared
+      path that covers every pane action and modal close, and that does what
+      `FocusSearch` does (`Focus`, `Keyboard.Focus`, `SelectAll`); if WPF
+      focus alone does not take because Outlook holds Win32 focus, also move it
+      to the pane's host window. Decided: "open folder" is excluded, focus
+      stays in the explorer so the Delete key keeps working (v2.9.0.0 B2,
+      issue #49). `/`: when the search box does not have focus it takes
+      focus and the character is swallowed; when it has focus, `/` is typed
+      normally. Implement through `PreviewTextInput`, not `KeyDown`, so it
+      works on AZERTY and the numeric keypad. Pane-scoped only: no global
+      keyboard hook (EDR risk); from Outlook the existing ribbon keytip reaches
+      the pane. Update the walkthrough shortcuts table. [#60]
+
+- [ ] **B4.** Make keyboard focus more visible, moderately: from subtle to a
+      little less subtle, not vivid. `Controls.xaml` has no keyboard-focus
+      state today. Add a `Theme.FocusBorder` brush to both
+      `Brushes.Light.xaml` and `Brushes.Dark.xaml`, and a thin accent-coloured
+      outline on buttons, check boxes, radio buttons, text boxes, combo boxes
+      and list items, driven by `IsKeyboardFocused`. Validate the contrast in
+      dark mode with the user. [#61]
+
+### C — Attachments
+
+- [ ] **C1.** Add a default attachment folder and a grouped view to the
+      attachment disposition modal. Setting: a new key with a Browse control in
+      Settings → Attachments, pre-filling the target directory; ignored
+      (fields left empty) when the folder is unreachable, e.g. a disconnected
+      share. Grouped view: when `UseSameDirectory` is ticked, hide the per-row
+      controls and show one set of options (delete / save to / keep, plus the
+      path) and a list of the affected attachments with their sizes, updating
+      each row behind the scenes. That box is ticked by default, so the grouped
+      view becomes the standard one, and it now covers the action as well as
+      the folder: reword the label in EN/FR/DE. Unticking restores the per-row
+      view. Keep the apply-to-all rule testable in `RBLclass.Core` with xUnit
+      cases, and preserve the v2.7.1.0 A2 rule when returning to per-row mode.
+      [#65]
+
+- [ ] **C2.** Add an opt-in option to treat body images as removable
+      attachments (requires: C1). New setting in Settings → Attachments,
+      default off; v2.5.0.0 B2's exclusion of inline images stays the default.
+      When on, `cid:` inline images appear in the disposition modal, marked
+      as such and defaulting to Keep; embedded items, OLE objects and remote
+      `http` images stay out of scope. Silent removal
+      (`DeleteSilently`) never removes them, since signature logos are inline
+      images and the removal is irreversible. Removing an image must also
+      rewrite the HTML: add a pure `RBLclass.Core` rewriter, with xUnit tests,
+      replacing the matching `<img src="cid:...">` by a short text placeholder
+      so no broken image remains; expose the content id on `AttachmentInfo`.
+      Encrypted mail stays untouched. New resource keys translated FR/DE. [#63]
 
 ---
 
