@@ -46,7 +46,9 @@ namespace RBLclass.Core
                 ? Widen(items, skippedEncrypted, out wideningTableDisabled)
                 : Dedupe(items);
 
-            var flagged = widened.Where(i => SafeIsFlaggedIncomplete(i)).ToArray();
+            // Protected mail stays flagged and is not offered: completing its
+            // flag would need a Save(), which it must never get (v2.11.0.0 A3).
+            var flagged = widened.Where(i => SafeIsFlaggedIncomplete(i) && !SafeIsEncrypted(i)).ToArray();
 
             return new ClassifyPreflight(widened, flagged, skippedEncrypted, wideningTableDisabled);
         }
@@ -106,8 +108,10 @@ namespace RBLclass.Core
         {
             try
             {
-                bool markComplete = request.MarkTasksComplete && SafeIsFlaggedIncomplete(item);
+                bool markComplete = request.MarkTasksComplete
+                    && SafeIsFlaggedIncomplete(item) && !SafeIsEncrypted(item);
                 int filed = 0;
+                var protectionBefore = TraceProtection("before", "pending", item);
 
                 // Where the item lives now - so Undo can put a moved
                 // original back. Resolved before anything moves it.
@@ -175,7 +179,11 @@ namespace RBLclass.Core
                                     if (deletedItems != null)
                                     {
                                         var safety = _store.CopyItemToFolder(filedRef, deletedItems);
-                                        if (safety != null) acc.CreatedCopies.Add(safety);
+                                        if (safety != null)
+                                        {
+                                            acc.CreatedCopies.Add(safety);
+                                            TraceProtectionAfter(protectionBefore, "safety-copy", safety);
+                                        }
                                     }
                                 }
                                 catch (Exception ex)
@@ -220,6 +228,7 @@ namespace RBLclass.Core
                                 }
                                 catch { /* adapter logs; a flag failure never fails a successful filing */ }
                             }
+                            TraceProtectionAfter(protectionBefore, moveSlot ? "move" : "copy", filedRef);
                         }
                     }
                     catch (Exception ex)
@@ -230,6 +239,9 @@ namespace RBLclass.Core
                         acc.Errors++;
                     }
                 }
+
+                if (request.KeepCopy)
+                    TraceProtectionAfter(protectionBefore, "kept-original", item);
 
                 if (filed > 0)
                 {
@@ -826,6 +838,48 @@ namespace RBLclass.Core
         {
             try { return _store.IsFlaggedIncomplete(item); }
             catch { return false; } // tolerate adapter misses; never block the batch
+        }
+
+        private bool SafeIsEncrypted(MailItemRef item)
+        {
+            try { return _store.IsEncryptedMail(item); }
+            catch { return true; } // unknown counts as protected: skip the Save()
+        }
+
+        /// <summary>
+        /// Record an item's message class and security flags, so a target run can
+        /// show whether classify changed them (v2.11.0.0 A3, #62). Reads COM only
+        /// when Debug logging is on, and a failure here never affects the filing.
+        /// Logs no subject, body or recipient.
+        /// </summary>
+        private MailProtectionState TraceProtection(string stage, string path, MailItemRef item)
+        {
+            if (!_log.IsDebugEnabled) return null;
+
+            try
+            {
+                var state = _store.GetProtectionState(item);
+                string messageClass = state == null ? "unresolved" : state.MessageClass ?? "unreadable";
+                string flags = state?.SecurityFlags == null
+                    ? "absent"
+                    : "0x" + state.SecurityFlags.Value.ToString("X8");
+                _log.Debug(
+                    "Protection trace: stage={Stage} path={Path} entry={EntryId} class={MessageClass} flags={SecurityFlags} protected={Protected}",
+                    stage, path, item.EntryId, messageClass, flags, state?.IsProtected);
+                return state;
+            }
+            catch
+            {
+                return null;
+            }
+        }
+
+        private void TraceProtectionAfter(MailProtectionState before, string path, MailItemRef item)
+        {
+            var after = TraceProtection("after", path, item);
+            if (before != null && before.IsProtected && after != null && !after.IsProtected)
+                _log.Warning("Protection trace: {Path} lost protection on {EntryId} ({Before} -> {After})",
+                    path, item.EntryId, before.MessageClass, after.MessageClass);
         }
     }
 }

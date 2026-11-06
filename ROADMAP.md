@@ -194,6 +194,7 @@ triage. Phases 8–9 are forward-looking.
       files-in-use UI. Choosing automatic close finished in 3 s (exit 0,
       Outlook restarted). So the lock alone does not reproduce the symptom
       here; this does not clear the target (32-bit Outlook, EDR).
+
 ---
 
 ## v2.6.0.0 — UI refresh & classify depth
@@ -550,8 +551,17 @@ text as the specification.
       trace implicates RBLclass. Update `docs/security.md` and
       `website/docs/security.md` through `docs-writer`. Not verifiable on
       the dev machine per the testing strategy above; re-check on the real
-      target. [#62]
-
+      target. [#62] - shipped, pending tests (not verifiable on the dev machine
+      per the testing strategy above). Decided 2026-11-05: PR_SECURITY_FLAGS is
+      log only, protection stays class-based until validated. Re-verify on the
+      real target before pilot: with Diagnostic logging on, classify one
+      protected mail per path (move, copy, safety copy, keep a copy) and read
+      the real class and flags from the `Protection trace` lines, then decide
+      whether the flags or another class prefix should drive the check. On
+      plain mail the dev machine shows `flags=0x00000000`, so the property is
+      present there. Also pending a live regression pass on ordinary mail:
+      copy, safety copy, mark as read, attachment removal, conversation
+      widening (only move, task-flag completion and Undo were exercised).
 ### B — Pane & keyboard
 
 - [x] **B1.** Remove the selection-count label at the bottom of the pane:

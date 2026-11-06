@@ -9,6 +9,9 @@ namespace RBLclass.Core.Logging
     /// </summary>
     public interface IAppLog
     {
+        /// <summary>True when Debug events are written: lets a caller skip costly diagnostics.</summary>
+        bool IsDebugEnabled { get; }
+
         void Debug(string template, params object[] args);
         void Information(string template, params object[] args);
         void Warning(string template, params object[] args);
