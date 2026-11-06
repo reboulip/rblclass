@@ -155,10 +155,10 @@ namespace RBLclass.AddIn
             catch { _railInsetPending = false; }
         }
 
-        /// <summary>Push a live selection count into the pane view model.</summary>
-        public void SetSelectionCount(int count)
+        /// <summary>Tell the pane view model the explorer selection changed.</summary>
+        public void OnExplorerSelectionChanged()
         {
-            (_view?.DataContext as MainPaneViewModel)?.SetSelectionCount(count);
+            (_view?.DataContext as MainPaneViewModel)?.OnExplorerSelectionChanged();
         }
 
         /// <summary>Easter egg: replace the Auto-Class button label with a pig.</summary>

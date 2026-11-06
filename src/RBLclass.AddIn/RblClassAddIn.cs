@@ -475,8 +475,8 @@ namespace RBLclass.AddIn
                 // 200 ms, user-adjustable).
                 _selectionDebouncer = new SelectionChangeDebouncer(startupSettings.SearchDebounceMs);
 
-                // Keep the classify pane's selection count live; also strip the
-                // external-sender banner from inline reply/forward drafts (B1).
+                // Clear the pane's just-sent pin on a selection change; also strip
+                // the external-sender banner from inline reply/forward drafts (B1).
                 try
                 {
                     _activeExplorer = _outlookApp.ActiveExplorer();
@@ -793,13 +793,11 @@ namespace RBLclass.AddIn
         }
 
         /// <summary>
-        /// Keep the classify pane's "N mails selected" label in sync with
-        /// Outlook. Debounced (C1): a rapid burst of SelectionChange events
-        /// (e.g. shift-drag across 1000+ rows) is coalesced into a single COM
-        /// walk after the user pauses for SearchDebounceMs milliseconds, so the
-        /// STA thread never blocks mid-drag. The DispatcherTimer fires on the
-        /// same STA dispatcher thread, satisfying the COM-from-STA rule
-        /// (CLAUDE.md).
+        /// Tell the classify pane the selection changed, so it can drop a
+        /// just-sent pin. Debounced (C1): a rapid burst of SelectionChange events
+        /// (e.g. shift-drag across 1000+ rows) is coalesced into a single
+        /// notification after the user pauses for SearchDebounceMs milliseconds.
+        /// The DispatcherTimer fires on the same STA dispatcher thread.
         /// </summary>
         private void OnExplorerSelectionChange()
         {
@@ -807,10 +805,9 @@ namespace RBLclass.AddIn
             {
                 // During a move batch (classify/auto/undo) the inter-item pump-
                 // yield (D1/D2) lets Outlook re-select the next mail and fire this
-                // event once per moved item. Re-counting the selection then is
-                // pointless work on the busy STA thread - the pane does one
-                // deferred refresh when the batch ends. Skip, but log so the PERF
-                // trace shows how many mid-batch fires we suppressed.
+                // event once per moved item. Those are not user selection changes
+                // - the pane does one deferred refresh when the batch ends. Skip,
+                // but log so the PERF trace shows how many fires we suppressed.
                 if (TaskPaneServices.BatchInProgress)
                 {
                     Log.Debug("PERF SelectionChange suppressed (batch in progress)");
@@ -838,9 +835,8 @@ namespace RBLclass.AddIn
 
         /// <summary>
         /// Fires SearchDebounceMs after the last SelectionChange event in a
-        /// burst. Calls GetSelectedItems() once (the only COM walk per burst)
-        /// and updates the pane's selection count. Best-effort; never throws
-        /// into Outlook. (v2.10.0.0 C1)
+        /// burst and notifies the pane once. Best-effort; never throws into
+        /// Outlook. (v2.10.0.0 C1)
         /// </summary>
         private void OnSelectionTimerTick(object sender, EventArgs e)
         {
@@ -857,13 +853,7 @@ namespace RBLclass.AddIn
                 }
 
                 _selectionDebouncer?.Reset();
-
-                var sw = System.Diagnostics.Stopwatch.StartNew();
-                int count = _mailStore.GetSelectedItems().Count;
-                sw.Stop();
-                Log.Debug("PERF SelectionChange (debounced) handled {Ms} ms: {Count} selected",
-                    sw.ElapsedMilliseconds, count);
-                TaskPaneServices.Host?.SetSelectionCount(count);
+                TaskPaneServices.Host?.OnExplorerSelectionChanged();
             }
             catch (Exception ex)
             {

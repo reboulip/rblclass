@@ -748,16 +748,7 @@
     <value>{0} dossiers.</value>
   </data>
 
-  <!-- MainPaneViewModel: selection summary / headers -->
-  <data name="Status_NoMailSelectedSummary" xml:space="preserve">
-    <value>Aucun message sélectionné.</value>
-  </data>
-  <data name="Status_MailSelected_One" xml:space="preserve">
-    <value>{0} message sélectionné.</value>
-  </data>
-  <data name="Status_MailSelected_Other" xml:space="preserve">
-    <value>{0} messages sélectionnés.</value>
-  </data>
+  <!-- MainPaneViewModel: headers -->
   <data name="Status_SelectedFolders_One" xml:space="preserve">
     <value>Sélectionné : {0} dossier</value>
   </data>

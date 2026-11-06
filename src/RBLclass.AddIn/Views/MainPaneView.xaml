@@ -46,7 +46,6 @@
                 <RowDefinition Height="Auto" />  <!-- 5: Options panel -->
                 <RowDefinition Height="Auto" />  <!-- 6: classify + undo -->
                 <RowDefinition Height="Auto" />  <!-- 7: status -->
-                <RowDefinition Height="Auto" />  <!-- 8: selection summary -->
             </Grid.RowDefinitions>
 
             <StackPanel Grid.Row="0" Margin="0,0,0,6">
@@ -305,11 +304,6 @@
                     </ItemsControl.ItemTemplate>
                 </ItemsControl>
             </StackPanel>
-
-            <!-- Row 8: selection summary, kept at the bottom so it can never
-                 crowd out the header action buttons (v2.8.0.0 A1 feedback). -->
-            <TextBlock Grid.Row="8" Margin="0,6,0,0" FontWeight="Bold" TextWrapping="Wrap"
-                       Text="{Binding SelectionSummary}" />
         </Grid>
 
         <!-- Busy overlay. -->

@@ -748,16 +748,7 @@
     <value>{0} Ordner.</value>
   </data>
 
-  <!-- MainPaneViewModel: selection summary / headers -->
-  <data name="Status_NoMailSelectedSummary" xml:space="preserve">
-    <value>Keine E-Mail ausgewählt.</value>
-  </data>
-  <data name="Status_MailSelected_One" xml:space="preserve">
-    <value>{0} E-Mail ausgewählt.</value>
-  </data>
-  <data name="Status_MailSelected_Other" xml:space="preserve">
-    <value>{0} E-Mails ausgewählt.</value>
-  </data>
+  <!-- MainPaneViewModel: headers -->
   <data name="Status_SelectedFolders_One" xml:space="preserve">
     <value>Ausgewählt: {0} Ordner</value>
   </data>

@@ -56,7 +56,6 @@ namespace RBLclass.AddIn.ViewModels
         private FolderMatchMode _matchMode = FolderMatchMode.Substring;
         private int _maxResults = FolderSearchOptions.DefaultMaxResults;
         private int _minSearchLength = FolderSearchOptions.DefaultMinQueryLength;
-        private string _selectionSummary;
         private string _searchFeedback = string.Empty;
         private string _busyStatus = string.Empty;
         private bool _isBusy;
@@ -112,7 +111,6 @@ namespace RBLclass.AddIn.ViewModels
             _confirmDeleteFolder = confirmDeleteFolder;
             _deleteFolder = deleteFolder;
             _loc = TaskPaneServices.Localization;
-            _selectionSummary = _loc.GetString("Status_NoMailSelectedSummary");
             _autoClassLabel = _loc.GetString("MainPane_AutoClass_Button");
 
             SeedOptionsFromSettings();
@@ -323,12 +321,6 @@ namespace RBLclass.AddIn.ViewModels
             set => SetProperty(ref _selectedResult, value);
         }
 
-        public string SelectionSummary
-        {
-            get => _selectionSummary;
-            private set => SetProperty(ref _selectionSummary, value);
-        }
-
         public string AutoClassLabel
         {
             get => _autoClassLabel;
@@ -378,9 +370,8 @@ namespace RBLclass.AddIn.ViewModels
             {
                 if (SetProperty(ref _isBusy, value)) OnPropertyChanged(nameof(IsNotBusy));
                 // Mirror the batch lifetime to the add-in's selection handler so
-                // it can skip the redundant per-item GetSelectedItems COM walk
-                // that mid-batch SelectionChange events would otherwise trigger.
-                // IsBusy is true only during a move batch (classify/auto/undo).
+                // mid-batch SelectionChange events are ignored and cannot clear a
+                // pin. IsBusy is true only during a move batch (classify/auto/undo).
                 TaskPaneServices.BatchInProgress = value;
             }
         }
@@ -863,13 +854,12 @@ namespace RBLclass.AddIn.ViewModels
         }
 
         /// <summary>
-        /// Push a live explorer selection count into the header. A genuine
-        /// selection change drops a just-sent pin (E1) - the user has moved on.
+        /// A genuine explorer selection change drops a just-sent pin (E1) - the
+        /// user has moved on.
         /// </summary>
-        public void SetSelectionCount(int count)
+        public void OnExplorerSelectionChanged()
         {
             ClearPin();
-            SelectionSummary = _loc.Plural(count, "Status_MailSelected_One", "Status_MailSelected_Other");
         }
 
         /// <summary>
@@ -882,7 +872,6 @@ namespace RBLclass.AddIn.ViewModels
         {
             if (item == null) return;
             _pinnedItem = item;
-            SelectionSummary = string.Empty; // the pin banner takes over the header
             OnPropertyChanged(nameof(HasPinnedItem));
             OnPropertyChanged(nameof(PinnedItemSubject));
         }
@@ -978,12 +967,6 @@ namespace RBLclass.AddIn.ViewModels
 
         public void RefreshSelection()
         {
-            // While a sent mail is pinned, keep the pin indicator - the show/theme
-            // refresh must not overwrite it with the (unrelated) live count.
-            if (_pinnedItem == null)
-                SelectionSummary = _loc.Plural(_getSelection != null ? _getSelection().Count : 0,
-                    "Status_MailSelected_One", "Status_MailSelected_Other");
-
             // A banner may have been learned (or forgotten) in Settings while the
             // pane was open - keep the strip tickbox's availability current.
             if (_settings != null)
@@ -992,16 +975,15 @@ namespace RBLclass.AddIn.ViewModels
         }
 
         /// <summary>
-        /// Post the pane's own post-filing refresh (the COM-touching selection
-        /// re-read in <see cref="RefreshSelection"/>) to the back of the STA pump
-        /// at Background priority. After a move, the filed mail leaves the active
-        /// view and Outlook must repaint its explorer and pick the next item -
-        /// that is the priority. Our refresh is purely cosmetic (the "N mail
-        /// selected" caption), so it waits until Outlook has settled rather than
-        /// fighting it for the single STA thread at the worst possible moment.
+        /// Post the pane's own post-filing refresh (<see cref="RefreshSelection"/>)
+        /// to the back of the STA pump at Background priority. After a move, the
+        /// filed mail leaves the active view and Outlook must repaint its explorer
+        /// and pick the next item - that is the priority. Our refresh only updates
+        /// the banner availability, so it waits until Outlook has settled rather
+        /// than fighting it for the single STA thread at the worst possible moment.
         /// PERF (v2.5.1.x): logs how long the continuation waited for the pump
         /// (= the Outlook-busy time, now off the critical path) versus how long
-        /// the refresh's COM work itself took once Outlook was free.
+        /// the refresh itself took once Outlook was free.
         /// </summary>
         private void ScheduleSelectionRefresh(string context)
         {

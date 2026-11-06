@@ -187,7 +187,13 @@ triage. Phases 8–9 are forward-looking.
       fix the log points to. If it is the Outlook lock, a pre-install check
       probably needs the `WixToolset.Util` extension — a new build
       dependency, so ask before adding it. [#66]
-
+      Discriminating test (2026-11-06, dev machine, 64-bit Outlook, no EDR):
+      2.9.1.0 installed, Outlook open and holding the DLLs, 2.10.0.0 MSI run.
+      Windows Installer shows its built-in modal "close the following
+      applications" dialog after 2 s and waits; the package does get a
+      files-in-use UI. Choosing automatic close finished in 3 s (exit 0,
+      Outlook restarted). So the lock alone does not reproduce the symptom
+      here; this does not clear the target (32-bit Outlook, EDR).
 ---
 
 ## v2.6.0.0 — UI refresh & classify depth
@@ -499,7 +505,7 @@ text as the specification.
 
 ### A — Fixes & diagnostics
 
-- [ ] **A1.** Fix the saved-attachment folder link for paths containing
+- [x] **A1.** Fix the saved-attachment folder link for paths containing
       accented characters. `AttachmentLabelFormatter.PathToFileUri`
       (`AttachmentLabelFormatter.cs:68`) uses `Uri.AbsoluteUri`, which
       percent-encodes non-ASCII as UTF-8 (`é` → `%C3%A9`); the likely fault
@@ -511,7 +517,7 @@ text as the specification.
       goes through `Process.Start("explorer.exe", ...)` and is not affected.
       Confirm the root cause by clicking a generated link on Windows. [#64]
 
-- [ ] **A2.** Make MSI failures diagnosable and correct the install guide.
+- [x] **A2.** Make MSI failures diagnosable and correct the install guide.
       Set the `MsiLogging` property in `installer/Package.wxs` so every
       install writes a verbose log to `%TEMP%` with no command-line switch.
       Add an install-troubleshooting section to
@@ -523,7 +529,8 @@ text as the specification.
       Finish" (the package has no `WixUI` wizard). Run the discriminating
       test on Windows and record the result on the issue: install 2.9.1.0,
       leave Outlook open, run the 2.10.0.0 MSI with `/l*vx`. The actual fix
-      is the carried-over item above. [#66]
+      is the carried-over item above. [#66] - pending reporter confirmation
+      (#66 stays open for the carried-over fix)
 
 - [ ] **A3.** Harden and instrument encrypted-mail handling during classify.
       Analysis (2026-11-05): the default single-destination classify is a pure
@@ -547,7 +554,7 @@ text as the specification.
 
 ### B — Pane & keyboard
 
-- [ ] **B1.** Remove the selection-count label at the bottom of the pane:
+- [x] **B1.** Remove the selection-count label at the bottom of the pane:
       the row 8 `TextBlock` in `MainPaneView.xaml`, `SelectionSummary`, and
       the `Status_MailSelected_One`/`_Other` and
       `Status_NoMailSelectedSummary` keys in all three `.resx` files. Keep
@@ -601,7 +608,7 @@ text as the specification.
       [#65]
 
 - [ ] **C2.** Add an opt-in option to treat body images as removable
-      attachments (requires: C1). New setting in Settings → Attachments,
+      attachments (requires: C1, A3). New setting in Settings → Attachments,
       default off; v2.5.0.0 B2's exclusion of inline images stays the default.
       When on, `cid:` inline images appear in the disposition modal, marked
       as such and defaulting to Keep; embedded items, OLE objects and remote

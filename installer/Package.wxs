@@ -32,6 +32,14 @@
     <MediaTemplate EmbedCab="yes" />
 
     <!--
+      Every install, upgrade and uninstall writes a verbose log to
+      %TEMP%\MSI*.LOG with no command-line switch, so a failure in the field
+      can be diagnosed after the fact (#66). The value mirrors /l*vx; the
+      trailing ! flushes each line, so a hung or killed install keeps its tail.
+    -->
+    <Property Id="MsiLogging" Value="voicewarmupx!" />
+
+    <!--
       Per-user install context: files land under %LocalAppData%, registry
       writes go to HKCU, and msiexec needs no elevation - the same
       constraints the PowerShell kit already satisfies (CLAUDE.md
