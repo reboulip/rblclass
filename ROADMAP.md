@@ -573,7 +573,7 @@ text as the specification.
       `GetSelectedItems().Count` COM call from the debounced selection tick
       if nothing else needs it. [#58]
 
-- [ ] **B2.** Expose the online documentation
+- [x] **B2.** Expose the online documentation
       (`https://reboulip.github.io/rblclass/`, English only) from a link in
       the About window and a "?" button in the pane header next to Settings,
       opened in the default browser. New label/tooltip resource keys,

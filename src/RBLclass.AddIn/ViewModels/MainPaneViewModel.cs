@@ -758,6 +758,13 @@ namespace RBLclass.AddIn.ViewModels
             catch (Exception ex) { Log.Error(ex, "OpenSettings failed."); }
         }
 
+        /// <summary>Open the online documentation in the default browser (v2.11.0.0 B2).</summary>
+        public void OpenDocumentation()
+        {
+            if (!DocumentationLink.TryOpen())
+                PushStatus(_loc.GetString("Status_DocumentationOpenFailed"));
+        }
+
         /// <summary>
         /// Re-scan PST stores and refresh the folder index (v2.10.0.0 B1).
         /// Delegates to the add-in shell via

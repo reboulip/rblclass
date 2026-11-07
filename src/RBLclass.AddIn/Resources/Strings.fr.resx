@@ -84,6 +84,12 @@
   <data name="MainPane_Settings_ToolTip" xml:space="preserve">
     <value>Configurer la recherche de dossiers, le classement, les garde-fous d'envoi et le triage des éléments envoyés. Chaque modification s'applique et est conservée immédiatement.</value>
   </data>
+  <data name="MainPane_Help_Button" xml:space="preserve">
+    <value>?</value>
+  </data>
+  <data name="MainPane_Help_ToolTip" xml:space="preserve">
+    <value>Ouvrir la documentation en ligne (en anglais) dans votre navigateur</value>
+  </data>
   <data name="MainPane_UpdateFolders_Button" xml:space="preserve">
     <value>🔄</value>
   </data>
@@ -748,6 +754,10 @@
     <value>{0} dossiers.</value>
   </data>
 
+  <data name="Status_DocumentationOpenFailed" xml:space="preserve">
+    <value>Impossible d'ouvrir la documentation en ligne.</value>
+  </data>
+
   <!-- MainPaneViewModel: headers -->
   <data name="Status_SelectedFolders_One" xml:space="preserve">
     <value>Sélectionné : {0} dossier</value>
@@ -980,6 +990,9 @@ Relancez votre recherche pour voir les dossiers créés ou renommés.</value>
   </data>
   <data name="About_Tech_Text" xml:space="preserve">
     <value>C# / .NET Framework 4.8 · WPF · SQLite · complément COM Outlook</value>
+  </data>
+  <data name="About_Documentation_Link" xml:space="preserve">
+    <value>Documentation en ligne</value>
   </data>
   <data name="About_Close_Button" xml:space="preserve">
     <value>Fermer</value>

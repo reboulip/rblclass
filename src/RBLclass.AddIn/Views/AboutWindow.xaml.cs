@@ -15,6 +15,8 @@ namespace RBLclass.AddIn.Views
 
         private void Close_Click(object sender, RoutedEventArgs e) => Close();
 
+        private void Documentation_Click(object sender, RoutedEventArgs e) => DocumentationLink.TryOpen();
+
         private void EasterEgg_Click(object sender, System.Windows.Input.MouseButtonEventArgs e)
         {
             TaskPaneServices.ActivateEasterEgg?.Invoke();

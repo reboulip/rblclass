@@ -84,6 +84,12 @@
   <data name="MainPane_Settings_ToolTip" xml:space="preserve">
     <value>Konfigurieren Sie Ordnersuche, Klassieren, Sende-Sicherungen und die Triage gesendeter Objekte. Jede Änderung wird sofort angewendet und gespeichert.</value>
   </data>
+  <data name="MainPane_Help_Button" xml:space="preserve">
+    <value>?</value>
+  </data>
+  <data name="MainPane_Help_ToolTip" xml:space="preserve">
+    <value>Online-Dokumentation (auf Englisch) im Browser öffnen</value>
+  </data>
   <data name="MainPane_UpdateFolders_Button" xml:space="preserve">
     <value>🔄</value>
   </data>
@@ -748,6 +754,10 @@
     <value>{0} Ordner.</value>
   </data>
 
+  <data name="Status_DocumentationOpenFailed" xml:space="preserve">
+    <value>Die Online-Dokumentation konnte nicht geöffnet werden.</value>
+  </data>
+
   <!-- MainPaneViewModel: headers -->
   <data name="Status_SelectedFolders_One" xml:space="preserve">
     <value>Ausgewählt: {0} Ordner</value>
@@ -980,6 +990,9 @@ Führen Sie Ihre Suche erneut aus, um neu erstellte oder umbenannte Ordner zu se
   </data>
   <data name="About_Tech_Text" xml:space="preserve">
     <value>C# / .NET Framework 4.8 · WPF · SQLite · Outlook-COM-Add-in</value>
+  </data>
+  <data name="About_Documentation_Link" xml:space="preserve">
+    <value>Online-Dokumentation</value>
   </data>
   <data name="About_Close_Button" xml:space="preserve">
     <value>Schließen</value>

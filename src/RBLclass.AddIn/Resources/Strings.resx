@@ -84,6 +84,12 @@
   <data name="MainPane_Settings_ToolTip" xml:space="preserve">
     <value>Configure folder search, classify, sending guards and sent-item triage. Every change applies and persists immediately.</value>
   </data>
+  <data name="MainPane_Help_Button" xml:space="preserve">
+    <value>?</value>
+  </data>
+  <data name="MainPane_Help_ToolTip" xml:space="preserve">
+    <value>Open the online documentation (in English) in your browser</value>
+  </data>
   <data name="MainPane_UpdateFolders_Button" xml:space="preserve">
     <value>🔄</value>
   </data>
@@ -748,6 +754,10 @@
     <value>{0} folders.</value>
   </data>
 
+  <data name="Status_DocumentationOpenFailed" xml:space="preserve">
+    <value>Could not open the online documentation.</value>
+  </data>
+
   <!-- MainPaneViewModel: headers -->
   <data name="Status_SelectedFolders_One" xml:space="preserve">
     <value>Selected: {0} folder</value>
@@ -980,6 +990,9 @@ Re-run your search to see newly created or renamed folders.</value>
   </data>
   <data name="About_Tech_Text" xml:space="preserve">
     <value>C# / .NET Framework 4.8 · WPF · SQLite · Outlook COM add-in</value>
+  </data>
+  <data name="About_Documentation_Link" xml:space="preserve">
+    <value>Online documentation</value>
   </data>
   <data name="About_Close_Button" xml:space="preserve">
     <value>Close</value>

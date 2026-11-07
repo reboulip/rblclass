@@ -77,39 +77,46 @@
                     </StackPanel>
                 </Border>
                 <DockPanel LastChildFill="False">
-                    <Button DockPanel.Dock="Right" Padding="6,1"
+                    <!-- The label wraps so FR/DE leave room for the icon buttons at the
+                         narrow default pane width (v2.11.0.0 B2). -->
+                    <Button DockPanel.Dock="Right" Padding="3,1"
                             IsEnabled="{Binding CanAutoClass}" Click="AutoClass_Click"
                             ToolTip="{loc:Loc Key=MainPane_AutoClass_ToolTip}">
                         <Button.Content>
                             <Grid>
-                                <TextBlock Text="{Binding AutoClassLabel}" FontSize="11"
+                                <TextBlock Text="{Binding AutoClassLabel}" FontSize="10" MaxWidth="48"
+                                           TextWrapping="Wrap" TextAlignment="Center" VerticalAlignment="Center"
                                            Visibility="{Binding IsEasterEggActive, Converter={StaticResource InverseBoolToVis}}" />
                                 <Image Width="26" Height="26" Source="{StaticResource PigDrawingImage}"
                                        Visibility="{Binding IsEasterEggActive, Converter={StaticResource BoolToVis}}" />
                             </Grid>
                         </Button.Content>
                     </Button>
-                    <Button DockPanel.Dock="Right" Padding="6,1" Margin="0,0,6,0"
+                    <Button DockPanel.Dock="Right" Padding="3,1" Margin="0,0,3,0"
                             Content="{loc:Loc Key=MainPane_SaveAs_Button}"
                             FontFamily="Segoe UI Emoji" FontSize="14"
                             Click="SaveAs_Click"
                             ToolTip="{loc:Loc Key=MainPane_SaveAs_ToolTip}" />
-                    <Button DockPanel.Dock="Right" Padding="6,1" Margin="0,0,6,0"
+                    <Button DockPanel.Dock="Right" Padding="3,1" Margin="0,0,3,0"
                             Content="{loc:Loc Key=MainPane_ManageAttachments_Button}"
                             FontFamily="Segoe UI Emoji" FontSize="14"
                             Click="ManageAttachments_Click"
                             ToolTip="{loc:Loc Key=MainPane_ManageAttachments_ToolTip}" />
-                    <Button DockPanel.Dock="Right" Padding="6,1" Margin="0,0,6,0"
+                    <Button DockPanel.Dock="Right" Padding="3,1" Margin="0,0,3,0"
                             Content="{loc:Loc Key=MainPane_UpdateFolders_Button}"
                             FontFamily="Segoe UI Emoji" FontSize="14"
                             Click="UpdateFolders_Click"
                             ToolTip="{loc:Loc Key=MainPane_UpdateFolders_ToolTip}" />
-                    <Button DockPanel.Dock="Right" Padding="6,1" Margin="0,0,6,0"
+                    <Button DockPanel.Dock="Right" Padding="3,1" Margin="0,0,3,0"
                             Content="{loc:Loc Key=MainPane_Settings_Button}"
                             FontFamily="Segoe UI Emoji" FontSize="14"
                             Click="Settings_Click"
                             ToolTip="{loc:Loc Key=MainPane_Settings_ToolTip}" />
-                    <Ellipse DockPanel.Dock="Right" Width="10" Height="10" Margin="0,0,6,0"
+                    <Button DockPanel.Dock="Right" Padding="3,1" Margin="0,0,3,0"
+                            Content="{loc:Loc Key=MainPane_Help_Button}" FontSize="14"
+                            Click="Help_Click"
+                            ToolTip="{loc:Loc Key=MainPane_Help_ToolTip}" />
+                    <Ellipse DockPanel.Dock="Right" Width="10" Height="10" Margin="0,0,3,0"
                              VerticalAlignment="Center" ToolTip="{Binding IndexStatusToolTip}">
                         <Ellipse.Style>
                             <Style TargetType="Ellipse">

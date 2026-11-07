@@ -238,6 +238,12 @@ namespace RBLclass.AddIn.Views
             catch (Exception ex) { Log.Error(ex, "Settings_Click failed."); }
         }
 
+        private void Help_Click(object sender, RoutedEventArgs e)
+        {
+            try { Vm?.OpenDocumentation(); }
+            catch (Exception ex) { Log.Error(ex, "Help_Click failed."); }
+        }
+
         private void UpdateFolders_Click(object sender, RoutedEventArgs e)
         {
             try { Vm?.RefreshFolders(); }

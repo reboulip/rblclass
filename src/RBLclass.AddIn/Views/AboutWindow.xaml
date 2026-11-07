@@ -34,6 +34,14 @@
             <TextBlock Text="{loc:Loc Key=About_Tech_Text}" TextWrapping="Wrap" />
         </StackPanel>
 
+        <TextBlock Grid.Row="3" Margin="0,4,0,0">
+            <Hyperlink Click="Documentation_Click"
+                       Foreground="{DynamicResource Theme.Foreground}"
+                       ToolTip="{loc:Loc Key=MainPane_Help_ToolTip}">
+                <Run Text="{loc:Loc Key=About_Documentation_Link}" />
+            </Hyperlink>
+        </TextBlock>
+
         <!-- Easter egg: invisible trigger in the bottom-left corner. -->
         <Border Grid.Row="4" Width="10" Height="10"
                 HorizontalAlignment="Left" VerticalAlignment="Bottom"
