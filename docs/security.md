@@ -62,6 +62,11 @@ administrator rights** and runs **inside the Outlook process**.
 - **No application-level encryption** (accepted by design): the contents (folder
   names/paths, preferences) are non-secret; confidentiality relies on the
   per-user ACL. See [Accepted by design](#accepted-by-design).
+- Installer log (outside `%LocalAppData%`): from version 2.11, every MSI
+  install, upgrade and uninstall writes a verbose Windows Installer log to
+  `%TEMP%\MSI*.LOG` (`MsiLogging` property in `installer/Package.wxs`). It
+  contains local paths and the user name, no mail data, and is not cleaned up
+  automatically.
 
 ## Log hygiene
 
@@ -72,11 +77,47 @@ administrator rights** and runs **inside the Outlook process**.
   the addresses or body that triggered them. Folder names/paths and file/DB
   paths may appear for diagnostics.
 
+## Protected (encrypted / signed) mail
+
+- **One definition** (`RBLclass.Core/ProtectedMailPolicy.IsProtected`): a mail is
+  protected when its message class starts with `IPM.Note.SMIME` or
+  `IPM.Note.Secure` (ordinal, case-insensitive), or when its class is null/blank
+  or cannot be read (fail closed).
+- **Never saved or rewritten.** Attachment removal, the HTML note, the banner
+  strip, mark-as-read, and both task-flag saves (`MarkTaskComplete`,
+  `MarkTaskIncomplete`) are guarded; the flag guard runs before the `FlagStatus`
+  setter, which alone dirties the item. A flagged protected mail stays flagged
+  and is excluded from the mark-complete prompt (`ClassifierService`); no new UI
+  string.
+- **Moves.** A pure move cannot remove encryption from the code's side; the
+  add-in does no re-encryption.
+- **Diagnostic "Protection trace"** (`ClassifierService`, via `IAppLog`): active
+  only with Diagnostic logging on (effective after an Outlook restart). Debug
+  lines record stage (before/after), path (pending, move, copy, safety-copy,
+  kept-original), EntryID, message class, `PR_SECURITY_FLAGS` and the protected
+  verdict; a warning is logged if a mail was protected before and is not after.
+  No subject, body or recipient is logged. The `PropertyAccessor` read behind it
+  may trigger Stormshield hooks, so it happens only with Diagnostic logging on.
+- **`PR_SECURITY_FLAGS` (0x6E010003) is recorded only**, not used to decide
+  protection, until validated on the real target.
+- **Status: pending real-target verification.**
+- **Body rewrite on explicit choice.** With the body-images setting on (off by
+  default), removing a body image rewrites the mail's HTML body (each matching
+  `<img src="cid:...">`, including Outlook's VML fallback, becomes a text
+  placeholder) and deletes the attachment. This happens only on an explicit
+  per-image user choice, never silently, is a local MAPI write with no network
+  access, is skipped for protected mail (no body rewrite, no image removal), and
+  cannot be undone.
+
 ## Network posture
 
 **Default: no outbound network calls.** The add-in ships with no telemetry, no
 auto-update download, and no analytics. This was the audit's finding at
-2026-06-07 and remains the default.
+2026-06-07 and remains the default. The **?** pane button and the About
+window's *Online documentation* link (`DocumentationLink.TryOpen`) only launch
+`https://reboulip.github.io/rblclass/` in the user's default browser on an
+explicit click (`ShellExecute`); the add-in itself makes no request and sends
+nothing.
 
 **Single opt-in exception — the v2.7.0.0 update check (E1):**
 
