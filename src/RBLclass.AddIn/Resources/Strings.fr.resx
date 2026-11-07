@@ -252,6 +252,24 @@
   <data name="AttachDisp_InlineExcluded_Other" xml:space="preserve">
     <value>{0} images intégrées exclues — les images incorporées ne sont pas des pièces jointes détachables.</value>
   </data>
+  <data name="AttachDisp_InlineImages_One" xml:space="preserve">
+    <value>{0} image du corps du message est listée. Elle fait partie du message : elle est conservée sauf choix contraire.</value>
+  </data>
+  <data name="AttachDisp_InlineImages_Other" xml:space="preserve">
+    <value>{0} images du corps du message sont listées. Elles font partie du message : elles sont conservées sauf choix contraire.</value>
+  </data>
+  <data name="AttachDisp_InlineImage_Badge" xml:space="preserve">
+    <value>image du corps</value>
+  </data>
+  <data name="AttachDisp_InlineImage_Placeholder" xml:space="preserve">
+    <value>[Image supprimée]</value>
+  </data>
+  <data name="Settings_TreatInlineImagesAsAttachments_CheckBox" xml:space="preserve">
+    <value>Proposer les images du corps du message à la suppression</value>
+  </data>
+  <data name="Settings_TreatInlineImagesAsAttachments_Info" xml:space="preserve">
+    <value>Désactivé (par défaut) : les images du corps du message, comme les logos de signature, ne sont jamais supprimées. Activé : elles sont listées dans la fenêtre des pièces jointes, signalées comme images du corps et conservées par défaut, même quand la suppression des pièces jointes est désactivée. En supprimer une la remplace par « [Image supprimée] ». La suppression silencieuse de toutes les pièces jointes ne les retire jamais, et les messages chiffrés ne sont jamais modifiés.</value>
+  </data>
   <data name="AttachDisp_Mode_SameForAll" xml:space="preserve">
     <value>Même action et même dossier pour toutes les pièces jointes</value>
   </data>

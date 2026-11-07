@@ -1498,7 +1498,8 @@ namespace RBLclass.Outlook.Adapter
                                 string name = Safe(() => att.Value.FileName, string.Empty);
                                 long size = Safe(() => (long)att.Value.Size, 0L);
                                 int id = Safe(() => att.Value.Index, i);
-                                result.Add(new AttachmentInfo(id, name, size, inline));
+                                string contentId = inline ? ImageContentIdOf(att.Value) : null;
+                                result.Add(new AttachmentInfo(id, name, size, inline, contentId));
                             }
                         }
                     }
@@ -1549,6 +1550,105 @@ namespace RBLclass.Outlook.Adapter
             catch { /* property not available for this store/item - treat as not inline */ }
 
             return false;
+        }
+
+        /// <summary>
+        /// The content id of a body image (v2.11.0.0 C2): a by-value attachment
+        /// carrying PR_ATTACH_CONTENT_ID, read even when it is also hidden.
+        /// Embedded items and OLE objects return null. Separate from
+        /// <see cref="IsInlineAttachment"/>, which must keep reporting body images
+        /// as inline so "remove all attachments" never takes a signature logo.
+        /// </summary>
+        private static string ImageContentIdOf(OutlookOM.Attachment att)
+        {
+            if (Safe(() => att.Type, OutlookOM.OlAttachmentType.olOLE) != OutlookOM.OlAttachmentType.olByValue)
+                return null;
+            try
+            {
+                using (var pa = new ComRef<OutlookOM.PropertyAccessor>(att.PropertyAccessor))
+                {
+                    const string PR_ATTACH_CONTENT_ID = "http://schemas.microsoft.com/mapi/proptag/0x3712001F";
+                    return InlineImageRules.NormalizeContentId(
+                        Safe(() => pa.Value.GetProperty(PR_ATTACH_CONTENT_ID) as string, null));
+                }
+            }
+            catch { return null; }
+        }
+
+        public bool RemoveInlineImages(MailItemRef item, IReadOnlyList<string> contentIds, string placeholder)
+        {
+            if (item == null || contentIds == null || contentIds.Count == 0) return false;
+
+            using (var session = new ComRef<OutlookOM.NameSpace>(_app.Session))
+            {
+                object rawItem;
+                try { rawItem = session.Value.GetItemFromID(item.EntryId, item.StoreId); }
+                catch { return false; }
+
+                using (var comItem = new ComRef<object>(rawItem))
+                {
+                    var mail = comItem.Value as OutlookOM.MailItem;
+                    if (mail == null) return false;
+
+                    if (IsProtectedMail(mail))
+                    {
+                        Log.Information("RemoveInlineImages skipped an encrypted/signed item.");
+                        return false;
+                    }
+
+                    // Assigning HTMLBody to a plain-text or RTF mail would convert it.
+                    if (Safe(() => mail.BodyFormat, OutlookOM.OlBodyFormat.olFormatUnspecified)
+                        != OutlookOM.OlBodyFormat.olFormatHTML)
+                    {
+                        Log.Information("RemoveInlineImages skipped a non-HTML mail.");
+                        return false;
+                    }
+
+                    string html = Safe(() => mail.HTMLBody, null);
+                    if (string.IsNullOrEmpty(html)) return false;
+
+                    var rewrite = InlineImageHtmlRewriter.Rewrite(html, contentIds, placeholder);
+                    if (rewrite.ReplacedContentIds.Count == 0)
+                    {
+                        Log.Information("RemoveInlineImages found no reference to remove.");
+                        return false;
+                    }
+                    var replaced = new HashSet<string>(rewrite.ReplacedContentIds, StringComparer.OrdinalIgnoreCase);
+
+                    try
+                    {
+                        // Delete only the images whose reference was replaced, highest
+                        // index first, then write the body and save once, so a
+                        // failure leaves neither a placeholder nor a broken image.
+                        int deleted = 0;
+                        using (var attachments = new ComRef<OutlookOM.Attachments>(mail.Attachments))
+                        {
+                            for (int i = attachments.Value.Count; i >= 1; i--)
+                            {
+                                OutlookOM.Attachment raw;
+                                try { raw = attachments.Value[i]; } catch { continue; }
+                                using (var att = new ComRef<OutlookOM.Attachment>(raw))
+                                {
+                                    string cid = ImageContentIdOf(att.Value);
+                                    if (cid == null || !replaced.Contains(cid)) continue;
+                                    att.Value.Delete();
+                                    deleted++;
+                                }
+                            }
+                        }
+
+                        mail.HTMLBody = rewrite.Html;
+                        mail.Save();
+                        Log.Information("Removed {Count} body image(s) from a mail.", deleted);
+                        return true;
+                    }
+                    catch (Exception ex)
+                    {
+                        Log.Warning(ex, "Removing body images failed.");
+                        return false;
+                    }
+                }
+            }
         }
 
         public bool SaveAttachmentToFile(MailItemRef item, int attachmentId, string destinationDirectory)

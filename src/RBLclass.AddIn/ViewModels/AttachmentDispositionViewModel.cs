@@ -34,7 +34,12 @@ namespace RBLclass.AddIn.ViewModels
     public sealed class AttachmentDispositionViewModel : ObservableObject
     {
         private AttachmentDispositionMode _mode = AttachmentDispositionMode.SameForAll;
+        private readonly string _inlinePlaceholder;
 
+        /// <param name="treatInlineImages">
+        /// Offer body images (inline with a content id) as rows, starting at Keep
+        /// (v2.11.0.0 C2). Off: they are counted in the inline notice instead.
+        /// </param>
         /// <param name="defaultFolder">
         /// Optional: the configured default folder, resolved off the UI thread
         /// (empty when unreachable). Pre-fills the folder when it completes,
@@ -43,11 +48,14 @@ namespace RBLclass.AddIn.ViewModels
         public AttachmentDispositionViewModel(
             IReadOnlyList<(MailItemRef Item, IReadOnlyList<AttachmentInfo> Attachments, bool IsEncrypted)> groups,
             ILocalizationService loc,
-            Task<string> defaultFolder = null)
+            Task<string> defaultFolder = null,
+            bool treatInlineImages = false)
         {
+            _inlinePlaceholder = loc.GetString("AttachDisp_InlineImage_Placeholder");
             Rows = new ObservableCollection<AttachmentRowViewModel>();
             var encrypted = new List<string>();
             int inlineExcluded = 0;
+            int inlineOffered = 0;
 
             foreach (var g in groups)
             {
@@ -59,9 +67,11 @@ namespace RBLclass.AddIn.ViewModels
                 }
                 foreach (var att in g.Attachments)
                 {
-                    // Inline/embedded images are not detachable files - never
-                    // offer them for disposition, just count them (v2.5.0.0 B2).
-                    if (att.IsInline) { inlineExcluded++; continue; }
+                    // Inline/embedded parts are not detachable files: only body
+                    // images, and only when opted in, are offered; the others are
+                    // just counted (v2.5.0.0 B2, v2.11.0.0 C2).
+                    if (!InlineImageRules.IsOffered(att, treatInlineImages)) { inlineExcluded++; continue; }
+                    if (att.IsInlineImage) inlineOffered++;
                     var row = new AttachmentRowViewModel(g.Item, att, g.Item.Subject);
                     row.PropertyChanged += OnRowChanged;
                     Rows.Add(row);
@@ -78,11 +88,23 @@ namespace RBLclass.AddIn.ViewModels
                 : loc.Plural(inlineExcluded,
                     "AttachDisp_InlineExcluded_One", "AttachDisp_InlineExcluded_Other");
 
+            InlineImagesNotice = inlineOffered == 0
+                ? string.Empty
+                : loc.Plural(inlineOffered, "AttachDisp_InlineImages_One", "AttachDisp_InlineImages_Other");
+
             IntroText = loc.GetString("AttachDisp_Intro");
             GroupCountText = loc.Plural(Rows.Count, "AttachDisp_Group_Count_One", "AttachDisp_Group_Count_Other");
 
             Group = new AttachmentGroupOptionsViewModel(Rows);
             Group.Picker.PropertyChanged += OnSharedFolderChanged;
+
+            // Group choices never touch body images: with nothing else to group,
+            // start per attachment.
+            if (Rows.Count > 0 && Rows.All(r => r.IsInlineImage))
+            {
+                _mode = AttachmentDispositionMode.PerAttachment;
+                Group.IsActive = false;
+            }
             Group.Apply();
 
             if (defaultFolder != null)
@@ -123,6 +145,10 @@ namespace RBLclass.AddIn.ViewModels
         /// <summary>Notice that inline/embedded images were excluded (v2.5.0.0 B2).</summary>
         public string InlineNotice { get; }
         public bool HasInlineNotice => !string.IsNullOrEmpty(InlineNotice);
+
+        /// <summary>Notice that body images are listed and default to Keep (v2.11.0.0 C2).</summary>
+        public string InlineImagesNotice { get; }
+        public bool HasInlineImagesNotice => !string.IsNullOrEmpty(InlineImagesNotice);
         public bool HasRows => Rows.Count > 0;
 
         /// <summary>The grouped options of "same action and folder for all"; its picker is also the shared folder.</summary>
@@ -184,7 +210,9 @@ namespace RBLclass.AddIn.ViewModels
 
         public IReadOnlyList<AttachmentDisposition> BuildDispositions() =>
             Rows.Select(r => new AttachmentDisposition(
-                r.Item, r.Info.Id, r.FileName, r.Action, r.TargetDirectory)).ToArray();
+                r.Item, r.Info.Id, r.FileName, r.Action, r.TargetDirectory,
+                r.IsInlineImage ? r.Info.ContentId : null,
+                r.IsInlineImage ? _inlinePlaceholder : null)).ToArray();
 
         private void Prefill(string directory)
         {

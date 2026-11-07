@@ -675,6 +675,14 @@ text as the specification.
       replacing the matching `<img src="cid:...">` by a short text placeholder
       so no broken image remains; expose the content id on `AttachmentInfo`.
       Encrypted mail stays untouched. New resource keys translated FR/DE. [#63]
+      Decided 2026-11-07: with the option on, body images are offered even when
+      "remove attachments" is off (only the images are then listed); the
+      placeholder reads "[Image removed]" / "[Image supprimée]" / "[Bild
+      entfernt]"; Save to also applies to body images. Verified live on the dev
+      machine: single and partial image removal, classify with removal off. -
+      shipped, pending tests (not verifiable on the dev machine per the testing
+      strategy above; re-verify on the real target that an S/MIME/Stormshield
+      mail with body images keeps them and its body untouched before pilot)
 
 ---
 

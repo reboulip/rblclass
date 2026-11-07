@@ -208,6 +208,9 @@ namespace RBLclass.Core
         /// <summary>Folder pre-filled as the save target in the attachment disposition modal (v2.11.0.0 C1); empty = none. Ignored when unreachable.</summary>
         public const string AttachmentDefaultFolder = "AttachmentDefaultFolder";
 
+        /// <summary>Offer body images (inline, with a content id) in the attachment disposition modal (v2.11.0.0 C2). Default off.</summary>
+        public const string TreatInlineImagesAsAttachments = "TreatInlineImagesAsAttachments";
+
         /// <summary>
         /// Raise the minimum log level to Debug, restoring the full per-item
         /// PERF/BEGIN/END trace (v2.8.0.0 logging audit, default off - the

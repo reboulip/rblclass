@@ -407,7 +407,7 @@ namespace RBLclass.AddIn
                 TaskPaneServices.ShowAttachmentDisposition = groups =>
                 {
                     var vm = new AttachmentDispositionViewModel(groups, TaskPaneServices.Localization,
-                        ProbeAttachmentDefaultFolder());
+                        ProbeAttachmentDefaultFolder(), ReadTreatInlineImages());
                     var window = new AttachmentDispositionWindow { DataContext = vm };
                     return window.ShowDialog() == true ? vm.BuildDispositions() : null;
                 };
@@ -424,7 +424,7 @@ namespace RBLclass.AddIn
                     }
                     catch { /* fall back to strip-on */ }
                     var vm = new AttachmentDispositionViewModel(groups, TaskPaneServices.Localization,
-                        ProbeAttachmentDefaultFolder())
+                        ProbeAttachmentDefaultFolder(), ReadTreatInlineImages())
                     {
                         IntroText = TaskPaneServices.Localization.GetString("AttachDisp_StandaloneIntro"),
                         ShowStripToggle = true,
@@ -1104,6 +1104,13 @@ namespace RBLclass.AddIn
 
             return Task.Run(() => AttachmentDefaultFolderResolver.Resolve(
                 configured, System.IO.Directory.Exists, TimeSpan.FromMilliseconds(750)));
+        }
+
+        /// <summary>The "offer body images" setting (v2.11.0.0 C2); off when unreadable.</summary>
+        private bool ReadTreatInlineImages()
+        {
+            try { return _settingsStore != null && Settings.Load(_settingsStore).TreatInlineImagesAsAttachments; }
+            catch { return false; }
         }
 
         private void TogglePane()

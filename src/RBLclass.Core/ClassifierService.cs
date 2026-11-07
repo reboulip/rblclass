@@ -209,7 +209,9 @@ namespace RBLclass.Core
                         // the skip so the UI can say so.
                         if (filedRef != null)
                         {
-                            if (request.RemoveAttachments)
+                            // Body images chosen in the modal are handled even
+                            // when attachment removal is off (v2.11.0.0 C2).
+                            if (request.RemoveAttachments || request.AttachmentDispositions.Any(row => row.IsInlineImage))
                                 ApplyAttachmentRemoval(item, filedRef, request, acc);
                             // Strip the learned external banner from the filed
                             // body (best-effort, not undoable - a body edit).
@@ -306,66 +308,105 @@ namespace RBLclass.Core
                 return;
             }
 
+            // Body images (v2.11.0.0 C2) are removed by rewriting the body, never
+            // by index or by strip-all, which leaves inline parts alone.
+            var regular = rows.Where(d => !d.IsInlineImage).ToList();
+            var inline = rows.Where(d => d.IsInlineImage).ToList();
+
             // B1: a "Keep" row leaves its attachment on the filed copy. When any
             // Keep is present, the strip-all primitive would also take the kept
             // ones, so remove only the non-Keep attachments individually (highest
             // id first, since removing one shifts the indexes of those above it).
             // With no Keep rows the single strip-all call is kept (also the
-            // DeleteSilently path, where there are no rows at all).
-            bool stripped;
-            if (rows.Any(d => d.Action == AttachmentDispositionAction.Keep))
+            // DeleteSilently path, where there are no rows at all). Only body-image
+            // rows means there is no regular attachment to strip.
+            bool stripped = false;
+            if (request.RemoveAttachments && (rows.Count == 0 || regular.Count > 0))
             {
-                stripped = false;
-                foreach (var d in rows.Where(d => d.Action != AttachmentDispositionAction.Keep)
-                                      .OrderByDescending(d => d.AttachmentId))
+                if (regular.Any(d => d.Action == AttachmentDispositionAction.Keep))
                 {
-                    bool removed;
-                    try { removed = _store.RemoveAttachment(filedRef, d.AttachmentId); }
-                    catch (Exception ex)
+                    foreach (var d in regular.Where(d => d.Action != AttachmentDispositionAction.Keep)
+                                             .OrderByDescending(d => d.AttachmentId))
                     {
-                        removed = false;
-                        _log.Warning(ex, "Attachment {AttachmentId} removal failed for {Subject}",
-                            d.AttachmentId, originalItem.Subject);
+                        bool removed;
+                        try { removed = _store.RemoveAttachment(filedRef, d.AttachmentId); }
+                        catch (Exception ex)
+                        {
+                            removed = false;
+                            _log.Warning(ex, "Attachment {AttachmentId} removal failed for {Subject}",
+                                d.AttachmentId, originalItem.Subject);
+                        }
+                        if (removed) stripped = true;
                     }
-                    if (removed) stripped = true;
+                }
+                else
+                {
+                    try
+                    {
+                        stripped = _store.RemoveAttachments(filedRef);
+                        // false = the adapter's S/MIME guard fired, not a COM fault.
+                        if (!stripped) acc.EncryptedSkips++;
+                    }
+                    catch
+                    {
+                        // COM fault during strip-all: the adapter logs the cause.
+                        // The filing itself succeeded - propagating would let the
+                        // per-destination catch double-count this action as both
+                        // filed and errored (v2.7.1.0 B2).
+                        stripped = false;
+                    }
                 }
             }
-            else
-            {
-                try
-                {
-                    stripped = _store.RemoveAttachments(filedRef);
-                    // false = the adapter's S/MIME guard fired, not a COM fault.
-                    if (!stripped) acc.EncryptedSkips++;
-                }
-                catch
-                {
-                    // COM fault during strip-all: the adapter logs the cause.
-                    // The filing itself succeeded - propagating would let the
-                    // per-destination catch double-count this action as both
-                    // filed and errored (v2.7.1.0 B2).
-                    stripped = false;
-                }
-            }
-
-            if (stripped) acc.Strips++;
 
             // F3: record only the attachments that left the filed copy (Saved /
             // Deleted). Kept attachments are still on the mail, so they need no
             // note (v2.5.0.0 B1).
-            if (request.LabelOptions != null && stripped)
+            var labelRows = stripped
+                ? regular.Where(d => d.Action != AttachmentDispositionAction.Keep).ToList()
+                : new List<AttachmentDisposition>();
+
+            bool imagesRemoved = RemoveInlineImages(filedRef, inline,
+                d => d.Action != AttachmentDispositionAction.Keep, labelRows, originalItem.Subject);
+
+            if (stripped || imagesRemoved) acc.Strips++;
+
+            if (request.LabelOptions != null && labelRows.Count > 0)
             {
-                var labelRows = rows.Where(d => d.Action != AttachmentDispositionAction.Keep).ToList();
-                if (labelRows.Count > 0)
+                var block = AttachmentLabelFormatter.Format(labelRows, request.LabelOptions, DateTime.Now);
+                if (block != null)
                 {
-                    var block = AttachmentLabelFormatter.Format(labelRows, request.LabelOptions, DateTime.Now);
-                    if (block != null)
-                    {
-                        try { _store.AppendHtmlNote(filedRef, block); }
-                        catch { /* best-effort; a label write never fails the filing */ }
-                    }
+                    try { _store.AppendHtmlNote(filedRef, block); }
+                    catch { /* best-effort; a label write never fails the filing */ }
                 }
             }
+        }
+
+        /// <summary>
+        /// Remove the body images whose rows <paramref name="isRemoved"/> selects
+        /// (v2.11.0.0 C2), in one store call. An image also referenced by a row
+        /// that stays is kept. The removed rows are added to
+        /// <paramref name="labelRows"/> only when the removal succeeded.
+        /// </summary>
+        private bool RemoveInlineImages(MailItemRef target, IReadOnlyList<AttachmentDisposition> inline,
+                                        Func<AttachmentDisposition, bool> isRemoved,
+                                        List<AttachmentDisposition> labelRows, string subject)
+        {
+            var kept = new HashSet<string>(inline.Where(d => !isRemoved(d)).Select(d => d.ContentId),
+                                           StringComparer.OrdinalIgnoreCase);
+            var removedRows = inline.Where(d => isRemoved(d) && !kept.Contains(d.ContentId)).ToList();
+            if (removedRows.Count == 0) return false;
+
+            var contentIds = removedRows.Select(d => d.ContentId)
+                                        .Distinct(StringComparer.OrdinalIgnoreCase).ToList();
+            bool removed;
+            try { removed = _store.RemoveInlineImages(target, contentIds, removedRows[0].InlinePlaceholder); }
+            catch (Exception ex)
+            {
+                removed = false;
+                _log.Warning(ex, "Body image removal failed for {Subject}", subject);
+            }
+            if (removed) labelRows.AddRange(removedRows);
+            return removed;
         }
 
         /// <summary>
@@ -425,8 +466,10 @@ namespace RBLclass.Core
                     d.Action == AttachmentDispositionAction.Delete
                     || (d.Action == AttachmentDispositionAction.SaveTo && stripSavedAttachments);
 
-                var toRemove = rows.Where(isRemoved).ToList();
-                bool anyKept = rows.Any(d => !isRemoved(d));
+                // Body images (v2.11.0.0 C2) go through the body rewrite below.
+                var regular = rows.Where(d => !d.IsInlineImage).ToList();
+                var toRemove = regular.Where(isRemoved).ToList();
+                bool anyKept = regular.Any(d => !isRemoved(d));
 
                 bool stripped = false;
                 if (toRemove.Count > 0)
@@ -454,11 +497,15 @@ namespace RBLclass.Core
                     }
                 }
 
-                if (stripped || anySaved) applied++;
+                var labelRows = stripped ? toRemove : new List<AttachmentDisposition>();
+                bool imagesRemoved = RemoveInlineImages(item, rows.Where(d => d.IsInlineImage).ToList(),
+                    isRemoved, labelRows, item.Subject);
 
-                if (labelOptions != null && stripped)
+                if (stripped || anySaved || imagesRemoved) applied++;
+
+                if (labelOptions != null && labelRows.Count > 0)
                 {
-                    var block = AttachmentLabelFormatter.Format(toRemove, labelOptions, DateTime.Now);
+                    var block = AttachmentLabelFormatter.Format(labelRows, labelOptions, DateTime.Now);
                     if (block != null)
                     {
                         try { _store.AppendHtmlNote(item, block); }

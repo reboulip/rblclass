@@ -58,6 +58,10 @@
                                     </Style>
                                 </TextBlock.Style>
                             </TextBlock>
+                            <TextBlock DockPanel.Dock="Right" Text="{loc:Loc Key=AttachDisp_InlineImage_Badge}"
+                                       Style="{DynamicResource MutedText}" FontStyle="Italic"
+                                       Margin="8,0,0,0" VerticalAlignment="Center"
+                                       Visibility="{Binding IsInlineImage, Converter={StaticResource BoolToVis}}" />
                             <StackPanel>
                                 <TextBlock Text="{Binding FileName}" FontWeight="Bold" TextTrimming="CharacterEllipsis" />
                                 <TextBlock Text="{Binding MailSubject}" Style="{DynamicResource MutedText}"

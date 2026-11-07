@@ -182,6 +182,15 @@ namespace RBLclass.Core
         bool RemoveAttachment(MailItemRef item, int attachmentId);
 
         /// <summary>
+        /// Remove body images (v2.11.0.0 C2): replace each <c>cid:</c> reference
+        /// with <paramref name="placeholder"/> via <see cref="InlineImageHtmlRewriter"/>,
+        /// delete only the attachments whose reference was replaced, and save once.
+        /// Never touches protected mail or a non-HTML body. Returns true when at
+        /// least one image was removed. Touches COM - call on the Outlook UI thread.
+        /// </summary>
+        bool RemoveInlineImages(MailItemRef item, IReadOnlyList<string> contentIds, string placeholder);
+
+        /// <summary>
         /// List an item's attachments as Outlook-free descriptors (v2.4.0.0 F2),
         /// for the disposition modal. Returns an empty list when the item does
         /// not resolve or carries none. Touches COM - call on the Outlook UI

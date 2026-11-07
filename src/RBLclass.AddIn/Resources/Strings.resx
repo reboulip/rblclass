@@ -252,6 +252,24 @@
   <data name="AttachDisp_InlineExcluded_Other" xml:space="preserve">
     <value>{0} inline images were excluded — embedded images are not detachable files.</value>
   </data>
+  <data name="AttachDisp_InlineImages_One" xml:space="preserve">
+    <value>{0} image from the message body is listed. It is part of the message, so it is kept unless you choose otherwise.</value>
+  </data>
+  <data name="AttachDisp_InlineImages_Other" xml:space="preserve">
+    <value>{0} images from the message body are listed. They are part of the message, so they are kept unless you choose otherwise.</value>
+  </data>
+  <data name="AttachDisp_InlineImage_Badge" xml:space="preserve">
+    <value>body image</value>
+  </data>
+  <data name="AttachDisp_InlineImage_Placeholder" xml:space="preserve">
+    <value>[Image removed]</value>
+  </data>
+  <data name="Settings_TreatInlineImagesAsAttachments_CheckBox" xml:space="preserve">
+    <value>Offer the images of the message body for removal</value>
+  </data>
+  <data name="Settings_TreatInlineImagesAsAttachments_Info" xml:space="preserve">
+    <value>Off (default): images inside the message body, such as signature logos, are never removed. On: they are listed in the attachment window, marked as body images and kept by default, even when attachment removal is off. Removing one replaces it with "[Image removed]". Silent removal of all attachments never removes them, and encrypted mail is never changed.</value>
+  </data>
   <data name="AttachDisp_Mode_SameForAll" xml:space="preserve">
     <value>Same action and folder for all attachments</value>
   </data>

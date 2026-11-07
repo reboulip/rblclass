@@ -221,6 +221,14 @@
                                                    Text="{loc:Loc Key=Settings_StripSavedAttachments_CheckBox}" />
                                     </CheckBox>
                                 </DockPanel>
+                                <DockPanel Margin="0,3">
+                                    <TextBlock DockPanel.Dock="Right" Style="{DynamicResource InfoGlyph}"
+                                               ToolTip="{loc:Loc Key=Settings_TreatInlineImagesAsAttachments_Info}" />
+                                    <CheckBox IsChecked="{Binding TreatInlineImagesAsAttachments}">
+                                        <TextBlock TextWrapping="Wrap" MaxWidth="360"
+                                                   Text="{loc:Loc Key=Settings_TreatInlineImagesAsAttachments_CheckBox}" />
+                                    </CheckBox>
+                                </DockPanel>
                             </StackPanel>
                         </GroupBox>
                     </StackPanel>

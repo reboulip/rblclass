@@ -35,6 +35,12 @@
                     Visibility="{Binding HasInlineNotice, Converter={StaticResource BoolToVis}}">
                 <TextBlock Text="{Binding InlineNotice}" TextWrapping="Wrap" />
             </Border>
+            <Border Background="{DynamicResource Theme.ControlBackground}"
+                    BorderBrush="{DynamicResource Theme.ControlBorder}" BorderThickness="1"
+                    CornerRadius="3" Padding="8,5" Margin="0,0,0,6"
+                    Visibility="{Binding HasInlineImagesNotice, Converter={StaticResource BoolToVis}}">
+                <TextBlock Text="{Binding InlineImagesNotice}" TextWrapping="Wrap" />
+            </Border>
             <!-- How choices apply (v2.11.0.0 C1): all alike, one folder, or per attachment. -->
             <StackPanel Margin="0,0,0,6"
                         Visibility="{Binding HasRows, Converter={StaticResource BoolToVis}}">
@@ -71,6 +77,10 @@
                                 <TextBlock DockPanel.Dock="Right" Text="{Binding SizeText}"
                                            Style="{DynamicResource MutedText}"
                                            Margin="8,0,0,0" VerticalAlignment="Center" />
+                                <TextBlock DockPanel.Dock="Right" Text="{loc:Loc Key=AttachDisp_InlineImage_Badge}"
+                                           Style="{DynamicResource MutedText}" FontStyle="Italic"
+                                           Margin="8,0,0,0" VerticalAlignment="Center"
+                                           Visibility="{Binding IsInlineImage, Converter={StaticResource BoolToVis}}" />
                                 <TextBlock Text="{Binding FileName}" FontWeight="Bold"
                                            TextTrimming="CharacterEllipsis" />
                             </DockPanel>

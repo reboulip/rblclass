@@ -389,6 +389,13 @@ namespace RBLclass.AddIn.ViewModels
             set => Apply(_settings.StripSavedAttachments, value, v => _settings.StripSavedAttachments = v);
         }
 
+        /// <summary>Offer body images in the attachment window (v2.11.0.0 C2, default off).</summary>
+        public bool TreatInlineImagesAsAttachments
+        {
+            get => _settings.TreatInlineImagesAsAttachments;
+            set => Apply(_settings.TreatInlineImagesAsAttachments, value, v => _settings.TreatInlineImagesAsAttachments = v);
+        }
+
         /// <summary>
         /// Full per-item PERF/BEGIN/END diagnostic trace (v2.8.0.0 logging audit,
         /// default off). Takes effect after restarting Outlook.

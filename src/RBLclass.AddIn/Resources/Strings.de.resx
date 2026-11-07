@@ -252,6 +252,24 @@
   <data name="AttachDisp_InlineExcluded_Other" xml:space="preserve">
     <value>{0} eingebettete Bilder ausgeschlossen — eingebettete Bilder sind keine trennbaren Anlagen.</value>
   </data>
+  <data name="AttachDisp_InlineImages_One" xml:space="preserve">
+    <value>{0} Bild aus dem Nachrichtentext wird aufgeführt. Es gehört zur Nachricht und bleibt erhalten, sofern Sie nichts anderes wählen.</value>
+  </data>
+  <data name="AttachDisp_InlineImages_Other" xml:space="preserve">
+    <value>{0} Bilder aus dem Nachrichtentext werden aufgeführt. Sie gehören zur Nachricht und bleiben erhalten, sofern Sie nichts anderes wählen.</value>
+  </data>
+  <data name="AttachDisp_InlineImage_Badge" xml:space="preserve">
+    <value>Bild im Text</value>
+  </data>
+  <data name="AttachDisp_InlineImage_Placeholder" xml:space="preserve">
+    <value>[Bild entfernt]</value>
+  </data>
+  <data name="Settings_TreatInlineImagesAsAttachments_CheckBox" xml:space="preserve">
+    <value>Bilder im Nachrichtentext zum Entfernen anbieten</value>
+  </data>
+  <data name="Settings_TreatInlineImagesAsAttachments_Info" xml:space="preserve">
+    <value>Aus (Standard): Bilder im Nachrichtentext, etwa Signatur-Logos, werden nie entfernt. An: Sie werden im Anlagenfenster als Bilder im Text aufgeführt und standardmäßig behalten, auch wenn das Entfernen von Anlagen ausgeschaltet ist. Beim Entfernen wird ein Bild durch „[Bild entfernt]“ ersetzt. Das stille Entfernen aller Anlagen entfernt sie nie, und verschlüsselte E-Mails werden nie verändert.</value>
+  </data>
   <data name="AttachDisp_Mode_SameForAll" xml:space="preserve">
     <value>Gleiche Aktion und gleicher Ordner für alle Anlagen</value>
   </data>

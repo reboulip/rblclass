@@ -507,15 +507,20 @@ namespace RBLclass.AddIn.ViewModels
                 IReadOnlyList<AttachmentDisposition> attachmentDispositions = null;
                 AttachmentLabelOptions labelOptions = null;
                 bool encryptedOnlySkippedModal = false;
-                if (removeAttachments && s != null
-                    && s.AttachmentRemovalMode == AttachmentRemovalMode.Modal
+                bool autoTreatInline = s != null && s.TreatInlineImagesAsAttachments;
+                bool autoModalForRemoval = removeAttachments && s != null
+                    && s.AttachmentRemovalMode == AttachmentRemovalMode.Modal;
+                // Removal off: body images are still offered when opted in (v2.11.0.0 C2).
+                bool autoModalForImages = !removeAttachments && autoTreatInline;
+                if ((autoModalForRemoval || autoModalForImages)
                     && TaskPaneServices.GatherAttachments != null
                     && TaskPaneServices.ShowAttachmentDisposition != null)
                 {
                     var groups = TaskPaneServices.GatherAttachments(preflight.Processable);
-                    if (groups.Any(g => g.IsEncrypted || g.Attachments.Any(a => !a.IsInline)))
+                    if (autoModalForImages) groups = OnlyBodyImages(groups);
+                    if (HasOfferedAttachments(groups, autoTreatInline))
                     {
-                        if (AllAttachmentBearersAreEncrypted(groups))
+                        if (AllAttachmentBearersAreEncrypted(groups, autoTreatInline))
                         {
                             encryptedOnlySkippedModal = true;
                         }
@@ -682,16 +687,17 @@ namespace RBLclass.AddIn.ViewModels
                 return;
 
             var groups = TaskPaneServices.GatherAttachments(items);
+            bool treatInline = _settings != null && Settings.Load(_settings).TreatInlineImagesAsAttachments;
 
-            // Nothing to manage when no item has a detachable (non-inline) attachment.
-            if (!groups.Any(g => g.IsEncrypted || g.Attachments.Any(a => !a.IsInline)))
+            // Nothing to manage when no item has an attachment to offer.
+            if (!HasOfferedAttachments(groups, treatInline))
             {
                 PushStatus(_loc.GetString("Status_ManageAttachments_NoAttachments"));
                 return;
             }
 
             // Every attachment-bearing item is encrypted: skip the modal.
-            if (AllAttachmentBearersAreEncrypted(groups))
+            if (AllAttachmentBearersAreEncrypted(groups, treatInline))
             {
                 PushStatus(_loc.Plural(items.Count,
                     "Status_Classify_EncryptedAttachmentsKept_One",
@@ -1277,15 +1283,21 @@ namespace RBLclass.AddIn.ViewModels
                 // cancel aborts the whole classify.
                 IReadOnlyList<AttachmentDisposition> attachmentDispositions = null;
                 bool encryptedOnlySkippedModal = false;
-                if (_removeAttachments && _settings != null
-                    && Settings.Load(_settings).AttachmentRemovalMode == AttachmentRemovalMode.Modal
+                var classifySettings = _settings != null ? Settings.Load(_settings) : null;
+                bool treatInline = classifySettings != null && classifySettings.TreatInlineImagesAsAttachments;
+                bool modalForRemoval = _removeAttachments && classifySettings != null
+                    && classifySettings.AttachmentRemovalMode == AttachmentRemovalMode.Modal;
+                // Removal off: body images are still offered when opted in (v2.11.0.0 C2).
+                bool modalForImages = !_removeAttachments && treatInline;
+                if ((modalForRemoval || modalForImages)
                     && TaskPaneServices.GatherAttachments != null
                     && TaskPaneServices.ShowAttachmentDisposition != null)
                 {
                     var groups = TaskPaneServices.GatherAttachments(preflight.Items);
-                    if (groups.Any(g => g.IsEncrypted || g.Attachments.Any(a => !a.IsInline)))
+                    if (modalForImages) groups = OnlyBodyImages(groups);
+                    if (HasOfferedAttachments(groups, treatInline))
                     {
-                        if (AllAttachmentBearersAreEncrypted(groups))
+                        if (AllAttachmentBearersAreEncrypted(groups, treatInline))
                         {
                             // A3: skip modal when only encrypted items are present;
                             // a status notice will be appended after classify completes.
@@ -1394,13 +1406,31 @@ namespace RBLclass.AddIn.ViewModels
         private static async Task YieldToPump() =>
             await Dispatcher.Yield(DispatcherPriority.Background);
 
+        /// <summary>True when the modal has something to show: an encrypted item to report or an attachment to offer.</summary>
+        private static bool HasOfferedAttachments(
+            IReadOnlyList<(MailItemRef Item, IReadOnlyList<AttachmentInfo> Attachments, bool IsEncrypted)> groups,
+            bool treatInline) =>
+            groups.Any(g => g.IsEncrypted || g.Attachments.Any(a => InlineImageRules.IsOffered(a, treatInline)));
+
+        /// <summary>
+        /// The body images only, for a classify with attachment removal off
+        /// (v2.11.0.0 C2): regular attachments stay untouched, and encrypted mail
+        /// is left out since nothing was asked of it.
+        /// </summary>
+        private static IReadOnlyList<(MailItemRef Item, IReadOnlyList<AttachmentInfo> Attachments, bool IsEncrypted)> OnlyBodyImages(
+            IReadOnlyList<(MailItemRef Item, IReadOnlyList<AttachmentInfo> Attachments, bool IsEncrypted)> groups) =>
+            groups.Where(g => !g.IsEncrypted)
+                  .Select(g => (g.Item, (IReadOnlyList<AttachmentInfo>)g.Attachments.Where(a => a.IsInlineImage).ToList(), false))
+                  .ToList();
+
         private static bool AllAttachmentBearersAreEncrypted(
-            IReadOnlyList<(MailItemRef Item, IReadOnlyList<AttachmentInfo> Attachments, bool IsEncrypted)> groups)
+            IReadOnlyList<(MailItemRef Item, IReadOnlyList<AttachmentInfo> Attachments, bool IsEncrypted)> groups,
+            bool treatInline)
         {
             bool anyParticipant = false;
             foreach (var g in groups)
             {
-                if (g.IsEncrypted || g.Attachments.Any(a => !a.IsInline))
+                if (g.IsEncrypted || g.Attachments.Any(a => InlineImageRules.IsOffered(a, treatInline)))
                 {
                     anyParticipant = true;
                     if (!g.IsEncrypted) return false;

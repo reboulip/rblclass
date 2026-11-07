@@ -25,6 +25,9 @@ namespace RBLclass.AddIn.ViewModels
             Item = item;
             Info = info;
             MailSubject = mailSubject;
+            // A body image starts at Keep (v2.11.0.0 C2): signature logos are
+            // body images, and removing one is irreversible.
+            if (info.IsInlineImage) _action = AttachmentDispositionAction.Keep;
         }
 
         /// <summary>
@@ -33,15 +36,15 @@ namespace RBLclass.AddIn.ViewModels
         /// </summary>
         public bool IsActionUserSet => _actionSetByUser;
 
-        /// <summary>Inline images are not offered yet; v2.11.0.0 C2 sets this.</summary>
-        public bool IsInlineImage => false;
+        /// <summary>A body image (v2.11.0.0 C2): never changed by a group choice, shown with a badge.</summary>
+        public bool IsInlineImage => Info.IsInlineImage;
 
         /// <summary>True when a group choice leaves this row alone (<see cref="AttachmentBulkRule.IsPinned"/>).</summary>
         public bool IsPinned => AttachmentBulkRule.IsPinned(this);
 
         /// <summary>
         /// Apply a group choice (v2.11.0.0 C1). Not a user gesture unless
-        /// <paramref name="markUserSet"/>: "Delete all" pins its rows as before.
+        /// <paramref name="markUserSet"/>.
         /// </summary>
         internal void ApplyBulk(AttachmentDispositionAction action, string directory, bool markUserSet)
         {
