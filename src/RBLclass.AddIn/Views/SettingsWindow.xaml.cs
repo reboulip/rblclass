@@ -56,5 +56,11 @@ namespace RBLclass.AddIn.Views
 
         private void ClearArchiveFolder_Click(object sender, RoutedEventArgs e) =>
             (DataContext as SettingsViewModel)?.ClearArchiveFolder();
+
+        private void PickAttachmentDefaultFolder_Click(object sender, RoutedEventArgs e) =>
+            (DataContext as SettingsViewModel)?.PickAttachmentDefaultFolder();
+
+        private void ClearAttachmentDefaultFolder_Click(object sender, RoutedEventArgs e) =>
+            (DataContext as SettingsViewModel)?.ClearAttachmentDefaultFolder();
     }
 }

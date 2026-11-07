@@ -220,7 +220,7 @@
     <value>The selected folder path contains a semicolon (;), which is used as the list separator and cannot be stored. Choose a different folder.</value>
   </data>
   <data name="Settings_FavoriteFolders_BrowseDescription" xml:space="preserve">
-    <value>Select a folder to add to your favourites</value>
+    <value>Select a folder</value>
   </data>
   <data name="Settings_AttachmentRemovalMode_Label" xml:space="preserve">
     <value>When removing attachments:</value>
@@ -252,11 +252,32 @@
   <data name="AttachDisp_InlineExcluded_Other" xml:space="preserve">
     <value>{0} inline images were excluded — embedded images are not detachable files.</value>
   </data>
-  <data name="AttachDisp_DeleteAll_Button" xml:space="preserve">
-    <value>Delete all</value>
+  <data name="AttachDisp_Mode_SameForAll" xml:space="preserve">
+    <value>Same action and folder for all attachments</value>
   </data>
-  <data name="AttachDisp_UseSameDirectory_CheckBox" xml:space="preserve">
-    <value>Use the same save directory for all attachments</value>
+  <data name="AttachDisp_Mode_SameFolder" xml:space="preserve">
+    <value>An action per attachment, one folder for the saved ones</value>
+  </data>
+  <data name="AttachDisp_Mode_PerAttachment" xml:space="preserve">
+    <value>An action and a folder per attachment</value>
+  </data>
+  <data name="AttachDisp_SharedFolder_Label" xml:space="preserve">
+    <value>Folder for the saved attachments:</value>
+  </data>
+  <data name="AttachDisp_Group_Count_One" xml:space="preserve">
+    <value>{0} attachment</value>
+  </data>
+  <data name="AttachDisp_Group_Count_Other" xml:space="preserve">
+    <value>{0} attachments</value>
+  </data>
+  <data name="AttachDisp_Group_NoFolder" xml:space="preserve">
+    <value>No folder chosen</value>
+  </data>
+  <data name="Settings_DefaultAttachmentFolder_Label" xml:space="preserve">
+    <value>Default folder for saved attachments:</value>
+  </data>
+  <data name="Settings_DefaultAttachmentFolder_Info" xml:space="preserve">
+    <value>Pre-fills the save folder in the attachment window. If the folder cannot be reached (for example a disconnected network share), the field is left empty.</value>
   </data>
   <data name="AttachDisp_StripSaved_CheckBox" xml:space="preserve">
     <value>Remove saved attachments from the email (uncheck to save a copy but keep them on the email)</value>

@@ -406,7 +406,8 @@ namespace RBLclass.AddIn
                 };
                 TaskPaneServices.ShowAttachmentDisposition = groups =>
                 {
-                    var vm = new AttachmentDispositionViewModel(groups, TaskPaneServices.Localization);
+                    var vm = new AttachmentDispositionViewModel(groups, TaskPaneServices.Localization,
+                        ProbeAttachmentDefaultFolder());
                     var window = new AttachmentDispositionWindow { DataContext = vm };
                     return window.ShowDialog() == true ? vm.BuildDispositions() : null;
                 };
@@ -422,7 +423,8 @@ namespace RBLclass.AddIn
                             defaultStrip = Settings.Load(_settingsStore).StripSavedAttachments;
                     }
                     catch { /* fall back to strip-on */ }
-                    var vm = new AttachmentDispositionViewModel(groups, TaskPaneServices.Localization)
+                    var vm = new AttachmentDispositionViewModel(groups, TaskPaneServices.Localization,
+                        ProbeAttachmentDefaultFolder())
                     {
                         IntroText = TaskPaneServices.Localization.GetString("AttachDisp_StandaloneIntro"),
                         ShowStripToggle = true,
@@ -1082,6 +1084,26 @@ namespace RBLclass.AddIn
                         .Select(s => s.Trim())
                         .Where(s => s.Length > 0)
                         .ToArray();
+        }
+
+        /// <summary>
+        /// Resolve the configured default attachment folder off the UI thread
+        /// (v2.11.0.0 C1): a dead network share can block a directory check for
+        /// many seconds, so the check is bounded and an unreachable folder gives
+        /// an empty result. The modal opens at once and pre-fills when this ends.
+        /// </summary>
+        private Task<string> ProbeAttachmentDefaultFolder()
+        {
+            string configured = string.Empty;
+            try
+            {
+                if (_settingsStore != null)
+                    configured = Settings.Load(_settingsStore).AttachmentDefaultFolder;
+            }
+            catch { /* no default folder */ }
+
+            return Task.Run(() => AttachmentDefaultFolderResolver.Resolve(
+                configured, System.IO.Directory.Exists, TimeSpan.FromMilliseconds(750)));
         }
 
         private void TogglePane()

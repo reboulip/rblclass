@@ -645,7 +645,7 @@ text as the specification.
 
 ### C — Attachments
 
-- [ ] **C1.** Add a default attachment folder and a grouped view to the
+- [x] **C1.** Add a default attachment folder and a grouped view to the
       attachment disposition modal. Setting: a new key with a Browse control in
       Settings → Attachments, pre-filling the target directory; ignored
       (fields left empty) when the folder is unreachable, e.g. a disconnected
@@ -657,7 +657,11 @@ text as the specification.
       the folder: reword the label in EN/FR/DE. Unticking restores the per-row
       view. Keep the apply-to-all rule testable in `RBLclass.Core` with xUnit
       cases, and preserve the v2.7.1.0 A2 rule when returning to per-row mode.
-      [#65]
+      [#65] Decided 2026-11-07 (live review): the tick box became three modes,
+      default first: same action and folder for all attachments (the grouped
+      view); an action per attachment with one folder for the saved ones; an
+      action and a folder per attachment. The "Delete all" button is removed,
+      covered by the first mode.
 
 - [ ] **C2.** Add an opt-in option to treat body images as removable
       attachments (requires: C1, A3). New setting in Settings → Attachments,

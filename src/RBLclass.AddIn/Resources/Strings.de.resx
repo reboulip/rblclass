@@ -220,7 +220,7 @@
     <value>Der gewählte Ordnerpfad enthält ein Semikolon (;), das als Listentrennzeichen verwendet wird und nicht gespeichert werden kann. Wählen Sie einen anderen Ordner.</value>
   </data>
   <data name="Settings_FavoriteFolders_BrowseDescription" xml:space="preserve">
-    <value>Wählen Sie einen Ordner für Ihre Favoriten aus</value>
+    <value>Wählen Sie einen Ordner aus</value>
   </data>
   <data name="Settings_AttachmentRemovalMode_Label" xml:space="preserve">
     <value>Beim Entfernen von Anlagen:</value>
@@ -252,11 +252,32 @@
   <data name="AttachDisp_InlineExcluded_Other" xml:space="preserve">
     <value>{0} eingebettete Bilder ausgeschlossen — eingebettete Bilder sind keine trennbaren Anlagen.</value>
   </data>
-  <data name="AttachDisp_DeleteAll_Button" xml:space="preserve">
-    <value>Alle löschen</value>
+  <data name="AttachDisp_Mode_SameForAll" xml:space="preserve">
+    <value>Gleiche Aktion und gleicher Ordner für alle Anlagen</value>
   </data>
-  <data name="AttachDisp_UseSameDirectory_CheckBox" xml:space="preserve">
-    <value>Dasselbe Speicherverzeichnis für alle Anlagen verwenden</value>
+  <data name="AttachDisp_Mode_SameFolder" xml:space="preserve">
+    <value>Eine Aktion je Anlage, ein Ordner für die gespeicherten</value>
+  </data>
+  <data name="AttachDisp_Mode_PerAttachment" xml:space="preserve">
+    <value>Eine Aktion und ein Ordner je Anlage</value>
+  </data>
+  <data name="AttachDisp_SharedFolder_Label" xml:space="preserve">
+    <value>Ordner für die gespeicherten Anlagen:</value>
+  </data>
+  <data name="AttachDisp_Group_Count_One" xml:space="preserve">
+    <value>{0} Anlage</value>
+  </data>
+  <data name="AttachDisp_Group_Count_Other" xml:space="preserve">
+    <value>{0} Anlagen</value>
+  </data>
+  <data name="AttachDisp_Group_NoFolder" xml:space="preserve">
+    <value>Kein Ordner gewählt</value>
+  </data>
+  <data name="Settings_DefaultAttachmentFolder_Label" xml:space="preserve">
+    <value>Standardordner für gespeicherte Anlagen:</value>
+  </data>
+  <data name="Settings_DefaultAttachmentFolder_Info" xml:space="preserve">
+    <value>Füllt den Speicherordner im Anlagenfenster vor. Ist der Ordner nicht erreichbar (z. B. eine getrennte Netzwerkfreigabe), bleibt das Feld leer.</value>
   </data>
   <data name="AttachDisp_StripSaved_CheckBox" xml:space="preserve">
     <value>Gespeicherte Anhänge aus der E-Mail entfernen (deaktivieren, um eine Kopie zu speichern und sie in der E-Mail zu behalten)</value>

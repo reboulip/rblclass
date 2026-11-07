@@ -220,7 +220,7 @@
     <value>Le chemin du dossier sélectionné contient un point-virgule (;), utilisé comme séparateur de liste et qui ne peut pas être enregistré. Choisissez un autre dossier.</value>
   </data>
   <data name="Settings_FavoriteFolders_BrowseDescription" xml:space="preserve">
-    <value>Sélectionnez un dossier à ajouter à vos favoris</value>
+    <value>Sélectionnez un dossier</value>
   </data>
   <data name="Settings_AttachmentRemovalMode_Label" xml:space="preserve">
     <value>Lors de la suppression des pièces jointes :</value>
@@ -252,11 +252,32 @@
   <data name="AttachDisp_InlineExcluded_Other" xml:space="preserve">
     <value>{0} images intégrées exclues — les images incorporées ne sont pas des pièces jointes détachables.</value>
   </data>
-  <data name="AttachDisp_DeleteAll_Button" xml:space="preserve">
-    <value>Tout supprimer</value>
+  <data name="AttachDisp_Mode_SameForAll" xml:space="preserve">
+    <value>Même action et même dossier pour toutes les pièces jointes</value>
   </data>
-  <data name="AttachDisp_UseSameDirectory_CheckBox" xml:space="preserve">
-    <value>Utiliser le même dossier de sauvegarde pour toutes les pièces jointes</value>
+  <data name="AttachDisp_Mode_SameFolder" xml:space="preserve">
+    <value>Une action par pièce jointe, un seul dossier pour celles enregistrées</value>
+  </data>
+  <data name="AttachDisp_Mode_PerAttachment" xml:space="preserve">
+    <value>Une action et un dossier par pièce jointe</value>
+  </data>
+  <data name="AttachDisp_SharedFolder_Label" xml:space="preserve">
+    <value>Dossier des pièces jointes enregistrées :</value>
+  </data>
+  <data name="AttachDisp_Group_Count_One" xml:space="preserve">
+    <value>{0} pièce jointe</value>
+  </data>
+  <data name="AttachDisp_Group_Count_Other" xml:space="preserve">
+    <value>{0} pièces jointes</value>
+  </data>
+  <data name="AttachDisp_Group_NoFolder" xml:space="preserve">
+    <value>Aucun dossier choisi</value>
+  </data>
+  <data name="Settings_DefaultAttachmentFolder_Label" xml:space="preserve">
+    <value>Dossier par défaut des pièces jointes enregistrées :</value>
+  </data>
+  <data name="Settings_DefaultAttachmentFolder_Info" xml:space="preserve">
+    <value>Pré-remplit le dossier d'enregistrement dans la fenêtre des pièces jointes. Si le dossier est inaccessible (par exemple un partage réseau déconnecté), le champ reste vide.</value>
   </data>
   <data name="AttachDisp_StripSaved_CheckBox" xml:space="preserve">
     <value>Supprimer les pièces jointes enregistrées du message (décocher pour en enregistrer une copie tout en les conservant sur le message)</value>

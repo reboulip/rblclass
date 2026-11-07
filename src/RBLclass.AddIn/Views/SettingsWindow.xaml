@@ -196,6 +196,23 @@
                         </GroupBox>
                         <GroupBox Header="{loc:Loc Key=Settings_ManageAttachments_Header}">
                             <StackPanel Margin="6">
+                                <DockPanel Margin="0,0,0,2">
+                                    <TextBlock DockPanel.Dock="Right" Style="{DynamicResource InfoGlyph}"
+                                               ToolTip="{loc:Loc Key=Settings_DefaultAttachmentFolder_Info}" />
+                                    <TextBlock TextWrapping="Wrap"
+                                               Text="{loc:Loc Key=Settings_DefaultAttachmentFolder_Label}" />
+                                </DockPanel>
+                                <DockPanel LastChildFill="True" Margin="0,0,0,6">
+                                    <Button DockPanel.Dock="Right" Padding="8,2" Margin="6,0,0,0"
+                                            Content="{loc:Loc Key=Settings_TriageArchiveFolder_Clear_Button}"
+                                            Click="ClearAttachmentDefaultFolder_Click" />
+                                    <Button DockPanel.Dock="Right" Padding="8,2" Margin="6,0,0,0"
+                                            Content="{loc:Loc Key=Settings_TriageArchiveFolder_Pick_Button}"
+                                            Click="PickAttachmentDefaultFolder_Click" />
+                                    <TextBlock VerticalAlignment="Center" TextTrimming="CharacterEllipsis"
+                                               Style="{DynamicResource MutedText}"
+                                               Text="{Binding AttachmentDefaultFolderPath}" />
+                                </DockPanel>
                                 <DockPanel Margin="0,3">
                                     <TextBlock DockPanel.Dock="Right" Style="{DynamicResource InfoGlyph}"
                                                ToolTip="{loc:Loc Key=Settings_StripSavedAttachments_Info}" />
