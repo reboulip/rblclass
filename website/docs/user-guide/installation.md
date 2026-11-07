@@ -22,11 +22,19 @@ to approve with an admin account.
 
 ## Install
 
+!!! warning "Close Outlook before installing"
+    Windows cannot replace files Outlook has open. If Outlook is open, Windows
+    Installer shows a "close the following applications" window and waits for an
+    answer, which can look like a hang if it sits behind another window.
+    Choosing the automatic-close option closes Outlook, finishes the install and
+    restarts Outlook.
+
 1. Download `RBLclass-<version>.msi` from the internal distribution share (ask
    your deployment team for the link).
 2. Double-click the `.msi`. It is a standard per-user Windows Installer package
    — no extraction, no extra steps.
-3. Click through **Next → Install → Finish**. There is nothing to configure.
+3. A small progress window appears. There is no wizard and nothing to configure
+   (a SmartScreen prompt may appear, see below).
 4. Start Outlook and look for the **RBLclass** tab on the ribbon.
 
 ### SmartScreen warning
@@ -68,8 +76,8 @@ for exactly what is and isn't persisted.
 
 ## Updating
 
-Install a newer `RBLclass-<version>.msi` the same way — it replaces the previous
-version. The search index under `%LocalAppData%\RBLclass\` is left in place so a
+Close Outlook, then install a newer `RBLclass-<version>.msi` the same way — it
+replaces the previous version. The search index under `%LocalAppData%\RBLclass\` is left in place so a
 reinstall doesn't have to re-index from scratch.
 
 RBLclass can also *tell you* when a newer version exists, if your deployment team
@@ -83,11 +91,39 @@ marker, and does nothing if the URL is blank. See
 
 1. Close Outlook.
 2. **Settings → Apps → Installed apps → "RBLclass - Email Classifier" →
-   Uninstall** (or re-run the `.msi` and choose **Remove**).
+   Uninstall**. (Re-running the `.msi` does not offer a **Remove** option —
+   there is no wizard.)
 
 The search index database is intentionally **left in place** under
 `%LocalAppData%\RBLclass\` so that a reinstall is fast. For a fully clean slate,
 delete that folder by hand after uninstalling.
+
+## Troubleshooting the installer
+
+- **Automatic log (version 2.11 and later).** Every install, upgrade and
+  uninstall writes a verbose log to `%TEMP%\MSI*.LOG` with no switch needed.
+  Open `%TEMP%` and sort by **Date modified**. If no log appears, use the manual
+  command below (a machine Logging policy, or a failure before the package
+  opens, can prevent it). These logs are not cleaned up automatically.
+- **Manual log.** In Command Prompt:
+
+    ```
+    msiexec /i "RBLclass-<version>.msi" /l*vx "%TEMP%\rblclass-install.log"
+    ```
+
+    In PowerShell use `"$env:TEMP\rblclass-install.log"` for the log path.
+    Search the file for `Return value 3` to find the failing action.
+- **Event Viewer.** Run `eventvwr.msc`, go to **Windows Logs → Application** and
+  filter on Source **MsiInstaller**.
+- **Fallback: the PowerShell install kit.** `RBLclass-<version>-target.zip` is
+  AES-encrypted; your deployment team supplies the password. With Outlook closed
+  (the script refuses to run otherwise), run
+  `Install-RblClassAddIn.ps1 -SkipSigning`. To go back to the MSI afterwards, run
+  `Uninstall-RblClassAddIn.ps1` first.
+
+The installer log is separate from the runtime log in
+`%LocalAppData%\RBLclass\logs\`, which records what the add-in does once Outlook
+is running.
 
 ## Reporting a problem
 

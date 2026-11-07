@@ -84,6 +84,12 @@
   <data name="MainPane_Settings_ToolTip" xml:space="preserve">
     <value>Configurer la recherche de dossiers, le classement, les garde-fous d'envoi et le triage des éléments envoyés. Chaque modification s'applique et est conservée immédiatement.</value>
   </data>
+  <data name="MainPane_Help_Button" xml:space="preserve">
+    <value>?</value>
+  </data>
+  <data name="MainPane_Help_ToolTip" xml:space="preserve">
+    <value>Ouvrir la documentation en ligne (en anglais) dans votre navigateur</value>
+  </data>
   <data name="MainPane_UpdateFolders_Button" xml:space="preserve">
     <value>🔄</value>
   </data>
@@ -214,7 +220,7 @@
     <value>Le chemin du dossier sélectionné contient un point-virgule (;), utilisé comme séparateur de liste et qui ne peut pas être enregistré. Choisissez un autre dossier.</value>
   </data>
   <data name="Settings_FavoriteFolders_BrowseDescription" xml:space="preserve">
-    <value>Sélectionnez un dossier à ajouter à vos favoris</value>
+    <value>Sélectionnez un dossier</value>
   </data>
   <data name="Settings_AttachmentRemovalMode_Label" xml:space="preserve">
     <value>Lors de la suppression des pièces jointes :</value>
@@ -246,11 +252,50 @@
   <data name="AttachDisp_InlineExcluded_Other" xml:space="preserve">
     <value>{0} images intégrées exclues — les images incorporées ne sont pas des pièces jointes détachables.</value>
   </data>
-  <data name="AttachDisp_DeleteAll_Button" xml:space="preserve">
-    <value>Tout supprimer</value>
+  <data name="AttachDisp_InlineImages_One" xml:space="preserve">
+    <value>{0} image du corps du message est listée. Elle fait partie du message : elle est conservée sauf choix contraire.</value>
   </data>
-  <data name="AttachDisp_UseSameDirectory_CheckBox" xml:space="preserve">
-    <value>Utiliser le même dossier de sauvegarde pour toutes les pièces jointes</value>
+  <data name="AttachDisp_InlineImages_Other" xml:space="preserve">
+    <value>{0} images du corps du message sont listées. Elles font partie du message : elles sont conservées sauf choix contraire.</value>
+  </data>
+  <data name="AttachDisp_InlineImage_Badge" xml:space="preserve">
+    <value>image du corps</value>
+  </data>
+  <data name="AttachDisp_InlineImage_Placeholder" xml:space="preserve">
+    <value>[Image supprimée]</value>
+  </data>
+  <data name="Settings_TreatInlineImagesAsAttachments_CheckBox" xml:space="preserve">
+    <value>Proposer les images du corps du message à la suppression</value>
+  </data>
+  <data name="Settings_TreatInlineImagesAsAttachments_Info" xml:space="preserve">
+    <value>Désactivé (par défaut) : les images du corps du message, comme les logos de signature, ne sont jamais supprimées. Activé : elles sont listées dans la fenêtre des pièces jointes, signalées comme images du corps et conservées par défaut, même quand la suppression des pièces jointes est désactivée. En supprimer une la remplace par « [Image supprimée] ». La suppression silencieuse de toutes les pièces jointes ne les retire jamais, et les messages chiffrés ne sont jamais modifiés.</value>
+  </data>
+  <data name="AttachDisp_Mode_SameForAll" xml:space="preserve">
+    <value>Même action et même dossier pour toutes les pièces jointes</value>
+  </data>
+  <data name="AttachDisp_Mode_SameFolder" xml:space="preserve">
+    <value>Une action par pièce jointe, un seul dossier pour celles enregistrées</value>
+  </data>
+  <data name="AttachDisp_Mode_PerAttachment" xml:space="preserve">
+    <value>Une action et un dossier par pièce jointe</value>
+  </data>
+  <data name="AttachDisp_SharedFolder_Label" xml:space="preserve">
+    <value>Dossier des pièces jointes enregistrées :</value>
+  </data>
+  <data name="AttachDisp_Group_Count_One" xml:space="preserve">
+    <value>{0} pièce jointe</value>
+  </data>
+  <data name="AttachDisp_Group_Count_Other" xml:space="preserve">
+    <value>{0} pièces jointes</value>
+  </data>
+  <data name="AttachDisp_Group_NoFolder" xml:space="preserve">
+    <value>Aucun dossier choisi</value>
+  </data>
+  <data name="Settings_DefaultAttachmentFolder_Label" xml:space="preserve">
+    <value>Dossier par défaut des pièces jointes enregistrées :</value>
+  </data>
+  <data name="Settings_DefaultAttachmentFolder_Info" xml:space="preserve">
+    <value>Pré-remplit le dossier d'enregistrement dans la fenêtre des pièces jointes. Si le dossier est inaccessible (par exemple un partage réseau déconnecté), le champ reste vide.</value>
   </data>
   <data name="AttachDisp_StripSaved_CheckBox" xml:space="preserve">
     <value>Supprimer les pièces jointes enregistrées du message (décocher pour en enregistrer une copie tout en les conservant sur le message)</value>
@@ -748,16 +793,11 @@
     <value>{0} dossiers.</value>
   </data>
 
-  <!-- MainPaneViewModel: selection summary / headers -->
-  <data name="Status_NoMailSelectedSummary" xml:space="preserve">
-    <value>Aucun message sélectionné.</value>
+  <data name="Status_DocumentationOpenFailed" xml:space="preserve">
+    <value>Impossible d'ouvrir la documentation en ligne.</value>
   </data>
-  <data name="Status_MailSelected_One" xml:space="preserve">
-    <value>{0} message sélectionné.</value>
-  </data>
-  <data name="Status_MailSelected_Other" xml:space="preserve">
-    <value>{0} messages sélectionnés.</value>
-  </data>
+
+  <!-- MainPaneViewModel: headers -->
   <data name="Status_SelectedFolders_One" xml:space="preserve">
     <value>Sélectionné : {0} dossier</value>
   </data>
@@ -989,6 +1029,9 @@ Relancez votre recherche pour voir les dossiers créés ou renommés.</value>
   </data>
   <data name="About_Tech_Text" xml:space="preserve">
     <value>C# / .NET Framework 4.8 · WPF · SQLite · complément COM Outlook</value>
+  </data>
+  <data name="About_Documentation_Link" xml:space="preserve">
+    <value>Documentation en ligne</value>
   </data>
   <data name="About_Close_Button" xml:space="preserve">
     <value>Fermer</value>

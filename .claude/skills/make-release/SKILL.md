@@ -120,6 +120,21 @@ Get-ChildItem "installer\bin\*" | Where-Object {
 } | Remove-Item -Force
 ```
 
+Run this exact pipeline — do not interleave a `Write-Output`/logging stage
+between `Where-Object` and `Remove-Item -Force`. Mixing string and object
+output in one pipeline makes `Remove-Item` try to treat the log string as a
+path; it then fails on every match (`DriveNotFoundException`) while still
+*appearing* to run — a silent-failure trap that would leave stale artifacts
+behind on a release that actually has any. If you want visibility into what
+was removed, capture matches first and log separately:
+```powershell
+$stale = Get-ChildItem "installer\bin\*" | Where-Object {
+    ($_.Extension -in '.msi', '.wixpdb') -and ($_.Name -notmatch [regex]::Escape($Version))
+}
+$stale | ForEach-Object { Write-Host "Removing: $($_.Name)" }
+$stale | Remove-Item -Force
+```
+
 ## Ship to main, tag, and publish the GitHub release
 
 This step runs **after** the kit and MSI are successfully produced.
@@ -156,9 +171,16 @@ for the same content produces a redundant/empty PR.
 
 ### Find issues resolved by this release
 
-Scan the `## vX.X.X.X` section in `ROADMAP.md` matching the version. For
-every `[#N]` back-reference on a **checked** (`- [x]`) item, sort it into
-one of two buckets by the item's trailing text:
+At this point in the flow the working tree is on `main` (post fast-forward,
+pre `--no-ff` merge) — but the `## vX.X.X.X` section being shipped was only
+added on `develop` and doesn't exist in `main`'s `ROADMAP.md` yet. Read it
+with `git show develop:ROADMAP.md` (not a plain `Read`/grep of the
+working-tree file, which is still pre-merge at this step and will come up
+empty or short by a whole section).
+
+Scan the `## vX.X.X.X` section (via `git show develop:ROADMAP.md`) matching
+the version. For every `[#N]` back-reference on a **checked** (`- [x]`)
+item, sort it into one of two buckets by the item's trailing text:
 
 - **Pending** — the item carries a verification-pending note (the
   established phrasing is `- shipped, pending tests` or `- pending

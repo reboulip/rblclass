@@ -3,6 +3,7 @@ using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
+using System.Windows.Interop;
 using System.Windows.Media;
 using RBLclass.AddIn.ViewModels;
 using Serilog;
@@ -42,13 +43,39 @@ namespace RBLclass.AddIn.Views
         public void FocusSearch()
         {
             Dispatcher.BeginInvoke(
-                new Action(() =>
-                {
-                    QueryBox.Focus();
-                    Keyboard.Focus(QueryBox);
-                    QueryBox.SelectAll();
-                }),
+                new Action(() => FocusSearchCore(requireForeground: false)),
                 System.Windows.Threading.DispatcherPriority.Input);
+        }
+
+        private void FocusSearchCore(bool requireForeground)
+        {
+            try
+            {
+                if (ComponentDispatcher.IsThreadModal || !QueryBox.IsEnabled) return;
+
+                var source = PresentationSource.FromVisual(QueryBox) as HwndSource;
+                bool foreground = source != null && PaneFocus.IsRootForeground(source.Handle);
+                if (requireForeground && !foreground) return;
+
+                MoveWpfFocusToSearch();
+                if (foreground && !PaneFocus.HasFocus(source.Handle))
+                {
+                    Log.Debug("Search focus: WPF focus did not take, moving Win32 focus to the pane.");
+                    PaneFocus.SetFocus(source.Handle);
+                    MoveWpfFocusToSearch();
+                }
+            }
+            catch (Exception ex)
+            {
+                Log.Warning(ex, "Moving focus to the search box failed.");
+            }
+        }
+
+        private void MoveWpfFocusToSearch()
+        {
+            QueryBox.Focus();
+            Keyboard.Focus(QueryBox);
+            QueryBox.SelectAll();
         }
 
         // True when Ctrl was used as a modifier (Ctrl+A, Ctrl+C...) since it was
@@ -73,6 +100,7 @@ namespace RBLclass.AddIn.Views
                     {
                         try { Vm?.OpenHighlighted(); }
                         catch (Exception ex) { Log.Error(ex, "OpenHighlighted failed."); }
+                        FocusMessageListWhenIdle();
                     }),
                     System.Windows.Threading.DispatcherPriority.ApplicationIdle);
                 return;
@@ -83,22 +111,51 @@ namespace RBLclass.AddIn.Views
                 e.Handled = true;
                 try { await (Vm?.FileToHighlighted() ?? Task.CompletedTask); }
                 catch (Exception ex) { Log.Error(ex, "FileToHighlighted failed."); }
-                FocusSearchAfterClassify();
+                ReturnFocusToSearch();
             }
         }
 
         /// <summary>
-        /// Return keyboard focus to the pane's search box after a classify
-        /// (v2.7.0.0 A1) so Ctrl+Z can undo without the user first clicking back
-        /// into the pane - Outlook grabs focus for the message list when the filed
-        /// item leaves the view. Deferred to ApplicationIdle so it runs after
-        /// Outlook's post-move selection change, which would otherwise steal focus
-        /// straight back.
+        /// Return keyboard focus to the pane's search box after a pane action or a
+        /// modal close (v2.7.0.0 A1, v2.11.0.0 B3), so the user can type or press
+        /// Ctrl+Z straight away - Outlook grabs focus for the message list when
+        /// the filed item leaves the view. Deferred to ApplicationIdle, never
+        /// Input: it must run after Outlook's post-move selection change and after
+        /// IsBusy clears at Background priority, since the box is disabled while
+        /// busy. Skipped unless the pane's window is in the foreground, so it
+        /// cannot steal focus from a compose window.
+        /// "Open folder" deliberately does not call this: focus stays in the
+        /// explorer so the Delete key keeps working (#49).
         /// </summary>
-        private void FocusSearchAfterClassify()
+        public void ReturnFocusToSearch()
         {
             Dispatcher.BeginInvoke(
-                new Action(() => QueryBox?.Focus()),
+                new Action(() => FocusSearchCore(requireForeground: true)),
+                System.Windows.Threading.DispatcherPriority.ApplicationIdle);
+        }
+
+        /// <summary>
+        /// Hand the keyboard to Outlook's message list after opening a folder, so
+        /// Delete acts on the selected mail (#49). Skipped when the folder opened
+        /// in a new window, which leaves the pane's window in the background.
+        /// </summary>
+        private void FocusMessageListWhenIdle()
+        {
+            Dispatcher.BeginInvoke(
+                new Action(() =>
+                {
+                    try
+                    {
+                        var source = PresentationSource.FromVisual(QueryBox) as HwndSource;
+                        if (source == null || !PaneFocus.IsRootForeground(source.Handle)) return;
+                        if (!PaneFocus.FocusMessageList(source.Handle))
+                            Log.Debug("Message list window not found; focus left as it is.");
+                    }
+                    catch (Exception ex)
+                    {
+                        Log.Warning(ex, "Moving focus to the message list failed.");
+                    }
+                }),
                 System.Windows.Threading.DispatcherPriority.ApplicationIdle);
         }
 
@@ -143,8 +200,30 @@ namespace RBLclass.AddIn.Views
                 if (vm == null || !vm.CanUndo) return;
 
                 e.Handled = true;
-                vm.UndoLast();
+
+                // Handled here, so QueryBox_PreviewKeyDown never sees the chord:
+                // without this, releasing Ctrl in the refocused box would count
+                // as a lone tap and flip "List every matching folder".
+                _ctrlComboUsed = true;
+
+                try { vm.UndoLast(); }
+                catch (Exception ex) { Log.Error(ex, "UndoLast failed."); }
+                ReturnFocusToSearch();
             }
+        }
+
+        /// <summary>
+        /// "/" jumps to the search box from anywhere in the pane and is swallowed;
+        /// inside the box it types normally. Uses text input, not KeyDown, so it
+        /// works on AZERTY and the numeric keypad. Pane-scoped: there is no global
+        /// hook (EDR risk).
+        /// </summary>
+        private void MainPane_PreviewTextInput(object sender, TextCompositionEventArgs e)
+        {
+            if (e.Text != "/" || QueryBox.IsKeyboardFocused) return;
+
+            e.Handled = true;
+            FocusSearchCore(requireForeground: false);
         }
 
         private void Options_Click(object sender, RoutedEventArgs e)
@@ -181,91 +260,117 @@ namespace RBLclass.AddIn.Views
             if (folder == null) return;
             try { await (Vm?.FileToFolder(folder.Folder) ?? Task.CompletedTask); }
             catch (Exception ex) { Log.Error(ex, "FileToFolder failed."); }
-            FocusSearchAfterClassify();
+            ReturnFocusToSearch();
         }
 
         private async void Classify_Click(object sender, RoutedEventArgs e)
         {
             try { await (Vm?.ClassifyChecked() ?? Task.CompletedTask); }
             catch (Exception ex) { Log.Error(ex, "ClassifyChecked failed."); }
-            FocusSearchAfterClassify();
+            ReturnFocusToSearch();
         }
 
         private void RemoveDestination_Click(object sender, RoutedEventArgs e)
         {
             var folder = (sender as FrameworkElement)?.DataContext as RBLclass.Core.FolderNode;
             if (folder != null) Vm?.RemoveDestination(folder);
+            ReturnFocusToSearch();
         }
 
-        private void ClearSelection_Click(object sender, RoutedEventArgs e) => Vm?.ClearDestinations();
+        private void ClearSelection_Click(object sender, RoutedEventArgs e)
+        {
+            Vm?.ClearDestinations();
+            ReturnFocusToSearch();
+        }
 
         private void Undo_Click(object sender, RoutedEventArgs e)
         {
             try { Vm?.UndoLast(); }
             catch (Exception ex) { Log.Error(ex, "UndoLast failed."); }
+            ReturnFocusToSearch();
         }
 
-        private void DismissUpdate_Click(object sender, RoutedEventArgs e) => Vm?.DismissUpdateBanner();
+        private void DismissUpdate_Click(object sender, RoutedEventArgs e)
+        {
+            Vm?.DismissUpdateBanner();
+            ReturnFocusToSearch();
+        }
 
         private void DeletePinned_Click(object sender, RoutedEventArgs e)
         {
             try { Vm?.DeletePinned(); }
             catch (Exception ex) { Log.Error(ex, "DeletePinned failed."); }
+            ReturnFocusToSearch();
         }
 
         private void AutoClass_Click(object sender, RoutedEventArgs e)
         {
             try { Vm?.AutoClassSelected(); }
             catch (Exception ex) { Log.Error(ex, "AutoClassSelected failed."); }
-            FocusSearchAfterClassify();
+            ReturnFocusToSearch();
         }
 
         private void SaveAs_Click(object sender, RoutedEventArgs e)
         {
             try { Vm?.SaveAsSelected(); }
             catch (Exception ex) { Log.Error(ex, "SaveAsSelected failed."); }
+            ReturnFocusToSearch();
         }
 
         private void ManageAttachments_Click(object sender, RoutedEventArgs e)
         {
             try { Vm?.ManageAttachmentsSelected(); }
             catch (Exception ex) { Log.Error(ex, "ManageAttachmentsSelected failed."); }
+            ReturnFocusToSearch();
         }
 
         private void Settings_Click(object sender, RoutedEventArgs e)
         {
             try { Vm?.OpenSettings(); }
             catch (Exception ex) { Log.Error(ex, "Settings_Click failed."); }
+            ReturnFocusToSearch();
+        }
+
+        private void Help_Click(object sender, RoutedEventArgs e)
+        {
+            try { Vm?.OpenDocumentation(); }
+            catch (Exception ex) { Log.Error(ex, "Help_Click failed."); }
+            ReturnFocusToSearch();
         }
 
         private void UpdateFolders_Click(object sender, RoutedEventArgs e)
         {
             try { Vm?.RefreshFolders(); }
             catch (Exception ex) { Log.Error(ex, "UpdateFolders_Click failed."); }
+            ReturnFocusToSearch();
         }
 
         private void OpenFolder_Click(object sender, RoutedEventArgs e)
         {
             var folder = (sender as FrameworkElement)?.DataContext as SelectableFolder;
             if (folder != null) Vm?.OpenFolder(folder.Folder);
+            FocusMessageListWhenIdle();
         }
 
         private void NewSubfolder_Click(object sender, RoutedEventArgs e)
         {
             var folder = (sender as FrameworkElement)?.DataContext as SelectableFolder;
             if (folder != null) Vm?.CreateSubfolderUnder(folder.Folder);
+            ReturnFocusToSearch();
         }
 
         private void RenameFolder_Click(object sender, RoutedEventArgs e)
         {
             var folder = (sender as FrameworkElement)?.DataContext as SelectableFolder;
             if (folder != null) Vm?.RenameFolder(folder.Folder);
+            ReturnFocusToSearch();
         }
 
         private void DeleteFolder_Click(object sender, RoutedEventArgs e)
         {
             var folder = (sender as FrameworkElement)?.DataContext as SelectableFolder;
             if (folder != null) Vm?.DeleteFolder(folder.Folder);
+            ReturnFocusToSearch();
         }
 
         private void ExpandPath_Click(object sender, RoutedEventArgs e)

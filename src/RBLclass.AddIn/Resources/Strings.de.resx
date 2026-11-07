@@ -84,6 +84,12 @@
   <data name="MainPane_Settings_ToolTip" xml:space="preserve">
     <value>Konfigurieren Sie Ordnersuche, Klassieren, Sende-Sicherungen und die Triage gesendeter Objekte. Jede Änderung wird sofort angewendet und gespeichert.</value>
   </data>
+  <data name="MainPane_Help_Button" xml:space="preserve">
+    <value>?</value>
+  </data>
+  <data name="MainPane_Help_ToolTip" xml:space="preserve">
+    <value>Online-Dokumentation (auf Englisch) im Browser öffnen</value>
+  </data>
   <data name="MainPane_UpdateFolders_Button" xml:space="preserve">
     <value>🔄</value>
   </data>
@@ -214,7 +220,7 @@
     <value>Der gewählte Ordnerpfad enthält ein Semikolon (;), das als Listentrennzeichen verwendet wird und nicht gespeichert werden kann. Wählen Sie einen anderen Ordner.</value>
   </data>
   <data name="Settings_FavoriteFolders_BrowseDescription" xml:space="preserve">
-    <value>Wählen Sie einen Ordner für Ihre Favoriten aus</value>
+    <value>Wählen Sie einen Ordner aus</value>
   </data>
   <data name="Settings_AttachmentRemovalMode_Label" xml:space="preserve">
     <value>Beim Entfernen von Anlagen:</value>
@@ -246,11 +252,50 @@
   <data name="AttachDisp_InlineExcluded_Other" xml:space="preserve">
     <value>{0} eingebettete Bilder ausgeschlossen — eingebettete Bilder sind keine trennbaren Anlagen.</value>
   </data>
-  <data name="AttachDisp_DeleteAll_Button" xml:space="preserve">
-    <value>Alle löschen</value>
+  <data name="AttachDisp_InlineImages_One" xml:space="preserve">
+    <value>{0} Bild aus dem Nachrichtentext wird aufgeführt. Es gehört zur Nachricht und bleibt erhalten, sofern Sie nichts anderes wählen.</value>
   </data>
-  <data name="AttachDisp_UseSameDirectory_CheckBox" xml:space="preserve">
-    <value>Dasselbe Speicherverzeichnis für alle Anlagen verwenden</value>
+  <data name="AttachDisp_InlineImages_Other" xml:space="preserve">
+    <value>{0} Bilder aus dem Nachrichtentext werden aufgeführt. Sie gehören zur Nachricht und bleiben erhalten, sofern Sie nichts anderes wählen.</value>
+  </data>
+  <data name="AttachDisp_InlineImage_Badge" xml:space="preserve">
+    <value>Bild im Text</value>
+  </data>
+  <data name="AttachDisp_InlineImage_Placeholder" xml:space="preserve">
+    <value>[Bild entfernt]</value>
+  </data>
+  <data name="Settings_TreatInlineImagesAsAttachments_CheckBox" xml:space="preserve">
+    <value>Bilder im Nachrichtentext zum Entfernen anbieten</value>
+  </data>
+  <data name="Settings_TreatInlineImagesAsAttachments_Info" xml:space="preserve">
+    <value>Aus (Standard): Bilder im Nachrichtentext, etwa Signatur-Logos, werden nie entfernt. An: Sie werden im Anlagenfenster als Bilder im Text aufgeführt und standardmäßig behalten, auch wenn das Entfernen von Anlagen ausgeschaltet ist. Beim Entfernen wird ein Bild durch „[Bild entfernt]“ ersetzt. Das stille Entfernen aller Anlagen entfernt sie nie, und verschlüsselte E-Mails werden nie verändert.</value>
+  </data>
+  <data name="AttachDisp_Mode_SameForAll" xml:space="preserve">
+    <value>Gleiche Aktion und gleicher Ordner für alle Anlagen</value>
+  </data>
+  <data name="AttachDisp_Mode_SameFolder" xml:space="preserve">
+    <value>Eine Aktion je Anlage, ein Ordner für die gespeicherten</value>
+  </data>
+  <data name="AttachDisp_Mode_PerAttachment" xml:space="preserve">
+    <value>Eine Aktion und ein Ordner je Anlage</value>
+  </data>
+  <data name="AttachDisp_SharedFolder_Label" xml:space="preserve">
+    <value>Ordner für die gespeicherten Anlagen:</value>
+  </data>
+  <data name="AttachDisp_Group_Count_One" xml:space="preserve">
+    <value>{0} Anlage</value>
+  </data>
+  <data name="AttachDisp_Group_Count_Other" xml:space="preserve">
+    <value>{0} Anlagen</value>
+  </data>
+  <data name="AttachDisp_Group_NoFolder" xml:space="preserve">
+    <value>Kein Ordner gewählt</value>
+  </data>
+  <data name="Settings_DefaultAttachmentFolder_Label" xml:space="preserve">
+    <value>Standardordner für gespeicherte Anlagen:</value>
+  </data>
+  <data name="Settings_DefaultAttachmentFolder_Info" xml:space="preserve">
+    <value>Füllt den Speicherordner im Anlagenfenster vor. Ist der Ordner nicht erreichbar (z. B. eine getrennte Netzwerkfreigabe), bleibt das Feld leer.</value>
   </data>
   <data name="AttachDisp_StripSaved_CheckBox" xml:space="preserve">
     <value>Gespeicherte Anhänge aus der E-Mail entfernen (deaktivieren, um eine Kopie zu speichern und sie in der E-Mail zu behalten)</value>
@@ -748,16 +793,11 @@
     <value>{0} Ordner.</value>
   </data>
 
-  <!-- MainPaneViewModel: selection summary / headers -->
-  <data name="Status_NoMailSelectedSummary" xml:space="preserve">
-    <value>Keine E-Mail ausgewählt.</value>
+  <data name="Status_DocumentationOpenFailed" xml:space="preserve">
+    <value>Die Online-Dokumentation konnte nicht geöffnet werden.</value>
   </data>
-  <data name="Status_MailSelected_One" xml:space="preserve">
-    <value>{0} E-Mail ausgewählt.</value>
-  </data>
-  <data name="Status_MailSelected_Other" xml:space="preserve">
-    <value>{0} E-Mails ausgewählt.</value>
-  </data>
+
+  <!-- MainPaneViewModel: headers -->
   <data name="Status_SelectedFolders_One" xml:space="preserve">
     <value>Ausgewählt: {0} Ordner</value>
   </data>
@@ -989,6 +1029,9 @@ Führen Sie Ihre Suche erneut aus, um neu erstellte oder umbenannte Ordner zu se
   </data>
   <data name="About_Tech_Text" xml:space="preserve">
     <value>C# / .NET Framework 4.8 · WPF · SQLite · Outlook-COM-Add-in</value>
+  </data>
+  <data name="About_Documentation_Link" xml:space="preserve">
+    <value>Online-Dokumentation</value>
   </data>
   <data name="About_Close_Button" xml:space="preserve">
     <value>Schließen</value>

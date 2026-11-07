@@ -21,14 +21,25 @@ namespace RBLclass.Core
     public sealed class AttachmentDisposition
     {
         public AttachmentDisposition(MailItemRef item, int attachmentId, string fileName,
-                                     AttachmentDispositionAction action, string targetDirectory = null)
+                                     AttachmentDispositionAction action, string targetDirectory = null,
+                                     string contentId = null, string inlinePlaceholder = null)
         {
             Item = item ?? throw new ArgumentNullException(nameof(item));
             AttachmentId = attachmentId;
             FileName = fileName ?? string.Empty;
             Action = action;
             TargetDirectory = targetDirectory ?? string.Empty;
+            ContentId = InlineImageRules.NormalizeContentId(contentId);
+            InlinePlaceholder = inlinePlaceholder ?? string.Empty;
         }
+
+        /// <summary>Set for a body image (v2.11.0.0 C2): removed by rewriting the body, not by index.</summary>
+        public string ContentId { get; }
+
+        public bool IsInlineImage => ContentId != null;
+
+        /// <summary>Text that replaces a removed body image.</summary>
+        public string InlinePlaceholder { get; }
 
         public MailItemRef Item { get; }
         public int AttachmentId { get; }

@@ -10,7 +10,7 @@ namespace RBLclass.AddIn.ViewModels
     /// directory picked via the F1 favourite-folder keyword search (or the OS
     /// browse fallback).
     /// </summary>
-    public sealed class AttachmentRowViewModel : ObservableObject
+    public sealed class AttachmentRowViewModel : ObservableObject, IAttachmentRowState
     {
         // Save-to is the default per user feedback (v2.7.1.0 A2): the default
         // disposition must not be destructive. Confirm stays gated until the
@@ -25,25 +25,33 @@ namespace RBLclass.AddIn.ViewModels
             Item = item;
             Info = info;
             MailSubject = mailSubject;
+            // A body image starts at Keep (v2.11.0.0 C2): signature logos are
+            // body images, and removing one is irreversible.
+            if (info.IsInlineImage) _action = AttachmentDispositionAction.Keep;
         }
 
-        internal System.Action<string> DirectoryChosen;
+        /// <summary>
+        /// True once the user has explicitly picked an action for this row. A
+        /// group choice must never override such a row (v2.7.1.0 A2).
+        /// </summary>
+        public bool IsActionUserSet => _actionSetByUser;
+
+        /// <summary>A body image (v2.11.0.0 C2): never changed by a group choice, shown with a badge.</summary>
+        public bool IsInlineImage => Info.IsInlineImage;
+
+        /// <summary>True when a group choice leaves this row alone (<see cref="AttachmentBulkRule.IsPinned"/>).</summary>
+        public bool IsPinned => AttachmentBulkRule.IsPinned(this);
 
         /// <summary>
-        /// True once the user has explicitly picked an action for this row.
-        /// Same-directory propagation must never override such a row (v2.7.1.0 A2).
+        /// Apply a group choice (v2.11.0.0 C1). Not a user gesture unless
+        /// <paramref name="markUserSet"/>.
         /// </summary>
-        internal bool IsActionUserSet => _actionSetByUser;
-
-        internal void SetDirectorySilent(string directory)
+        internal void ApplyBulk(AttachmentDispositionAction action, string directory, bool markUserSet)
         {
-            if (string.IsNullOrWhiteSpace(directory)) return;
-            TargetDirectory = directory;
-            // Propagation, not a user gesture - must not mark the row user-set.
-            SetActionCore(AttachmentDispositionAction.SaveTo);
-            _favoriteQuery = string.Empty;
-            OnPropertyChanged(nameof(FavoriteQuery));
-            FavoriteResults.Clear();
+            TargetDirectory = AttachmentBulkRule.DirectoryFor(this, action, directory);
+            _actionSetByUser = markUserSet;
+            SetActionCore(action);
+            OnPropertyChanged(nameof(IsPinned));
         }
 
         public MailItemRef Item { get; }
@@ -62,12 +70,14 @@ namespace RBLclass.AddIn.ViewModels
             {
                 _actionSetByUser = true;
                 SetActionCore(value);
+                OnPropertyChanged(nameof(IsPinned));
             }
         }
 
         private void SetActionCore(AttachmentDispositionAction action)
         {
             if (!SetProperty(ref _action, action)) return;
+            OnPropertyChanged(nameof(IsPinned));
             OnPropertyChanged(nameof(IsDelete));
             OnPropertyChanged(nameof(IsSaveTo));
             OnPropertyChanged(nameof(IsKeep));
@@ -133,7 +143,6 @@ namespace RBLclass.AddIn.ViewModels
             _favoriteQuery = string.Empty;
             OnPropertyChanged(nameof(FavoriteQuery));
             FavoriteResults.Clear();
-            DirectoryChosen?.Invoke(directory);
         }
 
         public void Browse()

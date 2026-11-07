@@ -1,13 +1,29 @@
+using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Linq;
+using System.Threading.Tasks;
+using System.Windows.Threading;
 using RBLclass.AddIn.Localization;
 using RBLclass.AddIn.Mvvm;
 using RBLclass.Core;
 
 namespace RBLclass.AddIn.ViewModels
 {
+    /// <summary>How the disposition modal applies choices to the attachments (v2.11.0.0 C1).</summary>
+    public enum AttachmentDispositionMode
+    {
+        /// <summary>One action and one folder for every attachment (the default).</summary>
+        SameForAll,
+
+        /// <summary>An action per attachment, one folder for every saved one.</summary>
+        SameFolder,
+
+        /// <summary>An action and a folder per attachment.</summary>
+        PerAttachment
+    }
+
     /// <summary>
     /// View model for the F2 per-attachment disposition modal: one row per
     /// attachment across all selected mails (encrypted mails excluded and
@@ -17,13 +33,29 @@ namespace RBLclass.AddIn.ViewModels
     /// </summary>
     public sealed class AttachmentDispositionViewModel : ObservableObject
     {
+        private AttachmentDispositionMode _mode = AttachmentDispositionMode.SameForAll;
+        private readonly string _inlinePlaceholder;
+
+        /// <param name="treatInlineImages">
+        /// Offer body images (inline with a content id) as rows, starting at Keep
+        /// (v2.11.0.0 C2). Off: they are counted in the inline notice instead.
+        /// </param>
+        /// <param name="defaultFolder">
+        /// Optional: the configured default folder, resolved off the UI thread
+        /// (empty when unreachable). Pre-fills the folder when it completes,
+        /// unless the user picked one meanwhile (v2.11.0.0 C1).
+        /// </param>
         public AttachmentDispositionViewModel(
             IReadOnlyList<(MailItemRef Item, IReadOnlyList<AttachmentInfo> Attachments, bool IsEncrypted)> groups,
-            ILocalizationService loc)
+            ILocalizationService loc,
+            Task<string> defaultFolder = null,
+            bool treatInlineImages = false)
         {
+            _inlinePlaceholder = loc.GetString("AttachDisp_InlineImage_Placeholder");
             Rows = new ObservableCollection<AttachmentRowViewModel>();
             var encrypted = new List<string>();
             int inlineExcluded = 0;
+            int inlineOffered = 0;
 
             foreach (var g in groups)
             {
@@ -35,12 +67,13 @@ namespace RBLclass.AddIn.ViewModels
                 }
                 foreach (var att in g.Attachments)
                 {
-                    // Inline/embedded images are not detachable files - never
-                    // offer them for disposition, just count them (v2.5.0.0 B2).
-                    if (att.IsInline) { inlineExcluded++; continue; }
+                    // Inline/embedded parts are not detachable files: only body
+                    // images, and only when opted in, are offered; the others are
+                    // just counted (v2.5.0.0 B2, v2.11.0.0 C2).
+                    if (!InlineImageRules.IsOffered(att, treatInlineImages)) { inlineExcluded++; continue; }
+                    if (att.IsInlineImage) inlineOffered++;
                     var row = new AttachmentRowViewModel(g.Item, att, g.Item.Subject);
                     row.PropertyChanged += OnRowChanged;
-                    row.DirectoryChosen = dir => ApplySameDirectory(dir, row);
                     Rows.Add(row);
                 }
             }
@@ -55,7 +88,34 @@ namespace RBLclass.AddIn.ViewModels
                 : loc.Plural(inlineExcluded,
                     "AttachDisp_InlineExcluded_One", "AttachDisp_InlineExcluded_Other");
 
+            InlineImagesNotice = inlineOffered == 0
+                ? string.Empty
+                : loc.Plural(inlineOffered, "AttachDisp_InlineImages_One", "AttachDisp_InlineImages_Other");
+
             IntroText = loc.GetString("AttachDisp_Intro");
+            GroupCountText = loc.Plural(Rows.Count, "AttachDisp_Group_Count_One", "AttachDisp_Group_Count_Other");
+
+            Group = new AttachmentGroupOptionsViewModel(Rows);
+            Group.Picker.PropertyChanged += OnSharedFolderChanged;
+
+            // Group choices never touch body images: with nothing else to group,
+            // start per attachment.
+            if (Rows.Count > 0 && Rows.All(r => r.IsInlineImage))
+            {
+                _mode = AttachmentDispositionMode.PerAttachment;
+                Group.IsActive = false;
+            }
+            Group.Apply();
+
+            if (defaultFolder != null)
+            {
+                var dispatcher = Dispatcher.CurrentDispatcher;
+                defaultFolder.ContinueWith(t =>
+                {
+                    if (t.Status != TaskStatus.RanToCompletion || string.IsNullOrWhiteSpace(t.Result)) return;
+                    dispatcher.BeginInvoke(new Action(() => Prefill(t.Result)));
+                });
+            }
         }
 
         /// <summary>
@@ -65,9 +125,9 @@ namespace RBLclass.AddIn.ViewModels
         public string IntroText { get; set; }
 
         /// <summary>
-        /// Show the "remove saved attachments from the email" checkbox — set only
-        /// for the standalone A2 modal; the classify path leaves it hidden so
-        /// Save-to keeps stripping as before (v2.8.0.0 A3).
+        /// Show the "remove saved attachments" checkbox — set only for the
+        /// standalone A2 modal; the classify path leaves it hidden so Save-to
+        /// keeps stripping as before (v2.8.0.0 A3).
         /// </summary>
         public bool ShowStripToggle { get; set; }
 
@@ -85,47 +145,123 @@ namespace RBLclass.AddIn.ViewModels
         /// <summary>Notice that inline/embedded images were excluded (v2.5.0.0 B2).</summary>
         public string InlineNotice { get; }
         public bool HasInlineNotice => !string.IsNullOrEmpty(InlineNotice);
+
+        /// <summary>Notice that body images are listed and default to Keep (v2.11.0.0 C2).</summary>
+        public string InlineImagesNotice { get; }
+        public bool HasInlineImagesNotice => !string.IsNullOrEmpty(InlineImagesNotice);
         public bool HasRows => Rows.Count > 0;
 
-        private bool _useSameDirectory = true;
-        public bool UseSameDirectory
-        {
-            get => _useSameDirectory;
-            set { SetProperty(ref _useSameDirectory, value); }
-        }
+        /// <summary>The grouped options of "same action and folder for all"; its picker is also the shared folder.</summary>
+        public AttachmentGroupOptionsViewModel Group { get; }
 
-        /// <summary>True when every Save-to row has a destination directory (gates Confirm).</summary>
-        public bool CanConfirm =>
-            Rows.All(r => r.Action != AttachmentDispositionAction.SaveTo
-                          || !string.IsNullOrWhiteSpace(r.TargetDirectory));
+        /// <summary>"N attachments" header of the grouped list.</summary>
+        public string GroupCountText { get; }
 
-        /// <summary>"Apply to all": set every row to Delete.</summary>
-        public void DeleteAll()
+        /// <summary>
+        /// Switching to "same for all" re-reads the group choice from the rows, and
+        /// rows the user set to Delete or Keep stay as they are. Switching to "one
+        /// folder" gives the shared folder to every Save-to row. Switching to "per
+        /// attachment" keeps each row as it is, now editable.
+        /// </summary>
+        public AttachmentDispositionMode Mode
         {
-            foreach (var r in Rows) r.Action = AttachmentDispositionAction.Delete;
-        }
-
-        private void ApplySameDirectory(string directory, AttachmentRowViewModel source)
-        {
-            if (!_useSameDirectory) return;
-            foreach (var r in Rows)
+            get => _mode;
+            set
             {
-                if (ReferenceEquals(r, source)) continue;
-                // Never flip an explicitly-chosen Delete/Keep row to Save-to; a
-                // row already in Save-to just receives the updated directory
-                // (v2.7.1.0 A2).
-                if (r.IsActionUserSet && r.Action != AttachmentDispositionAction.SaveTo)
-                    continue;
-                r.SetDirectorySilent(directory);
+                if (!SetProperty(ref _mode, value)) return;
+                Group.IsActive = value == AttachmentDispositionMode.SameForAll;
+                if (value == AttachmentDispositionMode.SameForAll) Group.Seed();
+                if (value == AttachmentDispositionMode.SameFolder) StartSharedFolder();
+                OnPropertyChanged(nameof(IsModeSameForAll));
+                OnPropertyChanged(nameof(IsModeSameFolder));
+                OnPropertyChanged(nameof(IsModePerAttachment));
+                OnPropertyChanged(nameof(IsGrouped));
+                OnPropertyChanged(nameof(IsPerRow));
+                OnPropertyChanged(nameof(ShowSharedFolder));
+                OnPropertyChanged(nameof(ShowRowFolders));
             }
         }
 
+        public bool IsModeSameForAll
+        {
+            get => _mode == AttachmentDispositionMode.SameForAll;
+            set { if (value) Mode = AttachmentDispositionMode.SameForAll; }
+        }
+
+        public bool IsModeSameFolder
+        {
+            get => _mode == AttachmentDispositionMode.SameFolder;
+            set { if (value) Mode = AttachmentDispositionMode.SameFolder; }
+        }
+
+        public bool IsModePerAttachment
+        {
+            get => _mode == AttachmentDispositionMode.PerAttachment;
+            set { if (value) Mode = AttachmentDispositionMode.PerAttachment; }
+        }
+
+        public bool IsGrouped => HasRows && _mode == AttachmentDispositionMode.SameForAll;
+        public bool IsPerRow => HasRows && _mode != AttachmentDispositionMode.SameForAll;
+        public bool ShowSharedFolder => HasRows && _mode == AttachmentDispositionMode.SameFolder;
+        public bool ShowRowFolders => _mode == AttachmentDispositionMode.PerAttachment;
+
+        /// <summary>True when every Save-to row has a destination directory (gates Confirm).</summary>
+        public bool CanConfirm => AttachmentBulkRule.CanConfirm(Rows);
+
         public IReadOnlyList<AttachmentDisposition> BuildDispositions() =>
             Rows.Select(r => new AttachmentDisposition(
-                r.Item, r.Info.Id, r.FileName, r.Action, r.TargetDirectory)).ToArray();
+                r.Item, r.Info.Id, r.FileName, r.Action, r.TargetDirectory,
+                r.IsInlineImage ? r.Info.ContentId : null,
+                r.IsInlineImage ? _inlinePlaceholder : null)).ToArray();
+
+        private void Prefill(string directory)
+        {
+            switch (_mode)
+            {
+                case AttachmentDispositionMode.SameForAll:
+                    Group.Prefill(directory);
+                    break;
+                case AttachmentDispositionMode.SameFolder:
+                    if (!Group.Picker.HasTarget) Group.Picker.TargetDirectory = directory;
+                    break;
+                case AttachmentDispositionMode.PerAttachment:
+                    foreach (var r in Rows.Where(r => r.IsSaveTo && !r.HasTarget))
+                        r.TargetDirectory = directory;
+                    break;
+            }
+        }
+
+        private void StartSharedFolder()
+        {
+            if (!Group.Picker.HasTarget)
+            {
+                var first = Rows.FirstOrDefault(r => r.IsSaveTo && r.HasTarget);
+                if (first != null) Group.Picker.TargetDirectory = first.TargetDirectory;
+            }
+            ApplySharedFolder();
+        }
+
+        private void ApplySharedFolder()
+        {
+            foreach (var r in Rows)
+                r.TargetDirectory = AttachmentBulkRule.SharedFolderFor(r, Group.Picker.TargetDirectory);
+        }
+
+        private void OnSharedFolderChanged(object sender, PropertyChangedEventArgs e)
+        {
+            if (e.PropertyName == nameof(SaveAsPickerViewModel.TargetDirectory)
+                && _mode == AttachmentDispositionMode.SameFolder)
+                ApplySharedFolder();
+        }
 
         private void OnRowChanged(object sender, PropertyChangedEventArgs e)
         {
+            // In "one folder" mode a row switched to Save to takes the shared folder.
+            if (e.PropertyName == nameof(AttachmentRowViewModel.Action)
+                && _mode == AttachmentDispositionMode.SameFolder
+                && sender is AttachmentRowViewModel row)
+                row.TargetDirectory = AttachmentBulkRule.SharedFolderFor(row, Group.Picker.TargetDirectory);
+
             if (e.PropertyName == nameof(AttachmentRowViewModel.Action)
                 || e.PropertyName == nameof(AttachmentRowViewModel.TargetDirectory)
                 || e.PropertyName == nameof(AttachmentRowViewModel.IsSaveTo))

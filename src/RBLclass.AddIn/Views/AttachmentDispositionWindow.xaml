@@ -5,6 +5,7 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:loc="clr-namespace:RBLclass.AddIn.Localization"
+        xmlns:views="clr-namespace:RBLclass.AddIn.Views"
         Title="{loc:Loc Key=AttachDisp_Title}" Height="540" Width="760"
         WindowStartupLocation="CenterOwner" MinHeight="340" MinWidth="560"
         d:DesignHeight="540" d:DesignWidth="760">
@@ -34,13 +35,27 @@
                     Visibility="{Binding HasInlineNotice, Converter={StaticResource BoolToVis}}">
                 <TextBlock Text="{Binding InlineNotice}" TextWrapping="Wrap" />
             </Border>
-            <Button HorizontalAlignment="Left" Padding="8,2" Margin="0,0,0,6"
-                    Content="{loc:Loc Key=AttachDisp_DeleteAll_Button}" Click="DeleteAll_Click"
-                    Visibility="{Binding HasRows, Converter={StaticResource BoolToVis}}" />
-            <CheckBox Content="{loc:Loc Key=AttachDisp_UseSameDirectory_CheckBox}"
-                      IsChecked="{Binding UseSameDirectory, Mode=TwoWay}"
-                      Margin="0,0,0,4"
-                      Visibility="{Binding HasRows, Converter={StaticResource BoolToVis}}" />
+            <Border Background="{DynamicResource Theme.ControlBackground}"
+                    BorderBrush="{DynamicResource Theme.ControlBorder}" BorderThickness="1"
+                    CornerRadius="3" Padding="8,5" Margin="0,0,0,6"
+                    Visibility="{Binding HasInlineImagesNotice, Converter={StaticResource BoolToVis}}">
+                <TextBlock Text="{Binding InlineImagesNotice}" TextWrapping="Wrap" />
+            </Border>
+            <!-- How choices apply (v2.11.0.0 C1): all alike, one folder, or per attachment. -->
+            <StackPanel Margin="0,0,0,6"
+                        Visibility="{Binding HasRows, Converter={StaticResource BoolToVis}}">
+                <RadioButton Content="{loc:Loc Key=AttachDisp_Mode_SameForAll}"
+                             IsChecked="{Binding IsModeSameForAll}" Margin="0,0,0,3" />
+                <RadioButton Content="{loc:Loc Key=AttachDisp_Mode_SameFolder}"
+                             IsChecked="{Binding IsModeSameFolder}" Margin="0,0,0,3" />
+                <RadioButton Content="{loc:Loc Key=AttachDisp_Mode_PerAttachment}"
+                             IsChecked="{Binding IsModePerAttachment}" />
+            </StackPanel>
+            <StackPanel Margin="0,0,0,6"
+                        Visibility="{Binding ShowSharedFolder, Converter={StaticResource BoolToVis}}">
+                <TextBlock Text="{loc:Loc Key=AttachDisp_SharedFolder_Label}" Margin="0,0,0,3" />
+                <views:AttachmentFolderPicker DataContext="{Binding Group.Picker}" />
+            </StackPanel>
             <CheckBox IsChecked="{Binding StripSavedAttachments, Mode=TwoWay}"
                       Margin="0,0,0,4"
                       Visibility="{Binding ShowStripToggle, Converter={StaticResource BoolToVis}}">
@@ -49,8 +64,11 @@
             </CheckBox>
         </StackPanel>
 
+        <Grid>
+        <views:AttachmentGroupPanel Visibility="{Binding IsGrouped, Converter={StaticResource BoolToVis}}" />
         <ListBox ItemsSource="{Binding Rows}" HorizontalContentAlignment="Stretch"
-                 ScrollViewer.HorizontalScrollBarVisibility="Disabled">
+                 ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                 Visibility="{Binding IsPerRow, Converter={StaticResource BoolToVis}}">
             <ListBox.ItemTemplate>
                 <DataTemplate>
                     <Border BorderBrush="{DynamicResource Theme.ControlBorder}" BorderThickness="0,0,0,1" Padding="2,6">
@@ -59,6 +77,10 @@
                                 <TextBlock DockPanel.Dock="Right" Text="{Binding SizeText}"
                                            Style="{DynamicResource MutedText}"
                                            Margin="8,0,0,0" VerticalAlignment="Center" />
+                                <TextBlock DockPanel.Dock="Right" Text="{loc:Loc Key=AttachDisp_InlineImage_Badge}"
+                                           Style="{DynamicResource MutedText}" FontStyle="Italic"
+                                           Margin="8,0,0,0" VerticalAlignment="Center"
+                                           Visibility="{Binding IsInlineImage, Converter={StaticResource BoolToVis}}" />
                                 <TextBlock Text="{Binding FileName}" FontWeight="Bold"
                                            TextTrimming="CharacterEllipsis" />
                             </DockPanel>
@@ -74,8 +96,21 @@
                                              IsChecked="{Binding IsKeep}" Margin="16,0,0,0"
                                              VerticalAlignment="Center" />
                             </StackPanel>
-                            <StackPanel Margin="20,4,0,0"
-                                        Visibility="{Binding IsSaveTo, Converter={StaticResource BoolToVis}}">
+                            <!-- Per-row folder: only in "action and folder per attachment" mode. -->
+                            <StackPanel Margin="20,4,0,0">
+                                <StackPanel.Style>
+                                    <Style TargetType="StackPanel">
+                                        <Setter Property="Visibility" Value="Collapsed" />
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding IsSaveTo}" Value="True">
+                                                <Setter Property="Visibility" Value="Visible" />
+                                            </DataTrigger>
+                                            <DataTrigger Binding="{Binding DataContext.ShowRowFolders, RelativeSource={RelativeSource AncestorType=Window}}" Value="False">
+                                                <Setter Property="Visibility" Value="Collapsed" />
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </StackPanel.Style>
                                 <DockPanel LastChildFill="True">
                                     <Button DockPanel.Dock="Right" Content="{loc:Loc Key=AttachDisp_Browse_Button}"
                                             Padding="8,2" Margin="6,0,0,0" Click="Browse_Click" />
@@ -122,5 +157,6 @@
                 </DataTemplate>
             </ListBox.ItemTemplate>
         </ListBox>
+        </Grid>
     </DockPanel>
 </Window>

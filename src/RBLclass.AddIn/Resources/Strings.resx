@@ -84,6 +84,12 @@
   <data name="MainPane_Settings_ToolTip" xml:space="preserve">
     <value>Configure folder search, classify, sending guards and sent-item triage. Every change applies and persists immediately.</value>
   </data>
+  <data name="MainPane_Help_Button" xml:space="preserve">
+    <value>?</value>
+  </data>
+  <data name="MainPane_Help_ToolTip" xml:space="preserve">
+    <value>Open the online documentation (in English) in your browser</value>
+  </data>
   <data name="MainPane_UpdateFolders_Button" xml:space="preserve">
     <value>🔄</value>
   </data>
@@ -214,7 +220,7 @@
     <value>The selected folder path contains a semicolon (;), which is used as the list separator and cannot be stored. Choose a different folder.</value>
   </data>
   <data name="Settings_FavoriteFolders_BrowseDescription" xml:space="preserve">
-    <value>Select a folder to add to your favourites</value>
+    <value>Select a folder</value>
   </data>
   <data name="Settings_AttachmentRemovalMode_Label" xml:space="preserve">
     <value>When removing attachments:</value>
@@ -246,11 +252,50 @@
   <data name="AttachDisp_InlineExcluded_Other" xml:space="preserve">
     <value>{0} inline images were excluded — embedded images are not detachable files.</value>
   </data>
-  <data name="AttachDisp_DeleteAll_Button" xml:space="preserve">
-    <value>Delete all</value>
+  <data name="AttachDisp_InlineImages_One" xml:space="preserve">
+    <value>{0} image from the message body is listed. It is part of the message, so it is kept unless you choose otherwise.</value>
   </data>
-  <data name="AttachDisp_UseSameDirectory_CheckBox" xml:space="preserve">
-    <value>Use the same save directory for all attachments</value>
+  <data name="AttachDisp_InlineImages_Other" xml:space="preserve">
+    <value>{0} images from the message body are listed. They are part of the message, so they are kept unless you choose otherwise.</value>
+  </data>
+  <data name="AttachDisp_InlineImage_Badge" xml:space="preserve">
+    <value>body image</value>
+  </data>
+  <data name="AttachDisp_InlineImage_Placeholder" xml:space="preserve">
+    <value>[Image removed]</value>
+  </data>
+  <data name="Settings_TreatInlineImagesAsAttachments_CheckBox" xml:space="preserve">
+    <value>Offer the images of the message body for removal</value>
+  </data>
+  <data name="Settings_TreatInlineImagesAsAttachments_Info" xml:space="preserve">
+    <value>Off (default): images inside the message body, such as signature logos, are never removed. On: they are listed in the attachment window, marked as body images and kept by default, even when attachment removal is off. Removing one replaces it with "[Image removed]". Silent removal of all attachments never removes them, and encrypted mail is never changed.</value>
+  </data>
+  <data name="AttachDisp_Mode_SameForAll" xml:space="preserve">
+    <value>Same action and folder for all attachments</value>
+  </data>
+  <data name="AttachDisp_Mode_SameFolder" xml:space="preserve">
+    <value>An action per attachment, one folder for the saved ones</value>
+  </data>
+  <data name="AttachDisp_Mode_PerAttachment" xml:space="preserve">
+    <value>An action and a folder per attachment</value>
+  </data>
+  <data name="AttachDisp_SharedFolder_Label" xml:space="preserve">
+    <value>Folder for the saved attachments:</value>
+  </data>
+  <data name="AttachDisp_Group_Count_One" xml:space="preserve">
+    <value>{0} attachment</value>
+  </data>
+  <data name="AttachDisp_Group_Count_Other" xml:space="preserve">
+    <value>{0} attachments</value>
+  </data>
+  <data name="AttachDisp_Group_NoFolder" xml:space="preserve">
+    <value>No folder chosen</value>
+  </data>
+  <data name="Settings_DefaultAttachmentFolder_Label" xml:space="preserve">
+    <value>Default folder for saved attachments:</value>
+  </data>
+  <data name="Settings_DefaultAttachmentFolder_Info" xml:space="preserve">
+    <value>Pre-fills the save folder in the attachment window. If the folder cannot be reached (for example a disconnected network share), the field is left empty.</value>
   </data>
   <data name="AttachDisp_StripSaved_CheckBox" xml:space="preserve">
     <value>Remove saved attachments from the email (uncheck to save a copy but keep them on the email)</value>
@@ -748,16 +793,11 @@
     <value>{0} folders.</value>
   </data>
 
-  <!-- MainPaneViewModel: selection summary / headers -->
-  <data name="Status_NoMailSelectedSummary" xml:space="preserve">
-    <value>No mail selected.</value>
+  <data name="Status_DocumentationOpenFailed" xml:space="preserve">
+    <value>Could not open the online documentation.</value>
   </data>
-  <data name="Status_MailSelected_One" xml:space="preserve">
-    <value>{0} mail selected.</value>
-  </data>
-  <data name="Status_MailSelected_Other" xml:space="preserve">
-    <value>{0} mails selected.</value>
-  </data>
+
+  <!-- MainPaneViewModel: headers -->
   <data name="Status_SelectedFolders_One" xml:space="preserve">
     <value>Selected: {0} folder</value>
   </data>
@@ -989,6 +1029,9 @@ Re-run your search to see newly created or renamed folders.</value>
   </data>
   <data name="About_Tech_Text" xml:space="preserve">
     <value>C# / .NET Framework 4.8 · WPF · SQLite · Outlook COM add-in</value>
+  </data>
+  <data name="About_Documentation_Link" xml:space="preserve">
+    <value>Online documentation</value>
   </data>
   <data name="About_Close_Button" xml:space="preserve">
     <value>Close</value>

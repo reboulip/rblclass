@@ -52,9 +52,9 @@ namespace RBLclass.AddIn
         /// True while the pane is running a move batch (classify / auto-class /
         /// undo). During a batch the inter-item pump-yield (D1/D2) lets Outlook
         /// repaint and fire <c>SelectionChange</c> after every <c>Move</c>; the
-        /// add-in's selection handler honours this flag to skip its per-item
-        /// <c>GetSelectedItems</c> COM walk, which is redundant until the batch
-        /// ends (the pane does one deferred refresh then). All access is on the
+        /// add-in's selection handler honours this flag to ignore those events,
+        /// which are not user selection changes (the pane does one deferred
+        /// refresh when the batch ends). All access is on the
         /// single STA thread. Does NOT change the yield itself - Stormshield's
         /// stable scan window after each Move is preserved.
         /// </summary>

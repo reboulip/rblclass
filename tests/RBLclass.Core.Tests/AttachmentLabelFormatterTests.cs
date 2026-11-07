@@ -1,4 +1,5 @@
 using System;
+using System.Net;
 using FluentAssertions;
 using RBLclass.Core;
 using Xunit;
@@ -61,6 +62,57 @@ namespace RBLclass.Core.Tests
             html.Should().Contain("href=\"file:///C:/Archive/2026\"");
             html.Should().Contain(@">C:\Archive\2026</a>");
             html.Should().NotContain(@"Saved to C:\Archive\2026");
+        }
+
+        // HtmlEncode turns Latin-1 characters into numeric entities, so assert on
+        // the decoded markup: that is the href value a mail client hands the shell.
+        private static string DecodedHtmlFor(string directory) =>
+            WebUtility.HtmlDecode(AttachmentLabelFormatter.Format(
+                new[] { Saved("file.pdf", directory) }, Options, When));
+
+        [Fact]
+        public void SaveTo_path_keeps_accented_characters_raw_in_the_href()
+        {
+            var html = DecodedHtmlFor(@"C:\Documents\Résumé");
+
+            html.Should().Contain("href=\"file:///C:/Documents/Résumé\"");
+            html.Should().Contain(@">C:\Documents\Résumé</a>");
+            html.Should().NotContain("%C3%A9");
+        }
+
+        [Fact]
+        public void SaveTo_path_percent_encodes_spaces_in_the_href_only()
+        {
+            var html = DecodedHtmlFor(@"C:\My Folder\archive");
+
+            html.Should().Contain("href=\"file:///C:/My%20Folder/archive\"");
+            html.Should().Contain(@">C:\My Folder\archive</a>");
+        }
+
+        [Fact]
+        public void SaveTo_UNC_path_uses_the_server_as_the_uri_authority()
+        {
+            var html = DecodedHtmlFor(@"\\server\partage\Résumé");
+
+            html.Should().Contain("href=\"file://server/partage/Résumé\"");
+            html.Should().NotContain("%C3%A9");
+        }
+
+        [Fact]
+        public void SaveTo_path_percent_encodes_uri_reserved_characters_once()
+        {
+            var html = DecodedHtmlFor(@"C:\100% #1?");
+
+            html.Should().Contain("href=\"file:///C:/100%25%20%231%3F\"");
+        }
+
+        [Fact]
+        public void SaveTo_path_html_encodes_the_href_attribute()
+        {
+            var html = AttachmentLabelFormatter.Format(
+                new[] { Saved("file.pdf", @"C:\R&D") }, Options, When);
+
+            html.Should().Contain("href=\"file:///C:/R&amp;D\"");
         }
 
         [Fact]

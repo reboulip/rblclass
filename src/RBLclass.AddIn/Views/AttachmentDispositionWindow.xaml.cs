@@ -26,8 +26,6 @@ namespace RBLclass.AddIn.Views
 
         private void Cancel_Click(object sender, RoutedEventArgs e) { DialogResult = false; Close(); }
 
-        private void DeleteAll_Click(object sender, RoutedEventArgs e) => Vm?.DeleteAll();
-
         private void Browse_Click(object sender, RoutedEventArgs e) =>
             ((sender as FrameworkElement)?.DataContext as AttachmentRowViewModel)?.Browse();
 

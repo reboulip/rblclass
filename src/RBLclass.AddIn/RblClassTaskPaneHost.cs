@@ -109,6 +109,12 @@ namespace RBLclass.AddIn
             _view?.FocusSearch();
         }
 
+        /// <summary>Return keyboard focus to the pane's search box (v2.11.0.0 B3).</summary>
+        public void ReturnFocusToSearch()
+        {
+            _view?.ReturnFocusToSearch();
+        }
+
         /// <summary>
         /// Office gives a Top/Bottom-docked task pane the full Explorer client
         /// width, then paints the left navigation icon rail over its leftmost
@@ -155,10 +161,10 @@ namespace RBLclass.AddIn
             catch { _railInsetPending = false; }
         }
 
-        /// <summary>Push a live selection count into the pane view model.</summary>
-        public void SetSelectionCount(int count)
+        /// <summary>Tell the pane view model the explorer selection changed.</summary>
+        public void OnExplorerSelectionChanged()
         {
-            (_view?.DataContext as MainPaneViewModel)?.SetSelectionCount(count);
+            (_view?.DataContext as MainPaneViewModel)?.OnExplorerSelectionChanged();
         }
 
         /// <summary>Easter egg: replace the Auto-Class button label with a pig.</summary>

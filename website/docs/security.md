@@ -60,6 +60,10 @@ administrator rights** and runs **inside the Outlook process**.
 - **No application-level encryption** (accepted by design): the contents (folder
   names/paths, preferences) are non-secret; confidentiality relies on the
   per-user ACL.
+- **Installer log (outside `%LocalAppData%`):** from version 2.11, every MSI
+  install, upgrade and uninstall writes a verbose Windows Installer log to
+  `%TEMP%\MSI*.LOG`. It contains local paths and the user name, **no mail data**,
+  and is **not cleaned up automatically**.
 
 ## Log hygiene
 
@@ -70,10 +74,42 @@ administrator rights** and runs **inside the Outlook process**.
   the addresses or body that triggered them. Folder names/paths and file/DB paths
   may appear for diagnostics.
 
+## Protected (encrypted / signed) mail
+
+- **One definition.** A mail is *protected* when its message class starts with
+  `IPM.Note.SMIME` or `IPM.Note.Secure` (case-insensitive), **or when its class
+  cannot be read** (fail closed).
+- **Never saved or rewritten.** For protected mail the add-in skips attachment
+  removal, the HTML note, the banner strip, mark-as-read, and both task-flag
+  saves (mark complete / incomplete). A flagged protected mail stays flagged and
+  is not offered in the mark-complete prompt.
+- **Moves.** A pure move cannot remove encryption from the add-in's side, and the
+  add-in performs no re-encryption.
+- **Diagnostic "Protection trace".** Only when *Diagnostic logging* is on (takes
+  effect after restarting Outlook), the log records, per classified mail, the
+  stage (before/after), path (pending, move, copy, safety-copy, kept-original),
+  EntryID, message class, `PR_SECURITY_FLAGS` value and whether the mail counts as
+  protected, plus a warning if a mail was protected before and is not after. No
+  subject, body or recipient is logged. The trace reads `PropertyAccessor`, which
+  may trigger endpoint-security hooks, so that read happens only with Diagnostic
+  logging on.
+- **`PR_SECURITY_FLAGS` is recorded only**, not used to decide protection, until
+  validated on the real target.
+- **Status:** pending verification on the real target workstation.
+- **Body rewrite on explicit choice.** With *Offer body images for removal* on,
+  removing a body image rewrites the mail's HTML body (each matching
+  `<img src="cid:...">` becomes a text placeholder) and deletes the attachment.
+  This only happens on an explicit per-image user choice, is a local MAPI write
+  with no network access, is never applied to protected mail, and cannot be
+  undone.
+
 ## Network posture
 
 **Default: no outbound network calls.** The add-in ships with no telemetry, no
-auto-update download, and no analytics.
+auto-update download, and no analytics. The **?** pane button and the About
+window's *Online documentation* link only ask your default browser to open the
+public documentation site on an explicit click; the add-in itself makes no
+request and sends nothing.
 
 The single opt-in exception is the **update check**:
 

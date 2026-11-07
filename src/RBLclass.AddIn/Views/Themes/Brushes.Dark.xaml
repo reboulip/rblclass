@@ -9,6 +9,8 @@
     <SolidColorBrush x:Key="Theme.ControlBackground" Color="#FF3B3B3B" />
     <SolidColorBrush x:Key="Theme.ControlBackgroundHover" Color="#FF454545" />
     <SolidColorBrush x:Key="Theme.ControlBorder" Color="#FF5A5A5A" />
+    <!-- Keyboard-focus ring (v2.11.0.0 B4): visible, not vivid. -->
+    <SolidColorBrush x:Key="Theme.FocusBorder" Color="#FF5CB0FF" />
 
     <SolidColorBrush x:Key="Theme.SelectionBackground" Color="#FF0E5A8A" />
 

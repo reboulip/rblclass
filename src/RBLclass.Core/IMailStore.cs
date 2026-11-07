@@ -154,12 +154,16 @@ namespace RBLclass.Core
         /// </summary>
         bool IsFlaggedIncomplete(MailItemRef item);
 
-        /// <summary>Mark an item's follow-up flag complete (<c>OlFlagStatus.olFlagComplete</c>) and save it.</summary>
+        /// <summary>
+        /// Mark an item's follow-up flag complete (<c>OlFlagStatus.olFlagComplete</c>)
+        /// and save it. Skips protected mail (<see cref="ProtectedMailPolicy"/>),
+        /// which must never be saved.
+        /// </summary>
         void MarkTaskComplete(MailItemRef item);
 
         /// <summary>
         /// Strip all attachments from a mail item and save it - unless the item
-        /// is S/MIME-encrypted/signed (<c>IPM.Note.SMIME*</c>), whose
+        /// is protected (<see cref="ProtectedMailPolicy"/>), whose
         /// "attachments" are the message payload itself: those are never
         /// stripped (maintainer rule, 2026-06-12) and the method returns false
         /// so the caller can tell the user. Returns true otherwise.
@@ -176,6 +180,15 @@ namespace RBLclass.Core
         /// removed. Touches COM - call on the Outlook UI thread.
         /// </summary>
         bool RemoveAttachment(MailItemRef item, int attachmentId);
+
+        /// <summary>
+        /// Remove body images (v2.11.0.0 C2): replace each <c>cid:</c> reference
+        /// with <paramref name="placeholder"/> via <see cref="InlineImageHtmlRewriter"/>,
+        /// delete only the attachments whose reference was replaced, and save once.
+        /// Never touches protected mail or a non-HTML body. Returns true when at
+        /// least one image was removed. Touches COM - call on the Outlook UI thread.
+        /// </summary>
+        bool RemoveInlineImages(MailItemRef item, IReadOnlyList<string> contentIds, string placeholder);
 
         /// <summary>
         /// List an item's attachments as Outlook-free descriptors (v2.4.0.0 F2),
@@ -195,12 +208,21 @@ namespace RBLclass.Core
         bool SaveAttachmentToFile(MailItemRef item, int attachmentId, string destinationDirectory);
 
         /// <summary>
-        /// True when the item is S/MIME-encrypted/signed (<c>IPM.Note.SMIME*</c>),
+        /// True when the item is protected (<see cref="ProtectedMailPolicy"/>),
         /// whose attachments must never be exposed or stripped (v2.4.0.0 F2 uses
         /// this to exclude such mail from the disposition modal and report it).
         /// Touches COM - call on the Outlook UI thread.
         /// </summary>
         bool IsEncryptedMail(MailItemRef item);
+
+        /// <summary>
+        /// Read an item's message class and <c>PR_SECURITY_FLAGS</c> for the
+        /// diagnostic trace (v2.11.0.0 A3). Returns null when the item is not a
+        /// mail or no longer resolves. Reads <c>PropertyAccessor</c>, so call it
+        /// only when diagnostics are on. Touches COM - call on the Outlook UI
+        /// thread.
+        /// </summary>
+        MailProtectionState GetProtectionState(MailItemRef item);
 
         /// <summary>
         /// Remove the learned external-sender banner (<paramref name="bannerSignature"/>,

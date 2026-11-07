@@ -69,6 +69,8 @@ namespace RBLclass.Core.Tests
             settings.UpdateCheckDismissedUtc.Should().BeEmpty();
             settings.ShowPaneOnStartup.Should().BeTrue();
             settings.StripSavedAttachments.Should().BeTrue();
+            settings.AttachmentDefaultFolder.Should().BeEmpty();
+            settings.TreatInlineImagesAsAttachments.Should().BeFalse();
         }
 
         [Fact]
@@ -110,6 +112,8 @@ namespace RBLclass.Core.Tests
                 UpdateCheckDismissedUtc = "2026-07-02T10:00:00.0000000Z",
                 ShowPaneOnStartup = false,
                 StripSavedAttachments = false,
+                TreatInlineImagesAsAttachments = true,
+                AttachmentDefaultFolder = @"\\server\partage\Pièces jointes",
                 PreferredUiLanguage = "fr"
             };
 
@@ -150,6 +154,8 @@ namespace RBLclass.Core.Tests
             reloaded.UpdateCheckDismissedUtc.Should().Be("2026-07-02T10:00:00.0000000Z");
             reloaded.ShowPaneOnStartup.Should().BeFalse();
             reloaded.StripSavedAttachments.Should().BeFalse();
+            reloaded.TreatInlineImagesAsAttachments.Should().BeTrue();
+            reloaded.AttachmentDefaultFolder.Should().Be(@"\\server\partage\Pièces jointes");
             reloaded.PreferredUiLanguage.Should().Be("fr");
         }
 

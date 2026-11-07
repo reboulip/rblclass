@@ -72,6 +72,8 @@ namespace RBLclass.Core
         public string UpdateCheckDismissedUtc { get; set; }
         public bool ShowPaneOnStartup { get; set; }
         public bool StripSavedAttachments { get; set; }
+        public string AttachmentDefaultFolder { get; set; }
+        public bool TreatInlineImagesAsAttachments { get; set; }
         public string PreferredUiLanguage { get; set; }
         public bool DiagnosticLogging { get; set; }
 
@@ -141,6 +143,8 @@ namespace RBLclass.Core
                 UpdateCheckDismissedUtc = Str(SettingsKeys.UpdateCheckDismissedUtc, string.Empty),
                 ShowPaneOnStartup = Bool(SettingsKeys.ShowPaneOnStartup, true),
                 StripSavedAttachments = Bool(SettingsKeys.StripSavedAttachments, true),
+                AttachmentDefaultFolder = Str(SettingsKeys.AttachmentDefaultFolder, string.Empty),
+                TreatInlineImagesAsAttachments = Bool(SettingsKeys.TreatInlineImagesAsAttachments, false),
                 PreferredUiLanguage = ParseUiLanguage(Str(SettingsKeys.PreferredUiLanguage)),
                 DiagnosticLogging = Bool(SettingsKeys.DiagnosticLogging, false)
             };
@@ -186,6 +190,8 @@ namespace RBLclass.Core
                 Pair(SettingsKeys.UpdateCheckDismissedUtc,      UpdateCheckDismissedUtc ?? string.Empty),
                 Pair(SettingsKeys.ShowPaneOnStartup,            ShowPaneOnStartup ? "1" : "0"),
                 Pair(SettingsKeys.StripSavedAttachments,        StripSavedAttachments ? "1" : "0"),
+                Pair(SettingsKeys.AttachmentDefaultFolder,      AttachmentDefaultFolder ?? string.Empty),
+                Pair(SettingsKeys.TreatInlineImagesAsAttachments, TreatInlineImagesAsAttachments ? "1" : "0"),
                 Pair(SettingsKeys.PreferredUiLanguage,          PreferredUiLanguage),
                 Pair(SettingsKeys.DiagnosticLogging,            DiagnosticLogging ? "1" : "0"),
             });

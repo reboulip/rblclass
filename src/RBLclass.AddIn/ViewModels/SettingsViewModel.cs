@@ -389,6 +389,13 @@ namespace RBLclass.AddIn.ViewModels
             set => Apply(_settings.StripSavedAttachments, value, v => _settings.StripSavedAttachments = v);
         }
 
+        /// <summary>Offer body images in the attachment window (v2.11.0.0 C2, default off).</summary>
+        public bool TreatInlineImagesAsAttachments
+        {
+            get => _settings.TreatInlineImagesAsAttachments;
+            set => Apply(_settings.TreatInlineImagesAsAttachments, value, v => _settings.TreatInlineImagesAsAttachments = v);
+        }
+
         /// <summary>
         /// Full per-item PERF/BEGIN/END diagnostic trace (v2.8.0.0 logging audit,
         /// default off). Takes effect after restarting Outlook.
@@ -706,6 +713,34 @@ namespace RBLclass.AddIn.ViewModels
             _archiveFolderIsStale = false;
             _settings.Save(_store, _log);
             OnPropertyChanged(nameof(SentItemTriageArchiveFolderPath));
+        }
+
+        /// <summary>
+        /// Display path of the default folder for saved attachments (v2.11.0.0 C1),
+        /// or the "not configured" placeholder.
+        /// </summary>
+        public string AttachmentDefaultFolderPath =>
+            string.IsNullOrWhiteSpace(_settings.AttachmentDefaultFolder)
+                ? _loc.GetString("Settings_TriageArchiveFolder_NotSet")
+                : _settings.AttachmentDefaultFolder;
+
+        /// <summary>Browse for the default attachment folder and persist it (v2.11.0.0 C1).</summary>
+        public void PickAttachmentDefaultFolder()
+        {
+            var folder = TaskPaneServices.BrowseForFolder?.Invoke();
+            if (string.IsNullOrWhiteSpace(folder)) return; // cancelled
+
+            _settings.AttachmentDefaultFolder = folder;
+            _settings.Save(_store, _log);
+            OnPropertyChanged(nameof(AttachmentDefaultFolderPath));
+        }
+
+        /// <summary>Clear the default attachment folder (v2.11.0.0 C1).</summary>
+        public void ClearAttachmentDefaultFolder()
+        {
+            _settings.AttachmentDefaultFolder = string.Empty;
+            _settings.Save(_store, _log);
+            OnPropertyChanged(nameof(AttachmentDefaultFolderPath));
         }
 
         /// <summary>Options for the language dropdown (Auto/English/Français/Deutsch), Phase E.</summary>

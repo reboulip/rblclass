@@ -41,7 +41,7 @@ namespace RBLclass.Core
                     string pre = Encode(parts[0]);
                     string post = parts.Length > 1 ? Encode(parts[1]) : string.Empty;
                     line = pre
-                         + "<a href=\"" + PathToFileUri(d.TargetDirectory) + "\">"
+                         + "<a href=\"" + Encode(PathToFileUri(d.TargetDirectory)) + "\">"
                          + Encode(d.TargetDirectory)
                          + "</a>"
                          + post;
@@ -61,15 +61,32 @@ namespace RBLclass.Core
         private static string Encode(string value) => WebUtility.HtmlEncode(value ?? string.Empty);
 
         /// <summary>
-        /// A local Windows path as a file:/// URI for an href attribute
-        /// (percent-encodes spaces and non-ASCII). Falls back to a plain
-        /// slash-swap when <see cref="Uri"/> cannot parse the path.
+        /// A local or UNC Windows path as a file: URI. Non-ASCII characters stay
+        /// raw: <see cref="Uri.AbsoluteUri"/> would percent-encode them as UTF-8,
+        /// which the Windows shell can decode with the local code page and then
+        /// fail to resolve the folder (#64). Only the space and the characters
+        /// that would otherwise end or escape the path are percent-encoded.
         /// </summary>
         private static string PathToFileUri(string localPath)
         {
             if (string.IsNullOrEmpty(localPath)) return "#";
-            try { return new Uri(localPath).AbsoluteUri; }
-            catch { return "file:///" + localPath.Replace('\\', '/'); }
+
+            string path = localPath.Replace('\\', '/');
+            bool isUnc = path.StartsWith("//", StringComparison.Ordinal);
+
+            var sb = new StringBuilder(isUnc ? "file:" : "file:///");
+            foreach (char c in path)
+            {
+                switch (c)
+                {
+                    case '%': sb.Append("%25"); break;
+                    case '#': sb.Append("%23"); break;
+                    case '?': sb.Append("%3F"); break;
+                    case ' ': sb.Append("%20"); break;
+                    default: sb.Append(c); break;
+                }
+            }
+            return sb.ToString();
         }
     }
 }

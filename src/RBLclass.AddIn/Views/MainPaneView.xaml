@@ -8,7 +8,8 @@
              xmlns:loc="clr-namespace:RBLclass.AddIn.Localization"
              xmlns:core="clr-namespace:RBLclass.Core;assembly=RBLclass.Core"
              d:DesignHeight="520" d:DesignWidth="320"
-             PreviewKeyDown="MainPane_PreviewKeyDown">
+             PreviewKeyDown="MainPane_PreviewKeyDown"
+             PreviewTextInput="MainPane_PreviewTextInput">
     <UserControl.Resources>
         <!-- Side-profile pink pig (like 🐖) — easter egg button image (v2.6.0.0 A1).
              WPF .NET FW 4.8 renders emoji monochrome via GDI; DrawingImage is the
@@ -46,13 +47,16 @@
                 <RowDefinition Height="Auto" />  <!-- 5: Options panel -->
                 <RowDefinition Height="Auto" />  <!-- 6: classify + undo -->
                 <RowDefinition Height="Auto" />  <!-- 7: status -->
-                <RowDefinition Height="Auto" />  <!-- 8: selection summary -->
             </Grid.RowDefinitions>
 
             <StackPanel Grid.Row="0" Margin="0,0,0,6">
                 <!-- v2.7.0.0 E1: opt-in "a newer version is available" banner. -->
                 <Border Background="#FF8C00" CornerRadius="4" Padding="8,6" Margin="0,0,0,6"
                         Visibility="{Binding HasUpdateAvailable, Converter={StaticResource BoolToVis}}">
+                    <!-- Focus ring readable on the orange banner (v2.11.0.0 B4). -->
+                    <Border.Resources>
+                        <SolidColorBrush x:Key="Theme.FocusBorder" Color="#FF201F1E" />
+                    </Border.Resources>
                     <DockPanel LastChildFill="True">
                         <Button DockPanel.Dock="Right" Content="{loc:Loc Key=MainPane_UpdateAvailable_Dismiss}"
                                 Background="Transparent" BorderThickness="0" Foreground="White"
@@ -64,6 +68,10 @@
                 <!-- E1: prominent, width-adapting banner for a pinned just-sent mail. -->
                 <Border Background="#0078D4" CornerRadius="4" Padding="8,6" Margin="0,0,0,6"
                         Visibility="{Binding HasPinnedItem, Converter={StaticResource BoolToVis}}">
+                    <!-- The default ring is this same blue: use white on this banner. -->
+                    <Border.Resources>
+                        <SolidColorBrush x:Key="Theme.FocusBorder" Color="#FFFFFFFF" />
+                    </Border.Resources>
                     <StackPanel>
                         <TextBlock Foreground="White" FontWeight="Bold" TextWrapping="Wrap" FontSize="11"
                                    Text="{loc:Loc Key=MainPane_PinnedSentMail_Indicator}" />
@@ -78,39 +86,46 @@
                     </StackPanel>
                 </Border>
                 <DockPanel LastChildFill="False">
-                    <Button DockPanel.Dock="Right" Padding="6,1"
+                    <!-- The label wraps so FR/DE leave room for the icon buttons at the
+                         narrow default pane width (v2.11.0.0 B2). -->
+                    <Button DockPanel.Dock="Right" Padding="3,1"
                             IsEnabled="{Binding CanAutoClass}" Click="AutoClass_Click"
                             ToolTip="{loc:Loc Key=MainPane_AutoClass_ToolTip}">
                         <Button.Content>
                             <Grid>
-                                <TextBlock Text="{Binding AutoClassLabel}" FontSize="11"
+                                <TextBlock Text="{Binding AutoClassLabel}" FontSize="10" MaxWidth="48"
+                                           TextWrapping="Wrap" TextAlignment="Center" VerticalAlignment="Center"
                                            Visibility="{Binding IsEasterEggActive, Converter={StaticResource InverseBoolToVis}}" />
                                 <Image Width="26" Height="26" Source="{StaticResource PigDrawingImage}"
                                        Visibility="{Binding IsEasterEggActive, Converter={StaticResource BoolToVis}}" />
                             </Grid>
                         </Button.Content>
                     </Button>
-                    <Button DockPanel.Dock="Right" Padding="6,1" Margin="0,0,6,0"
+                    <Button DockPanel.Dock="Right" Padding="3,1" Margin="0,0,3,0"
                             Content="{loc:Loc Key=MainPane_SaveAs_Button}"
                             FontFamily="Segoe UI Emoji" FontSize="14"
                             Click="SaveAs_Click"
                             ToolTip="{loc:Loc Key=MainPane_SaveAs_ToolTip}" />
-                    <Button DockPanel.Dock="Right" Padding="6,1" Margin="0,0,6,0"
+                    <Button DockPanel.Dock="Right" Padding="3,1" Margin="0,0,3,0"
                             Content="{loc:Loc Key=MainPane_ManageAttachments_Button}"
                             FontFamily="Segoe UI Emoji" FontSize="14"
                             Click="ManageAttachments_Click"
                             ToolTip="{loc:Loc Key=MainPane_ManageAttachments_ToolTip}" />
-                    <Button DockPanel.Dock="Right" Padding="6,1" Margin="0,0,6,0"
+                    <Button DockPanel.Dock="Right" Padding="3,1" Margin="0,0,3,0"
                             Content="{loc:Loc Key=MainPane_UpdateFolders_Button}"
                             FontFamily="Segoe UI Emoji" FontSize="14"
                             Click="UpdateFolders_Click"
                             ToolTip="{loc:Loc Key=MainPane_UpdateFolders_ToolTip}" />
-                    <Button DockPanel.Dock="Right" Padding="6,1" Margin="0,0,6,0"
+                    <Button DockPanel.Dock="Right" Padding="3,1" Margin="0,0,3,0"
                             Content="{loc:Loc Key=MainPane_Settings_Button}"
                             FontFamily="Segoe UI Emoji" FontSize="14"
                             Click="Settings_Click"
                             ToolTip="{loc:Loc Key=MainPane_Settings_ToolTip}" />
-                    <Ellipse DockPanel.Dock="Right" Width="10" Height="10" Margin="0,0,6,0"
+                    <Button DockPanel.Dock="Right" Padding="3,1" Margin="0,0,3,0"
+                            Content="{loc:Loc Key=MainPane_Help_Button}" FontSize="14"
+                            Click="Help_Click"
+                            ToolTip="{loc:Loc Key=MainPane_Help_ToolTip}" />
+                    <Ellipse DockPanel.Dock="Right" Width="10" Height="10" Margin="0,0,3,0"
                              VerticalAlignment="Center" ToolTip="{Binding IndexStatusToolTip}">
                         <Ellipse.Style>
                             <Style TargetType="Ellipse">
@@ -151,6 +166,15 @@
                         <Setter Property="BorderThickness" Value="0,0,0,1" />
                         <Setter Property="BorderBrush" Value="{DynamicResource Theme.ControlBorder}" />
                         <Setter Property="Padding" Value="0" />
+                        <Setter Property="FocusVisualStyle" Value="{x:Null}" />
+                        <!-- No BasedOn: these rows keep their own separator look, so the
+                             keyboard-focus ring (v2.11.0.0 B4) is set here. -->
+                        <Style.Triggers>
+                            <Trigger Property="IsKeyboardFocused" Value="True">
+                                <Setter Property="BorderBrush" Value="{DynamicResource Theme.FocusBorder}" />
+                                <Setter Property="BorderThickness" Value="1" />
+                            </Trigger>
+                        </Style.Triggers>
                     </Style>
                 </ListBox.ItemContainerStyle>
                 <ListBox.ItemTemplate>
@@ -305,11 +329,6 @@
                     </ItemsControl.ItemTemplate>
                 </ItemsControl>
             </StackPanel>
-
-            <!-- Row 8: selection summary, kept at the bottom so it can never
-                 crowd out the header action buttons (v2.8.0.0 A1 feedback). -->
-            <TextBlock Grid.Row="8" Margin="0,6,0,0" FontWeight="Bold" TextWrapping="Wrap"
-                       Text="{Binding SelectionSummary}" />
         </Grid>
 
         <!-- Busy overlay. -->

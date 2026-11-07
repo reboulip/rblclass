@@ -56,7 +56,6 @@ namespace RBLclass.AddIn.ViewModels
         private FolderMatchMode _matchMode = FolderMatchMode.Substring;
         private int _maxResults = FolderSearchOptions.DefaultMaxResults;
         private int _minSearchLength = FolderSearchOptions.DefaultMinQueryLength;
-        private string _selectionSummary;
         private string _searchFeedback = string.Empty;
         private string _busyStatus = string.Empty;
         private bool _isBusy;
@@ -112,7 +111,6 @@ namespace RBLclass.AddIn.ViewModels
             _confirmDeleteFolder = confirmDeleteFolder;
             _deleteFolder = deleteFolder;
             _loc = TaskPaneServices.Localization;
-            _selectionSummary = _loc.GetString("Status_NoMailSelectedSummary");
             _autoClassLabel = _loc.GetString("MainPane_AutoClass_Button");
 
             SeedOptionsFromSettings();
@@ -182,7 +180,11 @@ namespace RBLclass.AddIn.ViewModels
             if (_showMeetingClassifyHint == null) return;
             Dispatcher.CurrentDispatcher.BeginInvoke(new Action(() =>
             {
-                try { _showMeetingClassifyHint(); }
+                try
+                {
+                    _showMeetingClassifyHint();
+                    TaskPaneServices.Host?.ReturnFocusToSearch();
+                }
                 catch (Exception ex) { Log.Warning(ex, "Meeting-classify hint failed"); }
             }), DispatcherPriority.Background);
         }
@@ -323,12 +325,6 @@ namespace RBLclass.AddIn.ViewModels
             set => SetProperty(ref _selectedResult, value);
         }
 
-        public string SelectionSummary
-        {
-            get => _selectionSummary;
-            private set => SetProperty(ref _selectionSummary, value);
-        }
-
         public string AutoClassLabel
         {
             get => _autoClassLabel;
@@ -378,9 +374,8 @@ namespace RBLclass.AddIn.ViewModels
             {
                 if (SetProperty(ref _isBusy, value)) OnPropertyChanged(nameof(IsNotBusy));
                 // Mirror the batch lifetime to the add-in's selection handler so
-                // it can skip the redundant per-item GetSelectedItems COM walk
-                // that mid-batch SelectionChange events would otherwise trigger.
-                // IsBusy is true only during a move batch (classify/auto/undo).
+                // mid-batch SelectionChange events are ignored and cannot clear a
+                // pin. IsBusy is true only during a move batch (classify/auto/undo).
                 TaskPaneServices.BatchInProgress = value;
             }
         }
@@ -512,15 +507,20 @@ namespace RBLclass.AddIn.ViewModels
                 IReadOnlyList<AttachmentDisposition> attachmentDispositions = null;
                 AttachmentLabelOptions labelOptions = null;
                 bool encryptedOnlySkippedModal = false;
-                if (removeAttachments && s != null
-                    && s.AttachmentRemovalMode == AttachmentRemovalMode.Modal
+                bool autoTreatInline = s != null && s.TreatInlineImagesAsAttachments;
+                bool autoModalForRemoval = removeAttachments && s != null
+                    && s.AttachmentRemovalMode == AttachmentRemovalMode.Modal;
+                // Removal off: body images are still offered when opted in (v2.11.0.0 C2).
+                bool autoModalForImages = !removeAttachments && autoTreatInline;
+                if ((autoModalForRemoval || autoModalForImages)
                     && TaskPaneServices.GatherAttachments != null
                     && TaskPaneServices.ShowAttachmentDisposition != null)
                 {
                     var groups = TaskPaneServices.GatherAttachments(preflight.Processable);
-                    if (groups.Any(g => g.IsEncrypted || g.Attachments.Any(a => !a.IsInline)))
+                    if (autoModalForImages) groups = OnlyBodyImages(groups);
+                    if (HasOfferedAttachments(groups, autoTreatInline))
                     {
-                        if (AllAttachmentBearersAreEncrypted(groups))
+                        if (AllAttachmentBearersAreEncrypted(groups, autoTreatInline))
                         {
                             encryptedOnlySkippedModal = true;
                         }
@@ -687,16 +687,17 @@ namespace RBLclass.AddIn.ViewModels
                 return;
 
             var groups = TaskPaneServices.GatherAttachments(items);
+            bool treatInline = _settings != null && Settings.Load(_settings).TreatInlineImagesAsAttachments;
 
-            // Nothing to manage when no item has a detachable (non-inline) attachment.
-            if (!groups.Any(g => g.IsEncrypted || g.Attachments.Any(a => !a.IsInline)))
+            // Nothing to manage when no item has an attachment to offer.
+            if (!HasOfferedAttachments(groups, treatInline))
             {
                 PushStatus(_loc.GetString("Status_ManageAttachments_NoAttachments"));
                 return;
             }
 
             // Every attachment-bearing item is encrypted: skip the modal.
-            if (AllAttachmentBearersAreEncrypted(groups))
+            if (AllAttachmentBearersAreEncrypted(groups, treatInline))
             {
                 PushStatus(_loc.Plural(items.Count,
                     "Status_Classify_EncryptedAttachmentsKept_One",
@@ -765,6 +766,13 @@ namespace RBLclass.AddIn.ViewModels
         {
             try { TaskPaneServices.OpenSettings?.Invoke(); }
             catch (Exception ex) { Log.Error(ex, "OpenSettings failed."); }
+        }
+
+        /// <summary>Open the online documentation in the default browser (v2.11.0.0 B2).</summary>
+        public void OpenDocumentation()
+        {
+            if (!DocumentationLink.TryOpen())
+                PushStatus(_loc.GetString("Status_DocumentationOpenFailed"));
         }
 
         /// <summary>
@@ -863,13 +871,12 @@ namespace RBLclass.AddIn.ViewModels
         }
 
         /// <summary>
-        /// Push a live explorer selection count into the header. A genuine
-        /// selection change drops a just-sent pin (E1) - the user has moved on.
+        /// A genuine explorer selection change drops a just-sent pin (E1) - the
+        /// user has moved on.
         /// </summary>
-        public void SetSelectionCount(int count)
+        public void OnExplorerSelectionChanged()
         {
             ClearPin();
-            SelectionSummary = _loc.Plural(count, "Status_MailSelected_One", "Status_MailSelected_Other");
         }
 
         /// <summary>
@@ -882,7 +889,6 @@ namespace RBLclass.AddIn.ViewModels
         {
             if (item == null) return;
             _pinnedItem = item;
-            SelectionSummary = string.Empty; // the pin banner takes over the header
             OnPropertyChanged(nameof(HasPinnedItem));
             OnPropertyChanged(nameof(PinnedItemSubject));
         }
@@ -978,12 +984,6 @@ namespace RBLclass.AddIn.ViewModels
 
         public void RefreshSelection()
         {
-            // While a sent mail is pinned, keep the pin indicator - the show/theme
-            // refresh must not overwrite it with the (unrelated) live count.
-            if (_pinnedItem == null)
-                SelectionSummary = _loc.Plural(_getSelection != null ? _getSelection().Count : 0,
-                    "Status_MailSelected_One", "Status_MailSelected_Other");
-
             // A banner may have been learned (or forgotten) in Settings while the
             // pane was open - keep the strip tickbox's availability current.
             if (_settings != null)
@@ -992,16 +992,15 @@ namespace RBLclass.AddIn.ViewModels
         }
 
         /// <summary>
-        /// Post the pane's own post-filing refresh (the COM-touching selection
-        /// re-read in <see cref="RefreshSelection"/>) to the back of the STA pump
-        /// at Background priority. After a move, the filed mail leaves the active
-        /// view and Outlook must repaint its explorer and pick the next item -
-        /// that is the priority. Our refresh is purely cosmetic (the "N mail
-        /// selected" caption), so it waits until Outlook has settled rather than
-        /// fighting it for the single STA thread at the worst possible moment.
+        /// Post the pane's own post-filing refresh (<see cref="RefreshSelection"/>)
+        /// to the back of the STA pump at Background priority. After a move, the
+        /// filed mail leaves the active view and Outlook must repaint its explorer
+        /// and pick the next item - that is the priority. Our refresh only updates
+        /// the banner availability, so it waits until Outlook has settled rather
+        /// than fighting it for the single STA thread at the worst possible moment.
         /// PERF (v2.5.1.x): logs how long the continuation waited for the pump
         /// (= the Outlook-busy time, now off the critical path) versus how long
-        /// the refresh's COM work itself took once Outlook was free.
+        /// the refresh itself took once Outlook was free.
         /// </summary>
         private void ScheduleSelectionRefresh(string context)
         {
@@ -1284,15 +1283,21 @@ namespace RBLclass.AddIn.ViewModels
                 // cancel aborts the whole classify.
                 IReadOnlyList<AttachmentDisposition> attachmentDispositions = null;
                 bool encryptedOnlySkippedModal = false;
-                if (_removeAttachments && _settings != null
-                    && Settings.Load(_settings).AttachmentRemovalMode == AttachmentRemovalMode.Modal
+                var classifySettings = _settings != null ? Settings.Load(_settings) : null;
+                bool treatInline = classifySettings != null && classifySettings.TreatInlineImagesAsAttachments;
+                bool modalForRemoval = _removeAttachments && classifySettings != null
+                    && classifySettings.AttachmentRemovalMode == AttachmentRemovalMode.Modal;
+                // Removal off: body images are still offered when opted in (v2.11.0.0 C2).
+                bool modalForImages = !_removeAttachments && treatInline;
+                if ((modalForRemoval || modalForImages)
                     && TaskPaneServices.GatherAttachments != null
                     && TaskPaneServices.ShowAttachmentDisposition != null)
                 {
                     var groups = TaskPaneServices.GatherAttachments(preflight.Items);
-                    if (groups.Any(g => g.IsEncrypted || g.Attachments.Any(a => !a.IsInline)))
+                    if (modalForImages) groups = OnlyBodyImages(groups);
+                    if (HasOfferedAttachments(groups, treatInline))
                     {
-                        if (AllAttachmentBearersAreEncrypted(groups))
+                        if (AllAttachmentBearersAreEncrypted(groups, treatInline))
                         {
                             // A3: skip modal when only encrypted items are present;
                             // a status notice will be appended after classify completes.
@@ -1401,13 +1406,31 @@ namespace RBLclass.AddIn.ViewModels
         private static async Task YieldToPump() =>
             await Dispatcher.Yield(DispatcherPriority.Background);
 
+        /// <summary>True when the modal has something to show: an encrypted item to report or an attachment to offer.</summary>
+        private static bool HasOfferedAttachments(
+            IReadOnlyList<(MailItemRef Item, IReadOnlyList<AttachmentInfo> Attachments, bool IsEncrypted)> groups,
+            bool treatInline) =>
+            groups.Any(g => g.IsEncrypted || g.Attachments.Any(a => InlineImageRules.IsOffered(a, treatInline)));
+
+        /// <summary>
+        /// The body images only, for a classify with attachment removal off
+        /// (v2.11.0.0 C2): regular attachments stay untouched, and encrypted mail
+        /// is left out since nothing was asked of it.
+        /// </summary>
+        private static IReadOnlyList<(MailItemRef Item, IReadOnlyList<AttachmentInfo> Attachments, bool IsEncrypted)> OnlyBodyImages(
+            IReadOnlyList<(MailItemRef Item, IReadOnlyList<AttachmentInfo> Attachments, bool IsEncrypted)> groups) =>
+            groups.Where(g => !g.IsEncrypted)
+                  .Select(g => (g.Item, (IReadOnlyList<AttachmentInfo>)g.Attachments.Where(a => a.IsInlineImage).ToList(), false))
+                  .ToList();
+
         private static bool AllAttachmentBearersAreEncrypted(
-            IReadOnlyList<(MailItemRef Item, IReadOnlyList<AttachmentInfo> Attachments, bool IsEncrypted)> groups)
+            IReadOnlyList<(MailItemRef Item, IReadOnlyList<AttachmentInfo> Attachments, bool IsEncrypted)> groups,
+            bool treatInline)
         {
             bool anyParticipant = false;
             foreach (var g in groups)
             {
-                if (g.IsEncrypted || g.Attachments.Any(a => !a.IsInline))
+                if (g.IsEncrypted || g.Attachments.Any(a => InlineImageRules.IsOffered(a, treatInline)))
                 {
                     anyParticipant = true;
                     if (!g.IsEncrypted) return false;

@@ -24,7 +24,8 @@ splitter; the position is remembered across restarts.
 The **RBLclass** ribbon tab has two buttons:
 
 - **RBLclass pane** — show or hide the pane.
-- **About** — version, author and technical information.
+- **About** — version, author and technical information, plus an **Online
+  documentation** link that opens this site in your default browser.
 
 **Settings** and **Update folders** have moved into the pane itself (see
 [the icon-button row](#pane-icon-buttons) below).
@@ -37,6 +38,8 @@ The **RBLclass** ribbon tab has two buttons:
 
 The top row of the task pane contains a set of icon buttons:
 
+- **?** (Online documentation) — just left of the Settings gear; opens this
+  documentation site in your default browser.
 - **⚙️** (Settings) — opens the Settings dialog (see the
   [Settings reference](#settings-reference)).
 - **🔄** (Update folders) — re-scans your mailboxes so folders you created or
@@ -112,14 +115,45 @@ so you can re-file them elsewhere) and filed copies are removed.
 
 When *"Remove attachments"* is on, the filed copy loses its attachments; the
 original (or the kept copy) is never touched. In the default *"Ask what to do
-with each attachment"* mode, a dialog lets you **Delete**, **Save to…** or
-**Keep** each attachment; a *"use the same save directory"* checkbox applies your
-choice to all of them.
+with each attachment"* mode (and from the pane's **Manage attachments** button),
+a dialog lets you **Delete**, **Save to…** or **Keep** attachments. Radio buttons
+at the top choose one of three modes:
+
+1. **Same action and folder for all attachments** (default) — one choice and one
+   folder applied to every attachment; the list shows each attachment with its
+   size.
+2. **An action per attachment, one folder for the saved ones** — each attachment
+   has its own Delete / Save to / Keep, and one folder at the top is used by
+   every attachment set to Save to.
+3. **An action and a folder per attachment** — each attachment has its own
+   action and its own folder.
+
+Switching back to the first mode never overrides an attachment you explicitly set
+to Delete or Keep in the other two; it is shown with its own action in the list.
+If you set a *Default folder for saved attachments* in Settings, it pre-fills the
+save folder.
+
+If *Offer the images of the message body for removal* is on in Settings (off by default), the window
+also lists images shown inside the message body (`cid:` inline images). They carry
+a **body image** badge, default to **Keep**, and a notice explains that they are
+part of the message. Embedded items, OLE objects and remote `http` images are
+never listed. These images are offered even when *Remove attachments* is off; in
+that case only the images are listed and regular attachments stay untouched, and
+the **Manage attachments** button also works on a mail whose only attachments are
+body images. Removing one rewrites the message's HTML body, replacing the image
+with a text placeholder ("[Image removed]"), and then deletes the attachment; it
+is listed in the disposition label like any other removed attachment. **Save
+to…** works for body images too. Body images are never removed silently: without
+the window, the "remove attachments" strip still skips inline images, so
+signature logos survive.
 
 !!! danger "Encrypted mail is never stripped"
     Encrypted (S/MIME) mails are never stripped — RBLclass skips attachment
     removal for them and reports it, so a filed copy never silently loses
-    protected content.
+    protected content. The same applies to the other changes RBLclass would make
+    to a mail: encrypted or signed mails are never rewritten, never marked as
+    read, and a flagged one stays flagged and is simply not offered in the
+    "mark flagged tasks complete" prompt. Filing (moving) them works as usual.
 
 ### Sent-item triage
 
@@ -165,7 +199,7 @@ RBLclass pane. Every change applies and persists immediately — there is no
 | Search result path display | Single line | How each result row shows its folder path: a single left-trimmed line, the full path wrapped to the pane width, or the full path with one sub-folder per line. The per-row ⤢ button cycles all three for that row. |
 | Maximum results to display | 50 | Cap on the number of result rows. |
 | Search after at least N characters | 2 | Avoids searching on a single letter. Range 1–10. |
-| Pause before searching (ms) | 200 | Search fires this many milliseconds after your last keystroke. The same delay is also used to debounce the "N selected" mail counter in the pane, so a burst of rapid Outlook selection changes collapses into a single update. Range 0–2000. |
+| Pause before searching (ms) | 200 | Search fires this many milliseconds after your last keystroke. Range 0–2000. |
 
 ### Classify
 
@@ -173,6 +207,8 @@ RBLclass pane. Every change applies and persists immediately — there is no
 | --- | --- | --- |
 | Keep the original after classifying | Off | Copies the mail to the destination and leaves the original in place ("Keep a copy"). |
 | Remove attachments from the filed copy | Off | Strips attachments from the copy that lands in the destination; the original is untouched. Sub-options: ask per attachment (default) or delete all silently; and whether to record a "former attachments" note in the body. |
+| Default folder for saved attachments (Settings → Attachments) | *Not configured* | **Pick folder…** / **Clear**. Pre-fills the save folder in the attachment window. If the folder cannot be reached (for example a disconnected network share), the field is simply left empty; the window still opens immediately. |
+| Offer the images of the message body for removal (Settings → Manage attachments) | Off | Also lists body (inline `cid:`) images in the attachment window so you can remove or save them; they default to Keep. Removing one rewrites the HTML body (placeholder text) and cannot be undone. Never applied to encrypted mail. |
 | Keep a safety copy in Deleted Items | Off | When the original is not kept, also places a copy in Deleted Items as a safety net. |
 | Include the whole conversation by default | Off | Pre-checks the pane's "Include the whole conversation" option. |
 | Classify meeting requests and responses | Off | Allows meeting items selected in Outlook to be classified alongside regular mails. |
@@ -237,6 +273,24 @@ override it to English, Français or Deutsch.
 | ++ctrl++ (tap) | Toggle "List every matching folder". |
 | ++alt++, ++r++, ++r++ | Open / toggle the RBLclass pane from the ribbon. |
 | ++tab++ (from the search box) | Open the Options panel and move focus to its first checkbox. |
+| ++slash++ | Move focus to the search box from anywhere else in the pane (the `/` is not typed). Inside the search box it types `/` normally. Pane only — it does not work from Outlook's message list. |
+
+After a pane action or a dialog closed from the pane (classify, Auto-class,
+Undo, Save As, Manage attachments, Settings, Update folders and so on), keyboard
+focus returns to the search box with its text selected, so you can type
+straight away. It does not take focus while another Outlook window, such as a
+compose window, is in front. **Open folder** (the row button and
+++ctrl+enter++) is the exception: it gives focus to Outlook's message list.
+
+The control that currently has keyboard focus is shown with a thin blue outline
+(lighter blue in the dark theme; white on the blue Classify button), in the pane
+and in every RBLclass window. The outline also stays after a mouse click until
+focus moves elsewhere.
+
+!!! note "Known issue: Delete key after using the pane"
+    After the pane has had keyboard focus, Outlook's ++delete++ key does nothing
+    in the message list until you click in the message list once (tracked in
+    issue #49). Workaround: click the message list, then press ++delete++.
 
 ## Refresh the folder index
 

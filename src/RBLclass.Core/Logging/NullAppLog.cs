@@ -9,6 +9,8 @@ namespace RBLclass.Core.Logging
 
         private NullAppLog() { }
 
+        public bool IsDebugEnabled => false;
+
         public void Debug(string template, params object[] args) { }
         public void Information(string template, params object[] args) { }
         public void Warning(string template, params object[] args) { }
