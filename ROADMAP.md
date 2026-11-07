@@ -10,7 +10,7 @@ Reference docs from the legacy analysis:
 [docs/legacy-reimplementation-roadmap.md](docs/legacy-reimplementation-roadmap.md),
 [docs/parity-and-regression.md](docs/parity-and-regression.md).
 
-## Where we are (2026-11-05)
+## Where we are (2026-11-07)
 
 The rewritten add-in reached full legacy parity and shipped as **v2.0.0.0**,
 followed by feedback/refinement waves **v2.1.0.0** through **v2.8.0.0**
@@ -23,6 +23,9 @@ all complete and recorded in [history](docs/roadmap-history.md). **v2.9.0.0**
 **v2.10.0.0** (folder context-menu completeness, pane consolidation,
 selection-lag fix, banner diagnostics) shipped 2026-07-29 —
 [release](https://github.com/reboulip/rblclass/releases/tag/2.10.0.0).
+**v2.11.0.0** (install & encryption diagnostics, keyboard flow, attachments)
+shipped 2026-11-07 —
+[release](https://github.com/reboulip/rblclass/releases/tag/2.11.0.0).
 
 Open work: the two v2.6.0.0 items still pending live verification (banner
 strip B3, meeting classify C1), and v2.9.0.0 B1 (banner strip on
@@ -30,9 +33,9 @@ reply/forward) likewise shipped pending live verification on the real
 target — **confirmed still broken on the real target on 2026-07-28**
 (issue #46: detection works, stripping doesn't); v2.10.0.0 D1 adds the
 diagnostic capability needed to root-cause it, itself shipped pending a
-real-target re-check. **v2.11.0.0** (install & encryption diagnostics,
-keyboard flow, attachments) is planned from the 2026-11-05 `/gh-issues`
-triage. Phases 8–9 are forward-looking.
+real-target re-check. v2.11.0.0 A3 (encrypted-mail guard and trace) and
+C2 (body-image removal on encrypted mail) likewise await a real-target
+check. Phases 8–9 are forward-looking.
 
 ## Testing & validation strategy (applies to every item)
 
