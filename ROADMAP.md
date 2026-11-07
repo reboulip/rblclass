@@ -579,7 +579,7 @@ text as the specification.
       opened in the default browser. New label/tooltip resource keys,
       translated FR/DE. [#59]
 
-- [ ] **B3.** Return keyboard focus to the search box after pane actions and
+- [x] **B3.** Return keyboard focus to the search box after pane actions and
       add a `/` shortcut. Replace `FocusSearchAfterClassify` with one shared
       path that covers every pane action and modal close, and that does what
       `FocusSearch` does (`Focus`, `Keyboard.Focus`, `SelectAll`); if WPF

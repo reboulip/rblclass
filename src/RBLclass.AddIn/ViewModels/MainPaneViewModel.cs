@@ -180,7 +180,11 @@ namespace RBLclass.AddIn.ViewModels
             if (_showMeetingClassifyHint == null) return;
             Dispatcher.CurrentDispatcher.BeginInvoke(new Action(() =>
             {
-                try { _showMeetingClassifyHint(); }
+                try
+                {
+                    _showMeetingClassifyHint();
+                    TaskPaneServices.Host?.ReturnFocusToSearch();
+                }
                 catch (Exception ex) { Log.Warning(ex, "Meeting-classify hint failed"); }
             }), DispatcherPriority.Background);
         }
