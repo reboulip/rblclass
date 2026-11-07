@@ -22,12 +22,103 @@
         <Setter Property="Foreground" Value="{DynamicResource Theme.Foreground}" />
     </Style>
 
+    <!-- Minimal check box and radio button templates (v2.11.0.0 B4): the default
+         ones draw their own box, so neither the theme nor a focus ring could reach
+         it. The box keeps the default 13-14 px footprint; the focus ring is drawn
+         just outside it, so the row layout does not move. -->
     <Style TargetType="{x:Type CheckBox}">
         <Setter Property="Foreground" Value="{DynamicResource Theme.Foreground}" />
+        <Setter Property="Background" Value="{DynamicResource Theme.ControlBackground}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource Theme.ControlBorder}" />
+        <Setter Property="Padding" Value="4,0,0,0" />
+        <Setter Property="FocusVisualStyle" Value="{x:Null}" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="{x:Type CheckBox}">
+                    <Grid Background="Transparent" SnapsToDevicePixels="True">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <Grid Width="14" Height="14" VerticalAlignment="Center">
+                            <Border x:Name="Box" Background="{TemplateBinding Background}"
+                                    BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="1" CornerRadius="2" />
+                            <Path x:Name="Mark" Data="M 3,7 L 6,10 L 11,4" Visibility="Collapsed"
+                                  Stroke="{TemplateBinding Foreground}" StrokeThickness="1.8"
+                                  StrokeStartLineCap="Round" StrokeEndLineCap="Round" StrokeLineJoin="Round" />
+                            <Rectangle x:Name="Partial" Width="6" Height="6" Visibility="Collapsed"
+                                       Fill="{TemplateBinding Foreground}" />
+                            <Border x:Name="FocusRing" Margin="-2" CornerRadius="3" IsHitTestVisible="False"
+                                    Visibility="Collapsed" BorderThickness="1"
+                                    BorderBrush="{DynamicResource Theme.FocusBorder}" />
+                        </Grid>
+                        <ContentPresenter Grid.Column="1" Margin="{TemplateBinding Padding}"
+                                          VerticalAlignment="Center" RecognizesAccessKey="True" />
+                    </Grid>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsChecked" Value="True">
+                            <Setter TargetName="Mark" Property="Visibility" Value="Visible" />
+                        </Trigger>
+                        <Trigger Property="IsChecked" Value="{x:Null}">
+                            <Setter TargetName="Partial" Property="Visibility" Value="Visible" />
+                        </Trigger>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="Box" Property="Background" Value="{DynamicResource Theme.ControlBackgroundHover}" />
+                        </Trigger>
+                        <Trigger Property="IsKeyboardFocused" Value="True">
+                            <Setter TargetName="FocusRing" Property="Visibility" Value="Visible" />
+                        </Trigger>
+                        <Trigger Property="IsEnabled" Value="False">
+                            <Setter Property="Opacity" Value="0.5" />
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
     </Style>
 
     <Style TargetType="{x:Type RadioButton}">
         <Setter Property="Foreground" Value="{DynamicResource Theme.Foreground}" />
+        <Setter Property="Background" Value="{DynamicResource Theme.ControlBackground}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource Theme.ControlBorder}" />
+        <Setter Property="Padding" Value="4,0,0,0" />
+        <Setter Property="FocusVisualStyle" Value="{x:Null}" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="{x:Type RadioButton}">
+                    <Grid Background="Transparent" SnapsToDevicePixels="True">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <Grid Width="14" Height="14" VerticalAlignment="Center">
+                            <Ellipse x:Name="Circle" Fill="{TemplateBinding Background}"
+                                     Stroke="{TemplateBinding BorderBrush}" StrokeThickness="1" />
+                            <Ellipse x:Name="Dot" Width="6" Height="6" Visibility="Collapsed"
+                                     Fill="{TemplateBinding Foreground}" />
+                            <Ellipse x:Name="FocusRing" Margin="-2" IsHitTestVisible="False" Visibility="Collapsed"
+                                     Stroke="{DynamicResource Theme.FocusBorder}" StrokeThickness="1" />
+                        </Grid>
+                        <ContentPresenter Grid.Column="1" Margin="{TemplateBinding Padding}"
+                                          VerticalAlignment="Center" RecognizesAccessKey="True" />
+                    </Grid>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsChecked" Value="True">
+                            <Setter TargetName="Dot" Property="Visibility" Value="Visible" />
+                        </Trigger>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="Circle" Property="Fill" Value="{DynamicResource Theme.ControlBackgroundHover}" />
+                        </Trigger>
+                        <Trigger Property="IsKeyboardFocused" Value="True">
+                            <Setter TargetName="FocusRing" Property="Visibility" Value="Visible" />
+                        </Trigger>
+                        <Trigger Property="IsEnabled" Value="False">
+                            <Setter Property="Opacity" Value="0.5" />
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
     </Style>
 
     <Style TargetType="{x:Type GroupBox}">
@@ -35,12 +126,50 @@
         <Setter Property="BorderBrush" Value="{DynamicResource Theme.ControlBorder}" />
     </Style>
 
+    <!-- Keyboard focus (v2.11.0.0 B4): restyled controls draw a thin
+         Theme.FocusBorder ring on IsKeyboardFocused, overlaid on their own 1 px
+         border so nothing shifts. FocusVisualStyle is cleared on them to avoid a
+         second, dotted outline. -->
+
+    <!-- Minimal template: the default one draws its own focus border that a
+         style trigger cannot override. PART_ContentHost must stay a ScrollViewer. -->
     <Style TargetType="{x:Type TextBox}">
         <Setter Property="Background" Value="{DynamicResource Theme.ControlBackground}" />
         <Setter Property="Foreground" Value="{DynamicResource Theme.Foreground}" />
         <Setter Property="BorderBrush" Value="{DynamicResource Theme.ControlBorder}" />
+        <Setter Property="BorderThickness" Value="1" />
         <Setter Property="CaretBrush" Value="{DynamicResource Theme.Foreground}" />
         <Setter Property="Padding" Value="2,1" />
+        <Setter Property="FocusVisualStyle" Value="{x:Null}" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="{x:Type TextBox}">
+                    <Grid>
+                        <Border x:Name="Bd"
+                                Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                Padding="{TemplateBinding Padding}"
+                                SnapsToDevicePixels="True">
+                            <ScrollViewer x:Name="PART_ContentHost" Focusable="False"
+                                          HorizontalScrollBarVisibility="Hidden"
+                                          VerticalScrollBarVisibility="Hidden" />
+                        </Border>
+                        <Border x:Name="FocusRing" IsHitTestVisible="False" Visibility="Collapsed"
+                                BorderBrush="{DynamicResource Theme.FocusBorder}" BorderThickness="1"
+                                SnapsToDevicePixels="True" />
+                    </Grid>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsKeyboardFocused" Value="True">
+                            <Setter TargetName="FocusRing" Property="Visibility" Value="Visible" />
+                        </Trigger>
+                        <Trigger Property="IsEnabled" Value="False">
+                            <Setter TargetName="Bd" Property="Opacity" Value="0.5" />
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
     </Style>
 
     <Style TargetType="{x:Type ListBox}">
@@ -55,12 +184,15 @@
         <Setter Property="Foreground" Value="{DynamicResource Theme.Foreground}" />
         <Setter Property="Background" Value="Transparent" />
         <Setter Property="Padding" Value="4,2" />
+        <Setter Property="FocusVisualStyle" Value="{x:Null}" />
         <Setter Property="HorizontalContentAlignment" Value="Stretch" />
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="{x:Type ListBoxItem}">
                     <Border x:Name="Bd"
                             Background="{TemplateBinding Background}"
+                            BorderBrush="{TemplateBinding BorderBrush}"
+                            BorderThickness="{TemplateBinding BorderThickness}"
                             Padding="{TemplateBinding Padding}"
                             SnapsToDevicePixels="True">
                         <ContentPresenter HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}" />
@@ -73,6 +205,12 @@
                         <Trigger Property="IsSelected" Value="True">
                             <Setter TargetName="Bd" Property="Background"
                                     Value="{DynamicResource Theme.SelectionBackground}" />
+                        </Trigger>
+                        <!-- 1 px ring, padding reduced by 1 so the content stays put. -->
+                        <Trigger Property="IsKeyboardFocused" Value="True">
+                            <Setter TargetName="Bd" Property="BorderBrush" Value="{DynamicResource Theme.FocusBorder}" />
+                            <Setter TargetName="Bd" Property="BorderThickness" Value="1" />
+                            <Setter TargetName="Bd" Property="Padding" Value="3,1" />
                         </Trigger>
                     </ControlTemplate.Triggers>
                 </ControlTemplate>
@@ -88,6 +226,7 @@
         <Setter Property="Foreground" Value="{DynamicResource Theme.Foreground}" />
         <Setter Property="BorderBrush" Value="{DynamicResource Theme.ControlBorder}" />
         <Setter Property="Padding" Value="6,3" />
+        <Setter Property="FocusVisualStyle" Value="{x:Null}" />
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="{x:Type ComboBox}">
@@ -124,6 +263,10 @@
                             </ToggleButton.Template>
                         </ToggleButton>
 
+                        <Border x:Name="FocusRing" Grid.ColumnSpan="2" IsHitTestVisible="False" Visibility="Collapsed"
+                                BorderBrush="{DynamicResource Theme.FocusBorder}" BorderThickness="1"
+                                CornerRadius="2" SnapsToDevicePixels="True" />
+
                         <Popup IsOpen="{TemplateBinding IsDropDownOpen}" Placement="Bottom"
                                AllowsTransparency="True" Focusable="False" PopupAnimation="Slide">
                             <Border Background="{DynamicResource Theme.ControlBackground}"
@@ -140,6 +283,9 @@
                         <Trigger Property="IsMouseOver" Value="True">
                             <Setter TargetName="Bd" Property="Background"
                                     Value="{DynamicResource Theme.ControlBackgroundHover}" />
+                        </Trigger>
+                        <Trigger Property="IsKeyboardFocused" Value="True">
+                            <Setter TargetName="FocusRing" Property="Visibility" Value="Visible" />
                         </Trigger>
                         <Trigger Property="IsEnabled" Value="False">
                             <Setter TargetName="Bd" Property="Opacity" Value="0.5" />
@@ -170,19 +316,25 @@
         <Setter Property="BorderBrush" Value="{DynamicResource Theme.ControlBorder}" />
         <Setter Property="BorderThickness" Value="1" />
         <Setter Property="Padding" Value="8,3" />
+        <Setter Property="FocusVisualStyle" Value="{x:Null}" />
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="{x:Type Button}">
-                    <Border x:Name="Bd"
-                            Background="{TemplateBinding Background}"
-                            BorderBrush="{TemplateBinding BorderBrush}"
-                            BorderThickness="{TemplateBinding BorderThickness}"
-                            CornerRadius="2"
-                            SnapsToDevicePixels="True">
-                        <ContentPresenter HorizontalAlignment="Center"
-                                          VerticalAlignment="Center"
-                                          Margin="{TemplateBinding Padding}" />
-                    </Border>
+                    <Grid>
+                        <Border x:Name="Bd"
+                                Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                CornerRadius="2"
+                                SnapsToDevicePixels="True">
+                            <ContentPresenter HorizontalAlignment="Center"
+                                              VerticalAlignment="Center"
+                                              Margin="{TemplateBinding Padding}" />
+                        </Border>
+                        <Border x:Name="FocusRing" IsHitTestVisible="False" Visibility="Collapsed"
+                                BorderBrush="{DynamicResource Theme.FocusBorder}" BorderThickness="1"
+                                CornerRadius="2" SnapsToDevicePixels="True" />
+                    </Grid>
                     <ControlTemplate.Triggers>
                         <Trigger Property="IsMouseOver" Value="True">
                             <Setter TargetName="Bd" Property="Background"
@@ -191,6 +343,9 @@
                         <Trigger Property="IsPressed" Value="True">
                             <Setter TargetName="Bd" Property="Background"
                                     Value="{DynamicResource Theme.ButtonPressed}" />
+                        </Trigger>
+                        <Trigger Property="IsKeyboardFocused" Value="True">
+                            <Setter TargetName="FocusRing" Property="Visibility" Value="Visible" />
                         </Trigger>
                         <Trigger Property="IsEnabled" Value="False">
                             <Setter TargetName="Bd" Property="Opacity" Value="0.5" />
@@ -210,19 +365,25 @@
         <Setter Property="BorderThickness" Value="1" />
         <Setter Property="Padding"         Value="12,4" />
         <Setter Property="FontWeight"      Value="Normal" />
+        <Setter Property="FocusVisualStyle" Value="{x:Null}" />
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="{x:Type Button}">
-                    <Border x:Name="Bd"
-                            Background="{TemplateBinding Background}"
-                            BorderBrush="{TemplateBinding BorderBrush}"
-                            BorderThickness="{TemplateBinding BorderThickness}"
-                            CornerRadius="2"
-                            SnapsToDevicePixels="True">
-                        <ContentPresenter HorizontalAlignment="Center"
-                                          VerticalAlignment="Center"
-                                          Margin="{TemplateBinding Padding}" />
-                    </Border>
+                    <Grid>
+                        <Border x:Name="Bd"
+                                Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                CornerRadius="2"
+                                SnapsToDevicePixels="True">
+                            <ContentPresenter HorizontalAlignment="Center"
+                                              VerticalAlignment="Center"
+                                              Margin="{TemplateBinding Padding}" />
+                        </Border>
+                        <Border x:Name="FocusRing" IsHitTestVisible="False" Visibility="Collapsed"
+                                BorderBrush="{DynamicResource Theme.FocusBorder}" BorderThickness="1"
+                                CornerRadius="2" SnapsToDevicePixels="True" />
+                    </Grid>
                     <ControlTemplate.Triggers>
                         <!-- Plain hover/pressed (no destinations selected) -->
                         <Trigger Property="IsMouseOver" Value="True">
@@ -252,6 +413,17 @@
                                 <Condition Binding="{Binding IsPressed, RelativeSource={RelativeSource TemplatedParent}}" Value="True" />
                             </MultiDataTrigger.Conditions>
                             <Setter TargetName="Bd" Property="Background" Value="{DynamicResource Theme.AccentPressed}" />
+                        </MultiDataTrigger>
+                        <Trigger Property="IsKeyboardFocused" Value="True">
+                            <Setter TargetName="FocusRing" Property="Visibility" Value="Visible" />
+                        </Trigger>
+                        <!-- An accent ring on the accent face would vanish: use the accent foreground. -->
+                        <MultiDataTrigger>
+                            <MultiDataTrigger.Conditions>
+                                <Condition Binding="{Binding HasSelectedDestinations}" Value="True" />
+                                <Condition Binding="{Binding IsKeyboardFocused, RelativeSource={RelativeSource TemplatedParent}}" Value="True" />
+                            </MultiDataTrigger.Conditions>
+                            <Setter TargetName="FocusRing" Property="BorderBrush" Value="{DynamicResource Theme.AccentForeground}" />
                         </MultiDataTrigger>
                         <Trigger Property="IsEnabled" Value="False">
                             <Setter TargetName="Bd" Property="Opacity" Value="0.5" />
@@ -284,19 +456,29 @@
         <Setter Property="Foreground" Value="{DynamicResource Theme.Foreground}" />
         <Setter Property="Background" Value="Transparent" />
         <Setter Property="Padding" Value="10,7" />
+        <Setter Property="FocusVisualStyle" Value="{x:Null}" />
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="{x:Type TabItem}">
-                    <Border x:Name="Bd"
-                            Background="{TemplateBinding Background}"
-                            CornerRadius="3" Margin="0,1"
-                            Padding="{TemplateBinding Padding}"
-                            SnapsToDevicePixels="True">
-                        <ContentPresenter ContentSource="Header"
-                                          VerticalAlignment="Center"
-                                          HorizontalAlignment="Left" />
-                    </Border>
+                    <Grid>
+                        <Border x:Name="Bd"
+                                Background="{TemplateBinding Background}"
+                                CornerRadius="3" Margin="0,1"
+                                Padding="{TemplateBinding Padding}"
+                                SnapsToDevicePixels="True">
+                            <ContentPresenter ContentSource="Header"
+                                              VerticalAlignment="Center"
+                                              HorizontalAlignment="Left" />
+                        </Border>
+                        <Border x:Name="FocusRing" Margin="0,1" CornerRadius="3"
+                                IsHitTestVisible="False" Visibility="Collapsed"
+                                BorderBrush="{DynamicResource Theme.FocusBorder}" BorderThickness="1"
+                                SnapsToDevicePixels="True" />
+                    </Grid>
                     <ControlTemplate.Triggers>
+                        <Trigger Property="IsKeyboardFocused" Value="True">
+                            <Setter TargetName="FocusRing" Property="Visibility" Value="Visible" />
+                        </Trigger>
                         <Trigger Property="IsMouseOver" Value="True">
                             <Setter TargetName="Bd" Property="Background"
                                     Value="{DynamicResource Theme.ControlBackgroundHover}" />

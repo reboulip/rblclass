@@ -53,6 +53,10 @@
                 <!-- v2.7.0.0 E1: opt-in "a newer version is available" banner. -->
                 <Border Background="#FF8C00" CornerRadius="4" Padding="8,6" Margin="0,0,0,6"
                         Visibility="{Binding HasUpdateAvailable, Converter={StaticResource BoolToVis}}">
+                    <!-- Focus ring readable on the orange banner (v2.11.0.0 B4). -->
+                    <Border.Resources>
+                        <SolidColorBrush x:Key="Theme.FocusBorder" Color="#FF201F1E" />
+                    </Border.Resources>
                     <DockPanel LastChildFill="True">
                         <Button DockPanel.Dock="Right" Content="{loc:Loc Key=MainPane_UpdateAvailable_Dismiss}"
                                 Background="Transparent" BorderThickness="0" Foreground="White"
@@ -64,6 +68,10 @@
                 <!-- E1: prominent, width-adapting banner for a pinned just-sent mail. -->
                 <Border Background="#0078D4" CornerRadius="4" Padding="8,6" Margin="0,0,0,6"
                         Visibility="{Binding HasPinnedItem, Converter={StaticResource BoolToVis}}">
+                    <!-- The default ring is this same blue: use white on this banner. -->
+                    <Border.Resources>
+                        <SolidColorBrush x:Key="Theme.FocusBorder" Color="#FFFFFFFF" />
+                    </Border.Resources>
                     <StackPanel>
                         <TextBlock Foreground="White" FontWeight="Bold" TextWrapping="Wrap" FontSize="11"
                                    Text="{loc:Loc Key=MainPane_PinnedSentMail_Indicator}" />
@@ -158,6 +166,15 @@
                         <Setter Property="BorderThickness" Value="0,0,0,1" />
                         <Setter Property="BorderBrush" Value="{DynamicResource Theme.ControlBorder}" />
                         <Setter Property="Padding" Value="0" />
+                        <Setter Property="FocusVisualStyle" Value="{x:Null}" />
+                        <!-- No BasedOn: these rows keep their own separator look, so the
+                             keyboard-focus ring (v2.11.0.0 B4) is set here. -->
+                        <Style.Triggers>
+                            <Trigger Property="IsKeyboardFocused" Value="True">
+                                <Setter Property="BorderBrush" Value="{DynamicResource Theme.FocusBorder}" />
+                                <Setter Property="BorderThickness" Value="1" />
+                            </Trigger>
+                        </Style.Triggers>
                     </Style>
                 </ListBox.ItemContainerStyle>
                 <ListBox.ItemTemplate>

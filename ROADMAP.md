@@ -65,7 +65,49 @@ triage. Phases 8–9 are forward-looking.
       read when viewed in the Reading Pane"). Likely a Gmail/IMAP move quirk or a
       stale selection EntryID. Investigate on the real 32-bit target / a
       non-Gmail store before pilot; not reproducible as a code defect on the
-      current dev account.
+      current dev account. 2026-11-07: seen again as `0x80040109` ("the
+      message has been modified") on real Gmail mail shown in the Reading Pane
+      right after a classify, repeating on the same item for 10+ seconds. Not
+      reproduced on 47 dummy mails in a Gmail IMAP folder (read and unread,
+      1.2 s to 7 s apart), with or without v2.11.0.0 B3. One dummy mail moved
+      out of that folder reappeared in it later (IMAP sync), which points at
+      IMAP sync state rather than RBLclass code.
+- [ ] **Delete key ignored once the pane has had keyboard focus (#49
+      regression).** The v2.9.0.0 B2 fix (`Explorer.Activate()` after
+      navigating) no longer works on Outlook 16.0.20527 (Current channel). An
+      A/B test showed the defect also exists without v2.11.0.0 B3. Measured
+      2026-11-07 with an automated harness (dummy `[RBLCLASS-TEST]` mails in
+      dedicated folders, UI Automation, real mouse clicks, `SendKeys`; results
+      are only reliable with nobody using the PC), reproducible 3/3:
+      - Before any pane interaction, Delete deletes the selected mail.
+      - Any keyboard focus in the pane kills it, with or without a click and
+        with or without "open folder": after that, Delete does nothing in any
+        folder. Arrow keys still move the selection, and the Delete command
+        itself works (`CommandBars.ExecuteMso("Delete")` deletes), so only the
+        accelerator is lost.
+      - A real mouse click on a message row restores it. Programmatic focus
+        changes do not: `Explorer.Activate()`, `SetFocus` on the `OutlookGrid`
+        window (shipped in B3: it fixes "no window has focus" after "open
+        folder", but not Delete), clearing WPF focus, collapsing and expanding
+        the navigation pane.
+      - Calling `IOleInPlaceObject::UIDeactivate` on the pane's ActiveX host
+        after "open folder" returned S_OK but changed nothing (reverted).
+        WinForms returns S_OK without acting when it does not consider itself
+        UI-active, which fits focus being held by the WPF `HwndSource` child
+        rather than the WinForms control, so another object may be the one
+        swallowing the accelerator.
+      Suspected mechanism, not proven: while a hosted control is Office's
+      active object, Office offers it every keystroke through
+      `IOleInPlaceActiveObject::TranslateAccelerator`, and WinForms forwards
+      keys aimed at other windows to the Office control site
+      (`Control.ActiveXImpl.TranslateAccelerator`), which can consume them.
+      Workaround meanwhile: click in the message list before pressing Delete.
+      Next steps: find which object Office routes accelerators to once the
+      pane has had focus; evaluate Microsoft's KB 4490421 workaround (an
+      intermediary borderless Form between the CTP UserControl and the
+      ElementHost, documented for keys not working as expected with WPF in a
+      CustomTaskPane), mindful of the "never resize the CTP after creation"
+      rule and the nav-rail inset logic; re-verify on the 32-bit target. [#49]
 - [x] **Task pane rendered partly behind the navigation rail when docked
       top/bottom.** RESOLVED 2026-07-11 (plus a hard-freeze regression fixed the
       same day — see resolution block at the end of this item).
@@ -593,7 +635,7 @@ text as the specification.
       keyboard hook (EDR risk); from Outlook the existing ribbon keytip reaches
       the pane. Update the walkthrough shortcuts table. [#60]
 
-- [ ] **B4.** Make keyboard focus more visible, moderately: from subtle to a
+- [x] **B4.** Make keyboard focus more visible, moderately: from subtle to a
       little less subtle, not vivid. `Controls.xaml` has no keyboard-focus
       state today. Add a `Theme.FocusBorder` brush to both
       `Brushes.Light.xaml` and `Brushes.Dark.xaml`, and a thin accent-coloured
