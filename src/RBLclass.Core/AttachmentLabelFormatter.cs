@@ -58,6 +58,23 @@ namespace RBLclass.Core
             return sb.ToString();
         }
 
+        /// <summary>
+        /// Insert <paramref name="block"/> just inside the opening &lt;body&gt; tag, or
+        /// prepend when there is none. Shared by the adapter's label write and the
+        /// re-encrypted filing planner (moved from the adapter, v2.12.0.0 A3).
+        /// </summary>
+        public static string InsertAfterBodyTag(string html, string block)
+        {
+            if (string.IsNullOrEmpty(html)) return block;
+            int bodyStart = html.IndexOf("<body", StringComparison.OrdinalIgnoreCase);
+            if (bodyStart >= 0)
+            {
+                int close = html.IndexOf('>', bodyStart);
+                if (close >= 0) return html.Insert(close + 1, block);
+            }
+            return block + html;
+        }
+
         private static string Encode(string value) => WebUtility.HtmlEncode(value ?? string.Empty);
 
         /// <summary>

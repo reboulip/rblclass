@@ -821,7 +821,7 @@ pilot machine opens a re-encrypted mail with Stormshield.
       file name, an empty body, a large part (5 MB) with no excessive
       allocation (stream to a `MemoryStream`).
 
-- [ ] **A3.** Core: `ReencryptContentPlanner`, which applies the classify
+- [x] **A3.** Core: `ReencryptContentPlanner`, which applies the classify
       actions to a decrypted `MailContent` and returns the content to
       encrypt, with no Outlook. Inputs: the `MailContent`, the
       `ClassifyRequest` options for that item (`RemoveAttachments`, the
@@ -838,7 +838,7 @@ pilot machine opens a re-encrypted mail with Stormshield.
       labelled rows. xUnit tests mirroring `ClassifierServiceInlineImageTests`
       and the strip/keep/label cases.
 
-- [ ] **A4.** Core interface `IMailRebuilder`, implemented by the adapter,
+- [x] **A4.** Core interface `IMailRebuilder`, implemented by the adapter,
       kept separate from `IMailStore` so the shipped contract does not grow
       (memory `prefer-isolated-new-ui-over-retrofit`):
       `MailContent ReadDecryptedContent(MailItemRef item)` returns null when
