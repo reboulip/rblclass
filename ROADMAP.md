@@ -800,7 +800,7 @@ pilot machine opens a re-encrypted mail with Stormshield.
       All strings go in EN/FR/DE resx (`ResourceParityTests`). Update
       `SettingsTests` for the new keys.
 
-- [ ] **A2.** Core: `MimeEntityBuilder`, a pure MIME writer
+- [x] **A2.** Core: `MimeEntityBuilder`, a pure MIME writer
       (`RBLclass.Core`). Input: a new `MailContent` model (`HtmlBody`,
       `PlainBody` (either may be null), `IReadOnlyList<MailPart> Parts`, where
       `MailPart` = `FileName`, `ContentType`, `byte[] Data`, `ContentId`
