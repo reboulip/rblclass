@@ -1,5 +1,12 @@
 # CLAUDE.md
 
+## Interaction language
+
+The project is in English: code, identifiers, comments, commit messages,
+ROADMAP items, documentation and every English resource string. **Talk to the
+user in French** (replies, questions, `AskUserQuestion` prompts, summaries).
+The French and German UI strings stay in their resx files as they are.
+
 ## Project overview
 
 This is a refactor of a legacy Outlook VBA macro into a modern Outlook
