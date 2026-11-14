@@ -108,8 +108,16 @@ namespace RBLclass.Core
         {
             try
             {
+                // Decided once, on the source, BEFORE anything is filed (#62).
+                // Stormshield decrypts the opened mail in memory, and Outlook's
+                // Move/Copy write that in-memory state into the filed item, so
+                // the filed copy can look like plain mail afterwards. Its verdict
+                // must not be re-derived from it: a mail protected now gets no
+                // write at all on any filed copy.
+                bool wasProtected = SafeIsEncrypted(item);
                 bool markComplete = request.MarkTasksComplete
-                    && SafeIsFlaggedIncomplete(item) && !SafeIsEncrypted(item);
+                    && !wasProtected && SafeIsFlaggedIncomplete(item);
+                bool markAsRead = request.MarkAsRead && !wasProtected;
                 int filed = 0;
                 var protectionBefore = TraceProtection("before", "pending", item);
 
@@ -152,7 +160,7 @@ namespace RBLclass.Core
                         MailItemRef filedRef;
                         if (moveSlot)
                         {
-                            filedRef = _store.MoveItemToFolder(item, destination, request.MarkAsRead);
+                            filedRef = _store.MoveItemToFolder(item, destination, markAsRead);
                             if (filedRef == null)
                             {
                                 // The item no longer resolves - the original
@@ -195,7 +203,7 @@ namespace RBLclass.Core
                         }
                         else
                         {
-                            filedRef = _store.CopyItemToFolder(item, destination, request.MarkAsRead);
+                            filedRef = _store.CopyItemToFolder(item, destination, markAsRead);
                             acc.Copies++;
                             if (filedRef != null) acc.CreatedCopies.Add(filedRef);
                         }
@@ -207,7 +215,16 @@ namespace RBLclass.Core
                         // Encrypted items are never stripped (their
                         // attachments ARE the message); the store reports
                         // the skip so the UI can say so.
-                        if (filedRef != null)
+                        if (filedRef != null && wasProtected)
+                        {
+                            // No write on a protected mail's filed copy (#62).
+                            // Reported like the adapter's own strip guard.
+                            if (request.RemoveAttachments)
+                                acc.EncryptedSkips++;
+                            WarnIfProtectionLost(filedRef, moveSlot ? "move" : "copy");
+                            TraceProtectionAfter(protectionBefore, moveSlot ? "move" : "copy", filedRef);
+                        }
+                        else if (filedRef != null)
                         {
                             // Body images chosen in the modal are handled even
                             // when attachment removal is off (v2.11.0.0 C2).
@@ -922,6 +939,24 @@ namespace RBLclass.Core
             {
                 return null;
             }
+        }
+
+        /// <summary>
+        /// A mail protected before filing whose filed item no longer reads as
+        /// protected was written decrypted by the move/copy (#62: Stormshield had
+        /// decrypted it in memory). RBLclass cannot undo that; the warning makes it
+        /// visible in the log. Logs no subject.
+        /// </summary>
+        private void WarnIfProtectionLost(MailItemRef filedRef, string path)
+        {
+            bool stillProtected;
+            try { stillProtected = _store.IsEncryptedMail(filedRef); }
+            catch { return; } // unknown: nothing to report
+            if (!stillProtected)
+                _log.Warning(
+                    "Protected mail filed by {Path} no longer reads as protected ({EntryId}): " +
+                    "it was decrypted in memory when filed. No change was made to it.",
+                    path, filedRef.EntryId);
         }
 
         private void TraceProtectionAfter(MailProtectionState before, string path, MailItemRef item)

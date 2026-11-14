@@ -270,6 +270,94 @@ namespace RBLclass.Core.Tests
             result.OriginalsMoved.Should().Be(1);
         }
 
+        // #62 (reproduced on the dev machine, 2026-11-14): Outlook's Move writes the
+        // in-memory (decrypted) state into the filed item, so the filed copy can
+        // look plain. The verdict taken on the source must carry over to it.
+        private static IMailStore ProtectedSourceThatFilesPlain()
+        {
+            var store = Store();
+            store.IsEncryptedMail(Arg.Is<MailItemRef>(r => r.EntryId == "e1")).Returns(true);
+            return store; // filed refs ("moved-e1", "copy-…") read as plain
+        }
+
+        [Fact]
+        public void A_protected_source_is_never_stripped_even_when_the_filed_copy_looks_plain()
+        {
+            var store = ProtectedSourceThatFilesPlain();
+
+            var result = new ClassifierService(store).Classify(
+                Request(new ClassifyOptions(removeAttachments: true), D1));
+
+            store.DidNotReceive().RemoveAttachments(Arg.Any<MailItemRef>());
+            store.DidNotReceive().RemoveAttachment(Arg.Any<MailItemRef>(), Arg.Any<int>());
+            result.OriginalsMoved.Should().Be(1);
+            result.EncryptedStripSkips.Should().Be(1);
+        }
+
+        [Fact]
+        public void A_protected_source_is_filed_without_mark_as_read()
+        {
+            var store = ProtectedSourceThatFilesPlain();
+
+            new ClassifierService(store).Classify(Request(new ClassifyOptions(markAsRead: true), D2, D1));
+
+            store.Received(1).CopyItemToFolder(Arg.Any<MailItemRef>(), D2, false);
+            store.Received(1).MoveItemToFolder(Arg.Any<MailItemRef>(), D1, false);
+        }
+
+        [Fact]
+        public void A_plain_source_is_still_filed_with_mark_as_read()
+        {
+            var store = Store();
+
+            new ClassifierService(store).Classify(Request(new ClassifyOptions(markAsRead: true), D1));
+
+            store.Received(1).MoveItemToFolder(Arg.Any<MailItemRef>(), D1, true);
+        }
+
+        [Fact]
+        public void A_protected_source_gets_no_banner_strip_body_image_removal_or_label()
+        {
+            var store = ProtectedSourceThatFilesPlain();
+            var item = Item("e1");
+            var image = new AttachmentDisposition(item, 3, "logo.png", AttachmentDispositionAction.Delete,
+                                                  null, contentId: "logo", inlinePlaceholder: "[image]");
+
+            new ClassifierService(store).Classify(new ClassifyRequest(
+                new[] { item }, new[] { D1 },
+                new ClassifyOptions(removeAttachments: true),
+                bannerSignature: "banner",
+                attachmentDispositions: new[] { image }));
+
+            store.DidNotReceive().StripExternalBanner(Arg.Any<MailItemRef>(), Arg.Any<string>());
+            store.DidNotReceive().RemoveInlineImages(Arg.Any<MailItemRef>(), Arg.Any<IReadOnlyList<string>>(), Arg.Any<string>());
+            store.DidNotReceive().AppendHtmlNote(Arg.Any<MailItemRef>(), Arg.Any<string>());
+        }
+
+        [Fact]
+        public void A_protected_source_filed_plain_logs_a_warning()
+        {
+            var store = ProtectedSourceThatFilesPlain();
+            var log = Substitute.For<IAppLog>();
+
+            new ClassifierService(store, log: log).Classify(Request(ClassifyOptions.Default, D1));
+
+            log.Received(1).Warning(
+                Arg.Is<string>(s => s.StartsWith("Protected mail filed by")), Arg.Any<object[]>());
+        }
+
+        [Fact]
+        public void A_protected_source_filed_still_protected_logs_no_warning()
+        {
+            var store = Store();
+            store.IsEncryptedMail(Arg.Any<MailItemRef>()).Returns(true);
+            var log = Substitute.For<IAppLog>();
+
+            new ClassifierService(store, log: log).Classify(Request(ClassifyOptions.Default, D1));
+
+            log.DidNotReceive().Warning(Arg.Any<string>(), Arg.Any<object[]>());
+        }
+
         [Fact]
         public void The_trace_never_records_the_subject()
         {

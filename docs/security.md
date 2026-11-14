@@ -105,8 +105,29 @@ administrator rights** and runs **inside the Outlook process**.
   setter, which alone dirties the item. A flagged protected mail stays flagged
   and is excluded from the mark-complete prompt (`ClassifierService`); no new UI
   string.
-- **Moves.** A pure move cannot remove encryption from the code's side; the
-  add-in does no re-encryption.
+- **Verdict taken once, on the source.** `ClassifierService` decides protection
+  once on the source mail before filing (`IMailStore.IsEncryptedMail`,
+  multi-signal) and does not re-derive it from the filed item, because a move can
+  make the filed item look plain. When the source is protected, the filed copy
+  (the move and every extra copy) gets no write at all: no attachment strip, body
+  image removal, disposition label, banner strip, mark-as-read (`Move`/`Copy` are
+  called with `markAsRead=false`) or task-flag completion. A requested strip
+  counts as "encrypted kept" in the status. After filing, the filed item is
+  checked again; if it no longer reads as protected, a Warning is always logged
+  (not Debug-gated): "Protected mail filed by <move|copy> no longer reads as
+  protected (<EntryId>): it was decrypted in memory when filed. No change was
+  made to it." No subject is logged.
+- **Known limitation: Move/Copy persist in-memory state.** Outlook's
+  `MailItem.Move` and `Copy` write the item's in-memory state into the filed item
+  while another handle holds that state modified; `Close(olDiscard)` on another
+  handle does not prevent it, and once the holding handle releases the item a
+  fresh handle sees the stored state again. Reproduced on the dev machine by
+  simulation (stored `IPM.Note.SMIME`, class rewritten to `IPM.Note` in memory by
+  a held handle: the stored class after the move was `IPM.Note`). If Stormshield
+  has decrypted a mail in memory (smart card inserted, mail displayed), filing it
+  therefore writes the decrypted version; this is the likely cause of the
+  original #62 report ("the mail loses its encryption"). RBLclass cannot prevent
+  this through the Outlook object model; the add-in does no re-encryption.
 - **Diagnostic "Protection trace"** (`ClassifierService`, via `IAppLog`): active
   only with Diagnostic logging on (effective after an Outlook restart). Debug
   lines record stage (before/after), path (pending, move, copy, safety-copy,

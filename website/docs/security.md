@@ -91,8 +91,18 @@ administrator rights** and runs **inside the Outlook process**.
   strip, mark-as-read, and both task-flag
   saves (mark complete / incomplete). A flagged protected mail stays flagged and
   is not offered in the mark-complete prompt.
-- **Moves.** A pure move cannot remove encryption from the add-in's side, and the
-  add-in performs no re-encryption.
+- **Decided once, on the source.** Protection is decided on the source mail
+  before filing and is not re-derived from the filed item. When the source is
+  protected, the filed copy (the move and every extra copy) gets no write at all:
+  no attachment or body-image removal, label, banner strip, mark-as-read or task
+  completion. A requested strip is reported as kept. If the filed item no longer
+  reads as protected, a warning is always logged (no subject).
+- **Known limitation: filing can persist an in-memory decryption.** Outlook's
+  move and copy write the item's in-memory state into the filed item. If an
+  endpoint product such as Stormshield has decrypted a mail in memory (smart card
+  inserted, mail displayed), filing it writes the decrypted version, which is the
+  likely cause of the "mail loses its encryption" report. RBLclass cannot prevent
+  this through the Outlook object model, and it performs no re-encryption.
 - **Diagnostic "Protection trace".** Only when *Diagnostic logging* is on (takes
   effect after restarting Outlook), the log records, per classified mail, the
   stage (before/after), path (pending, move, copy, safety-copy, kept-original),

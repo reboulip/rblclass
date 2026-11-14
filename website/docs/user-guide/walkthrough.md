@@ -152,7 +152,11 @@ signature logos survive.
     removal for them and reports it, so a filed copy never silently loses
     protected content. This holds even when a mail-encryption product decrypts
     the open mail in memory: RBLclass also checks the class stored in the folder,
-    the S/MIME payload and whether the mail was already modified when opened. The same applies to the other changes RBLclass would make
+    the S/MIME payload and whether the mail was already modified when opened.
+    The filed copy is then left untouched. One limitation remains: if such a
+    product has decrypted the mail in memory (smart card inserted, mail
+    displayed), Outlook itself writes the decrypted version when the mail is
+    filed, and RBLclass cannot prevent that. The same applies to the other changes RBLclass would make
     to a mail: encrypted or signed mails are never rewritten, never marked as
     read, and a flagged one stays flagged and is simply not offered in the
     "mark flagged tasks complete" prompt. Filing (moving) them works as usual.

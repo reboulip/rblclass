@@ -625,6 +625,21 @@ text as the specification.
       stay, and the log shows `protected mail detected by StoredMessageClass`
       (or another reason). Card out: send the new `GetSelectedItems` warning
       line.
+      E2E on the dev machine 2026-11-14 (fake mails, add-in driven through UI
+      Automation): Outlook's `Move`/`Copy` **write the in-memory state** of an
+      item held modified by another handle (`Close(olDiscard)` does not stop
+      it). A Stormshield-decrypted mail is therefore filed decrypted, which
+      likely explains the original "loses its encryption" report and cannot be
+      prevented through the object model. Fix: `ClassifierService` decides
+      protection once on the source **before** filing and makes no write on
+      any filed copy of a protected source (no strip, body images, label,
+      banner, mark as read, task flag). It always logs a Warning `Protected
+      mail filed by … no longer reads as protected` when the filed item came
+      out plain. E2E green: plain move, strip via the window, mark as read,
+      manage attachments, Undo, empty selection, and the Stormshield simulation
+      (attachments kept, not marked read, `encryptedKept=1`, warning logged).
+      Target: with the card in, check that the attachments stay and look for
+      that warning (it means the mail was filed decrypted).
 ### B — Pane & keyboard
 
 - [x] **B1.** Remove the selection-count label at the bottom of the pane:
