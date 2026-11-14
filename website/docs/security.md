@@ -26,6 +26,7 @@ administrator rights** and runs **inside the Outlook process**.
 | **Outlook process ↔ add-in** | The add-in is loaded in-process by Outlook and runs with the user's full Outlook privileges. It is **not** a security boundary against the host: it trusts the Outlook Object Model and is trusted by it. |
 | **User account ↔ add-in data** | All persisted state lives under `%LocalAppData%\RBLclass\`, protected by the standard per-user NTFS ACL. Other non-admin users cannot read it; a local administrator can (accepted — the OS trust boundary). |
 | **Machine ↔ network** | By default the add-in makes **no** network calls. The single optional exception is the opt-in update check, which reaches a user-configured HTTPS URL only. |
+| **Decrypted mail ↔ add-in** | With the opt-in, experimental *Re-encrypt encrypted mail when filing* setting (off by default), the add-in reads mail content that Outlook and an endpoint product such as Stormshield have already decrypted in memory, and encrypts it again locally. See [Protected mail](#protected-encrypted-signed-mail). |
 | **Add-in ↔ registry** | COM registration and the Outlook load entry are written under **HKCU only**. No HKLM writes; no admin rights. |
 
 ## Data handled
@@ -49,6 +50,11 @@ administrator rights** and runs **inside the Outlook process**.
   the **only** path that writes mail body content to disk. It is never triggered
   automatically; the `diagnostics\` directory is created on first use; files
   accumulate until the user manually deletes them (no rolling retention).
+- **Re-encrypted filing (transient, opt-in):** decrypted content (body, body
+  images, attachments) is held in memory while a copy is rebuilt and encrypted;
+  the plaintext MIME buffer is cleared after encryption. Certificates are read
+  from the user's `CurrentUser\My` store (public key only). See *Protected
+  (encrypted / signed) mail*.
 
 ## Data at rest
 
@@ -72,7 +78,9 @@ administrator rights** and runs **inside the Outlook process**.
 - **Policy:** no recipient addresses and no mail-body text reach the log. The
   send-time guards log *outcomes* (e.g. "external-recipient warning shown"), not
   the addresses or body that triggered them. Folder names/paths and file/DB paths
-  may appear for diagnostics.
+  may appear for diagnostics. The re-encrypted filing path logs no subject, file
+  names or addresses: only entry ids, certificate thumbprint, algorithm OIDs,
+  counts and fallback reasons.
 
 ## Protected (encrypted / signed) mail
 
@@ -102,7 +110,39 @@ administrator rights** and runs **inside the Outlook process**.
   endpoint product such as Stormshield has decrypted a mail in memory (smart card
   inserted, mail displayed), filing it writes the decrypted version, which is the
   likely cause of the "mail loses its encryption" report. RBLclass cannot prevent
-  this through the Outlook object model, and it performs no re-encryption.
+  this through the Outlook object model, and by default it performs no
+  re-encryption (see the experimental option below).
+- **Experimental: re-encrypted filing (off by default).** With *Re-encrypt
+  encrypted mail when filing* on (Settings → Experimental), an encrypted mail that
+  is readable decrypted in memory is rebuilt from its content, encrypted again and
+  created directly as an S/MIME item in each destination, instead of letting
+  Outlook persist the decrypted version.
+    - **Local, no network.** Encryption uses the in-box `System.Security.dll`
+      (`EnvelopedCms`: CMS EnvelopedData, AES-256-CBC, RSA-OAEP key transport). No
+      network call is made. Certificates come from `CurrentUser\My`, filtered on
+      validity window, RSA key, key usage and EKU only: no chain building and no
+      revocation check. Only the public key is used; RBLclass never uses the
+      private key. *Automatic* selection also requires the certificate's e-mail to
+      equal the default account's SMTP address and a private key visible to Windows,
+      so the copy is decryptable on this machine. An explicit choice that becomes
+      invalid is not silently replaced: re-encryption is skipped.
+    - **Plaintext handling.** Attachment bytes are read through MAPI properties.
+      When that fails, `Attachment.SaveAsFile` writes a plaintext temporary file
+      under `%LocalAppData%\RBLclass\tmp\<guid>`, which is read, overwritten with
+      zeros, flushed and deleted (3 retries); leftovers are swept at startup.
+      Zeroing is best effort: SSD wear levelling and EDR/antivirus copies can keep
+      data. Nothing decrypted is saved to a mail store by this path.
+    - **Verification and fallback.** Each copy is verified as stored S/MIME. Any
+      failure (no usable certificate, content not rebuildable, encryption, copy or
+      verification failure) falls back to the standard path after removing every
+      copy made for that mail; the count is reported to the user.
+    - **The original.** Unless *Keep a copy* is on, the original goes to Deleted
+      Items. If Outlook's move wrote it decrypted, it is deleted permanently and a
+      warning is logged; deleted data may persist in PST free space until
+      compaction.
+    - **Limits.** Not undoable; the sender's signature is not kept; signed-only
+      mail, mail still showing its encrypted part and mail not readable decrypted
+      are not eligible; 25 MB attachment cap.
 - **Diagnostic "Protection trace".** Only when *Diagnostic logging* is on (takes
   effect after restarting Outlook), the log records, per classified mail, the
   stage (before/after), path (pending, move, copy, safety-copy, kept-original),
@@ -175,6 +215,9 @@ The single opt-in exception is the **update check**:
   encryption planned.
 - **External-recipient and diagnostics dialogs** that display addresses/paths are
   **intentional UX**, not information-disclosure leaks.
+- **Best-effort temp-file zeroing and PST free-space remnants** in the
+  experimental re-encrypted filing path (see *Protected (encrypted / signed)
+  mail*); the feature is off by default.
 - **Send-guard fails open** — per the project rule that exceptions must never
   escape into Outlook (which would disable the add-in). A fail-safe stance is a
   tracked hardening item.
@@ -192,5 +235,8 @@ Highlights still open:
   user believes were removed.
 - Decide & document the send-guard fail-open vs. fail-safe stance.
 - CI: dependency vulnerability scanning, SAST, SBOM per release.
+- Re-encrypted filing encrypts with RSA-OAEP only (the one RSA scheme .NET
+  Framework 4.8 produces); if Stormshield requires PKCS#1 v1.5, a `CryptMsg`
+  P/Invoke follow-up is needed.
 - Input caps: length-limit free-text inputs; upper-bound `MaxResults`; validate
   `InternalDomains` shape.

@@ -129,6 +129,48 @@ Outlook COM objects must be released explicitly, or Outlook leaks and crashes:
 - Ribbon buttons/tooltips need matching entries in all three `Ribbon*.xml`
   files. `ResourceParityTests` enforces parity across `.resx` and ribbon files.
 
+## Re-encrypted filing (experimental)
+
+An opt-in path (setting `ReencryptProtectedOnFile`, off by default) that files a
+protected mail that is readable decrypted in memory as a freshly encrypted copy.
+It follows the usual layering.
+
+**`RBLclass.Core`** (no Outlook, no crypto API):
+
+- `IMailRebuilder` — the adapter contract: `ReadDecryptedContent`, `Encrypt`,
+  `CreateEncryptedCopy`, `VerifyEncryptedCopy`, `ResolveCertificate`,
+  `ListEncryptionCertificates`. It never throws. The COM members run on the STA
+  thread; `Encrypt` and `ListEncryptionCertificates` are COM-free.
+- `MailContent` / `MailPart` — the rebuilt-content model (body, body images,
+  attachments, envelope).
+- `MimeEntityBuilder` — builds the RFC 2045/2046 message: multipart
+  alternative/related/mixed, base64, RFC 2231/2047 file names, a meta-charset
+  rewrite to utf-8, streaming output and boundary-collision checks.
+- `ReencryptContentPlanner` — pure logic that applies the attachment,
+  body-image, label and banner rules to the rebuilt content, mirroring the
+  in-place `ApplyAttachmentRemoval` rules.
+- `ReencryptEligibility` and `ReencryptOutcome` — which mail takes the path, and
+  the per-item result (re-encrypted, not applicable, or fallback with a reason).
+- `EncryptionCertificatePolicy`, `CertificateCandidate`, `CertificateInfo` — the
+  certificate filtering and *Automatic* selection rules.
+- `ClassifierService` takes an optional `IMailRebuilder`; with
+  `ClassifyOptions.ReencryptProtected`, its protected-item branch tries the
+  re-encrypted path before the standard loop, and falls back to it on any failure.
+
+**`RBLclass.Outlook.Adapter`**:
+
+- `OutlookMailRebuilder` creates the `IPM.Note.SMIME` item with a "PostItem
+  trick": `Items.Add(olPostItem)`, add a `smime.p7m` attachment tagged
+  `PR_ATTACH_MIME_TAG` `application/pkcs7-mime`, flip `MessageClass` to
+  `IPM.Note` and reopen as a `MailItem`, copy the recipients and envelope MAPI
+  properties, set `PR_ICON_INDEX` to -1, then flip to `IPM.Note.SMIME`. The
+  payload is byte-checked before the flip and the stub is deleted on failure.
+- `MailItemProbes` — probes shared with `OutlookMailStore` (moved out of it).
+- Encryption uses `EnvelopedCms` from the in-box `System.Security.dll`
+  (AES-256-CBC, RSA-OAEP key transport).
+
+See [Security](../security.md) for the trust and plaintext-handling implications.
+
 ## Performance targets
 
 | Operation | Target |

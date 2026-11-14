@@ -19,6 +19,11 @@ Because the core is `.NET Standard 2.0` with no Outlook, WPF, or COM
 dependencies, the tests run on a plain runner with no Office installed — which is
 exactly why CI can run them (see below).
 
+The experimental re-encrypted filing is covered at the Core level by
+`MimeEntityBuilderTests` (with the `MimeTestReader` helper),
+`ReencryptContentPlannerTests`, `EncryptionCertificatePolicyTests`,
+`ReencryptEligibilityTests` and `ClassifierServiceReencryptTests`.
+
 ### Resource parity is a test
 
 `ResourceParityTests` (in `RBLclass.Core.Tests`) fails `dotnet test` if any
@@ -41,6 +46,15 @@ interactively on the dev machine:
   S/MIME (Stormshield) mail and the external-sender banner. Items in this
   category ship with an explicit *re-verify on the real target* note rather than
   being blocked.
+- **Re-encrypted filing** is exercised end to end on the dev machine with a
+  self-signed `CN=RBLclass E2E Test` certificate (no SAN e-mail, so *Automatic*
+  does not select it and the tests pick it explicitly) and a **simulated
+  Stormshield decryption**: the item is stored as `IPM.Note.SMIME` while an
+  external COM handle holds it with an unsaved in-memory class `IPM.Note` during
+  the classify. Real Stormshield behaviour is verified only on the target.
+- `tools/Inspect-SmimeMsg.ps1` reads a dragged-out `.msg` offline and reports its
+  S/MIME CMS envelope (content-encryption and key-transport algorithms, and the
+  recipients).
 
 ## Target validation
 

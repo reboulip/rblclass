@@ -45,7 +45,10 @@ the same name.
   handling on copy.
 - **Attachment management** — strip attachments from a filed copy without
   touching the original (or a kept copy). Encrypted (S/MIME) mail is never
-  stripped.
+  stripped (except by the experimental re-encrypted filing below).
+- **Re-encrypted filing (experimental, off by default)** — file an encrypted
+  mail readable on your machine as a freshly encrypted copy instead of a
+  decrypted one.
 - **Inline sub-folder creation** — create a destination folder on the fly while
   classifying, with a targeted re-index.
 - **Conversation widening** — pull the rest of a conversation into view, with a

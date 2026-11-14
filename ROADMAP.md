@@ -964,7 +964,7 @@ pilot machine opens a re-encrypted mail with Stormshield.
       (copy opens decrypted, label, accents, image, original hard-deleted after
       the plaintext move). Stormshield itself is re-checked in A8.
 
-- [ ] **A7.** Docs and the security posture (through `doc-keeper`):
+- [x] **A7.** Docs and the security posture (through `doc-keeper`):
       `website/docs/user-guide/walkthrough.md` (the Experimental tab, what it
       does, the limits: no undo, signature lost, card required),
       `docs/security.md` + `website/docs/security.md` (a new trust boundary:

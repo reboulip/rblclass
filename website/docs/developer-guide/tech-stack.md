@@ -33,6 +33,7 @@ files, and load on the classic Win32 Outlook client.
 | UI | WPF with a **hand-rolled minimal MVVM** (`ObservableObject` + `RelayCommand`), hosted in Custom Task Panes via `ElementHost` inside a ComVisible WinForms host. |
 | Ribbon | `IRibbonExtensibility.GetCustomUI` returning Ribbon XML (not the Ribbon Designer). |
 | Storage | SQLite via **Microsoft.Data.Sqlite**, with **FTS5** for full-text folder search. Database in `%LocalAppData%\RBLclass\`. |
+| S/MIME encryption | **`System.Security.dll`** (in-box .NET Framework assembly, `EnvelopedCms`), used by the Outlook adapter only for the experimental re-encrypted filing. A GAC reference that is not copied to the output, so it needs no binding redirect. No new NuGet dependency. |
 | Logging | **Serilog** with a rolling file sink under `%LocalAppData%\RBLclass\logs\`. |
 | Tests | **xUnit + FluentAssertions + NSubstitute** against `RBLclass.Core`. |
 | Packaging | Per-user PowerShell install kit (`.zip`) now; per-user **WiX MSI** at GA, both writing HKCU + `%LocalAppData%`. |
