@@ -910,9 +910,12 @@ namespace RBLclass.Core
                 string flags = state?.SecurityFlags == null
                     ? "absent"
                     : "0x" + state.SecurityFlags.Value.ToString("X8");
+                string stored = state == null ? "unresolved" : state.StoredMessageClass ?? "not-found";
                 _log.Debug(
-                    "Protection trace: stage={Stage} path={Path} entry={EntryId} class={MessageClass} flags={SecurityFlags} protected={Protected}",
-                    stage, path, item.EntryId, messageClass, flags, state?.IsProtected);
+                    "Protection trace: stage={Stage} path={Path} entry={EntryId} class={MessageClass} flags={SecurityFlags} " +
+                    "protected={Protected} stored={StoredClass} payload={Payload} unsaved={Unsaved} reason={Reason}",
+                    stage, path, item.EntryId, messageClass, flags, state?.IsProtected,
+                    stored, state?.HasSmimePayload, state?.HasUnsavedChanges, state?.Reason);
                 return state;
             }
             catch

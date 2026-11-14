@@ -150,7 +150,9 @@ signature logos survive.
 !!! danger "Encrypted mail is never stripped"
     Encrypted (S/MIME) mails are never stripped — RBLclass skips attachment
     removal for them and reports it, so a filed copy never silently loses
-    protected content. The same applies to the other changes RBLclass would make
+    protected content. This holds even when a mail-encryption product decrypts
+    the open mail in memory: RBLclass also checks the class stored in the folder,
+    the S/MIME payload and whether the mail was already modified when opened. The same applies to the other changes RBLclass would make
     to a mail: encrypted or signed mails are never rewritten, never marked as
     read, and a flagged one stays flagged and is simply not offered in the
     "mark flagged tasks complete" prompt. Filing (moving) them works as usual.

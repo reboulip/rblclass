@@ -237,21 +237,39 @@ namespace RBLclass.Outlook.Adapter
                     int count = 0;
                     try { count = selection.Value.Count; } catch { }
 
+                    // #62: an item Outlook can't read (e.g. Stormshield mail with
+                    // the smart card removed) used to vanish from the selection
+                    // without a trace. Count and log it so the target shows why.
+                    int unreadable = 0;
+                    string firstError = null;
+
                     for (int i = 1; i <= count; i++)
                     {
                         object raw;
                         try { raw = selection.Value[i]; }
-                        catch { continue; }
+                        catch (Exception ex)
+                        {
+                            unreadable++;
+                            if (firstError == null) firstError = DescribeComError(ex);
+                            continue;
+                        }
 
                         using (var comItem = new ComRef<object>(raw))
                         {
                             var mail = comItem.Value as OutlookOM.MailItem;
                             if (mail != null)
                             {
-                                string entryId = Safe(() => mail.EntryID, null);
-                                if (entryId == null) continue;
+                                string entryId;
+                                try { entryId = mail.EntryID; }
+                                catch (Exception ex)
+                                {
+                                    unreadable++;
+                                    if (firstError == null) firstError = DescribeComError(ex);
+                                    continue;
+                                }
+                                if (entryId == null) { unreadable++; continue; }
                                 string storeId = GetItemStoreId(mail);
-                                if (storeId == null) continue;
+                                if (storeId == null) { unreadable++; continue; }
                                 list.Add(new MailItemRef(storeId, entryId,
                                                          Safe(() => mail.Subject, string.Empty)));
                                 continue;
@@ -274,6 +292,11 @@ namespace RBLclass.Outlook.Adapter
                             // ReportItem and other non-mail types are always skipped.
                         }
                     }
+
+                    if (unreadable > 0)
+                        Log.Warning(
+                            "GetSelectedItems: {Unreadable} of {Count} selected item(s) could not be read and were left out ({Error}).",
+                            unreadable, count, firstError ?? "no EntryID/StoreID");
 
                     Log.Debug(
                         "GetSelectedItems: Selection.Count={Count}, items returned={Returned} (meetingItems={IncludeMeeting}).",
@@ -833,7 +856,7 @@ namespace RBLclass.Outlook.Adapter
                     if (mail == null) return;
 
                     // Guard before FlagStatus: the setter alone dirties the item.
-                    if (IsProtectedMail(mail))
+                    if (IsProtectedMail(mail, "MarkTaskIncomplete"))
                     {
                         Log.Information("MarkTaskIncomplete skipped an encrypted/signed item.");
                         return;
@@ -1030,7 +1053,7 @@ namespace RBLclass.Outlook.Adapter
                 // In scope. Encrypted/signed S/MIME is skipped but reported.
                 // StartsWith, like every other S/MIME guard in this file, so
                 // subtypes (.MultipartSigned, ...) are caught too (v2.7.1.0 A3).
-                if (IsProtectedMail(sibling))
+                if (IsProtectedMail(sibling, "Conversation sibling"))
                 {
                     skipped.Add(Safe(() => sibling.Subject, "(encrypted message)"));
                     return;
@@ -1119,7 +1142,7 @@ namespace RBLclass.Outlook.Adapter
                                     string sibConvId = Safe(() => sibling.ConversationID, null);
                                     if (sibConvId != convId) continue;
 
-                                    if (IsProtectedMail(sibling))
+                                    if (IsProtectedMail(sibling, "Conversation sibling"))
                                     {
                                         skipped.Add(Safe(() => sibling.Subject, "(encrypted message)"));
                                         continue;
@@ -1215,7 +1238,7 @@ namespace RBLclass.Outlook.Adapter
                     if (mail == null) return;
 
                     // Guard before FlagStatus: the setter alone dirties the item.
-                    if (IsProtectedMail(mail))
+                    if (IsProtectedMail(mail, "MarkTaskComplete"))
                     {
                         Log.Information("MarkTaskComplete skipped an encrypted/signed item.");
                         return;
@@ -1253,13 +1276,14 @@ namespace RBLclass.Outlook.Adapter
 
                     // Never strip S/MIME-encrypted/signed mail (maintainer rule,
                     // 2026-06-12): its "attachments" are the encrypted/signed
-                    // payload itself - removing them destroys the message.
-                    string messageClass = Safe(() => mail.MessageClass, null);
-                    if (ProtectedMailPolicy.IsProtected(messageClass))
+                    // payload itself - removing them destroys the message. With
+                    // Stormshield's card inserted the item shows decrypted and
+                    // a plain class, hence the multi-signal check (#62).
+                    if (IsProtectedMail(mail, "RemoveAttachments"))
                     {
                         Log.Information(
-                            "RemoveAttachments skipped an encrypted/signed item ({MessageClass}).",
-                            messageClass);
+                            "RemoveAttachments skipped an encrypted/signed item ({EntryId}).",
+                            item.EntryId);
                         return false;
                     }
 
@@ -1320,12 +1344,11 @@ namespace RBLclass.Outlook.Adapter
 
                     // Same S/MIME guard as RemoveAttachments: never touch an
                     // encrypted/signed payload.
-                    string messageClass = Safe(() => mail.MessageClass, null);
-                    if (ProtectedMailPolicy.IsProtected(messageClass))
+                    if (IsProtectedMail(mail, "RemoveAttachment"))
                     {
                         Log.Information(
-                            "RemoveAttachment skipped an encrypted/signed item ({MessageClass}).",
-                            messageClass);
+                            "RemoveAttachment skipped an encrypted/signed item ({EntryId}).",
+                            item.EntryId);
                         return false;
                     }
 
@@ -1377,12 +1400,11 @@ namespace RBLclass.Outlook.Adapter
                     if (mail == null) return false;
 
                     // Never rewrite an encrypted/signed body (same rule as the banner strip).
-                    string messageClass = Safe(() => mail.MessageClass, null);
-                    if (ProtectedMailPolicy.IsProtected(messageClass))
+                    if (IsProtectedMail(mail, "AppendHtmlNote"))
                     {
                         Log.Information(
-                            "AppendHtmlNote skipped an encrypted/signed item ({MessageClass}, {EntryId}).",
-                            messageClass, item.EntryId);
+                            "AppendHtmlNote skipped an encrypted/signed item ({EntryId}).",
+                            item.EntryId);
                         return false;
                     }
 
@@ -1430,7 +1452,7 @@ namespace RBLclass.Outlook.Adapter
                 {
                     var mail = comItem.Value as OutlookOM.MailItem;
                     if (mail == null) return false;
-                    return IsProtectedMail(mail);
+                    return IsProtectedMail(mail, "IsEncryptedMail");
                 }
             }
         }
@@ -1450,21 +1472,7 @@ namespace RBLclass.Outlook.Adapter
                     var mail = comItem.Value as OutlookOM.MailItem;
                     if (mail == null) return null;
 
-                    string messageClass = Safe(() => mail.MessageClass, null);
-                    int? flags = null;
-                    try
-                    {
-                        using (var pa = new ComRef<OutlookOM.PropertyAccessor>(mail.PropertyAccessor))
-                        {
-                            // GetProperty throws when the property is absent, the
-                            // normal case on plain mail.
-                            const string PR_SECURITY_FLAGS = "http://schemas.microsoft.com/mapi/proptag/0x6E010003";
-                            flags = Convert.ToInt32(pa.Value.GetProperty(PR_SECURITY_FLAGS));
-                        }
-                    }
-                    catch { }
-
-                    return new MailProtectionState(messageClass, flags);
+                    return ReadProtection(mail, considerUnsaved: true, readSecurityFlags: true);
                 }
             }
         }
@@ -1590,7 +1598,7 @@ namespace RBLclass.Outlook.Adapter
                     var mail = comItem.Value as OutlookOM.MailItem;
                     if (mail == null) return false;
 
-                    if (IsProtectedMail(mail))
+                    if (IsProtectedMail(mail, "RemoveInlineImages"))
                     {
                         Log.Information("RemoveInlineImages skipped an encrypted/signed item.");
                         return false;
@@ -1881,14 +1889,14 @@ namespace RBLclass.Outlook.Adapter
                 catch { return false; }
 
                 using (var comItem = new ComRef<object>(rawItem))
-                    return StripBannerOnLiveMail(comItem.Value as OutlookOM.MailItem, bannerSignature);
+                    return StripBannerOnLiveMail(comItem.Value as OutlookOM.MailItem, bannerSignature, isDraft: false);
             }
         }
 
         public bool StripBannerFromDraft(object draft, string bannerSignature)
         {
             if (string.IsNullOrWhiteSpace(bannerSignature)) return false;
-            return StripBannerOnLiveMail(draft as OutlookOM.MailItem, bannerSignature);
+            return StripBannerOnLiveMail(draft as OutlookOM.MailItem, bannerSignature, isDraft: true);
         }
 
         /// <summary>
@@ -1896,18 +1904,17 @@ namespace RBLclass.Outlook.Adapter
         /// run the Core stripper over the HTML body, write back and save only
         /// when it changed. Best-effort - logs and returns false on any fault.
         /// </summary>
-        private static bool StripBannerOnLiveMail(OutlookOM.MailItem mail, string bannerSignature)
+        private static bool StripBannerOnLiveMail(OutlookOM.MailItem mail, string bannerSignature, bool isDraft)
         {
             if (mail == null) return false;
 
             string entryId = Safe(() => mail.EntryID, null) ?? "(unsaved draft)";
 
-            // Never rewrite an encrypted/signed body - it would corrupt it.
-            string messageClass = Safe(() => mail.MessageClass, null);
-            if (ProtectedMailPolicy.IsProtected(messageClass))
+            // Never rewrite an encrypted/signed body - it would corrupt it. A draft
+            // being composed is dirty by nature, so unsaved changes don't count there.
+            if (IsProtectedMail(mail, "StripExternalBanner", considerUnsaved: !isDraft))
             {
-                Log.Information("StripExternalBanner skipped an encrypted/signed item ({MessageClass}, {EntryId}).",
-                    messageClass, entryId);
+                Log.Information("StripExternalBanner skipped an encrypted/signed item ({EntryId}).", entryId);
                 return false;
             }
 
@@ -2236,14 +2243,172 @@ namespace RBLclass.Outlook.Adapter
             finally { deleted?.Dispose(); }
         }
 
+        private const string PR_MESSAGE_CLASS_W = "http://schemas.microsoft.com/mapi/proptag/0x001A001F";
+        private const string PR_INTERNET_MESSAGE_ID_W = "http://schemas.microsoft.com/mapi/proptag/0x1035001F";
+        private const string PR_SECURITY_FLAGS = "http://schemas.microsoft.com/mapi/proptag/0x6E010003";
+        private const string DaslSubject = "urn:schemas:httpmail:subject";
+
         /// <summary>
-        /// The shared protected-mail check (v2.11.0.0 A3): class only, and a class
-        /// that cannot be read counts as protected. See <see cref="ProtectedMailPolicy"/>.
+        /// The shared protected-mail check, called before any write to an item
+        /// (v2.11.0.0 A3, hardened for #62). The live class alone is not trusted:
+        /// with the smart card inserted, Stormshield decrypts the opened item in
+        /// memory and it reports IPM.Note, so the stored class, the S/MIME payload
+        /// part and unsaved changes on open are checked too. See
+        /// <see cref="ProtectedMailPolicy.Evaluate"/>.
         /// </summary>
-        private static bool IsProtectedMail(OutlookOM.MailItem mail)
+        /// <param name="context">The calling action, for the log line.</param>
+        /// <param name="considerUnsaved">
+        /// False for a draft being composed, which legitimately has unsaved changes.
+        /// </param>
+        private static bool IsProtectedMail(OutlookOM.MailItem mail, string context, bool considerUnsaved = true)
         {
-            return ProtectedMailPolicy.IsProtected(Safe(() => mail.MessageClass, null));
+            var state = ReadProtection(mail, considerUnsaved, readSecurityFlags: false);
+            if (state.Reason != ProtectionReason.None && state.Reason != ProtectionReason.MessageClass)
+            {
+                // The case #62 was about: the class alone would have let the write through.
+                Log.Information(
+                    "{Context}: protected mail detected by {Reason} (class={MessageClass}, stored={StoredClass}, entry={EntryId}).",
+                    context, state.Reason, state.MessageClass ?? "unreadable",
+                    state.StoredMessageClass ?? "not-found", Safe(() => mail.EntryID, "(unsaved)"));
+            }
+            return state.IsProtected;
         }
+
+        /// <summary>
+        /// Read every protection signal from an opened item. Read-only: nothing here
+        /// writes to the item. A protected or unreadable live class decides on its
+        /// own, so the costlier reads only run on a mail that looks plain.
+        /// </summary>
+        private static MailProtectionState ReadProtection(OutlookOM.MailItem mail, bool considerUnsaved, bool readSecurityFlags)
+        {
+            // Saved first: an item that is already dirty right after being opened
+            // was rewritten in memory by someone else.
+            bool unsaved = considerUnsaved && !Safe(() => mail.Saved, true);
+            string messageClass = Safe(() => mail.MessageClass, null);
+            int? flags = readSecurityFlags ? ReadSecurityFlags(mail) : null;
+
+            if (ProtectedMailPolicy.IsProtected(messageClass))
+                return new MailProtectionState(messageClass, flags, hasUnsavedChanges: unsaved);
+
+            bool payload = HasSmimePayloadAttachment(mail);
+            string stored = ReadStoredProtectedClass(mail);
+            return new MailProtectionState(messageClass, flags, stored, payload, unsaved);
+        }
+
+        /// <summary><c>PR_SECURITY_FLAGS</c>, or null when absent. Trace only.</summary>
+        private static int? ReadSecurityFlags(OutlookOM.MailItem mail)
+        {
+            try
+            {
+                using (var pa = new ComRef<OutlookOM.PropertyAccessor>(mail.PropertyAccessor))
+                    return Convert.ToInt32(pa.Value.GetProperty(PR_SECURITY_FLAGS));
+            }
+            catch { return null; } // absent on plain mail
+        }
+
+        /// <summary>True when the item still shows its smime.p7m / smime.p7s part.</summary>
+        private static bool HasSmimePayloadAttachment(OutlookOM.MailItem mail)
+        {
+            OutlookOM.Attachments rawAtts;
+            try { rawAtts = mail.Attachments; }
+            catch { return false; }
+
+            using (var attachments = new ComRef<OutlookOM.Attachments>(rawAtts))
+            {
+                int count = Safe(() => attachments.Value.Count, 0);
+                for (int i = 1; i <= count; i++)
+                {
+                    OutlookOM.Attachment raw;
+                    try { raw = attachments.Value[i]; } catch { continue; }
+                    using (var att = new ComRef<OutlookOM.Attachment>(raw))
+                    {
+                        if (ProtectedMailPolicy.IsSmimePayloadName(Safe(() => att.Value.FileName, null)))
+                            return true;
+                    }
+                }
+            }
+            return false;
+        }
+
+        /// <summary>
+        /// The class the folder stores for this item when it is an S/MIME or secure
+        /// class, else null (#62). Read from the parent folder's contents table,
+        /// which is the stored row: an add-in that decrypts the opened item in
+        /// memory does not change it. The table is restricted to protected classes
+        /// and narrowed by Internet message id (or subject), so it holds a row or
+        /// two; the row is matched with <c>CompareEntryIDs</c> since a table can
+        /// return the short-term form of the EntryID. Best-effort: null on any fault.
+        /// </summary>
+        private static string ReadStoredProtectedClass(OutlookOM.MailItem mail)
+        {
+            string entryId = Safe(() => mail.EntryID, null);
+            if (string.IsNullOrEmpty(entryId)) return null; // never saved: nothing stored
+
+            string narrowing = null;
+            try
+            {
+                using (var pa = new ComRef<OutlookOM.PropertyAccessor>(mail.PropertyAccessor))
+                {
+                    string messageId = Safe(() => pa.Value.GetProperty(PR_INTERNET_MESSAGE_ID_W) as string, null);
+                    if (!string.IsNullOrWhiteSpace(messageId))
+                        narrowing = "\"" + PR_INTERNET_MESSAGE_ID_W + "\" = '" + DaslLiteral(messageId) + "'";
+                }
+            }
+            catch { /* fall back to the subject */ }
+
+            if (narrowing == null)
+            {
+                string subject = Safe(() => mail.Subject, null);
+                if (string.IsNullOrEmpty(subject)) return null; // no key to narrow on: skip, don't scan the folder
+                narrowing = "\"" + DaslSubject + "\" = '" + DaslLiteral(subject) + "'";
+            }
+
+            string filter = "@SQL=(\"" + PR_MESSAGE_CLASS_W + "\" LIKE 'IPM.Note.SMIME%' OR \""
+                          + PR_MESSAGE_CLASS_W + "\" LIKE 'IPM.Note.Secure%') AND " + narrowing;
+
+            object rawParent = null;
+            try
+            {
+                rawParent = mail.Parent;
+                var folder = rawParent as OutlookOM.Folder;
+                if (folder == null) return null;
+
+                using (var session = new ComRef<OutlookOM.NameSpace>(mail.Session))
+                using (var table = new ComRef<OutlookOM.Table>(folder.GetTable(filter, OutlookOM.OlTableContents.olUserItems)))
+                {
+                    // Narrowed to one message id: a handful of rows at most (copies).
+                    for (int guard = 0; guard < 25 && !table.Value.EndOfTable; guard++)
+                    {
+                        using (var row = new ComRef<OutlookOM.Row>(table.Value.GetNextRow()))
+                        {
+                            string rowId = Safe(() => row.Value["EntryID"] as string, null);
+                            if (rowId == null) continue;
+                            bool same = string.Equals(rowId, entryId, StringComparison.OrdinalIgnoreCase)
+                                     || Safe(() => session.Value.CompareEntryIDs(rowId, entryId), false);
+                            if (same) return Safe(() => row.Value["MessageClass"] as string, null);
+                        }
+                    }
+                }
+                return null;
+            }
+            catch (Exception ex)
+            {
+                Log.Debug(ex, "Stored message class lookup failed for {EntryId}.", entryId);
+                return null;
+            }
+            finally
+            {
+                if (rawParent != null && Marshal.IsComObject(rawParent))
+                    Marshal.ReleaseComObject(rawParent);
+            }
+        }
+
+        /// <summary>Exception type and HRESULT, for a log line with no item content.</summary>
+        private static string DescribeComError(Exception ex) =>
+            ex.GetType().Name + " 0x" + ex.HResult.ToString("X8");
+
+        /// <summary>Escape a value for a single-quoted DASL literal.</summary>
+        private static string DaslLiteral(string value) => value.Replace("'", "''");
 
         private static T Safe<T>(Func<T> read, T fallback)
         {
@@ -2264,12 +2429,9 @@ namespace RBLclass.Outlook.Adapter
         {
             if (mail != null)
             {
-                string messageClass = Safe(() => mail.MessageClass, null);
-                if (ProtectedMailPolicy.IsProtected(messageClass))
+                if (IsProtectedMail(mail, "MarkAsRead"))
                 {
-                    Log.Information(
-                        "MarkAsRead skipped an encrypted/signed item ({MessageClass}).",
-                        messageClass);
+                    Log.Information("MarkAsRead skipped an encrypted/signed item.");
                     return;
                 }
                 try { mail.UnRead = false; mail.Save(); }

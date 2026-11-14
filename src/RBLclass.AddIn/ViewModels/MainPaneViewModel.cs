@@ -448,6 +448,7 @@ namespace RBLclass.AddIn.ViewModels
             bool hadSkippedMeetingItems = _checkHasMeetingItemsInSelection?.Invoke() ?? false;
             if (items.Count == 0)
             {
+                Log.Information("AutoClass: nothing to file (empty or unreadable selection)."); // #62
                 PushStatus(_loc.GetString("Status_NoMailSelectedAction"));
                 if (hadSkippedMeetingItems) DeferMeetingClassifyHint();
                 return;
@@ -1231,6 +1232,9 @@ namespace RBLclass.AddIn.ViewModels
                 && (_checkHasMeetingItemsInSelection?.Invoke() ?? false);
             if (items.Count == 0)
             {
+                // #62: logged so a classify that files nothing leaves a trace
+                // (the adapter logs any selected item it could not read).
+                Log.Information("Classify: nothing to file (empty or unreadable selection).");
                 PushStatus(_loc.GetString("Status_NoMailSelectedAction"));
                 // A selection of only meeting invites lands here with nothing
                 // filed at all - the hint is the only explanation the user gets.

@@ -78,9 +78,17 @@ administrator rights** and runs **inside the Outlook process**.
 
 - **One definition.** A mail is *protected* when its message class starts with
   `IPM.Note.SMIME` or `IPM.Note.Secure` (case-insensitive), **or when its class
-  cannot be read** (fail closed).
+  cannot be read** (fail closed). The live class alone is not trusted, because
+  Stormshield decrypts an opened mail in memory and it then reports a plain
+  class. A mail is therefore also protected when its **stored** class (read from
+  the folder's contents table) is protected, when it still carries an S/MIME
+  payload part named `smime.p7m` or `smime.p7s` (other `.p7m` files such as
+  signed PDFs are ordinary attachments), or when it already had unsaved changes
+  as soon as it was opened, before the add-in touched it (ignored for a draft
+  being composed).
 - **Never saved or rewritten.** For protected mail the add-in skips attachment
-  removal, the HTML note, the banner strip, mark-as-read, and both task-flag
+  removal, body-image removal, the disposition label, the HTML note, the banner
+  strip, mark-as-read, and both task-flag
   saves (mark complete / incomplete). A flagged protected mail stays flagged and
   is not offered in the mark-complete prompt.
 - **Moves.** A pure move cannot remove encryption from the add-in's side, and the
@@ -92,7 +100,14 @@ administrator rights** and runs **inside the Outlook process**.
   protected, plus a warning if a mail was protected before and is not after. No
   subject, body or recipient is logged. The trace reads `PropertyAccessor`, which
   may trigger endpoint-security hooks, so that read happens only with Diagnostic
-  logging on.
+  logging on. The trace also records the stored class, the payload and
+  unsaved-on-open flags, and the reason a mail counted as protected.
+- **Non-class detection is logged.** When a signal other than the live class
+  decides, an Information line records the action, reason, classes and EntryID;
+  no subject or body.
+- **Unreadable selection diagnostics.** A selected item Outlook cannot read is
+  logged as a Warning (count, exception type/HRESULT), and a classify that finds
+  nothing to file logs an Information line.
 - **`PR_SECURITY_FLAGS` is recorded only**, not used to decide protection, until
   validated on the real target.
 - **Status:** pending verification on the real target workstation.

@@ -15,6 +15,9 @@ namespace RBLclass.Core.Tests
         private const int ArgPath = 1;
         private const int ArgClass = 3;
         private const int ArgFlags = 4;
+        private const int ArgProtected = 5;
+        private const int ArgStored = 6;
+        private const int ArgReason = 9;
 
         private static MailItemRef Item(string entry) => new MailItemRef("s1", entry, "Secret subject");
 
@@ -233,6 +236,38 @@ namespace RBLclass.Core.Tests
             new ClassifierService(store, log: log).Classify(Request(ClassifyOptions.Default, D1));
 
             log.DidNotReceive().Warning(Arg.Any<string>(), Arg.Any<object[]>());
+        }
+
+        // #62: the trace must show a mail decrypted in memory (plain live class,
+        // protected stored class) as protected, and say why.
+        [Fact]
+        public void The_trace_records_the_stored_class_and_the_reason()
+        {
+            var store = Store();
+            store.GetProtectionState(Arg.Any<MailItemRef>()).Returns(
+                new MailProtectionState("IPM.Note", 0, storedMessageClass: "IPM.Note.SMIME"));
+            var log = DebugLog();
+
+            new ClassifierService(store, log: log).Classify(Request(ClassifyOptions.Default, D1));
+
+            var trace = Traces(log)[0];
+            trace[ArgClass].Should().Be("IPM.Note");
+            trace[ArgProtected].Should().Be(true);
+            trace[ArgStored].Should().Be("IPM.Note.SMIME");
+            trace[ArgReason].Should().Be(ProtectionReason.StoredMessageClass);
+        }
+
+        [Fact]
+        public void A_store_reporting_protection_by_stored_class_keeps_attachments()
+        {
+            var store = Store();
+            store.RemoveAttachments(Arg.Any<MailItemRef>()).Returns(false); // the adapter's guard fired
+
+            var result = new ClassifierService(store).Classify(
+                Request(new ClassifyOptions(removeAttachments: true), D1));
+
+            result.EncryptedStripSkips.Should().Be(1);
+            result.OriginalsMoved.Should().Be(1);
         }
 
         [Fact]

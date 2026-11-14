@@ -607,6 +607,24 @@ text as the specification.
       present there. Also pending a live regression pass on ordinary mail:
       copy, safety copy, mark as read, attachment removal, conversation
       widening (only move, task-flag completion and Undo were exercised).
+      Target result 2026-11-13 (v2.11.0.0, Stormshield): with the smart card
+      inserted, "remove attachments" silently stripped an encrypted mail's
+      attachments and body images (`encryptedKept=0`). Stormshield decrypts the
+      opened item in memory and it reports `IPM.Note`, so the class-only check
+      passed. Fixed on develop 2026-11-14: `ProtectedMailPolicy.Evaluate`
+      also treats as protected a protected **stored** class (parent folder
+      contents table, narrowed by Internet message id, matched with
+      `CompareEntryIDs`), a `smime.p7m`/`smime.p7s` part, and unsaved changes
+      on open (not for drafts). A non-class detection logs `protected mail
+      detected by <Reason>` at Information. Dev machine: verified by driving
+      the adapter (plain mail still stripped, simulated in-memory decryption
+      and dirty-on-open refused). Without the card, Classify did nothing and
+      logged nothing; unreadable selected items and empty classifies are now
+      logged (Warning / Information). Re-verify on the target: card in,
+      classify an encrypted mail with "remove attachments" on: the attachments
+      stay, and the log shows `protected mail detected by StoredMessageClass`
+      (or another reason). Card out: send the new `GetSelectedItems` warning
+      line.
 ### B — Pane & keyboard
 
 - [x] **B1.** Remove the selection-count label at the bottom of the pane:

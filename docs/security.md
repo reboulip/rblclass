@@ -82,9 +82,25 @@ administrator rights** and runs **inside the Outlook process**.
 - **One definition** (`RBLclass.Core/ProtectedMailPolicy.IsProtected`): a mail is
   protected when its message class starts with `IPM.Note.SMIME` or
   `IPM.Note.Secure` (ordinal, case-insensitive), or when its class is null/blank
-  or cannot be read (fail closed).
+  or cannot be read (fail closed). **The live class alone is not trusted**
+  (GH #62): Stormshield decrypts the opened item in memory, so the opened
+  `MailItem` reports a plain `IPM.Note` and a class-only check let the strip and
+  its `Save()` through, writing the decrypted view without attachments. A mail is
+  therefore also protected when any of these holds (`ProtectedMailPolicy.Evaluate`;
+  `OutlookMailStore.IsProtectedMail`/`ReadProtection`):
+  - the **stored** class, read from the parent folder's contents table
+    (`Folder.GetTable`, restricted to protected classes, narrowed by
+    `PR_INTERNET_MESSAGE_ID` and falling back to subject, row matched with
+    `CompareEntryIDs`), is a protected class; a table row is what is stored and
+    is unaffected by in-memory decryption;
+  - the item still carries an S/MIME payload part named exactly `smime.p7m` or
+    `smime.p7s` (other `.p7m` files, e.g. signed PDFs, are ordinary attachments);
+  - the item already had unsaved changes when opened, before RBLclass touched it
+    (something rewrote it in memory and a save would commit that); ignored for a
+    draft being composed (reply/forward banner strip).
 - **Never saved or rewritten.** Attachment removal, the HTML note, the banner
-  strip, mark-as-read, and both task-flag saves (`MarkTaskComplete`,
+  strip, body-image removal, the disposition label, mark-as-read, and both
+  task-flag saves (`MarkTaskComplete`,
   `MarkTaskIncomplete`) are guarded; the flag guard runs before the `FlagStatus`
   setter, which alone dirties the item. A flagged protected mail stays flagged
   and is excluded from the mark-complete prompt (`ClassifierService`); no new UI
@@ -98,6 +114,16 @@ administrator rights** and runs **inside the Outlook process**.
   verdict; a warning is logged if a mail was protected before and is not after.
   No subject, body or recipient is logged. The `PropertyAccessor` read behind it
   may trigger Stormshield hooks, so it happens only with Diagnostic logging on.
+  The trace also records the stored class, the payload and unsaved-on-open flags,
+  and the deciding reason.
+- **Non-class detection is logged.** When a signal other than the live class
+  decides, an Information line `"<action>: protected mail detected by <Reason>
+  (class=..., stored=..., entry=...)"` is written; no subject or body.
+- **Unreadable selection diagnostics.** A selected item Outlook cannot read
+  (exception or missing EntryID/StoreID) is logged as a Warning with the count
+  and exception type/HRESULT; a classify that finds nothing to file logs an
+  Information line. Cause of the "badge removed, Classify does nothing" symptom is
+  not yet established.
 - **`PR_SECURITY_FLAGS` (0x6E010003) is recorded only**, not used to decide
   protection, until validated on the real target.
 - **Status: pending real-target verification.**
