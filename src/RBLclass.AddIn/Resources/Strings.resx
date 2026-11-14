@@ -906,6 +906,21 @@
   <data name="Status_Classify_EncryptedKept_Other" xml:space="preserve">
     <value> {0} encrypted mails kept their attachments.</value>
   </data>
+  <data name="Status_Classify_Reencrypted_One" xml:space="preserve">
+    <value> {0} encrypted mail re-encrypted (cannot be undone).</value>
+  </data>
+  <data name="Status_Classify_Reencrypted_Other" xml:space="preserve">
+    <value> {0} encrypted mails re-encrypted (cannot be undone).</value>
+  </data>
+  <data name="Status_Classify_ReencryptFallback_One" xml:space="preserve">
+    <value> {0} encrypted mail filed without re-encryption — see the log.</value>
+  </data>
+  <data name="Status_Classify_ReencryptFallback_Other" xml:space="preserve">
+    <value> {0} encrypted mails filed without re-encryption — see the log.</value>
+  </data>
+  <data name="Status_Classify_ReencryptNoCertificate" xml:space="preserve">
+    <value> No usable encryption certificate: re-encryption skipped.</value>
+  </data>
   <data name="Status_Classify_EncryptedAttachmentsKept_One" xml:space="preserve">
     <value> Attachments were retained — {0} encrypted mail cannot be stripped.</value>
   </data>

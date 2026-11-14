@@ -906,6 +906,21 @@
   <data name="Status_Classify_EncryptedKept_Other" xml:space="preserve">
     <value> {0} verschlüsselte E-Mails haben ihre Anhänge behalten.</value>
   </data>
+  <data name="Status_Classify_Reencrypted_One" xml:space="preserve">
+    <value> {0} verschlüsselte E-Mail neu verschlüsselt (nicht rückgängig zu machen).</value>
+  </data>
+  <data name="Status_Classify_Reencrypted_Other" xml:space="preserve">
+    <value> {0} verschlüsselte E-Mails neu verschlüsselt (nicht rückgängig zu machen).</value>
+  </data>
+  <data name="Status_Classify_ReencryptFallback_One" xml:space="preserve">
+    <value> {0} verschlüsselte E-Mail ohne Neuverschlüsselung abgelegt – siehe Protokoll.</value>
+  </data>
+  <data name="Status_Classify_ReencryptFallback_Other" xml:space="preserve">
+    <value> {0} verschlüsselte E-Mails ohne Neuverschlüsselung abgelegt – siehe Protokoll.</value>
+  </data>
+  <data name="Status_Classify_ReencryptNoCertificate" xml:space="preserve">
+    <value> Kein verwendbares Verschlüsselungszertifikat: Neuverschlüsselung übersprungen.</value>
+  </data>
   <data name="Status_Classify_EncryptedAttachmentsKept_One" xml:space="preserve">
     <value> Anhänge behalten — {0} verschlüsselte E-Mail kann nicht verarbeitet werden.</value>
   </data>

@@ -303,13 +303,26 @@ namespace RBLclass.Core.Tests
             MimeTestReader.Parse(bytes).Children[1].Body.Should().Equal(data);
         }
 
+        [Fact]
+        public void A_regular_part_with_a_content_id_stays_an_attachment_and_keeps_its_content_id()
+        {
+            var unflagged = new MailPart(2, "logo.png", "image/png", Png, isInline: false, contentId: "logo@x");
+            var content = new MailContent("<html><body><img src=\"cid:logo@x\"></body></html>", null, new[] { unflagged });
+
+            var root = MimeTestReader.Parse(new MimeEntityBuilder().Build(content));
+
+            root.MediaType.Should().Be("multipart/mixed");
+            root.Children[1].Disposition.Should().Be("attachment");
+            root.Children[1].ContentId.Should().Be("<logo@x>");
+        }
+
         // ---- model --------------------------------------------------------------
 
         [Fact]
-        public void Mail_part_normalises_the_content_id_only_when_inline()
+        public void Mail_part_normalises_the_content_id_inline_or_not()
         {
             new MailPart(1, "a", null, null, isInline: true, contentId: "<cid@x>").ContentId.Should().Be("cid@x");
-            new MailPart(1, "a", null, null, isInline: false, contentId: "cid@x").ContentId.Should().BeNull();
+            new MailPart(1, "a", null, null, isInline: false, contentId: "<cid@x>").ContentId.Should().Be("cid@x");
             new MailPart(1, null, null, null).FileName.Should().BeEmpty();
             new MailPart(1, "a", null, null).Data.Should().BeEmpty();
         }

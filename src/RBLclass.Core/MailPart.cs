@@ -23,7 +23,7 @@ namespace RBLclass.Core
             ContentType = contentType;
             Data = data ?? new byte[0];
             IsInline = isInline;
-            ContentId = isInline ? InlineImageRules.NormalizeContentId(contentId) : null;
+            ContentId = InlineImageRules.NormalizeContentId(contentId);
         }
 
         public int AttachmentId { get; }
@@ -41,7 +41,12 @@ namespace RBLclass.Core
         /// </summary>
         public bool IsInline { get; }
 
-        /// <summary>The normalised content id (no angle brackets) of an inline part, or null.</summary>
+        /// <summary>
+        /// The normalised content id (no angle brackets), or null. A regular
+        /// (non-inline) part may carry one too: some stores (IMAP, PST) leave a body
+        /// image unflagged, and keeping its <c>Content-ID</c> keeps the body's
+        /// <c>cid:</c> reference working in the rebuilt mail.
+        /// </summary>
         public string ContentId { get; }
     }
 }

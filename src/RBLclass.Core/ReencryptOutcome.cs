@@ -16,7 +16,13 @@ namespace RBLclass.Core
         /// <summary>Still shows its S/MIME payload (smart card absent): standard path (not a fallback).</summary>
         NotDecrypted,
 
-        /// <summary>The item could not be resolved: standard path (not a fallback).</summary>
+        /// <summary>
+        /// Protected by another signal (unsaved changes only) but not
+        /// identified as encrypted: standard path (not a fallback).
+        /// </summary>
+        NotEncrypted,
+
+        /// <summary>The item or its message class could not be read: standard path (not a fallback).</summary>
         Unresolved,
 
         /// <summary>No usable encryption certificate.</summary>

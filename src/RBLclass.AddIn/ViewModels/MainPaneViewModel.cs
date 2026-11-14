@@ -517,7 +517,8 @@ namespace RBLclass.AddIn.ViewModels
                     && TaskPaneServices.GatherAttachments != null
                     && TaskPaneServices.ShowAttachmentDisposition != null)
                 {
-                    var groups = TaskPaneServices.GatherAttachments(preflight.Processable);
+                    var groups = TaskPaneServices.GatherAttachments(preflight.Processable,
+                        s != null && s.ReencryptProtectedOnFile);
                     if (autoModalForImages) groups = OnlyBodyImages(groups);
                     if (HasOfferedAttachments(groups, autoTreatInline))
                     {
@@ -556,7 +557,9 @@ namespace RBLclass.AddIn.ViewModels
                                                        new ClassifyOptions(keepCopy: keepCopy,
                                                                            removeAttachments: removeAttachments,
                                                                            safetyCopy: safetyCopy,
-                                                                           markAsRead: s != null && s.MarkAsReadOnClassify),
+                                                                           markAsRead: s != null && s.MarkAsReadOnClassify,
+                                                                           reencryptProtected: s != null && s.ReencryptProtectedOnFile,
+                                                                           reencryptCertificateThumbprint: s?.ReencryptCertificateThumbprint),
                                                        attachmentDispositions, labelOptions,
                                                        historyRetentionDays: retentionDays,
                                                        bannerSignature: autoClassBannerSig);
@@ -585,6 +588,9 @@ namespace RBLclass.AddIn.ViewModels
                 if (result.EncryptedStripSkips > 0)
                     autoClassStatus += _loc.Plural(result.EncryptedStripSkips,
                         "Status_Classify_EncryptedKept_One", "Status_Classify_EncryptedKept_Other");
+
+                autoClassStatus += DescribeReencryption(result.Reencrypted, result.ReencryptFallbacks,
+                                                        result.ReencryptNoCertificate, _loc);
 
                 // C1: tell the user why not all selected mails were filed, using
                 // the preflight's own skip counts (distinct from AutoClassify's
@@ -687,7 +693,8 @@ namespace RBLclass.AddIn.ViewModels
                 || TaskPaneServices.ApplyAttachmentDispositions == null)
                 return;
 
-            var groups = TaskPaneServices.GatherAttachments(items);
+            // In-place edits never rebuild: protected mail stays out of the modal.
+            var groups = TaskPaneServices.GatherAttachments(items, false);
             bool treatInline = _settings != null && Settings.Load(_settings).TreatInlineImagesAsAttachments;
 
             // Nothing to manage when no item has an attachment to offer.
@@ -1297,7 +1304,8 @@ namespace RBLclass.AddIn.ViewModels
                     && TaskPaneServices.GatherAttachments != null
                     && TaskPaneServices.ShowAttachmentDisposition != null)
                 {
-                    var groups = TaskPaneServices.GatherAttachments(preflight.Items);
+                    var groups = TaskPaneServices.GatherAttachments(preflight.Items,
+                        classifySettings != null && classifySettings.ReencryptProtectedOnFile);
                     if (modalForImages) groups = OnlyBodyImages(groups);
                     if (HasOfferedAttachments(groups, treatInline))
                     {
@@ -1350,7 +1358,10 @@ namespace RBLclass.AddIn.ViewModels
                                                             removeAttachments: _removeAttachments,
                                                             markTasksComplete: markTasksComplete,
                                                             safetyCopy: safetyCopy,
-                                                            markAsRead: _markAsRead),
+                                                            markAsRead: _markAsRead,
+                                                            reencryptProtected: classifySettings != null
+                                                                && classifySettings.ReencryptProtectedOnFile,
+                                                            reencryptCertificateThumbprint: classifySettings?.ReencryptCertificateThumbprint),
                                         bannerSignature: bannerSignature,
                                         attachmentDispositions: attachmentDispositions,
                                         labelOptions: labelOptions),
@@ -1380,6 +1391,9 @@ namespace RBLclass.AddIn.ViewModels
 
                 if (preflight.SkippedEncrypted.Count > 0)
                     classifyStatus.Append(_loc.Plural(preflight.SkippedEncrypted.Count, "Status_Classify_EncryptedInConversation_One", "Status_Classify_EncryptedInConversation_Other"));
+
+                classifyStatus.Append(DescribeReencryption(result.Reencrypted, result.ReencryptFallbacks,
+                                                           result.ReencryptNoCertificate, _loc));
 
                 PushStatus(classifyStatus.ToString());
 
@@ -1426,6 +1440,25 @@ namespace RBLclass.AddIn.ViewModels
             groups.Where(g => !g.IsEncrypted)
                   .Select(g => (g.Item, (IReadOnlyList<AttachmentInfo>)g.Attachments.Where(a => a.IsInlineImage).ToList(), false))
                   .ToList();
+
+        /// <summary>
+        /// The status suffix of experimental re-encrypted filing (v2.12.0.0):
+        /// how many mails were re-encrypted (not undoable), how many fell back to
+        /// the standard path, and the one-time "no certificate" notice. Empty when
+        /// nothing applies.
+        /// </summary>
+        internal static string DescribeReencryption(int reencrypted, int fallbacks, bool noCertificate,
+                                                    ILocalizationService loc)
+        {
+            var sb = new System.Text.StringBuilder();
+            if (reencrypted > 0)
+                sb.Append(loc.Plural(reencrypted, "Status_Classify_Reencrypted_One", "Status_Classify_Reencrypted_Other"));
+            if (fallbacks > 0)
+                sb.Append(loc.Plural(fallbacks, "Status_Classify_ReencryptFallback_One", "Status_Classify_ReencryptFallback_Other"));
+            if (noCertificate)
+                sb.Append(loc.GetString("Status_Classify_ReencryptNoCertificate"));
+            return sb.ToString();
+        }
 
         private static bool AllAttachmentBearersAreEncrypted(
             IReadOnlyList<(MailItemRef Item, IReadOnlyList<AttachmentInfo> Attachments, bool IsEncrypted)> groups,

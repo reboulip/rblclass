@@ -84,7 +84,7 @@ namespace RBLclass.Core
                     if (replaced.Count > 0)
                     {
                         html = rewrite.Html;
-                        removed += parts.RemoveAll(p => p.ContentId != null && replaced.Contains(p.ContentId));
+                        removed += parts.RemoveAll(p => p.IsInline && p.ContentId != null && replaced.Contains(p.ContentId));
                         labelRows.AddRange(removedRows.Where(r => replaced.Contains(r.ContentId)));
                     }
                 }

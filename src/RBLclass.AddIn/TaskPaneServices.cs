@@ -198,9 +198,12 @@ namespace RBLclass.AddIn
 
         /// <summary>
         /// Gather each item's attachments (and whether it is encrypted) for the
-        /// F2 disposition modal. Touches COM - invoked on the UI thread.
+        /// F2 disposition modal. Touches COM - invoked on the UI thread. The bool
+        /// is true when re-encrypted filing is on (v2.12.0.0): an encrypted mail
+        /// readable decrypted in memory is then offered like plain mail, since it
+        /// will be rebuilt. Manage Attachments always passes false.
         /// </summary>
-        public static Func<IReadOnlyList<MailItemRef>,
+        public static Func<IReadOnlyList<MailItemRef>, bool,
             IReadOnlyList<(MailItemRef Item, IReadOnlyList<AttachmentInfo> Attachments, bool IsEncrypted)>>
             GatherAttachments;
 

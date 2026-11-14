@@ -906,6 +906,21 @@
   <data name="Status_Classify_EncryptedKept_Other" xml:space="preserve">
     <value> {0} messages chiffrés ont conservé leurs pièces jointes.</value>
   </data>
+  <data name="Status_Classify_Reencrypted_One" xml:space="preserve">
+    <value> {0} message chiffré rechiffré (impossible à annuler).</value>
+  </data>
+  <data name="Status_Classify_Reencrypted_Other" xml:space="preserve">
+    <value> {0} messages chiffrés rechiffrés (impossible à annuler).</value>
+  </data>
+  <data name="Status_Classify_ReencryptFallback_One" xml:space="preserve">
+    <value> {0} message chiffré classé sans rechiffrement — voir le journal.</value>
+  </data>
+  <data name="Status_Classify_ReencryptFallback_Other" xml:space="preserve">
+    <value> {0} messages chiffrés classés sans rechiffrement — voir le journal.</value>
+  </data>
+  <data name="Status_Classify_ReencryptNoCertificate" xml:space="preserve">
+    <value> Aucun certificat de chiffrement utilisable : rechiffrement ignoré.</value>
+  </data>
   <data name="Status_Classify_EncryptedAttachmentsKept_One" xml:space="preserve">
     <value> Pièces jointes conservées — {0} message chiffré ne peut pas être traité.</value>
   </data>

@@ -197,7 +197,8 @@ namespace RBLclass.AddIn
                 _classificationHistory = new SqliteClassificationHistory(connectionString);
                 _classificationHistory.EnsureSchema();
 
-                _classifier = new ClassifierService(_mailStore, _classificationHistory, new Logging.SerilogAppLog());
+                _classifier = new ClassifierService(_mailStore, _classificationHistory, new Logging.SerilogAppLog(),
+                                                    _mailRebuilder);
 
                 // Publish services for the Custom Task Pane host control (which
                 // Office instantiates via COM and so can't be constructor-injected).
@@ -405,15 +406,29 @@ namespace RBLclass.AddIn
                     TaskPaneServices.Host?.ActivatePigEasterEgg();
 
                 // F2: gather attachments and show the per-attachment disposition modal.
-                TaskPaneServices.GatherAttachments = items =>
+                TaskPaneServices.GatherAttachments = (items, offerReadableProtected) =>
                 {
                     var groups = new List<(MailItemRef, IReadOnlyList<AttachmentInfo>, bool)>();
                     foreach (var it in items)
                     {
                         bool encrypted = _mailStore.IsEncryptedMail(it);
-                        var atts = encrypted
-                            ? (IReadOnlyList<AttachmentInfo>)new AttachmentInfo[0]
-                            : _mailStore.GetAttachments(it);
+                        IReadOnlyList<AttachmentInfo> atts = new AttachmentInfo[0];
+                        if (!encrypted)
+                        {
+                            atts = _mailStore.GetAttachments(it);
+                        }
+                        else if (offerReadableProtected)
+                        {
+                            // v2.12.0.0: re-encrypted filing rebuilds this mail, so
+                            // its attachments can be chosen like plain mail's. Reading
+                            // them never saves the item.
+                            var readable = _mailStore.GetAttachments(it);
+                            if (ReencryptEligibility.IsEligible(_mailStore.GetProtectionState(it), readable))
+                            {
+                                encrypted = false;
+                                atts = readable;
+                            }
+                        }
                         groups.Add((it, atts, encrypted));
                     }
                     return groups;

@@ -914,7 +914,7 @@ pilot machine opens a re-encrypted mail with Stormshield.
       first account); then the latest `NotAfter`. An explicit thumbprint that
       is no longer valid resolves to null (no silent switch).
 
-- [ ] **A6.** `ClassifierService`: the re-encrypted path
+- [x] **A6.** `ClassifierService`: the re-encrypted path
       (requires: A2, A3, A4). `ClassifierService` takes an optional
       `IMailRebuilder` (ctor parameter, default null = feature unavailable).
       `ClassifyOptions` gains `ReencryptProtected` (bool) and
@@ -955,6 +955,14 @@ pilot machine opens a re-encrypted mail with Stormshield.
       point, KeepCopy keeps the source, a plaintext Deleted Items copy is
       deleted permanently, the setting off means the standard path is
       unchanged.
+      Done (2026-11-14): eligibility in `ReencryptEligibility` (new outcome
+      `NotEncrypted` for mail protected only by unsaved changes); the original
+      already in Deleted Items is not moved; a regular part keeps its
+      `Content-ID`, so an unflagged body image (IMAP/PST stores) still renders
+      in the rebuilt copy. Verified on dev with the simulated-Stormshield
+      technique: move + strip + modal + mark as read, keep a copy, no strip
+      (copy opens decrypted, label, accents, image, original hard-deleted after
+      the plaintext move). Stormshield itself is re-checked in A8.
 
 - [ ] **A7.** Docs and the security posture (through `doc-keeper`):
       `website/docs/user-guide/walkthrough.md` (the Experimental tab, what it

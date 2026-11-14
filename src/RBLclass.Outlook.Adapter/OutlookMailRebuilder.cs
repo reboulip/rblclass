@@ -170,7 +170,8 @@ namespace RBLclass.Outlook.Adapter
 
                         string fileName = Safe(() => att.Value.FileName, string.Empty);
                         bool inline = MailItemProbes.IsInlineAttachment(att.Value);
-                        string contentId = inline ? MailItemProbes.ImageContentIdOf(att.Value) : null;
+                        // Read for every part: an unflagged body image keeps its cid.
+                        string contentId = MailItemProbes.ImageContentIdOf(att.Value);
                         int index = Safe(() => att.Value.Index, i);
                         parts.Add(new MailPart(index, fileName, ReadMimeTag(att.Value, fileName), data, inline, contentId));
                     }

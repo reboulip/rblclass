@@ -22,6 +22,11 @@ namespace RBLclass.Core
         private readonly IMailStore _store;
         private readonly IClassificationHistory _history;
         private readonly IAppLog _log;
+        private readonly IMailRebuilder _rebuilder;
+
+        // "No usable certificate" is reported once per classifier, i.e. once per
+        // Outlook session, so the status line does not repeat it on every classify.
+        private bool _noCertificateReported;
 
         /// <param name="history">
         /// Optional: when provided, every successful filing is recorded against
@@ -29,11 +34,17 @@ namespace RBLclass.Core
         /// records back. Recording is best-effort - it never fails a classify.
         /// </param>
         /// <param name="log">Optional: defaults to a no-op sink when not provided.</param>
-        public ClassifierService(IMailStore store, IClassificationHistory history = null, IAppLog log = null)
+        /// <param name="rebuilder">
+        /// Optional: enables the experimental re-encrypted filing of protected mail
+        /// (v2.12.0.0) when a request asks for it. Null = the standard path only.
+        /// </param>
+        public ClassifierService(IMailStore store, IClassificationHistory history = null, IAppLog log = null,
+                                 IMailRebuilder rebuilder = null)
         {
             _store = store ?? throw new ArgumentNullException(nameof(store));
             _history = history;
             _log = log ?? NullAppLog.Instance;
+            _rebuilder = rebuilder;
         }
 
         public ClassifyPreflight Preflight(IReadOnlyList<MailItemRef> items, bool widenConversation)
@@ -53,7 +64,13 @@ namespace RBLclass.Core
             return new ClassifyPreflight(widened, flagged, skippedEncrypted, wideningTableDisabled);
         }
 
-        public ClassifyResult Classify(ClassifyRequest request)
+        public ClassifyResult Classify(ClassifyRequest request) => Classify(request, new ReencryptSession());
+
+        /// <summary>
+        /// <see cref="Classify(ClassifyRequest)"/> sharing one re-encryption session
+        /// (the certificate is resolved once) across the per-item runs of Auto-class.
+        /// </summary>
+        private ClassifyResult Classify(ClassifyRequest request, ReencryptSession session)
         {
             if (request == null) throw new ArgumentNullException(nameof(request));
 
@@ -61,7 +78,7 @@ namespace RBLclass.Core
             if (request.Items.Count == 0 || request.Destinations.Count == 0)
                 return new ClassifyResult(0, 0, 0, 0);
 
-            var acc = new ClassifyAccumulator();
+            var acc = new ClassifyAccumulator(session);
             foreach (var item in request.Items)
                 ProcessItem(item, request, acc);
 
@@ -76,7 +93,7 @@ namespace RBLclass.Core
             if (request.Items.Count == 0 || request.Destinations.Count == 0)
                 return new ClassifyResult(0, 0, 0, 0);
 
-            var acc = new ClassifyAccumulator();
+            var acc = new ClassifyAccumulator(new ReencryptSession());
             int total = request.Items.Count;
             for (int i = 0; i < total; i++)
             {
@@ -138,6 +155,13 @@ namespace RBLclass.Core
                     try { conversationKey = _store.GetConversationKey(item); }
                     catch { /* tolerated: this item just won't feed Auto-class */ }
                 }
+
+                // Experimental (v2.12.0.0): an encrypted mail readable decrypted in
+                // memory is rebuilt, encrypted again and created as S/MIME in each
+                // destination. Any failure falls through to the standard path below.
+                if (wasProtected && request.ReencryptProtected && _rebuilder != null
+                    && TryReencrypt(item, request, acc, sourceFolder, conversationKey))
+                    return;
 
                 // Copies first (the original must stay put while it is the
                 // copy source); the original itself is then moved into the
@@ -272,6 +296,237 @@ namespace RBLclass.Core
             catch
             {
                 // Unexpected per-item failure (e.g. the flag check); keep going.
+                acc.Errors++;
+            }
+        }
+
+        /// <summary>
+        /// Experimental re-encrypted filing of one protected item (v2.12.0.0).
+        /// Rebuilds the mail as decrypted in memory, applies the requested
+        /// attachment, body-image, label and banner changes to the rebuilt content,
+        /// encrypts it again and creates it directly as S/MIME in every
+        /// destination, so no plaintext is stored. Unless "keep a copy" is on, the
+        /// original then goes to its store's Deleted Items (deleted for good if the
+        /// move wrote it decrypted). Returns false, having created nothing that
+        /// stays, when the item must take the standard path instead; true when it
+        /// was handled here (counted, never added to the Undo plan).
+        /// </summary>
+        private bool TryReencrypt(MailItemRef item, ClassifyRequest request, ClassifyAccumulator acc,
+                                  FolderNode sourceFolder, string conversationKey)
+        {
+            // 1. Only encrypted mail readable decrypted in memory qualifies. The
+            //    other verdicts are expected cases, not fallbacks.
+            MailProtectionState state;
+            try { state = _store.GetProtectionState(item); }
+            catch { state = null; }
+            var ineligible = ReencryptEligibility.Evaluate(state);
+            if (ineligible != null)
+            {
+                _log.Debug("Re-encrypted filing not applicable: {Reason} ({EntryId})", ineligible.Value, item.EntryId);
+                return false;
+            }
+
+            // 2. The certificate, resolved once per user action.
+            var session = acc.Reencrypt;
+            if (!session.CertificateResolved)
+            {
+                session.CertificateResolved = true;
+                try { session.Certificate = _rebuilder.ResolveCertificate(request.ReencryptCertificateThumbprint); }
+                catch { session.Certificate = null; }
+            }
+            var certificate = session.Certificate;
+            if (certificate == null)
+            {
+                if (!_noCertificateReported)
+                {
+                    _noCertificateReported = true;
+                    acc.ReencryptNoCertificate = true;
+                }
+                return FallBack(item, ReencryptOutcome.NoCertificate, acc);
+            }
+
+            // 3. The content as decrypted in memory.
+            MailContent content;
+            try { content = _rebuilder.ReadDecryptedContent(item); }
+            catch { content = null; }
+            if (content == null) return FallBack(item, ReencryptOutcome.Unsupported, acc);
+
+            // 4. This item's attachment rows, and its "Save to" files written from
+            //    the source (readable in memory) before anything is removed. A
+            //    failed save keeps every attachment: the strip is not planned.
+            var rows = request.AttachmentDispositions
+                .Where(d => d.Item.StoreId == item.StoreId && d.Item.EntryId == item.EntryId)
+                .ToList();
+            bool removeAttachments = request.RemoveAttachments;
+            if (request.RemoveAttachments || request.AttachmentDispositions.Any(row => row.IsInlineImage))
+            {
+                bool allSavesSucceeded = true;
+                foreach (var d in rows)
+                {
+                    if (d.Action != AttachmentDispositionAction.SaveTo || string.IsNullOrWhiteSpace(d.TargetDirectory))
+                        continue;
+                    bool saved;
+                    try { saved = _store.SaveAttachmentToFile(item, d.AttachmentId, d.TargetDirectory); }
+                    catch (Exception ex)
+                    {
+                        saved = false;
+                        _log.Warning(ex, "Save-to-file failed for attachment {AttachmentId} ({EntryId})",
+                            d.AttachmentId, item.EntryId);
+                    }
+                    if (!saved) allSavesSucceeded = false;
+                }
+                if (!allSavesSucceeded)
+                {
+                    _log.Warning("Attachment removal skipped: prior save failed ({EntryId})", item.EntryId);
+                    acc.Errors++;
+                    removeAttachments = false;
+                    rows.Clear();
+                }
+            }
+            else
+            {
+                rows.Clear();
+            }
+
+            // 5. Plan the rebuilt content and build its MIME entity.
+            byte[] mime;
+            int partCount;
+            try
+            {
+                var plan = ReencryptContentPlanner.Plan(content, removeAttachments, rows,
+                    request.StripBanner ? request.BannerSignature : null, request.LabelOptions, DateTime.Now);
+                if (plan.AttachmentMapMismatch)
+                    return FallBack(item, ReencryptOutcome.Unsupported, acc);
+                partCount = plan.Content.Parts.Count;
+                mime = new MimeEntityBuilder().Build(plan.Content);
+            }
+            catch (Exception ex)
+            {
+                // OutOfMemoryException included: a large mail in a 32-bit Outlook.
+                _log.Warning(ex, "Re-encrypted filing: building the content failed ({EntryId})", item.EntryId);
+                return FallBack(item, ReencryptOutcome.BuildFailed, acc);
+            }
+            content = null; // the plaintext is no longer needed once built
+
+            // 6. Encrypt, then wipe the plaintext entity.
+            byte[] payload;
+            try { payload = _rebuilder.Encrypt(mime, certificate.Thumbprint); }
+            catch { payload = null; }
+            finally { Array.Clear(mime, 0, mime.Length); }
+            if (payload == null) return FallBack(item, ReencryptOutcome.EncryptFailed, acc);
+
+            // 7. One verified S/MIME copy per destination; on any failure remove
+            //    every copy made for this item and take the standard path.
+            var copies = new List<MailItemRef>();
+            foreach (var destination in request.Destinations)
+            {
+                MailItemRef copy;
+                try { copy = _rebuilder.CreateEncryptedCopy(item, destination, payload, request.MarkAsRead); }
+                catch { copy = null; }
+                if (copy == null)
+                {
+                    DeleteCopies(copies);
+                    return FallBack(item, ReencryptOutcome.CopyFailed, acc);
+                }
+                copies.Add(copy);
+
+                bool verified;
+                try { verified = _rebuilder.VerifyEncryptedCopy(copy); }
+                catch { verified = false; }
+                if (!verified)
+                {
+                    DeleteCopies(copies);
+                    return FallBack(item, ReencryptOutcome.VerifyFailed, acc);
+                }
+            }
+
+            // 8. The original goes to Deleted Items unless "keep a copy" is on.
+            if (!request.KeepCopy)
+                MoveOriginalToDeletedItems(item, sourceFolder, acc);
+
+            acc.Processed++;
+            acc.Reencrypted++;
+            if (!string.IsNullOrEmpty(conversationKey))
+                acc.ReencryptedConversationKeys.Add(conversationKey);
+            _log.Information(
+                "Re-encrypted filing: {Destinations} destination(s), {Parts} part(s), cert {Thumbprint} ({EntryId})",
+                copies.Count, partCount, certificate.Thumbprint, item.EntryId);
+            return true;
+        }
+
+        private bool FallBack(MailItemRef item, ReencryptOutcome reason, ClassifyAccumulator acc)
+        {
+            acc.ReencryptFallbacks++;
+            _log.Warning("Re-encrypted filing fell back to the standard path: {Reason} ({EntryId})",
+                reason, item.EntryId);
+            return false;
+        }
+
+        private void DeleteCopies(IEnumerable<MailItemRef> copies)
+        {
+            foreach (var copy in copies)
+            {
+                try { _store.DeleteItemPermanently(copy); }
+                catch (Exception ex)
+                {
+                    _log.Warning(ex, "Re-encrypted filing: removing a partial copy failed ({EntryId})", copy.EntryId);
+                }
+            }
+        }
+
+        /// <summary>
+        /// Move the re-encrypted original to its store's Deleted Items. A move can
+        /// write the in-memory decrypted state (#62): when the moved item no longer
+        /// reads as protected it is deleted for good, so no plaintext stays. A
+        /// failure leaves the original where it is; the filing itself stands.
+        /// </summary>
+        private void MoveOriginalToDeletedItems(MailItemRef item, FolderNode sourceFolder, ClassifyAccumulator acc)
+        {
+            var trash = ResolveDeletedItems(item.StoreId, ref acc.DeletedItemsByStore);
+            if (trash == null)
+            {
+                _log.Warning("Re-encrypted filing: no Deleted Items folder, original left in place ({EntryId})", item.EntryId);
+                acc.Errors++;
+                return;
+            }
+
+            // Already in Deleted Items: Outlook refuses a same-folder move.
+            if (sourceFolder != null && sourceFolder.StoreId == trash.StoreId && sourceFolder.EntryId == trash.EntryId)
+                return;
+
+            MailItemRef moved;
+            try { moved = _store.MoveItemToFolder(item, trash, false); }
+            catch (Exception ex)
+            {
+                _log.Warning(ex, "Re-encrypted filing: moving the original to Deleted Items failed ({EntryId})", item.EntryId);
+                moved = null;
+            }
+            if (moved == null)
+            {
+                acc.Errors++;
+                return;
+            }
+
+            bool stillProtected;
+            try { stillProtected = _store.IsEncryptedMail(moved); }
+            catch
+            {
+                _log.Warning("Re-encrypted filing: the original in Deleted Items could not be checked ({EntryId})", moved.EntryId);
+                return;
+            }
+            if (stillProtected) return;
+
+            try
+            {
+                // Delete() inside Deleted Items is a hard delete.
+                _store.DeleteItem(moved);
+                _log.Warning("Re-encrypted filing: the original was written decrypted by the move and was deleted " +
+                             "permanently ({EntryId})", moved.EntryId);
+            }
+            catch (Exception ex)
+            {
+                _log.Warning(ex, "Re-encrypted filing: the original was written decrypted by the move and could not " +
+                                 "be deleted ({EntryId})", moved.EntryId);
                 acc.Errors++;
             }
         }
@@ -554,6 +809,21 @@ namespace RBLclass.Core
                 }
                 catch { /* Auto-class just won't learn this one */ }
             }
+
+            // Re-encrypted filings go in a batch of their own that is NOT returned:
+            // they cannot be undone, so their history must not make Undo look
+            // available (or be rolled back by an Undo of the plain items).
+            if (request.RecordHistory && _history != null && acc.ReencryptedConversationKeys.Count > 0)
+            {
+                try
+                {
+                    string batchId = Guid.NewGuid().ToString("N");
+                    var whenUtc = DateTime.UtcNow;
+                    foreach (var key in acc.ReencryptedConversationKeys)
+                        _history.Record(batchId, key, request.Destinations, whenUtc);
+                }
+                catch { /* Auto-class just won't learn this one */ }
+            }
             return historyBatchIds;
         }
 
@@ -561,13 +831,22 @@ namespace RBLclass.Core
         {
             var plan = new ClassifyUndoPlan(acc.Moves, acc.CreatedCopies, acc.Flags, acc.Strips, historyBatchIds);
             return new ClassifyResult(acc.Processed, acc.Copies, acc.Moved, acc.Errors, acc.EncryptedSkips,
-                                      plan.IsEmpty ? null : plan);
+                                      plan.IsEmpty ? null : plan,
+                                      acc.Reencrypted, acc.ReencryptFallbacks, acc.ReencryptNoCertificate);
         }
 
         /// <summary>Mutable per-call scratch shared by the sync and async classify paths.</summary>
         private sealed class ClassifyAccumulator
         {
+            public ClassifyAccumulator(ReencryptSession session) { Reencrypt = session; }
+
             public int Processed, Copies, Moved, Errors, EncryptedSkips, Strips;
+
+            // Experimental re-encrypted filing (v2.12.0.0).
+            public int Reencrypted, ReencryptFallbacks;
+            public bool ReencryptNoCertificate;
+            public readonly ReencryptSession Reencrypt;
+            public readonly HashSet<string> ReencryptedConversationKeys = new HashSet<string>();
 
             // Everything reversible, recorded as it happens (v2.2 Undo).
             public readonly List<UndoableMove> Moves = new List<UndoableMove>();
@@ -581,6 +860,16 @@ namespace RBLclass.Core
             // Deleted Items per source store, resolved at most once per call
             // (only needed for the opt-in safety copy). Misses are cached too.
             public Dictionary<string, FolderNode> DeletedItemsByStore;
+        }
+
+        /// <summary>
+        /// Re-encryption state shared by one user action (a classify, or every
+        /// per-item run of one Auto-class): the certificate is resolved once.
+        /// </summary>
+        private sealed class ReencryptSession
+        {
+            public bool CertificateResolved;
+            public CertificateInfo Certificate;
         }
 
         public UndoResult Undo(ClassifyUndoPlan plan)
@@ -699,6 +988,10 @@ namespace RBLclass.Core
             var filedDestinations = new List<FolderNode>();
             var filedDestKeys = new HashSet<string>();
 
+            int reencrypted = 0, reencryptFallbacks = 0;
+            bool reencryptNoCertificate = false;
+            var reencryptSession = new ReencryptSession();
+
             foreach (var item in Dedupe(items))
             {
                 string key;
@@ -740,7 +1033,11 @@ namespace RBLclass.Core
                     new[] { item }, live, options,
                     bannerSignature: bannerSignature,
                     attachmentDispositions: attachmentDispositions,
-                    labelOptions: labelOptions));
+                    labelOptions: labelOptions), reencryptSession);
+
+                reencrypted += result.Reencrypted;
+                reencryptFallbacks += result.ReencryptFallbacks;
+                reencryptNoCertificate |= result.ReencryptNoCertificate;
 
                 if (result.ItemsProcessed > 0)
                 {
@@ -774,7 +1071,8 @@ namespace RBLclass.Core
             var plan = new ClassifyUndoPlan(allMoves, allCopies, allFlags, strips, allBatchIds);
             return new AutoClassifyResult(filed, noHistory, staleFolders, errors,
                                           partialErrors, encryptedStripSkips, alreadyInPlace,
-                                          plan.IsEmpty ? null : plan, filedDestinations);
+                                          plan.IsEmpty ? null : plan, filedDestinations,
+                                          reencrypted, reencryptFallbacks, reencryptNoCertificate);
         }
 
         /// <summary>
