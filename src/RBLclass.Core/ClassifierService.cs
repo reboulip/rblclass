@@ -319,7 +319,18 @@ namespace RBLclass.Core
             MailProtectionState state;
             try { state = _store.GetProtectionState(item); }
             catch { state = null; }
-            var ineligible = ReencryptEligibility.Evaluate(state);
+
+            // A protected live class stops the store's payload probe early, so a
+            // mail Outlook could not decrypt (smart card absent) only shows itself
+            // by its smime.p7m part: look at the parts in that case.
+            IReadOnlyList<AttachmentInfo> attachments = null;
+            if (state != null && ReencryptEligibility.IsEncryptedClass(state.MessageClass))
+            {
+                try { attachments = _store.GetAttachments(item); }
+                catch { attachments = null; }
+            }
+
+            var ineligible = ReencryptEligibility.Evaluate(state, attachments);
             if (ineligible != null)
             {
                 _log.Debug("Re-encrypted filing not applicable: {Reason} ({EntryId})", ineligible.Value, item.EntryId);

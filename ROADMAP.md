@@ -988,6 +988,23 @@ pilot machine opens a re-encrypted mail with Stormshield.
       the setting off, which runs the standard path. Each re-encrypted copy
       must open decrypted in Outlook with the expected parts. Target: a pilot
       machine with Stormshield opens a re-encrypted mail. [#62]
+      Dev results (2026-11-14, simulated Stormshield, explicit E2E
+      certificate): move + strip + attachment window + mark as read, keep a
+      copy, no strip, two destinations all re-encrypted; each copy is stored
+      `IPM.Note.SMIME`, opens decrypted with the expected parts, accents and
+      label, unread state kept or cleared as asked; the original written
+      decrypted by the move to Deleted Items is hard-deleted (logged). Card
+      absent (payload visible) takes the standard path silently
+      (`NotDecrypted`, fixed here: the eligibility now reads the parts when
+      the live class is protected); embedded `.msg` falls back (`Unsupported`);
+      Automatic with no usable certificate falls back with both status lines;
+      setting off runs the standard path. Certificate pick in Settings saved.
+      No temp file left. - shipped, pending tests (not verifiable on the dev
+      machine per the testing strategy above; re-verify on the real target
+      before pilot: with the card inserted, a classified Stormshield mail is
+      filed re-encrypted and opens decrypted in Outlook with all its parts;
+      Stormshield accepts the RSA-OAEP key transport (step 0); the external
+      banner is stripped from the rebuilt body; card absent files normally)
 
 ---
 

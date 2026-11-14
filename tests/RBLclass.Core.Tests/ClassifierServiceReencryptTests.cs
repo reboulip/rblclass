@@ -412,6 +412,31 @@ namespace RBLclass.Core.Tests
         }
 
         [Fact]
+        public void A_mail_still_showing_its_payload_part_takes_the_standard_path_silently()
+        {
+            // Live class protected: the store does not probe the payload, the parts show it.
+            var store = Store("IPM.Note.SMIME", "IPM.Note.SMIME");
+            store.GetAttachments(Arg.Any<MailItemRef>()).Returns(new[] { new AttachmentInfo(1, "smime.p7m", 100) });
+            var rb = new Rebuilder();
+
+            var result = new ClassifierService(store, rebuilder: rb.Mock).Classify(Request(On(), new[] { D1 }));
+
+            ShouldHaveTakenTheStandardPath(store, result);
+            result.ReencryptFallbacks.Should().Be(0);
+            rb.Mock.ReceivedCalls().Should().BeEmpty();
+        }
+
+        [Fact]
+        public void A_decrypted_in_memory_mail_is_not_asked_for_its_parts()
+        {
+            var store = Store();
+
+            new ClassifierService(store, rebuilder: new Rebuilder().Mock).Classify(Request(On(), new[] { D1 }));
+
+            store.DidNotReceive().GetAttachments(Arg.Any<MailItemRef>());
+        }
+
+        [Fact]
         public void A_plain_mail_takes_the_standard_path()
         {
             var store = Store();
