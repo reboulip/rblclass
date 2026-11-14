@@ -770,7 +770,7 @@ pilot machine opens a re-encrypted mail with Stormshield.
 
 ### A — Re-encrypted filing (experimental)
 
-- [ ] **A1.** Settings: an "Experimental" tab and the re-encryption settings.
+- [x] **A1.** Settings: an "Experimental" tab and the re-encryption settings.
       Add a new `TabItem` at the end of `SettingsWindow.xaml` (after
       General), header key `Settings_Nav_Experimental`, holding one
       `GroupBox` `Settings_Experimental_Header`. Start it with a warning
@@ -855,7 +855,7 @@ pilot machine opens a re-encrypted mail with Stormshield.
       `CertificateInfo` = Thumbprint, Subject, NotAfter, HasPrivateKey.
       Also define `ReencryptOutcome` (see A6).
 
-- [ ] **A5.** Adapter: `OutlookMailRebuilder : IMailRebuilder`
+- [x] **A5.** Adapter: `OutlookMailRebuilder : IMailRebuilder`
       (`RBLclass.Outlook.Adapter`; COM rules from CLAUDE.md: `ComRef`,
       indexed loops, no chained property access, STA only).
       *ReadDecryptedContent*: resolve the item and refuse (return null) when

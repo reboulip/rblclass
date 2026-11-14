@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <!-- Outlook adapter: .NET Framework 4.8, the only layer that touches the
        Outlook Object Model over COM. Implements the RBLclass.Core seams
@@ -27,6 +27,12 @@
          2.x to match the AddIn (a COM host has no binding redirects; see
          CLAUDE.md). The AddIn configures the sink; this project just logs. -->
     <PackageReference Include="Serilog" Version="2.12.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- In-box .NET Framework assembly (GAC, never copied, no binding redirect):
+         EnvelopedCms for the experimental re-encrypted filing (v2.12.0.0 A5). -->
+    <Reference Include="System.Security" />
   </ItemGroup>
 
   <ItemGroup>

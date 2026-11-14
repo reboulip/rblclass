@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Globalization;
@@ -93,6 +93,9 @@ namespace RBLclass.AddIn.ViewModels
 
             FavoriteFolders = new ObservableCollection<string>(
                 _settings.AttachmentFavoriteFolders ?? new string[0]);
+
+            ReencryptCertificates = BuildCertificateOptions();
+            ReencryptAutomaticCertificateText = DescribeAutomaticCertificate();
         }
 
         /// <summary>
@@ -387,6 +390,63 @@ namespace RBLclass.AddIn.ViewModels
         {
             get => _settings.StripSavedAttachments;
             set => Apply(_settings.StripSavedAttachments, value, v => _settings.StripSavedAttachments = v);
+        }
+
+        /// <summary>Experimental (v2.12.0.0 A1): re-encrypted filing of readable protected mail.</summary>
+        public bool ReencryptProtectedOnFile
+        {
+            get => _settings.ReencryptProtectedOnFile;
+            set => Apply(_settings.ReencryptProtectedOnFile, value, v => _settings.ReencryptProtectedOnFile = v);
+        }
+
+        /// <summary>Experimental (v2.12.0.0 A1): the chosen certificate's thumbprint, empty = Automatic.</summary>
+        public string ReencryptCertificateThumbprint
+        {
+            get => _settings.ReencryptCertificateThumbprint ?? string.Empty;
+            set => Apply(_settings.ReencryptCertificateThumbprint ?? string.Empty, value ?? string.Empty,
+                         v => _settings.ReencryptCertificateThumbprint = v);
+        }
+
+        /// <summary>Automatic first, then every candidate certificate (plus the stored one if it vanished).</summary>
+        public IReadOnlyList<CertificateOption> ReencryptCertificates { get; }
+
+        /// <summary>Which certificate Automatic resolves to right now, or that none does.</summary>
+        public string ReencryptAutomaticCertificateText { get; }
+
+        private IReadOnlyList<CertificateOption> BuildCertificateOptions()
+        {
+            var options = new List<CertificateOption>
+            {
+                new CertificateOption(string.Empty, _loc.GetString("Settings_ReencryptCertificate_Automatic")),
+            };
+
+            IReadOnlyList<CertificateInfo> certificates = null;
+            try { certificates = TaskPaneServices.ListEncryptionCertificates?.Invoke(); }
+            catch (Exception ex) { _log.Warning(ex, "Listing encryption certificates failed."); }
+
+            foreach (var cert in certificates ?? new CertificateInfo[0])
+            {
+                string label = _loc.GetString("Settings_ReencryptCertificate_Item", cert.Subject,
+                    cert.NotAfter.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture));
+                if (!cert.HasPrivateKey) label += " " + _loc.GetString("Settings_ReencryptCertificate_NoPrivateKey");
+                options.Add(new CertificateOption(cert.Thumbprint, label));
+            }
+
+            string stored = EncryptionCertificatePolicy.NormalizeThumbprint(_settings.ReencryptCertificateThumbprint);
+            if (stored.Length > 0 && options.All(o => !string.Equals(o.Thumbprint, stored, StringComparison.OrdinalIgnoreCase)))
+                options.Add(new CertificateOption(_settings.ReencryptCertificateThumbprint,
+                    _loc.GetString("Settings_ReencryptCertificate_Missing", stored)));
+            return options;
+        }
+
+        private string DescribeAutomaticCertificate()
+        {
+            CertificateInfo automatic = null;
+            try { automatic = TaskPaneServices.ResolveEncryptionCertificate?.Invoke(string.Empty); }
+            catch (Exception ex) { _log.Warning(ex, "Resolving the automatic encryption certificate failed."); }
+            return automatic == null
+                ? _loc.GetString("Settings_ReencryptCertificate_None")
+                : _loc.GetString("Settings_ReencryptCertificate_Resolved", automatic.Subject);
         }
 
         /// <summary>Offer body images in the attachment window (v2.11.0.0 C2, default off).</summary>

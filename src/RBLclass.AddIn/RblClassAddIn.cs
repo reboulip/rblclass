@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
@@ -48,6 +48,7 @@ namespace RBLclass.AddIn
 
         private IFolderRepository _repository;
         private IMailStore _mailStore;
+        private IMailRebuilder _mailRebuilder;   // v2.12.0.0 experimental re-encrypted filing
         private IFolderIndexService _folderTree;
         private IFolderSearch _folderSearch;
         private IClassifier _classifier;
@@ -100,6 +101,7 @@ namespace RBLclass.AddIn
         private string _dbPath;
         private string _logDirectory;
         private string _diagnosticsDirectory;
+        private string _tempDirectory;
 
         public void OnConnection(object application,
                                  ext_ConnectMode connectMode,
@@ -173,6 +175,15 @@ namespace RBLclass.AddIn
 
                 _repository = new SqliteFolderRepository(connectionString);
                 _mailStore = new OutlookMailStore(_outlookApp);
+                // Cheap: no certificate or store work until re-encryption is used.
+                _mailRebuilder = new OutlookMailRebuilder(_outlookApp, _tempDirectory);
+                string tempDirectory = _tempDirectory;
+                _ = System.Threading.Tasks.Task.Run(() =>
+                {
+                    // Leftover staged attachments from an interrupted run: zero and delete.
+                    try { OutlookMailRebuilder.SweepTempDirectory(tempDirectory); }
+                    catch (Exception ex) { Log.Warning(ex, "Temp directory sweep failed."); }
+                });
                 _folderTree = new FolderIndexService(_mailStore, _repository);
                 _folderSearch = new FolderSearchService(_folderTree);
 
@@ -193,6 +204,9 @@ namespace RBLclass.AddIn
                 TaskPaneServices.Search = _folderSearch;
                 TaskPaneServices.Settings = _settingsStore;
                 TaskPaneServices.Classifier = _classifier;
+                // Experimental re-encrypted filing (v2.12.0.0): certificate list for Settings.
+                TaskPaneServices.ListEncryptionCertificates = () => _mailRebuilder.ListEncryptionCertificates();
+                TaskPaneServices.ResolveEncryptionCertificate = thumbprint => _mailRebuilder.ResolveCertificate(thumbprint);
                 TaskPaneServices.GetSelection = () =>
                     _mailStore.GetSelectedItems(
                         _settingsStore.GetBool(SettingsKeys.ClassifyMeetingItems, false));
@@ -1456,6 +1470,9 @@ namespace RBLclass.AddIn
 
             // Created lazily by SaveDiagnosticArtifact on first use (v2.10.0.0 D1).
             _diagnosticsDirectory = Path.Combine(dataDir, "diagnostics");
+
+            // Created on demand by re-encrypted filing (v2.12.0.0 A5).
+            _tempDirectory = Path.Combine(dataDir, "tmp");
         }
 
         /// <summary>

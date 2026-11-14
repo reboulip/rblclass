@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
@@ -74,6 +74,8 @@ namespace RBLclass.Core
         public bool StripSavedAttachments { get; set; }
         public string AttachmentDefaultFolder { get; set; }
         public bool TreatInlineImagesAsAttachments { get; set; }
+        public bool ReencryptProtectedOnFile { get; set; }
+        public string ReencryptCertificateThumbprint { get; set; }
         public string PreferredUiLanguage { get; set; }
         public bool DiagnosticLogging { get; set; }
 
@@ -145,6 +147,8 @@ namespace RBLclass.Core
                 StripSavedAttachments = Bool(SettingsKeys.StripSavedAttachments, true),
                 AttachmentDefaultFolder = Str(SettingsKeys.AttachmentDefaultFolder, string.Empty),
                 TreatInlineImagesAsAttachments = Bool(SettingsKeys.TreatInlineImagesAsAttachments, false),
+                ReencryptProtectedOnFile = Bool(SettingsKeys.ReencryptProtectedOnFile, false),
+                ReencryptCertificateThumbprint = Str(SettingsKeys.ReencryptCertificateThumbprint, string.Empty),
                 PreferredUiLanguage = ParseUiLanguage(Str(SettingsKeys.PreferredUiLanguage)),
                 DiagnosticLogging = Bool(SettingsKeys.DiagnosticLogging, false)
             };
@@ -192,6 +196,8 @@ namespace RBLclass.Core
                 Pair(SettingsKeys.StripSavedAttachments,        StripSavedAttachments ? "1" : "0"),
                 Pair(SettingsKeys.AttachmentDefaultFolder,      AttachmentDefaultFolder ?? string.Empty),
                 Pair(SettingsKeys.TreatInlineImagesAsAttachments, TreatInlineImagesAsAttachments ? "1" : "0"),
+                Pair(SettingsKeys.ReencryptProtectedOnFile,     ReencryptProtectedOnFile ? "1" : "0"),
+                Pair(SettingsKeys.ReencryptCertificateThumbprint, ReencryptCertificateThumbprint ?? string.Empty),
                 Pair(SettingsKeys.PreferredUiLanguage,          PreferredUiLanguage),
                 Pair(SettingsKeys.DiagnosticLogging,            DiagnosticLogging ? "1" : "0"),
             });
@@ -207,10 +213,12 @@ namespace RBLclass.Core
             Save(store);
             log?.Information(
                 "Settings saved: sendExternalWarning={SendExternalWarning}, internalDomains={InternalDomains}, " +
-                "classifySafetyCopy={ClassifySafetyCopy}, archiveTarget={ArchiveTarget}, forgottenAttachmentKeywords={ForgottenAttachmentKeywords}",
+                "classifySafetyCopy={ClassifySafetyCopy}, archiveTarget={ArchiveTarget}, forgottenAttachmentKeywords={ForgottenAttachmentKeywords}, " +
+                "reencryptProtected={ReencryptProtected}, reencryptCertificate={ReencryptCertificate}",
                 SendExternalWarning, FormatList(InternalDomains), ClassifySafetyCopy,
                 string.IsNullOrEmpty(SentItemTriageArchivePath) ? "(none)" : SentItemTriageArchivePath,
-                FormatList(ForgottenAttachmentKeywords));
+                FormatList(ForgottenAttachmentKeywords), ReencryptProtectedOnFile,
+                string.IsNullOrEmpty(ReencryptCertificateThumbprint) ? "(automatic)" : ReencryptCertificateThumbprint);
         }
 
         private static KeyValuePair<string, string> Pair(string key, string value)

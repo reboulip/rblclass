@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using RBLclass.AddIn.Localization;
 using RBLclass.Core;
@@ -285,5 +285,17 @@ namespace RBLclass.AddIn
         /// startup; null until then. UI thread only.
         /// </summary>
         public static Action RefreshFolders;
+
+        /// <summary>
+        /// Experimental re-encrypted filing (v2.12.0.0 A1): the certificates that
+        /// can be chosen in Settings. STA. Null when unavailable.
+        /// </summary>
+        public static Func<IReadOnlyList<CertificateInfo>> ListEncryptionCertificates;
+
+        /// <summary>
+        /// Experimental re-encrypted filing (v2.12.0.0 A1): the certificate a
+        /// thumbprint (empty = Automatic) resolves to, or null. STA.
+        /// </summary>
+        public static Func<string, CertificateInfo> ResolveEncryptionCertificate;
     }
 }

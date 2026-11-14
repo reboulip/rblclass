@@ -1,4 +1,4 @@
-namespace RBLclass.Core
+﻿namespace RBLclass.Core
 {
     /// <summary>
     /// Canonical keys for the <see cref="ISettingsStore"/>, mapping to the
@@ -210,6 +210,12 @@ namespace RBLclass.Core
 
         /// <summary>Offer body images (inline, with a content id) in the attachment disposition modal (v2.11.0.0 C2). Default off.</summary>
         public const string TreatInlineImagesAsAttachments = "TreatInlineImagesAsAttachments";
+
+        /// <summary>Experimental (v2.12.0.0): file readable protected mail by rebuilding and re-encrypting it. Default off.</summary>
+        public const string ReencryptProtectedOnFile = "ReencryptProtectedOnFile";
+
+        /// <summary>Experimental (v2.12.0.0): thumbprint of the certificate to re-encrypt to; empty = Automatic.</summary>
+        public const string ReencryptCertificateThumbprint = "ReencryptCertificateThumbprint";
 
         /// <summary>
         /// Raise the minimum log level to Debug, restoring the full per-item
