@@ -93,6 +93,8 @@ namespace RBLclass.AddIn
         private OutlookOM.Inspectors _inspectors;
         // Warns before an attachment from an external-banner mail opens (v2.13.0.0 D2).
         private RBLclass.AddIn.Phishing.AttachmentWarningGuard _attachmentWarningGuard;
+        // Warns before a link from an external-banner mail opens (v2.13.0.0 D3).
+        private RBLclass.AddIn.Phishing.LinkClickGuard _linkGuard;
 
         // Debounces SelectionChange bursts (e.g. shift-drag across 1000+ rows)
         // using the same SearchDebounceMs setting as folder search (C1).
@@ -122,6 +124,10 @@ namespace RBLclass.AddIn
 
         public void OnDisconnection(ext_DisconnectMode removeMode, ref Array custom)
         {
+            // Unhook before the add-in is released: Outlook must never call a freed callback.
+            try { _linkGuard?.Dispose(); } catch { }
+            _linkGuard = null;
+
             try
             {
                 if (_outlookApp != null)
@@ -574,6 +580,21 @@ namespace RBLclass.AddIn
                 }
                 catch (Exception ex) { TryLog("Attachment guard setup failed", ex); }
 
+                // D3: link warning for external-banner mail (two thread-scoped hooks on this
+                // UI thread + the repurposed HyperlinkOpen command). A failure leaves it inert.
+                try
+                {
+                    var resolver = new RBLclass.AddIn.Phishing.LinkMailResolver(_outlookApp, _mailStore);
+                    _linkGuard = new RBLclass.AddIn.Phishing.LinkClickGuard(_settingsStore, resolver);
+                    _linkGuard.Install();
+                }
+                catch (Exception ex)
+                {
+                    TryLog("Link guard setup failed", ex);
+                    try { _linkGuard?.Dispose(); } catch { }
+                    _linkGuard = null;
+                }
+
                 // Fast path: load the persisted index (SQLite only, no COM walk).
                 _lastIndexResult = _folderTree.Load();
                 Log.Information(
@@ -695,6 +716,9 @@ namespace RBLclass.AddIn
                 try { _attachmentWarningGuard?.Dispose(); } catch { }
                 _attachmentWarningGuard = null;
 
+                try { _linkGuard?.Dispose(); } catch { }
+                _linkGuard = null;
+
                 if (_inspectors != null)
                 {
                     try { _inspectors.NewInspector -= OnNewInspectorForAttachmentGuard; } catch { }
@@ -761,6 +785,28 @@ namespace RBLclass.AddIn
             {
                 ShowError("GetCustomUI failed", ex);
                 return string.Empty;
+            }
+        }
+
+        /// <summary>
+        /// Repurposed built-in "Open hyperlink" command (v2.13.0.0 D3). Office finds this
+        /// callback through the AutoDispatch class interface, and it needs EXACTLY the
+        /// toggle signature (control, pressed, ref cancelDefault): any other signature
+        /// leaves the menu item dead. Cancelling the default queues the warning, whose
+        /// "Open anyway" follows the link itself. Never throws; on any error the link opens.
+        /// </summary>
+        public void OnHyperlinkOpenRepurposed(Office.IRibbonControl control, bool pressed, ref bool cancelDefault)
+        {
+            cancelDefault = false;
+            try
+            {
+                var guard = _linkGuard;
+                if (guard != null) cancelDefault = guard.OnHyperlinkOpenRequested();
+            }
+            catch (Exception ex)
+            {
+                cancelDefault = false;
+                TryLog("OnHyperlinkOpenRepurposed failed", ex);
             }
         }
 

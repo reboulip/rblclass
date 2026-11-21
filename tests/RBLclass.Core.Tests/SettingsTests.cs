@@ -49,6 +49,7 @@ namespace RBLclass.Core.Tests
             settings.WidenConversation.Should().BeFalse();
             settings.SendExternalWarning.Should().BeTrue();
             settings.PhishingWarnAttachments.Should().BeTrue();
+            settings.PhishingWarnLinks.Should().BeTrue();
             settings.InternalDomains.Should().BeEmpty();
             settings.ForgottenAttachmentKeywords.Should().Equal("attach", "enclos", "joint", "PJ");
             settings.SentItemTriageMode.Should().Be(SentItemTriageMode.AskEveryTime);
@@ -98,6 +99,7 @@ namespace RBLclass.Core.Tests
                 WidenConversation = true,
                 SendExternalWarning = false,
                 PhishingWarnAttachments = false,
+                PhishingWarnLinks = false,
                 InternalDomains = new[] { "example.com", "example.org" },
                 ForgottenAttachmentKeywords = new[] { "pièce jointe", "ci-joint" },
                 SentItemTriageMode = SentItemTriageMode.Delete,
@@ -145,6 +147,7 @@ namespace RBLclass.Core.Tests
             reloaded.WidenConversation.Should().BeTrue();
             reloaded.SendExternalWarning.Should().BeFalse();
             reloaded.PhishingWarnAttachments.Should().BeFalse();
+            reloaded.PhishingWarnLinks.Should().BeFalse();
             reloaded.InternalDomains.Should().Equal("example.com", "example.org");
             reloaded.ForgottenAttachmentKeywords.Should().Equal("pièce jointe", "ci-joint");
             reloaded.SentItemTriageMode.Should().Be(SentItemTriageMode.Delete);

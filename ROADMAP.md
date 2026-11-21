@@ -591,6 +591,18 @@ patching, no modification of the stored mail.
       reaction of the corporate EDR to `SetWindowsHookEx` on the 32-bit
       target: leave the checkbox open with `- shipped, pending tests` and
       re-verify both on the real target before pilot. [#37]
+      - shipped, pending tests (re-verify on the real target before pilot:
+        real banner / Stormshield mail, and the EDR reaction to the two
+        `SetWindowsHookEx` calls on the 32-bit workstation; also the cases not
+        driven on the dev machine: an opened mail's own window, reply Ctrl+click
+        in its own window and inline, image and table "button" links).
+        **Verified on the dev machine** (fake banner mail, reading pane, real
+        mouse and keyboard input): a click on a link, Enter on a selected link
+        and the "Open hyperlink" context-menu item each show the warning with
+        sender, full destination and the "Shown in the email as" line; Cancel
+        opens nothing and "Open anyway" opens the browser; a mail without
+        banner opens unchanged. The warning cannot be driven by touch taps
+        (accepted gap).
 
 ---
 

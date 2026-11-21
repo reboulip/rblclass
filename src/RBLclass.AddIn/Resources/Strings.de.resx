@@ -1198,4 +1198,16 @@ Führen Sie Ihre Suche erneut aus, um neu erstellte oder umbenannte Ordner zu se
   <data name="Settings_PhishingWarnAttachments" xml:space="preserve">
     <value>Vor dem Öffnen eines Anhangs aus einer externen E-Mail warnen</value>
   </data>
+  <data name="PhishingLink_Text" xml:space="preserve">
+    <value>Dieser Link stammt aus einer externen E-Mail. Es könnte sich um einen Phishing-Versuch handeln.</value>
+  </data>
+  <data name="PhishingLink_Url" xml:space="preserve">
+    <value>Linkziel: {0}</value>
+  </data>
+  <data name="PhishingLink_DisplayedText" xml:space="preserve">
+    <value>In der E-Mail angezeigt als: {0}</value>
+  </data>
+  <data name="Settings_PhishingWarnLinks" xml:space="preserve">
+    <value>Vor dem Öffnen eines Links aus einer externen E-Mail warnen</value>
+  </data>
 </root>

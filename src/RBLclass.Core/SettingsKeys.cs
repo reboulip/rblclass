@@ -68,6 +68,9 @@
         /// <summary>Warn before an attachment from an external-banner mail opens (v2.13.0.0 D2, default on).</summary>
         public const string PhishingWarnAttachments = "PhishingWarnAttachments";
 
+        /// <summary>Warn before a link from an external-banner mail opens (v2.13.0.0 D3, default on).</summary>
+        public const string PhishingWarnLinks = "PhishingWarnLinks";
+
         /// <summary>
         /// Semicolon-separated domains treated as internal in addition to
         /// Exchange-resolved recipients (empty by default - nothing

@@ -1198,4 +1198,16 @@ Relancez votre recherche pour voir les dossiers créés ou renommés.</value>
   <data name="Settings_PhishingWarnAttachments" xml:space="preserve">
     <value>Avertir avant d'ouvrir une pièce jointe provenant d'un e-mail externe</value>
   </data>
+  <data name="PhishingLink_Text" xml:space="preserve">
+    <value>Ce lien provient d'un e-mail externe. Il peut s'agir d'une tentative d'hameçonnage.</value>
+  </data>
+  <data name="PhishingLink_Url" xml:space="preserve">
+    <value>Destination du lien : {0}</value>
+  </data>
+  <data name="PhishingLink_DisplayedText" xml:space="preserve">
+    <value>Affiché dans l'e-mail comme : {0}</value>
+  </data>
+  <data name="Settings_PhishingWarnLinks" xml:space="preserve">
+    <value>Avertir avant d'ouvrir un lien provenant d'un e-mail externe</value>
+  </data>
 </root>

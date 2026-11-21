@@ -1198,4 +1198,16 @@ Re-run your search to see newly created or renamed folders.</value>
   <data name="Settings_PhishingWarnAttachments" xml:space="preserve">
     <value>Warn before opening an attachment from an external email</value>
   </data>
+  <data name="PhishingLink_Text" xml:space="preserve">
+    <value>This link comes from an external email. It may be a phishing attempt.</value>
+  </data>
+  <data name="PhishingLink_Url" xml:space="preserve">
+    <value>Link destination: {0}</value>
+  </data>
+  <data name="PhishingLink_DisplayedText" xml:space="preserve">
+    <value>Shown in the email as: {0}</value>
+  </data>
+  <data name="Settings_PhishingWarnLinks" xml:space="preserve">
+    <value>Warn before opening a link from an external email</value>
+  </data>
 </root>

@@ -131,6 +131,39 @@ namespace RBLclass.Core
             return htmlBody;
         }
 
+        /// <summary>
+        /// Whether the banner's text appears in <paramref name="plainText"/>, a mail's
+        /// RENDERED text (for example Word's <c>Document.Content.Text</c>). It compares
+        /// letters and digits only, lower-cased, so quotes, entities, line breaks and the
+        /// encoding the HTML was stored in do not matter (v2.13.0.0 D3). False when either
+        /// side is empty, or when the signature reduces to fewer than 16 significant
+        /// characters (a trivial signature would match anything).
+        /// </summary>
+        public static bool ContainsBannerText(string plainText, string bannerSignature)
+        {
+            if (string.IsNullOrEmpty(plainText) || string.IsNullOrWhiteSpace(bannerSignature))
+                return false;
+
+            string signatureText = ReduceToLettersAndDigits(
+                System.Net.WebUtility.HtmlDecode(
+                    Regex.Replace(bannerSignature, "<[^>]+>", string.Empty, RegexOptions.None, MatchTimeout)));
+            if (signatureText.Length < MinSignatureTextLength) return false;
+
+            return ReduceToLettersAndDigits(System.Net.WebUtility.HtmlDecode(plainText)).Contains(signatureText);
+        }
+
+        private const int MinSignatureTextLength = 16;
+
+        private static string ReduceToLettersAndDigits(string s)
+        {
+            if (string.IsNullOrEmpty(s)) return string.Empty;
+            var sb = new System.Text.StringBuilder(s.Length);
+            foreach (char c in s)
+                if (char.IsLetterOrDigit(c))
+                    sb.Append(char.ToLowerInvariant(c));
+            return sb.ToString();
+        }
+
         /// <summary>Convenience overload that just says whether the banner is present/removable.</summary>
         public static bool ContainsBanner(string htmlBody, string bannerBlock)
         {

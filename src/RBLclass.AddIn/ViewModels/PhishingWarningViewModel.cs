@@ -38,6 +38,20 @@ namespace RBLclass.AddIn.ViewModels
             return sender.DisplayName.Length > 0 ? sender.DisplayName : sender.SmtpAddress;
         }
 
+        public static PhishingWarningViewModel ForLink(ILocalizationService loc, LinkWarningMessage message)
+        {
+            return new PhishingWarningViewModel
+            {
+                Text = loc.GetString("PhishingLink_Text"),
+                SenderLine = FormatSender(loc, message.Sender),
+                DetailLine = string.Empty,
+                UrlText = loc.GetString("PhishingLink_Url", message.Url),
+                DisplayedTextLine = message.DisplayedTextDiffers
+                    ? loc.GetString("PhishingLink_DisplayedText", message.TextToDisplay)
+                    : string.Empty
+            };
+        }
+
         public static PhishingWarningViewModel ForAttachment(ILocalizationService loc, PhishingWarningMessage message)
         {
             return new PhishingWarningViewModel
