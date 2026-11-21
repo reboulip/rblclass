@@ -18,12 +18,14 @@ the pilot and general availability (Phases 6–7), and has since shipped
 feedback waves up to **v2.12.0.0** (experimental re-encrypted filing of
 protected mail, 2026-11-21 —
 [release](https://github.com/reboulip/rblclass/releases/tag/v2.12.0.0)). All
-of them are recorded in [history](docs/roadmap-history.md). No sprint
-milestone is planned yet: the next one comes from a `/gh-issues` triage.
+of them are recorded in [history](docs/roadmap-history.md). The next sprint
+milestone, **v2.13.0.0** (pane UI study and redesign, search depth, PDF
+export, phishing warnings), was planned on 2026-11-21 from a `/gh-issues`
+triage.
 
-Open work: the two real-target items below, encrypted (Stormshield) mail
-[#62] and the external-sender banner on reply/forward [#46]. Phases 8–9 are
-forward-looking.
+Open work: the v2.13.0.0 sprint below, plus the two real-target items,
+encrypted (Stormshield) mail [#62] and the external-sender banner on
+reply/forward [#46]. Phases 8–9 are forward-looking.
 
 ## Testing & validation strategy (applies to every item)
 
@@ -93,6 +95,257 @@ archived version sections of [history](docs/roadmap-history.md).
       that action (file written, match highlighted, folder created on first
       use), get a diagnostic file for a reply/forward draft, root-cause why
       the strip fails there, then fix and re-verify on the target.
+
+---
+
+## v2.13.0.0 — feedback wave: pane UI study and redesign, search depth, PDF export, phishing warnings
+
+Planned 2026-11-21 from the open GitHub issues (`/gh-issues` triage). Each
+item embeds the implementation decisions made with the user — treat the item
+text as the specification.
+
+**Sprint order (user decision).** The sprint opens with the two studies,
+**A1** and **D1**, and stops after them for user validation. Their validated
+outcomes are then written into **A2** and **D3** (which are gated on them),
+committed as a `ROADMAP.md` update, and only then implemented. B1, C1 and D2
+do not depend on the studies and run in the waves after that validation.
+
+### A — Pane UI
+
+- [ ] **A1.** Critical study of the whole pane UI, with #67 as its central
+      constraint. Docs only: no code change in this item. Write
+      `docs/ui-review.md` (internal doc, not the website) containing:
+      1. **Inventory**: every element of `MainPaneView.xaml` (rows 0–7: the
+         update and pinned-mail banners, the header icon buttons and index
+         status dot, the query box, the results list with its per-row 👁/⤢
+         buttons and three path display modes, the destination chips, the
+         Options toggle and panel, Classify/Undo, the search feedback and
+         journal), both layout modes (vertical, and the horizontal mode of
+         v2.9.0.0 A2), and the modals (Settings, attachment disposition,
+         Save-as picker, sent-item triage, name prompt, meeting hint).
+      2. **The #67 problem, measured**: on new HP laptops (smaller screens)
+         the pane cannot be narrowed without clipping. The header is a
+         right-docked `DockPanel` (`LastChildFill="False"`), so the leftmost
+         items (the `?` button, the index status dot) are pushed out of view,
+         and the `Classement auto` text button takes a large share of the
+         width. Widening the pane instead makes Outlook drop the mail list's
+         column view. Measure the minimum pane width at which nothing is
+         clipped today, in EN/FR/DE, and set a **target minimum width**
+         (starting proposal: 260 DIP) at which everything stays usable.
+      3. **Critique against named best practices**: Windows/Fluent design
+         guidance on visual hierarchy, a single prominent primary action,
+         progressive disclosure, icon-only buttons (tooltip plus accessible
+         name, icon consistency), click-target size, spacing and alignment
+         grid, text truncation, keyboard flow (v2.11.0.0 B3 `/` and focus
+         return, B4 focus ring), and WCAG AA contrast (4.5:1) in light and
+         dark themes. Each finding names the element, the guideline, and the
+         impact.
+      4. **Font scaling**: assess the issue's suggestion (font size
+         proportional to the pane width) against responsive layout
+         (wrapping, overflow menu, icon-only modes), and give a
+         recommendation with its rationale.
+      5. **At least two layout proposals**, each with mockups at the target
+         minimum width and at a wide width (ASCII or embedded images),
+         stating what moves, what is merged, and what is dropped.
+      6. **A prioritized change list** (each change tagged quick win or
+         structural) and a **proposed A2 specification**.
+
+      Constraints the proposals must respect: CLAUDE.md "never resize the CTP
+      after creation" ([[never-resize-ctp-after-creation]]); WPF on .NET
+      Framework 4.8 with the hand-rolled MVVM and no new dependency; every
+      string in EN/FR/DE. Validate the study with the user through
+      `AskUserQuestion`, then rewrite A2 from the validated outcome and commit
+      that `ROADMAP.md` change before A2 starts. [#67]
+
+- [ ] **A2.** Pane redesign implementing A1's validated outcome (requires:
+      A1). **The detailed change list is written into this item from A1
+      before implementation starts.** Acceptance criteria fixed now,
+      whatever A1 concludes: no control clipped or hidden at A1's target
+      minimum width, in EN/FR/DE and in light and dark themes; the header
+      controls are never pushed out of view at any width; every icon-only
+      button keeps a localized tooltip and `AutomationProperties.Name`; the
+      `/` shortcut, focus return after pane actions (v2.11.0.0 B3) and the
+      keyboard focus ring (B4) keep working; the horizontal layout mode
+      (v2.9.0.0 A2) is kept or explicitly replaced as A1 decides; the CTP is
+      never resized after creation; new strings are added to `Strings.resx`,
+      `Strings.fr.resx` and `Strings.de.resx`. Live check with the user on the
+      dev machine at the target minimum width in all three languages. [#67]
+
+### B — Folder search
+
+- [ ] **B1.** Add a maximum search depth for the folder search. New setting
+      `MaxSearchDepth` (`SettingsKeys`, parsed in `Settings` like
+      `MaxResults`): an integer, default **0 = unlimited**, negative values
+      clamp to 0. It sits in Settings → Search as a numeric field labelled
+      "Maximum search depth (0 = unlimited)", translated FR/DE.
+      **Levels:** the store (PST) root is level 0 and its direct sub-folders
+      are level 1. Compute a folder's depth from the `ParentEntryId` chain
+      (keyed by `(StoreId, EntryId)`), **not** by splitting `FullPath`,
+      because folder names may contain `/`. Cache depths alongside the
+      normalized-path cache in `FolderSearchService` and rebuild them on the
+      same `CacheVersion` change. Add `MaxDepth` to `FolderSearchOptions`
+      (0 = unlimited) and wire it from the settings like `MaxResults`.
+      **Behaviour (user decision: deeper folders are excluded):** a folder
+      deeper than N is not a match candidate. It can still appear only
+      through the existing collapse, as part of a matching ancestor of level
+      ≤ N shown as `path | [...]`. With All results on, folders deeper than
+      N are not listed either, and a listed level-N folder that has
+      sub-folders gets the `FolderSearchResult.CollapsedSuffix` so the user
+      can tell its subtree was cut. `MaxResults` applies after the depth
+      filter. Favourite filesystem folders (`FavoriteFolderSearchAdapter`,
+      flat) are not affected. xUnit cases: 0 means unlimited; a deep-only
+      match is excluded; a matching ancestor at level ≤ N still collapses
+      over its deep subtree; with All results on, a level-N folder with
+      children carries the suffix; the store root is level 0; a folder name
+      containing `/` gets the right depth; the cap counts results after
+      depth filtering. Update the walkthrough settings table. [#68]
+
+### C — Save as
+
+- [ ] **C1.** Add PDF export to the pane's 💾 Save-as button (v2.8.0.0
+      A1, today `.msg` only through `OutlookMailStore.SaveMailAsFile`).
+      **Setting** `SaveAsFormat`: `Msg` (default), `Pdf`, `Ask`, in Settings
+      next to the other save/attachment options, labelled "Outlook message
+      (.msg)", "PDF (.pdf)", "Ask each time" (translated FR/DE). With `Ask`,
+      the Save-as picker window shows a two-option format choice (`.msg`
+      preselected) above its OK button; with `Msg` or `Pdf` the picker looks
+      as it does today. The `.msg` path is unchanged.
+      **PDF conversion** (no new dependency, no Word PIA reference):
+      1. On the Outlook UI thread, per mail: `mail.SaveAs(<temp>.mht,
+         olMHTML)` into `%TEMP%\RBLclass\pdf\` (random file name). MHTML
+         carries the header block (From, Sent, To, Cc, Subject, Attachments),
+         the body and inline images.
+      2. On a **dedicated STA background thread** (Word runs out of process;
+         Outlook OM calls stay on the UI thread): create one Word instance per
+         batch through late binding (`Type.GetTypeFromProgID("Word.Application")`
+         + `Activator.CreateInstance`, called via `dynamic` or
+         `InvokeMember`), `Visible = false`, `DisplayAlerts = 0`; for each
+         file `Documents.Open(path, ConfirmConversions: false, ReadOnly:
+         true, AddToRecentFiles: false, Visible: false)`,
+         `ExportAsFixedFormat(<dest>.pdf, 17 /* wdExportFormatPDF */)`,
+         `Close(0)`; `Quit(0)` in a `finally`, and `Marshal.ReleaseComObject`
+         on every Word object.
+      3. Always delete the temp `.mht` files, even on failure.
+
+      The pane shows its busy overlay with progress ("Saving as PDF… n/N").
+      File name: the same sanitized subject as `.msg`, with `.pdf`; on a
+      collision use `AttachmentFilenameCollisionResolver` (suffix). No
+      checksum dedupe, since PDF bytes differ from one run to the next. If
+      Word is missing or fails to start, write nothing and show a localized
+      status "PDF export needs Microsoft Word". Only `MailItem`s are saved,
+      as for `.msg`.
+      **Encrypted mail (user decision: ask):** before converting, partition
+      the batch with the shared protected-mail check (`ProtectedMailPolicy`).
+      If any mail is protected, show one confirmation for the whole batch:
+      "N of the selected mails are encrypted. The PDF will contain them
+      unencrypted." with **Continue** and **Skip encrypted mails** (default:
+      Skip). Skipped mails are reported in the pane journal with their own
+      `_One`/`_Other` status keys, separate from failures.
+      **Core:** the format resolution (setting plus the Ask choice), the PDF
+      file naming and the protected/plain partition live in a small
+      `RBLclass.Core` planner with xUnit tests.
+      **Docs:** walkthrough settings table; `docs/security.md` and
+      `website/docs/security.md` (plaintext PDF of encrypted mail only after
+      explicit confirmation; out-of-process Word automation; temp MHTML
+      cleaned up); tech-stack (Word late-bound, optional at runtime).
+      Real-target check: Word automation is not blocked by the EDR on the
+      32-bit target, and the confirmation appears for a Stormshield mail
+      (not verifiable on the dev machine). [#69]
+
+### D — Phishing warnings on external-banner mail
+
+The goal (user decision): the user is warned **systematically, with no
+action of their own**, when they open a link or an attachment from a mail
+carrying the organization's external-sender banner, because a user who
+already has a doubt does not need the tool. A warning before the link opens
+is preferred; immediately after is acceptable if "before" is not feasible.
+Applies to every item: a mail "carries the banner" when
+`ExternalBannerStripper.ContainsBanner(htmlBody, <learned signature>)` is
+true (signature: `SettingsKeys.ExternalBannerSignature`). The body is read
+**only when the event fires**, never on each selection change (performance,
+and reading a Stormshield body prompts for the smart card). No warning when
+no signature has been learned. No global keyboard or mouse hook, no API
+patching, no modification of the stored mail.
+
+- [ ] **D1.** Study: intercepting link clicks in banner mail. The Outlook
+      object model has no hyperlink-click event, in either the reading pane
+      or the inspector (the reason #37 was deferred on 2026-07-03).
+      Prototype each candidate on the dev machine with throwaway code
+      (not committed, or kept under `tools/` if useful later) and assess it
+      on: before or after the open, whether it can cancel, whether the URL is
+      known, coverage (reading pane, opened inspector, inline reply), EDR
+      risk on the target, S/MIME impact, and performance. Candidates:
+      1. **UI Automation** on the reading pane and inspector: hyperlink
+         `Invoke` events, or `AutomationElement.FromPoint` at click time,
+         from a UIA client on a background MTA thread inside Outlook's
+         process (check for re-entrancy and deadlocks).
+      2. A **thread-scoped** `WH_MOUSE` hook on Outlook's UI thread only
+         (`SetWindowsHookEx` with that thread id, not a global hook) plus a
+         UIA hit test of the element under the cursor to read the link's URL
+         before Outlook follows it, and whether swallowing the click cancels
+         the navigation.
+      3. An out-of-context `SetWinEventHook(EVENT_SYSTEM_FOREGROUND,
+         WINEVENT_OUTOFCONTEXT)` noticing a browser taking the foreground
+         right after the user acted on a banner mail (after the fact, URL
+         unknown, browser title available).
+      4. **Rewriting links in the stored body** to a local handler (custom
+         HKCU protocol): rejected a priori (modifies received mail, breaks
+         S/MIME signatures, adds an executable and a trust boundary). Record
+         why in the study.
+      5. Word events on the inspector's `WordEditor` (`WindowSelectionChange`)
+         and whether they reach Outlook-hosted Word at all.
+
+      Deliverable: `docs/phishing-link-study.md` with the comparison matrix,
+      the prototype findings, and a recommendation in this order of
+      preference: before the open, otherwise after it, otherwise not
+      feasible. Validate it with the user through `AskUserQuestion`, then
+      rewrite D3 from the validated outcome and commit that `ROADMAP.md`
+      change before D3 starts. [#37]
+
+- [ ] **D2.** Warn before an attachment from a banner mail opens. Hook the
+      item events `BeforeAttachmentWriteToTempFile` and
+      `BeforeAttachmentPreview` (both take `ref bool Cancel`) on (a) the
+      single selected mail of the active explorer, re-hooked on the
+      debounced `SelectionChange` (multi-selection or non-`MailItem`: no hook),
+      and (b) each opened inspector's `CurrentItem` (hooked on
+      `NewInspector`, released on `Inspector.Close`). Keep the item and
+      event-source references in fields so the events keep firing, release
+      the previous ones through `ComRef<T>` on every change, and unhook in
+      `OnBeginShutdown`. Verify empirically and record in the item which
+      events fire for double-click open, reading-pane preview and drag to the
+      desktop. Saving an attachment (`BeforeAttachmentSave`) does not warn.
+      When an event fires and the setting is on and the mail carries the
+      banner, show a modal: title "Possible phishing", text "This attachment
+      comes from an external email. It may be a phishing attempt.", the
+      sender display name and real SMTP address (resolved as the existing
+      external-recipient code does), the attachment file name, and buttons
+      **Open anyway** / **Cancel** (Cancel is the default and `Esc`). Cancel
+      sets `Cancel = true`. Top-level try/catch in each handler: on error,
+      log and let the attachment open (fail open, as the send guard does).
+      New setting `PhishingWarnAttachments`, default **on**, in Settings
+      next to the external-banner options. **Core:** a
+      `PhishingWarningPolicy` (setting, learned signature, HTML body →
+      warn or not) and the message model, with xUnit tests. New strings in
+      EN/FR/DE. Update the walkthrough and both `security.md` files. Dev
+      verification: I run it end to end with a fake mail carrying a learned
+      banner (UIA + COM, [[e2e-outlook-testing]]). Real banner mail is not
+      verifiable on the dev machine: leave the checkbox open with
+      `- shipped, pending tests` and re-verify on the real target. [#37]
+
+- [ ] **D3.** Warn when a link from a banner mail is opened (requires: D1).
+      **The mechanism is written into this item from D1's validated outcome
+      before implementation starts.** Acceptance criteria fixed now:
+      systematic, with no action of the user; banner mails only; before the
+      link opens if D1 found a cancellable mechanism (buttons **Open
+      anyway** / **Cancel**), otherwise immediately after with "You opened a
+      link from an external email. It may be a phishing attempt."; the
+      warning shows the sender display name and real SMTP address, plus the
+      full URL when known; new setting `PhishingWarnLinks`, default **on**;
+      the shared constraints of section D (no global hook, no stored-mail
+      modification, body read only at event time); strings in EN/FR/DE;
+      walkthrough and both `security.md` files updated. Not verifiable on
+      the dev machine with real banner mail: re-verify on the real target.
+      [#37]
 
 ---
 
