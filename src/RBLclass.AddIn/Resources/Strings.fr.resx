@@ -157,7 +157,7 @@
     <value>Annuler</value>
   </data>
   <data name="MainPane_Undo_ToolTip" xml:space="preserve">
-    <value>Annuler le dernier classement : remettre les messages déplacés et supprimer les copies classées</value>
+    <value>Annuler le dernier classement : remettre les messages déplacés et supprimer les copies classées (Ctrl+Z)</value>
   </data>
   <data name="MainPane_Busy_Filing" xml:space="preserve">
     <value>Classement en cours…</value>
@@ -1013,19 +1013,13 @@ Relancez votre recherche pour voir les dossiers créés ou renommés.</value>
     <value>RBLclass - {0}</value>
   </data>
   <data name="IndexStatus_NotFound" xml:space="preserve">
-    <value>Index des dossiers non encore construit — cliquez sur Actualiser les dossiers pour le créer</value>
+    <value>Index des dossiers non encore construit — ouvrez le menu ⋯ puis choisissez Actualiser les dossiers pour le créer</value>
   </data>
   <data name="IndexStatus_Indexing" xml:space="preserve">
     <value>Construction de l'index des dossiers…</value>
   </data>
   <data name="IndexStatus_Ready" xml:space="preserve">
     <value>Index des dossiers prêt</value>
-  </data>
-  <data name="Pane_Journal" xml:space="preserve">
-    <value>▶ Journal</value>
-  </data>
-  <data name="Pane_Options" xml:space="preserve">
-    <value>▶ Options</value>
   </data>
   <data name="About_Title" xml:space="preserve">
     <value>RBLclass - À propos</value>
@@ -1089,5 +1083,50 @@ Relancez votre recherche pour voir les dossiers créés ou renommés.</value>
   </data>
   <data name="Settings_ReencryptCertificate_Missing" xml:space="preserve">
     <value>Certificat indisponible ({0})</value>
+  </data>
+  <data name="MainPane_More_Name" xml:space="preserve">
+    <value>Plus d'actions</value>
+  </data>
+  <data name="MainPane_More_ToolTip" xml:space="preserve">
+    <value>Plus : actualiser les dossiers, paramètres, documentation en ligne</value>
+  </data>
+  <data name="MainPane_UpdateFolders_MenuItem" xml:space="preserve">
+    <value>Actualiser les dossiers</value>
+  </data>
+  <data name="MainPane_Settings_MenuItem" xml:space="preserve">
+    <value>Paramètres…</value>
+  </data>
+  <data name="MainPane_Help_MenuItem" xml:space="preserve">
+    <value>Documentation en ligne</value>
+  </data>
+  <data name="MainPane_SaveAs_Name" xml:space="preserve">
+    <value>Enregistrer en .msg</value>
+  </data>
+  <data name="MainPane_ManageAttachments_Name" xml:space="preserve">
+    <value>Gérer les pièces jointes</value>
+  </data>
+  <data name="MainPane_OpenFolder_Name" xml:space="preserve">
+    <value>Ouvrir le dossier</value>
+  </data>
+  <data name="MainPane_ExpandPath_Name" xml:space="preserve">
+    <value>Changer l'affichage du chemin</value>
+  </data>
+  <data name="MainPane_ClearAll_Name" xml:space="preserve">
+    <value>Retirer toutes les destinations</value>
+  </data>
+  <data name="MainPane_QueryBox_Name" xml:space="preserve">
+    <value>Rechercher des dossiers</value>
+  </data>
+  <data name="MainPane_QueryBox_Placeholder" xml:space="preserve">
+    <value>Rechercher un dossier…</value>
+  </data>
+  <data name="MainPane_IndexStatus_Name" xml:space="preserve">
+    <value>État de l'index des dossiers</value>
+  </data>
+  <data name="Pane_Options_Label" xml:space="preserve">
+    <value>Options</value>
+  </data>
+  <data name="Pane_Journal_Label" xml:space="preserve">
+    <value>Journal</value>
   </data>
 </root>

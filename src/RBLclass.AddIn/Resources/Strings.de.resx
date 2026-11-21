@@ -157,7 +157,7 @@
     <value>Rückgängig</value>
   </data>
   <data name="MainPane_Undo_ToolTip" xml:space="preserve">
-    <value>Letzte Ablage rückgängig machen: verschobene E-Mails zurücklegen und abgelegte Kopien entfernen</value>
+    <value>Letzte Ablage rückgängig machen: verschobene E-Mails zurücklegen und abgelegte Kopien entfernen (Strg+Z)</value>
   </data>
   <data name="MainPane_Busy_Filing" xml:space="preserve">
     <value>Wird abgelegt…</value>
@@ -1013,19 +1013,13 @@ Führen Sie Ihre Suche erneut aus, um neu erstellte oder umbenannte Ordner zu se
     <value>RBLclass - {0}</value>
   </data>
   <data name="IndexStatus_NotFound" xml:space="preserve">
-    <value>Ordnerindex noch nicht erstellt — klicken Sie auf Ordner aktualisieren, um ihn zu erstellen</value>
+    <value>Ordnerindex noch nicht erstellt — öffnen Sie das Menü ⋯ und wählen Sie Ordner aktualisieren, um ihn zu erstellen</value>
   </data>
   <data name="IndexStatus_Indexing" xml:space="preserve">
     <value>Ordnerindex wird erstellt…</value>
   </data>
   <data name="IndexStatus_Ready" xml:space="preserve">
     <value>Ordnerindex bereit</value>
-  </data>
-  <data name="Pane_Journal" xml:space="preserve">
-    <value>▶ Journal</value>
-  </data>
-  <data name="Pane_Options" xml:space="preserve">
-    <value>▶ Optionen</value>
   </data>
   <data name="About_Title" xml:space="preserve">
     <value>RBLclass - Info</value>
@@ -1089,5 +1083,50 @@ Führen Sie Ihre Suche erneut aus, um neu erstellte oder umbenannte Ordner zu se
   </data>
   <data name="Settings_ReencryptCertificate_Missing" xml:space="preserve">
     <value>Zertifikat nicht verfügbar ({0})</value>
+  </data>
+  <data name="MainPane_More_Name" xml:space="preserve">
+    <value>Weitere Aktionen</value>
+  </data>
+  <data name="MainPane_More_ToolTip" xml:space="preserve">
+    <value>Mehr: Ordner aktualisieren, Einstellungen, Online-Dokumentation</value>
+  </data>
+  <data name="MainPane_UpdateFolders_MenuItem" xml:space="preserve">
+    <value>Ordner aktualisieren</value>
+  </data>
+  <data name="MainPane_Settings_MenuItem" xml:space="preserve">
+    <value>Einstellungen…</value>
+  </data>
+  <data name="MainPane_Help_MenuItem" xml:space="preserve">
+    <value>Online-Dokumentation</value>
+  </data>
+  <data name="MainPane_SaveAs_Name" xml:space="preserve">
+    <value>Als .msg speichern</value>
+  </data>
+  <data name="MainPane_ManageAttachments_Name" xml:space="preserve">
+    <value>Anlagen verwalten</value>
+  </data>
+  <data name="MainPane_OpenFolder_Name" xml:space="preserve">
+    <value>Ordner öffnen</value>
+  </data>
+  <data name="MainPane_ExpandPath_Name" xml:space="preserve">
+    <value>Pfadanzeige ändern</value>
+  </data>
+  <data name="MainPane_ClearAll_Name" xml:space="preserve">
+    <value>Alle Ziele entfernen</value>
+  </data>
+  <data name="MainPane_QueryBox_Name" xml:space="preserve">
+    <value>Ordner suchen</value>
+  </data>
+  <data name="MainPane_QueryBox_Placeholder" xml:space="preserve">
+    <value>Ordner suchen…</value>
+  </data>
+  <data name="MainPane_IndexStatus_Name" xml:space="preserve">
+    <value>Status des Ordnerindex</value>
+  </data>
+  <data name="Pane_Options_Label" xml:space="preserve">
+    <value>Optionen</value>
+  </data>
+  <data name="Pane_Journal_Label" xml:space="preserve">
+    <value>Journal</value>
   </data>
 </root>

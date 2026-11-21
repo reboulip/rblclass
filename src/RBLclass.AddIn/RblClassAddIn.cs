@@ -1214,16 +1214,48 @@ namespace RBLclass.AddIn
         /// </summary>
         private static void ApplyDockSize(Office.CustomTaskPane pane)
         {
+            double scale = GetDpiScale();
             switch (pane.DockPosition)
             {
                 case Office.MsoCTPDockPosition.msoCTPDockPositionLeft:
                 case Office.MsoCTPDockPosition.msoCTPDockPositionRight:
-                    if (pane.Width != 360) pane.Width = 360;
+                    {
+                        int w = Math.Max(360, (int)Math.Ceiling(229 * scale) + 16);
+                        Log.Information("Task pane size requested: width {W} px (dpi scale {S}).", w, scale);
+                        if (pane.Width != w) pane.Width = w;
+                    }
                     break;
                 case Office.MsoCTPDockPosition.msoCTPDockPositionTop:
                 case Office.MsoCTPDockPosition.msoCTPDockPositionBottom:
-                    if (pane.Height != 300) pane.Height = 300;
+                    {
+                        int h = Math.Max(300, (int)Math.Ceiling(207 * scale));
+                        Log.Information("Task pane size requested: height {H} px (dpi scale {S}).", h, scale);
+                        if (pane.Height != h) pane.Height = h;
+                    }
                     break;
+            }
+        }
+
+        [System.Runtime.InteropServices.DllImport("user32.dll")]
+        private static extern uint GetDpiForWindow(IntPtr hwnd);
+
+        /// <summary>
+        /// DPI scale of the Outlook main window (1.0 = 96 dpi) used to size the pane
+        /// at creation (v2.13.0.0 A2). <c>GetDpiForWindow</c> needs Windows 10 1607,
+        /// below the 1809 minimum; any failure falls back to 1.0.
+        /// </summary>
+        private static double GetDpiScale()
+        {
+            try
+            {
+                var hwnd = System.Diagnostics.Process.GetCurrentProcess().MainWindowHandle;
+                uint dpi = hwnd == IntPtr.Zero ? 0 : GetDpiForWindow(hwnd);
+                return dpi >= 96 ? dpi / 96.0 : 1.0;
+            }
+            catch (Exception ex)
+            {
+                Log.Warning(ex, "GetDpiForWindow failed; assuming 100% scale.");
+                return 1.0;
             }
         }
 

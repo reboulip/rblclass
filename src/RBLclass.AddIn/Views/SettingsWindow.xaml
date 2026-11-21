@@ -97,7 +97,7 @@
                                           Content="{loc:Loc Key=Settings_RemoveAttachments_CheckBox}" />
                             </DockPanel>
                             <StackPanel Margin="18,0,0,3">
-                                <TextBlock Margin="0,2,0,0" FontStyle="Italic" Foreground="#777"
+                                <TextBlock Margin="0,2,0,0" FontStyle="Italic" Style="{DynamicResource MutedText}"
                                            Text="{loc:Loc Key=Settings_AttachmentRemovalMode_Label}" />
                                 <RadioButton Margin="0,2" GroupName="AttachMode"
                                              IsChecked="{Binding AttachmentRemovalModeIsModal}">
@@ -109,7 +109,7 @@
                                     <TextBlock TextWrapping="Wrap" MaxWidth="360"
                                                Text="{loc:Loc Key=Settings_AttachmentRemovalMode_DeleteSilently}" />
                                 </RadioButton>
-                                <TextBlock Margin="0,6,0,0" FontStyle="Italic" Foreground="#777"
+                                <TextBlock Margin="0,6,0,0" FontStyle="Italic" Style="{DynamicResource MutedText}"
                                            Text="{loc:Loc Key=Settings_AttachmentLabelLocation_Label}" />
                                 <RadioButton Margin="0,2" GroupName="AttachLabelLoc"
                                              IsChecked="{Binding AttachmentLabelLocationIsBody}">

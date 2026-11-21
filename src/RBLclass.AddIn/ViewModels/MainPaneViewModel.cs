@@ -166,7 +166,6 @@ namespace RBLclass.AddIn.ViewModels
             while (StatusLog.Count > StatusLogCapacity)
                 StatusLog.RemoveAt(StatusLog.Count - 1);
             OnPropertyChanged(nameof(HasStatusEntries));
-            OnPropertyChanged(nameof(CanShowJournalInVerticalMode));
         }
 
         /// <summary>
@@ -306,18 +305,8 @@ namespace RBLclass.AddIn.ViewModels
         public bool IsHorizontalLayout
         {
             get => _isHorizontalLayout;
-            set
-            {
-                if (SetProperty(ref _isHorizontalLayout, value))
-                    OnPropertyChanged(nameof(CanShowJournalInVerticalMode));
-            }
+            set => SetProperty(ref _isHorizontalLayout, value);
         }
-
-        /// <summary>
-        /// True when the Journal button should appear in the vertical (stacked)
-        /// layout — i.e. there are entries AND the pane is in portrait orientation.
-        /// </summary>
-        public bool CanShowJournalInVerticalMode => HasStatusEntries && !IsHorizontalLayout;
 
         public SelectableFolder SelectedResult
         {
@@ -390,8 +379,18 @@ namespace RBLclass.AddIn.ViewModels
         public IndexStatus IndexStatus
         {
             get => _indexStatus;
-            private set { if (SetProperty(ref _indexStatus, value)) OnPropertyChanged(nameof(IndexStatusToolTip)); }
+            private set
+            {
+                if (SetProperty(ref _indexStatus, value))
+                {
+                    OnPropertyChanged(nameof(IndexStatusToolTip));
+                    OnPropertyChanged(nameof(IsIndexReady));
+                }
+            }
         }
+
+        /// <summary>True once the folder index is built (hides the pane's index notice line, v2.13.0.0 A2).</summary>
+        public bool IsIndexReady => _indexStatus == IndexStatus.Ready;
 
         /// <summary>Localized tooltip for the index status dot.</summary>
         public string IndexStatusToolTip

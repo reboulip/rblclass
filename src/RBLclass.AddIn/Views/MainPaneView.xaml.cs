@@ -1,7 +1,10 @@
 using System;
 using System.Threading.Tasks;
 using System.Windows;
+using System.Windows.Automation;
+using System.Windows.Automation.Peers;
 using System.Windows.Controls;
+using System.Windows.Controls.Primitives;
 using System.Windows.Input;
 using System.Windows.Interop;
 using System.Windows.Media;
@@ -20,18 +23,20 @@ namespace RBLclass.AddIn.Views
         {
             InitializeComponent();
             SizeChanged += MainPane_SizeChanged;
+            DataContextChanged += MainPane_DataContextChanged;
         }
 
         private MainPaneViewModel Vm => DataContext as MainPaneViewModel;
 
         /// <summary>
-        /// Switches the action-button bar between the stacked (portrait) and
-        /// single-row (landscape) layouts based on the pane's own aspect ratio,
-        /// not a user setting (v2.9.0.0 A2).
+        /// Switches between the stacked layout and the three-column layout from the
+        /// pane's own size, not a user setting: three columns need at least 560 DIP
+        /// of width and a view wider than tall (v2.9.0.0 A2, v2.13.0.0 A2).
         /// </summary>
         private void MainPane_SizeChanged(object sender, SizeChangedEventArgs e)
         {
-            if (Vm != null) Vm.IsHorizontalLayout = e.NewSize.Width > e.NewSize.Height;
+            if (Vm != null)
+                Vm.IsHorizontalLayout = e.NewSize.Width >= 560 && e.NewSize.Width > e.NewSize.Height;
         }
 
         /// <summary>
@@ -226,14 +231,64 @@ namespace RBLclass.AddIn.Views
             FocusSearchCore(requireForeground: false);
         }
 
-        private void Options_Click(object sender, RoutedEventArgs e)
+        /// <summary>
+        /// Options / Journal toggles: the ToggleButtons are two-way bound to the view
+        /// model, so the click only hands the keyboard back to the search box.
+        /// </summary>
+        private void Toggle_Click(object sender, RoutedEventArgs e)
         {
-            if (Vm != null) Vm.IsOptionsExpanded = !Vm.IsOptionsExpanded;
+            ReturnFocusToSearch();
         }
 
-        private void Journal_Click(object sender, RoutedEventArgs e)
+        /// <summary>Opens the command bar's overflow menu, right-aligned under the button.</summary>
+        private void More_Click(object sender, RoutedEventArgs e)
         {
-            if (Vm != null) Vm.IsStatusLogExpanded = !Vm.IsStatusLogExpanded;
+            var button = sender as Button;
+            var menu = button?.ContextMenu;
+            if (menu == null) return;
+
+            menu.PlacementTarget = button;
+            menu.Placement = PlacementMode.Custom;
+            menu.CustomPopupPlacementCallback = (popupSize, targetSize, offset) => new[]
+            {
+                new CustomPopupPlacement(
+                    new Point(targetSize.Width - popupSize.Width, targetSize.Height),
+                    PopupPrimaryAxis.None)
+            };
+            menu.IsOpen = true;
+        }
+
+        /// <summary>
+        /// Tells screen readers the polite live regions changed (search feedback and the
+        /// index notice). The peer is null until the element is loaded, so it is guarded.
+        /// </summary>
+        private void RaiseLiveRegionChanged(UIElement element)
+        {
+            try
+            {
+                if (element == null || !element.IsVisible) return;
+                var peer = UIElementAutomationPeer.FromElement(element)
+                           ?? UIElementAutomationPeer.CreatePeerForElement(element);
+                peer?.RaiseAutomationEvent(AutomationEvents.LiveRegionChanged);
+            }
+            catch (Exception ex)
+            {
+                Log.Debug(ex, "Raising LiveRegionChanged failed.");
+            }
+        }
+
+        private void MainPane_DataContextChanged(object sender, DependencyPropertyChangedEventArgs e)
+        {
+            if (e.OldValue is MainPaneViewModel old) old.PropertyChanged -= Vm_PropertyChanged;
+            if (e.NewValue is MainPaneViewModel vm) vm.PropertyChanged += Vm_PropertyChanged;
+        }
+
+        private void Vm_PropertyChanged(object sender, System.ComponentModel.PropertyChangedEventArgs e)
+        {
+            if (e.PropertyName == nameof(MainPaneViewModel.SearchFeedback))
+                RaiseLiveRegionChanged(FeedbackText);
+            else if (e.PropertyName == nameof(MainPaneViewModel.IndexStatusToolTip))
+                RaiseLiveRegionChanged(IndexNotice);
         }
 
         /// <summary>Ctrl pressed and released on its own toggles "List every matching folder" (v2.2).</summary>

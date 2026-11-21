@@ -9,6 +9,7 @@
     <SolidColorBrush x:Key="Theme.ControlBackground" Color="#FF3B3B3B" />
     <SolidColorBrush x:Key="Theme.ControlBackgroundHover" Color="#FF454545" />
     <SolidColorBrush x:Key="Theme.ControlBorder" Color="#FF5A5A5A" />
+    <SolidColorBrush x:Key="Theme.InputBorder" Color="#FFA19F9D" />
     <!-- Keyboard-focus ring (v2.11.0.0 B4): visible, not vivid. -->
     <SolidColorBrush x:Key="Theme.FocusBorder" Color="#FF5CB0FF" />
 
@@ -20,9 +21,9 @@
 
     <SolidColorBrush x:Key="Theme.DisabledForeground" Color="#FF7A7A7A" />
 
-    <SolidColorBrush x:Key="Theme.AccentBackground" Color="#FF2899F5" />
+    <SolidColorBrush x:Key="Theme.AccentBackground" Color="#FF115EA3" />
     <SolidColorBrush x:Key="Theme.AccentForeground" Color="#FFFFFFFF" />
-    <SolidColorBrush x:Key="Theme.AccentHover"      Color="#FF1A82D9" />
-    <SolidColorBrush x:Key="Theme.AccentPressed"    Color="#FF1168B3" />
+    <SolidColorBrush x:Key="Theme.AccentHover"      Color="#FF0F548C" />
+    <SolidColorBrush x:Key="Theme.AccentPressed"    Color="#FF0C3B5E" />
 
 </ResourceDictionary>

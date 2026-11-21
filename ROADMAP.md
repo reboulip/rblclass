@@ -157,7 +157,7 @@ do not depend on the studies and run in the waves after that validation.
       `AskUserQuestion`, then rewrite A2 from the validated outcome and commit
       that `ROADMAP.md` change before A2 starts. [#67]
 
-- [ ] **A2.** Pane redesign: command bar with overflow, reflowing rows,
+- [x] **A2.** Pane redesign: command bar with overflow, reflowing rows,
       three-column Top/Bottom layout (requires: A1). Files:
       - `Views/MainPaneView.xaml` and `.xaml.cs`;
       - `Views/Themes/Controls.xaml` and `Brushes.{Light,Dark}.xaml`;

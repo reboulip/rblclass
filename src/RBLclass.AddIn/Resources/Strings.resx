@@ -157,7 +157,7 @@
     <value>Undo</value>
   </data>
   <data name="MainPane_Undo_ToolTip" xml:space="preserve">
-    <value>Undo the last filing: put moved mails back and remove the filed copies</value>
+    <value>Undo the last filing: put moved mails back and remove the filed copies (Ctrl+Z)</value>
   </data>
   <data name="MainPane_Busy_Filing" xml:space="preserve">
     <value>Filing…</value>
@@ -1013,19 +1013,13 @@ Re-run your search to see newly created or renamed folders.</value>
     <value>RBLclass - {0}</value>
   </data>
   <data name="IndexStatus_NotFound" xml:space="preserve">
-    <value>Folder index not built yet — click Refresh folders to build it</value>
+    <value>Folder index not built yet — open the ⋯ menu and choose Update folders to build it</value>
   </data>
   <data name="IndexStatus_Indexing" xml:space="preserve">
     <value>Building folder index…</value>
   </data>
   <data name="IndexStatus_Ready" xml:space="preserve">
     <value>Folder index ready</value>
-  </data>
-  <data name="Pane_Journal" xml:space="preserve">
-    <value>▶ Journal</value>
-  </data>
-  <data name="Pane_Options" xml:space="preserve">
-    <value>▶ Options</value>
   </data>
   <data name="About_Title" xml:space="preserve">
     <value>RBLclass - About</value>
@@ -1089,5 +1083,50 @@ Re-run your search to see newly created or renamed folders.</value>
   </data>
   <data name="Settings_ReencryptCertificate_Missing" xml:space="preserve">
     <value>Unavailable certificate ({0})</value>
+  </data>
+  <data name="MainPane_More_Name" xml:space="preserve">
+    <value>More actions</value>
+  </data>
+  <data name="MainPane_More_ToolTip" xml:space="preserve">
+    <value>More: update folders, settings, online documentation</value>
+  </data>
+  <data name="MainPane_UpdateFolders_MenuItem" xml:space="preserve">
+    <value>Update folders</value>
+  </data>
+  <data name="MainPane_Settings_MenuItem" xml:space="preserve">
+    <value>Settings…</value>
+  </data>
+  <data name="MainPane_Help_MenuItem" xml:space="preserve">
+    <value>Online documentation</value>
+  </data>
+  <data name="MainPane_SaveAs_Name" xml:space="preserve">
+    <value>Save as .msg</value>
+  </data>
+  <data name="MainPane_ManageAttachments_Name" xml:space="preserve">
+    <value>Manage attachments</value>
+  </data>
+  <data name="MainPane_OpenFolder_Name" xml:space="preserve">
+    <value>Open folder</value>
+  </data>
+  <data name="MainPane_ExpandPath_Name" xml:space="preserve">
+    <value>Change path display</value>
+  </data>
+  <data name="MainPane_ClearAll_Name" xml:space="preserve">
+    <value>Clear all destinations</value>
+  </data>
+  <data name="MainPane_QueryBox_Name" xml:space="preserve">
+    <value>Search folders</value>
+  </data>
+  <data name="MainPane_QueryBox_Placeholder" xml:space="preserve">
+    <value>Search folders…</value>
+  </data>
+  <data name="MainPane_IndexStatus_Name" xml:space="preserve">
+    <value>Folder index status</value>
+  </data>
+  <data name="Pane_Options_Label" xml:space="preserve">
+    <value>Options</value>
+  </data>
+  <data name="Pane_Journal_Label" xml:space="preserve">
+    <value>Journal</value>
   </data>
 </root>
