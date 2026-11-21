@@ -112,7 +112,7 @@ do not depend on the studies and run in the waves after that validation.
 
 ### A — Pane UI
 
-- [ ] **A1.** Critical study of the whole pane UI, with #67 as its central
+- [x] **A1.** Critical study of the whole pane UI, with #67 as its central
       constraint. Docs only: no code change in this item. Write
       `docs/ui-review.md` (internal doc, not the website) containing:
       1. **Inventory**: every element of `MainPaneView.xaml` (rows 0–7: the
@@ -157,19 +157,202 @@ do not depend on the studies and run in the waves after that validation.
       `AskUserQuestion`, then rewrite A2 from the validated outcome and commit
       that `ROADMAP.md` change before A2 starts. [#67]
 
-- [ ] **A2.** Pane redesign implementing A1's validated outcome (requires:
-      A1). **The detailed change list is written into this item from A1
-      before implementation starts.** Acceptance criteria fixed now,
-      whatever A1 concludes: no control clipped or hidden at A1's target
-      minimum width, in EN/FR/DE and in light and dark themes; the header
-      controls are never pushed out of view at any width; every icon-only
-      button keeps a localized tooltip and `AutomationProperties.Name`; the
-      `/` shortcut, focus return after pane actions (v2.11.0.0 B3) and the
-      keyboard focus ring (B4) keep working; the horizontal layout mode
-      (v2.9.0.0 A2) is kept or explicitly replaced as A1 decides; the CTP is
-      never resized after creation; new strings are added to `Strings.resx`,
-      `Strings.fr.resx` and `Strings.de.resx`. Live check with the user on the
-      dev machine at the target minimum width in all three languages. [#67]
+- [ ] **A2.** Pane redesign: command bar with overflow, reflowing rows,
+      three-column Top/Bottom layout (requires: A1). Files:
+      - `Views/MainPaneView.xaml` and `.xaml.cs`;
+      - `Views/Themes/Controls.xaml` and `Brushes.{Light,Dark}.xaml`;
+      - `Resources/Strings{,.fr,.de}.resx`;
+      - `RblClassTaskPaneHost.cs` (font mapping);
+      - `RblClassAddIn.cs` (`ApplyDockSize` only, at creation);
+      - `ViewModels/MainPaneViewModel.cs` (view-state properties only);
+      - `Views/SentItemTriageWindow.xaml` and `SettingsWindow.xaml` (labels).
+
+      No new dependency, no Core change.
+
+      1. **Width contract.** At a view width of **200 DIP and above** (184 DIP
+         column), no control is clipped and no label breaks mid-word, in
+         EN/FR/DE, light and dark. Below 200 DIP, rows keep reflowing: no
+         right-docked `DockPanel` chains anywhere in the pane. Set
+         `d:DesignWidth="200"`.
+      2. **Font and icons.** Set `FontFamily="Segoe UI" FontSize="12"` on the
+         `MainPaneView` root. In `RblClassTaskPaneHost`, call
+         `_elementHost.PropertyMap.Remove("Font")` right after creating the
+         `ElementHost`. Secondary text (feedback, journal, banner subject) uses
+         11 DIP and `MutedText`. Icons: `FontFamily="Segoe MDL2 Assets"`,
+         `FontSize="16"`:
+
+         | Command | Glyph |
+         |---|---|
+         | Save | `&#xE74E;` |
+         | Attach | `&#xE723;` |
+         | More | `&#xE712;` |
+         | Refresh | `&#xE72C;` |
+         | Settings | `&#xE713;` |
+         | Help | `&#xE897;` |
+         | Undo | `&#xE7A7;` |
+         | Open folder (eye, keeps v2.9.0.0 A1) | `&#xE890;` |
+         | Path display | `&#xE740;` |
+         | Remove chip | `&#xE711;` |
+         | Clear all | `&#xE8E6;` |
+         | Chevrons | `&#xE76C;` / `&#xE70D;` |
+
+         The easter-egg pig image is kept.
+      3. **Command bar** (replaces `:88-144`). A `Grid` with columns `*, Auto,
+         Auto, Auto`:
+         - column 0: the Auto-class button, `HorizontalAlignment="Left"`,
+           `Padding="8,4"`. Its label is `TextWrapping="WrapWithOverflow"` with no
+           `MaxWidth`, and `AutomationProperties.Name` is
+           `MainPane_AutoClass_Button`;
+         - columns 1–3: Save as, Manage attachments and More, each 28×28 with
+           `Margin="4,0,0,0"`, keeping their tooltips.
+
+         More opens a `ContextMenu` (placement bottom, right-aligned) with Update
+         folders, Settings…, Online documentation, a separator and a
+         non-interactive line bound to `IndexStatusToolTip`. Each menu item calls
+         the existing view-model method, then `ReturnFocusToSearch()`, exactly
+         like today's click handlers. Declare children in visual order.
+      4. **Search row.**
+         - The existing `TextBox x:Name="QueryBox"` keeps every binding and
+           handler, with `Padding="4,3,20,3"` and
+           `AutomationProperties.Name=MainPane_QueryBox_Name`.
+         - A placeholder `TextBlock` overlays it: `IsHitTestVisible="False"`,
+           `MutedText`, trimmed, visible only while the box is empty.
+         - An 8×8 status ellipse sits inside the box on the right
+           (`Margin="0,0,8,0"`, same colour triggers, faint `Theme.Foreground`
+           outline), with tooltip `IndexStatusToolTip` and name
+           `MainPane_IndexStatus_Name`.
+         - Under the box, a `MutedText` notice line shows `IndexStatusToolTip`
+           only while the index is not ready, with
+           `AutomationProperties.LiveSetting="Polite"`; raise
+           `AutomationEvents.LiveRegionChanged` from its peer when the text
+           changes. Add an `IsIndexReady` view-model property, raised with
+           `IndexStatus`.
+      5. **Results list.** Behaviour unchanged.
+         - The item container style gets `AutomationProperties.Name="{Binding
+           DisplayPath}"`; so does the row `CheckBox`.
+         - Rows get `MinHeight="24"`.
+         - The row buttons become 24×24 MDL2 icons with
+           `MainPane_OpenFolder_Name` and `MainPane_ExpandPath_Name` (tooltips
+           kept).
+         - `v:PathTrim.RightReserve` matches the new button block.
+      6. **Destinations.**
+         - Remove the "Selected: N folders" header row (`:230-236`). Use
+           `SelectionHeader` as the chips container's `AutomationProperties.Name`.
+         - The chips container is a `Grid` with columns `*, Auto`: the chip
+           `WrapPanel` in column 0, and a 24×24 clear-all icon (`&#xE8E6;`) in
+           column 1, top-aligned, with the existing tooltip and name
+           `MainPane_ClearAll_Name`.
+         - Chip names get `MaxWidth="150"` and `TextTrimming="CharacterEllipsis"`
+           (full-path tooltip kept).
+         - The remove buttons are 20×20 with name
+           `MainPane_RemoveDestination_ToolTip`.
+      7. **Toggles row.** A `Grid` with columns `*, Auto`:
+         - Options `ToggleButton` (`IsChecked` two-way to `IsOptionsExpanded`,
+           `x:Name="OptionsToggle"`) on the left;
+         - Journal `ToggleButton` (two-way to `IsStatusLogExpanded`, visible when
+           `HasStatusEntries`, `x:Name="JournalToggle"`) on the right.
+
+         Content is a chevron that turns via a trigger, plus `Pane_Options_Label`
+         / `Pane_Journal_Label`. Add implicit `ToggleButton`, `ContextMenu`,
+         `MenuItem` and `Separator` styles to `Controls.xaml`, using the theme
+         brushes, with the checked state on `Theme.SelectionBackground` and the
+         `Theme.FocusBorder` ring on `IsKeyboardFocused`, in both themes.
+      8. **Options panel.** Each `CheckBox` gets `<TextBlock
+         TextWrapping="Wrap" …/>` content. Keep `x:Name="FirstOptionCheckBox"`
+         and the Tab-from-search behaviour.
+      9. **Action row.** A `Grid` with columns `*, Auto`, a single instance for
+         both modes:
+         - Classify: `AccentButton`, stretched, `Padding="10,5"`, content a
+           centred, wrapping `TextBlock` bound to `ClassifyButtonText`;
+         - Undo: a 28×28 icon, `IsEnabled="{Binding CanUndo}"`, name
+           `MainPane_Undo_Button`, tooltip `MainPane_Undo_ToolTip` with
+           "(Ctrl+Z)" / "(Strg+Z)" appended.
+      10. **Status.** The search feedback gets
+          `AutomationProperties.LiveSetting="Polite"`, with `LiveRegionChanged`
+          raised when `SearchFeedback` changes. The journal is unchanged.
+      11. **Horizontal layout** (replaces v2.9.0.0 A2's bar).
+          - `IsHorizontalLayout = ActualWidth >= 560 && ActualWidth >
+            ActualHeight` (`MainPaneView.xaml.cs:32-35`).
+          - When true, `DataTrigger` setters re-place the same elements into
+            three columns: column 0 (`Width="300"`) holds the command bar, search,
+            action row and status; column 1 (`Auto`, visible only while Options or
+            Journal is open, in a vertical `ScrollViewer`) holds the Options panel
+            and the journal; column 2 (`*`) holds the destinations above the
+            results.
+          - Delete the duplicated horizontal `StackPanel` (`:272-285`) and
+            `CanShowJournalInVerticalMode`.
+          - Check: at a 1200 × 163 DIP view, with one line of chips and Options
+            open, at least 4 result rows (24 DIP each) are visible and nothing is
+            clipped.
+      12. **Contrast.**
+          - Dark `Theme.AccentBackground` `#FF115EA3`, `AccentHover` `#FF0F548C`,
+            `AccentPressed` `#FF0C3B5E`.
+          - Update banner text `#FF201F1E` on `#FF8C00`.
+          - A new `Theme.InputBorder` brush (light `#FF8A8886`, dark `#FFA19F9D`)
+            for the `TextBox` and `ListBox` borders.
+          - `SettingsWindow.xaml:100` and `:112` use `MutedText` instead of
+            `#777`.
+      13. **Banners and dialogs.**
+          - The pinned-banner Delete button content wraps.
+          - The Sent-items triage buttons get wrapping `TextBlock` content and
+            the window gets `SizeToContent="Height"` (width 380, still not
+            resizable).
+      14. **Task-pane size (creation only).** `ApplyDockSize`, still called only
+          from `EnsureTaskPane` before `Visible` and before the
+          `DockPositionStateChange` subscription, sets:
+          - Left/Right: `Width = Math.Max(360, ceil(229 × s) + 16)`;
+          - Top/Bottom: `Height = Math.Max(300, ceil(207 × s))`;
+
+          where `s = GetDpiForWindow(hwnd) / 96.0` and `hwnd` is the Outlook main
+          window (`Process.GetCurrentProcess().MainWindowHandle`, as
+          `DialogPlacement` uses; `GetDpiForWindow` requires Windows 10 1607,
+          below the 1809 minimum). Log the requested size and `s`, and log the
+          host's pixel size on its first `OnResize`. No size is ever set after
+          creation.
+      15. **Invariants (acceptance):**
+          - the `/` jump;
+          - focus return after every pane action, including the More menu items
+            and the toggles;
+          - Ctrl+Z, Enter / Ctrl+Enter, Ctrl tap, Tab to Options;
+          - the focus ring on every focusable element in both themes;
+          - a localized tooltip and `AutomationProperties.Name` on every
+            icon-only button;
+          - the CTP never resized after creation.
+      16. **Strings.** Add these keys to all three resx files, remove
+          `Pane_Options` and `Pane_Journal`, and keep `Status_SelectedFolders_*`
+          (now an accessible name):
+
+          | Key | EN | FR | DE |
+          |---|---|---|---|
+          | `MainPane_More_Name` | More actions | Plus d'actions | Weitere Aktionen |
+          | `MainPane_More_ToolTip` | More: update folders, settings, online documentation | Plus : actualiser les dossiers, paramètres, documentation en ligne | Mehr: Ordner aktualisieren, Einstellungen, Online-Dokumentation |
+          | `MainPane_UpdateFolders_MenuItem` | Update folders | Actualiser les dossiers | Ordner aktualisieren |
+          | `MainPane_Settings_MenuItem` | Settings… | Paramètres… | Einstellungen… |
+          | `MainPane_Help_MenuItem` | Online documentation | Documentation en ligne | Online-Dokumentation |
+          | `MainPane_SaveAs_Name` | Save as .msg | Enregistrer en .msg | Als .msg speichern |
+          | `MainPane_ManageAttachments_Name` | Manage attachments | Gérer les pièces jointes | Anlagen verwalten |
+          | `MainPane_OpenFolder_Name` | Open folder | Ouvrir le dossier | Ordner öffnen |
+          | `MainPane_ExpandPath_Name` | Change path display | Changer l'affichage du chemin | Pfadanzeige ändern |
+          | `MainPane_ClearAll_Name` | Clear all destinations | Retirer toutes les destinations | Alle Ziele entfernen |
+          | `MainPane_QueryBox_Name` | Search folders | Rechercher des dossiers | Ordner suchen |
+          | `MainPane_QueryBox_Placeholder` | Search folders… | Rechercher un dossier… | Ordner suchen… |
+          | `MainPane_IndexStatus_Name` | Folder index status | État de l'index des dossiers | Status des Ordnerindex |
+          | `Pane_Options_Label` | Options | Options | Optionen |
+          | `Pane_Journal_Label` | Journal | Journal | Journal |
+
+          Also reword `IndexStatus_NotFound` to point at "⋯ > Update folders".
+          This also fixes the EN wording "Refresh folders", which does not match
+          the command's name.
+      17. **Docs** (doc-keeper): update the walkthrough's "Pane icon buttons"
+          section, the shortcuts note (Undo icon) and the pane-position note
+          (sizes).
+      18. **Verification.** A live check with the user at a 200 DIP view (about
+          316 px of frame at 150 %) and at the default width, in EN/FR/DE, light
+          and dark, docked Left/Right and Top/Bottom. Optionally run an offline
+          layout check with the method in Appendix A of `docs/ui-review.md`.
+      Validated by the user on 2026-11-21 (study: `docs/ui-review.md`): target
+      200 DIP of view width, Proposal B, three-column Top/Bottom, Segoe UI 12 + MDL2
+      icons, no font scaling. Acceptance criteria fixed earlier still apply. [#67]
 
 ### B — Folder search
 
