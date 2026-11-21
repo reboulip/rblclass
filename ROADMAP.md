@@ -450,7 +450,7 @@ and reading a Stormshield body prompts for the smart card). No warning when
 no signature has been learned. No global keyboard or mouse hook, no API
 patching, no modification of the stored mail.
 
-- [ ] **D1.** Study: intercepting link clicks in banner mail. The Outlook
+- [x] **D1.** Study: intercepting link clicks in banner mail. The Outlook
       object model has no hyperlink-click event, in either the reading pane
       or the inspector (the reason #37 was deferred on 2026-07-03).
       Prototype each candidate on the dev machine with throwaway code
@@ -485,6 +485,24 @@ patching, no modification of the stored mail.
       rewrite D3 from the validated outcome and commit that `ROADMAP.md`
       change before D3 starts. [#37]
 
+- [ ] **D4.** Fix: the banner strip must never modify a received mail
+      (found by D1, `docs/phishing-link-study.md` section 2.12). With *Strip
+      banner from replies* on, `OnNewInspector` (`RblClassAddIn.cs`, ~754)
+      subscribes `Inspector.Activate` for every inspector and its handler
+      calls `_mailStore.StripBannerFromDraft(inspector.CurrentItem, sig)`.
+      `StripBannerOnLiveMail` (`OutlookMailStore.cs`, ~1827-1851) rewrites
+      `HTMLBody` and calls `Save()` without checking `mail.Sent`, so opening a
+      received banner mail in its own window removes the banner from the
+      stored mail for good (measured: body 1283 to 514 characters,
+      `Sent=True`) and blinds D2/D3. Strip only drafts (`mail.Sent == false`),
+      in `StripBannerFromDraft` itself so that every caller is covered; when
+      the mail is sent, do nothing and log at Debug. Keep behaviour for
+      reply/forward drafts unchanged. Add an adapter-level guard comment, and
+      a Core-free test is not possible, so Claude verifies end to end: open a
+      received fake banner mail (own window) with the setting on and check via
+      COM that the stored body is unchanged and `Sent` is true, and that a
+      reply draft is still stripped. No setting or string change. [#37]
+
 - [ ] **D2.** Warn before an attachment from a banner mail opens. Hook the
       item events `BeforeAttachmentWriteToTempFile` and
       `BeforeAttachmentPreview` (both take `ref bool Cancel`) on (a) the
@@ -515,20 +533,44 @@ patching, no modification of the stored mail.
       verifiable on the dev machine: leave the checkbox open with
       `- shipped, pending tests` and re-verify on the real target. [#37]
 
-- [ ] **D3.** Warn when a link from a banner mail is opened (requires: D1).
-      **The mechanism is written into this item from D1's validated outcome
-      before implementation starts.** Acceptance criteria fixed now:
-      systematic, with no action of the user; banner mails only; before the
-      link opens if D1 found a cancellable mechanism (buttons **Open
-      anyway** / **Cancel**), otherwise immediately after with "You opened a
-      link from an external email. It may be a phishing attempt."; the
-      warning shows the sender display name and real SMTP address, plus the
-      full URL when known; new setting `PhishingWarnLinks`, default **on**;
-      the shared constraints of section D (no global hook, no stored-mail
-      modification, body read only at event time); strings in EN/FR/DE;
-      walkthrough and both `security.md` files updated. Not verifiable on
-      the dev machine with real banner mail: re-verify on the real target.
-      [#37]
+- [ ] **D3.** Warn before a link from a banner mail opens (requires: D1,
+      D4, and D2 for `PhishingWarningPolicy`/the warning window if D2 lands
+      first; otherwise create them here). **Validated by the user on
+      2026-11-21 from `docs/phishing-link-study.md`; section 5 of that study
+      is the implementation spec and is authoritative (classes, hook
+      procedures, hit test, sender resolution, strings table, Open-anyway
+      logic, cleanup). Read it fully before implementing.** Summary of the
+      validated decisions: warning **before** the open, systematic, banner
+      mails only, URL known, cancellable; mechanism = two **thread-scoped**
+      hooks on Outlook's UI thread (`WH_MOUSE` for clicks, `WH_GETMESSAGE`
+      for Enter after Tab; never global, hMod NULL) plus repurposing the
+      ribbon command `HyperlinkOpen` (`<commands>` block in `Ribbon.xml`,
+      `.fr.xml`, `.de.xml`; callback `OnHyperlinkOpenRepurposed(IRibbonControl
+      control, bool pressed, ref bool cancelDefault)` public on
+      `RblClassAddIn`, exactly that three-argument signature or the menu item
+      dies); the Word object model is reached by late binding through
+      `AccessibleObjectFromWindow(OBJID_NATIVEOM)`, no Word interop; Ctrl+click
+      in replies (own window and inline) is included; touch taps cannot be
+      blocked (accepted gap, documented, no after-the-fact warning);
+      banner detected from the **rendered text** at click time
+      (`ExternalBannerStripper.ContainsBannerText`, tolerant to encodings),
+      not from the HTML; no warning for `mailto:` or `#` anchors
+      (`PhishingLinkFilter.IsWarnable`); fail-open everywhere; log only
+      `scheme://host`, never the full URL; "Open anyway" re-follows through
+      `Hyperlink.Follow()`. New setting `PhishingWarnLinks`, default **on**,
+      in Settings next to the banner options; strings
+      `PhishingLink_*` and `Settings_PhishingWarnLinks` in EN/FR/DE (table in
+      study section 5.3); core types `ContainsBannerText`, `PhishingLinkFilter`,
+      `PhishingWarningPolicy.ShouldWarnLink`, `LinkWarningMessage`, all
+      xUnit-tested. Docs: walkthrough settings row, both `security.md` files
+      (two thread-scoped hooks on Outlook's own thread, no injection, rendered
+      text read at click time, no mail modified, host logged, touch gap),
+      architecture hook rules. Dev verification: Claude runs the e2e cases of
+      study section 5.14 (fake banner mail stored as UTF-8). **Not verifiable
+      on the dev machine:** real banner/Stormshield mail, and above all the
+      reaction of the corporate EDR to `SetWindowsHookEx` on the 32-bit
+      target: leave the checkbox open with `- shipped, pending tests` and
+      re-verify both on the real target before pilot. [#37]
 
 ---
 
