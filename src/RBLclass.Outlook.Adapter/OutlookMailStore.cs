@@ -1816,7 +1816,24 @@ namespace RBLclass.Outlook.Adapter
         public bool StripBannerFromDraft(object draft, string bannerSignature)
         {
             if (string.IsNullOrWhiteSpace(bannerSignature)) return false;
-            return StripBannerOnLiveMail(draft as OutlookOM.MailItem, bannerSignature, isDraft: true);
+
+            var mail = draft as OutlookOM.MailItem;
+            if (mail == null) return false;
+
+            // Guard (v2.13.0.0 D4): this method is reached from Inspector.Activate, which
+            // also fires for a RECEIVED mail opened in its own window. A received mail
+            // (Sent == true) must never be rewritten and saved: only drafts (reply /
+            // forward / new) are stripped. StripExternalBanner, the classify path, is the
+            // one place allowed to strip a sent mail (the filed copy). An unreadable Sent
+            // flag counts as sent: failing open would reintroduce the defect.
+            if (Safe(() => mail.Sent, true))
+            {
+                Log.Debug("Banner strip skipped: {EntryId} is a sent/received mail, not a draft.",
+                    Safe(() => mail.EntryID, "(unknown)"));
+                return false;
+            }
+
+            return StripBannerOnLiveMail(mail, bannerSignature, isDraft: true);
         }
 
         /// <summary>

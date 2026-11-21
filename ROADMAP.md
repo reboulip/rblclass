@@ -485,7 +485,7 @@ patching, no modification of the stored mail.
       rewrite D3 from the validated outcome and commit that `ROADMAP.md`
       change before D3 starts. [#37]
 
-- [ ] **D4.** Fix: the banner strip must never modify a received mail
+- [x] **D4.** Fix: the banner strip must never modify a received mail
       (found by D1, `docs/phishing-link-study.md` section 2.12). With *Strip
       banner from replies* on, `OnNewInspector` (`RblClassAddIn.cs`, ~754)
       subscribes `Inspector.Activate` for every inspector and its handler
