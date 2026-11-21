@@ -148,6 +148,35 @@ namespace RBLclass.AddIn.ViewModels
             set { if (value) UpdateAttachmentLabelLocation(AttachmentLabelLocation.None); }
         }
 
+        /// <summary>C1: format written by the pane's Save-as button.</summary>
+        public bool SaveAsFormatIsMsg
+        {
+            get => _settings.SaveAsFormat == SaveAsFormat.Msg;
+            set { if (value) UpdateSaveAsFormat(SaveAsFormat.Msg); }
+        }
+
+        public bool SaveAsFormatIsPdf
+        {
+            get => _settings.SaveAsFormat == SaveAsFormat.Pdf;
+            set { if (value) UpdateSaveAsFormat(SaveAsFormat.Pdf); }
+        }
+
+        public bool SaveAsFormatIsAsk
+        {
+            get => _settings.SaveAsFormat == SaveAsFormat.Ask;
+            set { if (value) UpdateSaveAsFormat(SaveAsFormat.Ask); }
+        }
+
+        private void UpdateSaveAsFormat(SaveAsFormat format)
+        {
+            if (_settings.SaveAsFormat == format) return;
+            _settings.SaveAsFormat = format;
+            _settings.Save(_store, _log);
+            OnPropertyChanged(nameof(SaveAsFormatIsMsg));
+            OnPropertyChanged(nameof(SaveAsFormatIsPdf));
+            OnPropertyChanged(nameof(SaveAsFormatIsAsk));
+        }
+
         private void UpdateAttachmentLabelLocation(AttachmentLabelLocation location)
         {
             if (_settings.AttachmentLabelLocation == location) return;

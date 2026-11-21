@@ -13,6 +13,19 @@
         <BooleanToVisibilityConverter x:Key="BoolToVis" />
     </Window.Resources>
     <DockPanel Margin="12">
+        <!-- Format choice, only when the setting is "Ask each time" (v2.13.0.0 C1). -->
+        <StackPanel DockPanel.Dock="Bottom" Orientation="Horizontal" Margin="0,12,0,0"
+                    Visibility="{Binding AskFormat, Converter={StaticResource BoolToVis}}">
+            <TextBlock VerticalAlignment="Center" Margin="0,0,10,0"
+                       Text="{loc:Loc Key=SaveAsPicker_Format_Label}" />
+            <RadioButton GroupName="SaveAsFormat" IsChecked="{Binding IsMsgSelected}" Margin="0,0,14,0">
+                <TextBlock Text="{loc:Loc Key=Settings_SaveAsFormat_Msg}" />
+            </RadioButton>
+            <RadioButton GroupName="SaveAsFormat" IsChecked="{Binding IsPdfSelected}">
+                <TextBlock Text="{loc:Loc Key=Settings_SaveAsFormat_Pdf}" />
+            </RadioButton>
+        </StackPanel>
+
         <DockPanel DockPanel.Dock="Bottom" LastChildFill="False" Margin="0,12,0,0">
             <Button DockPanel.Dock="Right" Content="{loc:Loc Key=SaveAsPicker_Save_Button}"
                     IsDefault="True" Padding="18,4" Click="Save_Click"

@@ -70,7 +70,7 @@
     <value>💾</value>
   </data>
   <data name="MainPane_SaveAs_ToolTip" xml:space="preserve">
-    <value>Save the selected email(s) as .msg files to a folder</value>
+    <value>Save the selected email(s) as files (.msg or PDF, per Settings) to a folder</value>
   </data>
   <data name="MainPane_ManageAttachments_Button" xml:space="preserve">
     <value>📎</value>
@@ -325,7 +325,7 @@
     <value>Save email(s) as files</value>
   </data>
   <data name="SaveAsPicker_Intro" xml:space="preserve">
-    <value>Choose a folder to save the selected email(s) into as .msg files.</value>
+    <value>Choose a folder to save the selected email(s) into.</value>
   </data>
   <data name="SaveAsPicker_Save_Button" xml:space="preserve">
     <value>Save</value>
@@ -1103,7 +1103,7 @@ Re-run your search to see newly created or renamed folders.</value>
     <value>Online documentation</value>
   </data>
   <data name="MainPane_SaveAs_Name" xml:space="preserve">
-    <value>Save as .msg</value>
+    <value>Save as file</value>
   </data>
   <data name="MainPane_ManageAttachments_Name" xml:space="preserve">
     <value>Manage attachments</value>
@@ -1131,5 +1131,50 @@ Re-run your search to see newly created or renamed folders.</value>
   </data>
   <data name="Pane_Journal_Label" xml:space="preserve">
     <value>Journal</value>
+  </data>
+  <data name="Settings_SaveAsFormat_Label" xml:space="preserve">
+    <value>Save as format:</value>
+  </data>
+  <data name="Settings_SaveAsFormat_Msg" xml:space="preserve">
+    <value>Outlook message (.msg)</value>
+  </data>
+  <data name="Settings_SaveAsFormat_Pdf" xml:space="preserve">
+    <value>PDF (.pdf)</value>
+  </data>
+  <data name="Settings_SaveAsFormat_Ask" xml:space="preserve">
+    <value>Ask each time</value>
+  </data>
+  <data name="SaveAsPicker_Format_Label" xml:space="preserve">
+    <value>Format:</value>
+  </data>
+  <data name="MainPane_Busy_SavingPdf_One" xml:space="preserve">
+    <value>Saving as PDF… {0} of {1}</value>
+  </data>
+  <data name="MainPane_Busy_SavingPdf_Other" xml:space="preserve">
+    <value>Saving as PDF… {0} of {1}</value>
+  </data>
+  <data name="Status_SaveAs_NeedsWord" xml:space="preserve">
+    <value>PDF export needs Microsoft Word</value>
+  </data>
+  <data name="Status_SaveAs_EncryptedSkipped_One" xml:space="preserve">
+    <value>{0} encrypted email skipped.</value>
+  </data>
+  <data name="Status_SaveAs_EncryptedSkipped_Other" xml:space="preserve">
+    <value>{0} encrypted emails skipped.</value>
+  </data>
+  <data name="EncryptedPdf_Title" xml:space="preserve">
+    <value>Encrypted emails</value>
+  </data>
+  <data name="EncryptedPdf_Body_One" xml:space="preserve">
+    <value>{0} of the selected emails is encrypted. The PDF will contain it unencrypted.</value>
+  </data>
+  <data name="EncryptedPdf_Body_Other" xml:space="preserve">
+    <value>{0} of the selected emails are encrypted. The PDF will contain them unencrypted.</value>
+  </data>
+  <data name="EncryptedPdf_Continue" xml:space="preserve">
+    <value>Continue</value>
+  </data>
+  <data name="EncryptedPdf_Skip" xml:space="preserve">
+    <value>Skip encrypted mails</value>
   </data>
 </root>

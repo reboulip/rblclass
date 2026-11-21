@@ -156,6 +156,9 @@
         /// </summary>
         public const string AttachmentLabelLocation = "AttachmentLabelLocation";
 
+        /// <summary>Format written by the Save-as button: Msg (default), Pdf or Ask (v2.13.0.0 C1).</summary>
+        public const string SaveAsFormat = "SaveAsFormat";
+
         /// <summary>Whether the Auto-class button easter egg (pig icon) is active (v2.6.0.0).</summary>
         public const string EasterEggActive = "EasterEggActive";
 

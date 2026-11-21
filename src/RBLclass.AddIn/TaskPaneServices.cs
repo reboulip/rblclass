@@ -239,10 +239,36 @@ namespace RBLclass.AddIn
 
         /// <summary>
         /// Show the Save As directory-picker modal (reusing the favourite-folder
-        /// search + OS-browse UX) and return the chosen directory, or null when
-        /// the user cancels. Call on the Outlook UI thread. (v2.8.0.0 A1)
+        /// search + OS-browse UX) and return the chosen directory and format, or null
+        /// when the user cancels. The argument is true when the format setting is
+        /// "Ask each time": the picker then shows the format choice. Call on the
+        /// Outlook UI thread. (v2.8.0.0 A1, v2.13.0.0 C1)
         /// </summary>
-        public static Func<string> ShowSaveAsPicker;
+        public static Func<bool, SaveAsChoice> ShowSaveAsPicker;
+
+        /// <summary>True when Microsoft Word can be automated for the PDF export (v2.13.0.0 C1).</summary>
+        public static Func<bool> IsWordAvailable;
+
+        /// <summary>
+        /// Shared protected-mail check for one item (ProtectedMailPolicy through the
+        /// adapter). Call on the Outlook UI thread. (v2.13.0.0 C1)
+        /// </summary>
+        public static Func<MailItemRef, bool> IsEncryptedMail;
+
+        /// <summary>
+        /// One confirmation for a batch holding the given number of encrypted mails:
+        /// true = Continue (the PDFs will contain them unencrypted), false = skip the
+        /// encrypted mails (the default). (v2.13.0.0 C1)
+        /// </summary>
+        public static Func<int, bool> ConfirmEncryptedPdf;
+
+        /// <summary>
+        /// Export each item as a PDF into the directory (MHTML through Outlook on the
+        /// UI thread, then Word on a dedicated STA thread). The callback receives
+        /// (completed, total) on the UI thread. Returns (Saved, Failed, WordUnavailable).
+        /// Touches COM - call on the Outlook UI thread. (v2.13.0.0 C1)
+        /// </summary>
+        public static Func<IReadOnlyList<MailItemRef>, string, Action<int, int>, (int Saved, int Failed, bool WordUnavailable)> SaveMailsAsPdf;
 
         /// <summary>
         /// Save each item in <paramref name="items"/> as a .msg file into

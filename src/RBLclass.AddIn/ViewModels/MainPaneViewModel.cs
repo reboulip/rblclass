@@ -647,10 +647,20 @@ namespace RBLclass.AddIn.ViewModels
 
             // Show the picker while the pane is still enabled (mirrors the preflight
             // attach-disposition pattern in DoClassifyAsync).
-            var directory = TaskPaneServices.ShowSaveAsPicker?.Invoke();
+            var formatSetting = _settings != null
+                ? Settings.Load(_settings).SaveAsFormat
+                : SaveAsFormat.Msg;
+            var choice = TaskPaneServices.ShowSaveAsPicker?.Invoke(formatSetting == SaveAsFormat.Ask);
+            var directory = choice?.Directory;
             if (string.IsNullOrWhiteSpace(directory))
             {
                 PushStatus(_loc.GetString("Status_SaveAs_Cancelled"));
+                return;
+            }
+
+            if (SaveAsPlanner.Resolve(formatSetting, choice.Format) == SaveAsFormat.Pdf)
+            {
+                SaveAsPdf(items, directory);
                 return;
             }
 
@@ -668,6 +678,82 @@ namespace RBLclass.AddIn.ViewModels
             catch (Exception ex)
             {
                 Log.Error(ex, "SaveAsSelected failed.");
+                PushStatus(_loc.GetString("Status_SaveAs_Cancelled"));
+            }
+            finally
+            {
+                IsBusy = false;
+            }
+        }
+
+        /// <summary>
+        /// PDF branch of Save-as (v2.13.0.0 C1): Word must be available, encrypted mails
+        /// need one batch confirmation (default: skip them), then the export runs with a
+        /// progress status. Skipped mails are journaled apart from failures.
+        /// </summary>
+        private void SaveAsPdf(IReadOnlyList<MailItemRef> items, string directory)
+        {
+            if (TaskPaneServices.IsWordAvailable?.Invoke() != true)
+            {
+                PushStatus(_loc.GetString("Status_SaveAs_NeedsWord"));
+                return;
+            }
+
+            // A failed protection check counts as protected: never convert on a guess.
+            var partition = SaveAsPlanner.Partition(items, it =>
+            {
+                try { return TaskPaneServices.IsEncryptedMail?.Invoke(it) ?? false; }
+                catch (Exception ex) { Log.Warning(ex, "Protected-mail check failed; treating as encrypted."); return true; }
+            });
+
+            IReadOnlyList<MailItemRef> toSave = items;
+            int skipped = 0;
+            if (partition.Protected.Count > 0)
+            {
+                bool proceed = TaskPaneServices.ConfirmEncryptedPdf?.Invoke(partition.Protected.Count) ?? false;
+                if (!proceed)
+                {
+                    toSave = partition.Plain;
+                    skipped = partition.Protected.Count;
+                }
+            }
+
+            string skippedStatus = skipped > 0
+                ? _loc.Plural(skipped, "Status_SaveAs_EncryptedSkipped_One", "Status_SaveAs_EncryptedSkipped_Other")
+                : null;
+
+            if (toSave.Count == 0)
+            {
+                if (skippedStatus != null) PushStatus(skippedStatus);
+                return;
+            }
+
+            IsBusy = true;
+            BusyStatus = _loc.Plural(0, "MainPane_Busy_SavingPdf_One", "MainPane_Busy_SavingPdf_Other", toSave.Count);
+            try
+            {
+                var result = TaskPaneServices.SaveMailsAsPdf?.Invoke(toSave, directory,
+                    (done, total) => BusyStatus = _loc.Plural(done, "MainPane_Busy_SavingPdf_One",
+                                                              "MainPane_Busy_SavingPdf_Other", total))
+                    ?? (0, toSave.Count, false);
+
+                if (result.WordUnavailable)
+                {
+                    PushStatus(_loc.GetString("Status_SaveAs_NeedsWord"));
+                }
+                else
+                {
+                    string status = _loc.Plural(result.Saved,
+                        "Status_SaveAs_Result_One", "Status_SaveAs_Result_Other");
+                    if (result.Failed > 0)
+                        status += _loc.GetString("Status_SaveAs_Failed", result.Failed);
+                    PushStatus(status);
+                }
+                if (skippedStatus != null) PushStatus(skippedStatus);
+            }
+            catch (Exception ex)
+            {
+                Log.Error(ex, "SaveAsPdf failed.");
                 PushStatus(_loc.GetString("Status_SaveAs_Cancelled"));
             }
             finally

@@ -1692,6 +1692,41 @@ namespace RBLclass.Outlook.Adapter
             return false;
         }
 
+        public bool SaveMailAsMht(MailItemRef item, string mhtPath, out string baseName)
+        {
+            baseName = "email";
+            if (item == null || string.IsNullOrWhiteSpace(mhtPath)) return false;
+
+            try
+            {
+                using (var session = new ComRef<OutlookOM.NameSpace>(_app.Session))
+                {
+                    object rawItem;
+                    try { rawItem = session.Value.GetItemFromID(item.EntryId, item.StoreId); }
+                    catch { return false; }
+
+                    using (var comItem = new ComRef<object>(rawItem))
+                    {
+                        var mail = comItem.Value as OutlookOM.MailItem;
+                        if (mail == null) return false;
+
+                        string subject = Safe(() => mail.Subject, string.Empty) ?? string.Empty;
+                        string name = SanitizeFileName(subject);
+                        baseName = string.IsNullOrWhiteSpace(name) ? "email" : name;
+
+                        System.IO.Directory.CreateDirectory(System.IO.Path.GetDirectoryName(mhtPath));
+                        mail.SaveAs(mhtPath, OutlookOM.OlSaveAsType.olMHTML);
+                        return true;
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Log.Error(ex, "SaveMailAsMht failed for {EntryId}", item.EntryId);
+                return false;
+            }
+        }
+
         public bool SaveMailAsFile(MailItemRef item, string destinationDirectory)
         {
             if (item == null || string.IsNullOrWhiteSpace(destinationDirectory)) return false;

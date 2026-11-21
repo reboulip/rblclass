@@ -226,6 +226,22 @@
                                                    Text="{loc:Loc Key=Settings_StripSavedAttachments_CheckBox}" />
                                     </CheckBox>
                                 </DockPanel>
+                                <StackPanel Margin="0,6,0,3">
+                                    <TextBlock Margin="0,0,0,2" TextWrapping="Wrap"
+                                               Text="{loc:Loc Key=Settings_SaveAsFormat_Label}" />
+                                    <RadioButton Margin="18,2,0,2" GroupName="SaveAsFormat"
+                                                 IsChecked="{Binding SaveAsFormatIsMsg}">
+                                        <TextBlock TextWrapping="Wrap" Text="{loc:Loc Key=Settings_SaveAsFormat_Msg}" />
+                                    </RadioButton>
+                                    <RadioButton Margin="18,2,0,2" GroupName="SaveAsFormat"
+                                                 IsChecked="{Binding SaveAsFormatIsPdf}">
+                                        <TextBlock TextWrapping="Wrap" Text="{loc:Loc Key=Settings_SaveAsFormat_Pdf}" />
+                                    </RadioButton>
+                                    <RadioButton Margin="18,2,0,2" GroupName="SaveAsFormat"
+                                                 IsChecked="{Binding SaveAsFormatIsAsk}">
+                                        <TextBlock TextWrapping="Wrap" Text="{loc:Loc Key=Settings_SaveAsFormat_Ask}" />
+                                    </RadioButton>
+                                </StackPanel>
                                 <DockPanel Margin="0,3">
                                     <TextBlock DockPanel.Dock="Right" Style="{DynamicResource InfoGlyph}"
                                                ToolTip="{loc:Loc Key=Settings_TreatInlineImagesAsAttachments_Info}" />

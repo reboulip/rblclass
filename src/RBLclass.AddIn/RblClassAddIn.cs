@@ -469,12 +469,23 @@ namespace RBLclass.AddIn
                     _classifier.ApplyAttachmentDispositions(dispositions, labelOptions, stripSaved);
 
                 // A1: "Save as" - pick a target directory, then save each item as .msg.
-                TaskPaneServices.ShowSaveAsPicker = () =>
+                TaskPaneServices.ShowSaveAsPicker = askFormat =>
                 {
-                    var vm = new SaveAsPickerViewModel();
+                    var vm = new SaveAsPickerViewModel { AskFormat = askFormat };
                     var window = new SaveAsPickerWindow { DataContext = vm };
-                    return window.ShowDialog() == true ? vm.TargetDirectory : null;
+                    return window.ShowDialog() == true
+                        ? new SaveAsChoice(vm.TargetDirectory, vm.SelectedFormat)
+                        : null;
                 };
+                TaskPaneServices.IsWordAvailable = () => WordPdfConverter.IsWordInstalled();
+                TaskPaneServices.IsEncryptedMail = item => _mailStore.IsEncryptedMail(item);
+                TaskPaneServices.ConfirmEncryptedPdf = count =>
+                {
+                    var vm = new EncryptedPdfConfirmViewModel(count);
+                    var window = new EncryptedPdfConfirmWindow { DataContext = vm };
+                    return window.ShowDialog() == true;
+                };
+                TaskPaneServices.SaveMailsAsPdf = (items, directory, report) => SaveMailsAsPdf(items, directory, report);
                 TaskPaneServices.SaveMailsAsFiles = (items, directory) =>
                 {
                     int saved = 0, failed = 0;
@@ -1238,6 +1249,65 @@ namespace RBLclass.AddIn
 
         [System.Runtime.InteropServices.DllImport("user32.dll")]
         private static extern uint GetDpiForWindow(IntPtr hwnd);
+
+        /// <summary>
+        /// PDF export (v2.13.0.0 C1). Outlook OM stays on this (UI) thread: each mail is
+        /// saved as a temporary MHTML file; Word then converts the batch on a dedicated
+        /// STA thread while the UI thread keeps pumping messages (so the busy overlay
+        /// repaints). The temporary files are always deleted.
+        /// </summary>
+        private (int Saved, int Failed, bool WordUnavailable) SaveMailsAsPdf(
+            IReadOnlyList<MailItemRef> items, string directory, Action<int, int> report)
+        {
+            var temp = System.IO.Path.Combine(System.IO.Path.GetTempPath(), "RBLclass", "pdf");
+            var jobs = new List<PdfJob>();
+            var tempFiles = new List<string>();
+            int failed = 0;
+            var dispatcher = System.Windows.Threading.Dispatcher.CurrentDispatcher;
+            try
+            {
+                System.IO.Directory.CreateDirectory(directory);
+                var reserved = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+                foreach (var item in items)
+                {
+                    string mht = System.IO.Path.Combine(temp, System.IO.Path.GetRandomFileName() + ".mht");
+                    string baseName;
+                    if (!_mailStore.SaveMailAsMht(item, mht, out baseName))
+                    {
+                        failed++;
+                        continue;
+                    }
+                    tempFiles.Add(mht);
+                    string pdf = SaveAsPlanner.PdfPath(directory, baseName,
+                        p => System.IO.File.Exists(p) || reserved.Contains(p));
+                    reserved.Add(pdf);
+                    jobs.Add(new PdfJob(mht, pdf));
+                }
+
+                if (jobs.Count == 0) return (0, failed, false);
+
+                var converter = new WordPdfConverter();
+                var task = Task.Run(() => converter.ConvertAll(jobs,
+                    (done, total) => dispatcher.BeginInvoke(new Action(() => report?.Invoke(done, jobs.Count)))));
+
+                // Keep the UI thread pumping until Word is done (no SynchronizationContext assumed).
+                var frame = new System.Windows.Threading.DispatcherFrame();
+                task.ContinueWith(_ => frame.Continue = false, TaskScheduler.Default);
+                System.Windows.Threading.Dispatcher.PushFrame(frame);
+
+                var result = task.Result;
+                if (result.WordUnavailable) return (0, 0, true);
+                return (result.Converted, failed + result.Failed, false);
+            }
+            finally
+            {
+                foreach (var f in tempFiles)
+                {
+                    try { System.IO.File.Delete(f); }
+                    catch (Exception ex) { Log.Warning(ex, "Could not delete temporary MHTML file."); }
+                }
+            }
+        }
 
         /// <summary>
         /// DPI scale of the Outlook main window (1.0 = 96 dpi) used to size the pane

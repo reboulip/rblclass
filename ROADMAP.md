@@ -434,6 +434,12 @@ do not depend on the studies and run in the waves after that validation.
       Real-target check: Word automation is not blocked by the EDR on the
       32-bit target, and the confirmation appears for a Stormshield mail
       (not verifiable on the dev machine). [#69]
+      - shipped, pending tests (not verifiable on the dev machine per the
+        testing strategy; re-verify on the real target before pilot: Word
+        automation is not blocked by the EDR on the 32-bit workstation, and the
+        encrypted-mail confirmation appears for a real Stormshield mail. The
+        dev-machine e2e passed: 2 mails to 2 PDFs, Ask picker with .msg
+        preselected, skip and continue paths, temporary MHTML deleted.)
 
 ### D — Phishing warnings on external-banner mail
 

@@ -1,0 +1,25 @@
+<Window x:Class="RBLclass.AddIn.Views.EncryptedPdfConfirmWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        mc:Ignorable="d"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:loc="clr-namespace:RBLclass.AddIn.Localization"
+        Title="{loc:Loc Key=EncryptedPdf_Title}" Width="400" SizeToContent="Height"
+        WindowStartupLocation="CenterOwner" ResizeMode="NoResize"
+        d:DesignHeight="170" d:DesignWidth="400">
+    <!-- Skip is the default button and Esc (v2.13.0.0 C1): converting encrypted mail needs a deliberate Continue. -->
+    <StackPanel Margin="14">
+        <TextBlock TextWrapping="Wrap" Text="{Binding Body}" />
+        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,14,0,0">
+            <Button Padding="14,5" Margin="0,0,8,0" Click="Continue_Click">
+                <TextBlock Text="{loc:Loc Key=EncryptedPdf_Continue}" TextWrapping="Wrap"
+                           Foreground="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}" />
+            </Button>
+            <Button Padding="14,5" IsDefault="True" IsCancel="True" Click="Skip_Click">
+                <TextBlock Text="{loc:Loc Key=EncryptedPdf_Skip}" TextWrapping="Wrap"
+                           Foreground="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}" />
+            </Button>
+        </StackPanel>
+    </StackPanel>
+</Window>

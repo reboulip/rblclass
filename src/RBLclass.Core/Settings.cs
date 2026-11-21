@@ -68,6 +68,9 @@ namespace RBLclass.Core
         public IReadOnlyList<string> AttachmentFavoriteFolders { get; set; }
         public AttachmentRemovalMode AttachmentRemovalMode { get; set; }
         public AttachmentLabelLocation AttachmentLabelLocation { get; set; }
+
+        /// <summary>Format the Save-as button writes (v2.13.0.0 C1).</summary>
+        public SaveAsFormat SaveAsFormat { get; set; }
         public SearchPathDisplayMode SearchPathDisplayMode { get; set; }
         public int AutoClassHistoryDays { get; set; }
         public bool ClassifyMeetingItems { get; set; }
@@ -140,6 +143,7 @@ namespace RBLclass.Core
                 AttachmentFavoriteFolders = ParseList(Str(SettingsKeys.AttachmentFavoriteFolders, string.Empty)),
                 AttachmentRemovalMode = ParseAttachmentRemovalMode(Str(SettingsKeys.AttachmentRemovalMode)),
                 AttachmentLabelLocation = ParseAttachmentLabelLocation(Str(SettingsKeys.AttachmentLabelLocation)),
+                SaveAsFormat = ParseSaveAsFormat(Str(SettingsKeys.SaveAsFormat)),
                 SearchPathDisplayMode = ParsePathDisplayMode(
                     Str(SettingsKeys.SearchPathDisplayMode),
                     Bool(SettingsKeys.AutoExpandResults, false)),
@@ -193,6 +197,7 @@ namespace RBLclass.Core
                 Pair(SettingsKeys.AttachmentFavoriteFolders,    FormatList(AttachmentFavoriteFolders)),
                 Pair(SettingsKeys.AttachmentRemovalMode,        AttachmentRemovalMode.ToString()),
                 Pair(SettingsKeys.AttachmentLabelLocation,      AttachmentLabelLocation.ToString()),
+                Pair(SettingsKeys.SaveAsFormat,                 SaveAsFormat.ToString()),
                 Pair(SettingsKeys.SearchPathDisplayMode,        SearchPathDisplayMode.ToString()),
                 Pair(SettingsKeys.AutoClassHistoryDays,         AutoClassHistoryDays.ToString(CultureInfo.InvariantCulture)),
                 Pair(SettingsKeys.ClassifyMeetingItems,         ClassifyMeetingItems ? "1" : "0"),
@@ -267,6 +272,13 @@ namespace RBLclass.Core
         }
 
         /// <summary>Unrecognised or missing values fall back to Body (the reliable label location).</summary>
+        private static SaveAsFormat ParseSaveAsFormat(string raw)
+        {
+            SaveAsFormat format;
+            return Enum.TryParse(raw, out format) && Enum.IsDefined(typeof(SaveAsFormat), format)
+                ? format : SaveAsFormat.Msg;
+        }
+
         private static AttachmentLabelLocation ParseAttachmentLabelLocation(string raw)
         {
             AttachmentLabelLocation loc;

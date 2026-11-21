@@ -334,5 +334,14 @@ namespace RBLclass.Core
         /// Outlook UI thread. (v2.8.0.0 A1)
         /// </summary>
         bool SaveMailAsFile(MailItemRef item, string destinationDirectory);
+
+        /// <summary>
+        /// Save <paramref name="item"/> as an MHTML (.mht) file at <paramref name="mhtPath"/>
+        /// (header block, body and inline images), the intermediate of the PDF export.
+        /// <paramref name="baseName"/> receives the sanitized subject (the name the
+        /// .msg would get, "email" when blank). Returns false when the item cannot be
+        /// read or saved. Touches COM - call on the Outlook UI thread. (v2.13.0.0 C1)
+        /// </summary>
+        bool SaveMailAsMht(MailItemRef item, string mhtPath, out string baseName);
     }
 }
