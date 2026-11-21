@@ -91,6 +91,8 @@ namespace RBLclass.AddIn
         // New-inspector subscription for the v2.2 reply/forward banner strip.
         // Held in a field for the add-in's lifetime (GC rule - CLAUDE.md).
         private OutlookOM.Inspectors _inspectors;
+        // Warns before an attachment from an external-banner mail opens (v2.13.0.0 D2).
+        private RBLclass.AddIn.Phishing.AttachmentWarningGuard _attachmentWarningGuard;
 
         // Debounces SelectionChange bursts (e.g. shift-drag across 1000+ rows)
         // using the same SearchDebounceMs setting as folder search (C1).
@@ -562,6 +564,16 @@ namespace RBLclass.AddIn
                 }
                 catch (Exception ex) { TryLog("NewInspector subscribe failed", ex); }
 
+                // D2: attachment warning for external-banner mail (item events on the
+                // selected mail and on each opened inspector). Never blocks startup.
+                try
+                {
+                    _attachmentWarningGuard = new RBLclass.AddIn.Phishing.AttachmentWarningGuard(_mailStore, _settingsStore);
+                    if (_inspectors != null) _inspectors.NewInspector += OnNewInspectorForAttachmentGuard;
+                    RefreshAttachmentGuardSelection();
+                }
+                catch (Exception ex) { TryLog("Attachment guard setup failed", ex); }
+
                 // Fast path: load the persisted index (SQLite only, no COM walk).
                 _lastIndexResult = _folderTree.Load();
                 Log.Information(
@@ -680,8 +692,12 @@ namespace RBLclass.AddIn
                     try { _outlookApp.ItemSend -= Application_ItemSend; } catch { }
                 }
 
+                try { _attachmentWarningGuard?.Dispose(); } catch { }
+                _attachmentWarningGuard = null;
+
                 if (_inspectors != null)
                 {
+                    try { _inspectors.NewInspector -= OnNewInspectorForAttachmentGuard; } catch { }
                     try { _inspectors.NewInspector -= OnNewInspector; } catch { }
                     try { Marshal.ReleaseComObject(_inspectors); } catch { }
                     _inspectors = null;
@@ -880,6 +896,53 @@ namespace RBLclass.AddIn
         /// burst and notifies the pane once. Best-effort; never throws into
         /// Outlook. (v2.10.0.0 C1)
         /// </summary>
+        /// <summary>
+        /// Re-hook the attachment guard on the single selected mail (none for a multiple
+        /// or non-mail selection). Runs from the debounced selection tick; never throws.
+        /// </summary>
+        private void RefreshAttachmentGuardSelection()
+        {
+            var guard = _attachmentWarningGuard;
+            if (guard == null) return;
+
+            OutlookOM.Explorer explorer = null;
+            OutlookOM.Selection selection = null;
+            try
+            {
+                try { explorer = _outlookApp?.ActiveExplorer(); } catch { }
+                if (explorer == null) { guard.UnhookSelected(); return; }
+
+                selection = explorer.Selection;
+                if (selection == null || selection.Count != 1) { guard.UnhookSelected(); return; }
+
+                object item = selection[1];
+                var mail = item as OutlookOM.MailItem;
+                if (mail == null)
+                {
+                    try { if (item != null) Marshal.ReleaseComObject(item); } catch { }
+                    guard.UnhookSelected();
+                    return;
+                }
+                guard.HookSelected(mail); // the guard owns the mail reference from here
+            }
+            catch (Exception ex)
+            {
+                Log.Debug(ex, "Attachment guard: re-hooking the selection failed.");
+                try { guard.UnhookSelected(); } catch { }
+            }
+            finally
+            {
+                if (selection != null) { try { Marshal.ReleaseComObject(selection); } catch { } }
+                if (explorer != null) { try { Marshal.ReleaseComObject(explorer); } catch { } }
+            }
+        }
+
+        private void OnNewInspectorForAttachmentGuard(OutlookOM.Inspector inspector)
+        {
+            try { _attachmentWarningGuard?.HookInspector(inspector); }
+            catch (Exception ex) { Log.Debug(ex, "Attachment guard: hooking an inspector failed."); }
+        }
+
         private void OnSelectionTimerTick(object sender, EventArgs e)
         {
             try
@@ -895,6 +958,7 @@ namespace RBLclass.AddIn
                 }
 
                 _selectionDebouncer?.Reset();
+                RefreshAttachmentGuardSelection();
                 TaskPaneServices.Host?.OnExplorerSelectionChanged();
             }
             catch (Exception ex)

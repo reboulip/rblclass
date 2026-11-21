@@ -1911,6 +1911,50 @@ namespace RBLclass.Outlook.Adapter
             }
         }
 
+        public SenderInfo GetSenderInfo(object liveMailItem)
+        {
+            var mail = liveMailItem as OutlookOM.MailItem;
+            if (mail == null) return SenderInfo.Unknown;
+
+            try
+            {
+                string name = Safe(() => mail.SenderName, string.Empty) ?? string.Empty;
+                string address = string.Empty;
+
+                string type = Safe(() => mail.SenderEmailType, string.Empty) ?? string.Empty;
+                if (string.Equals(type, "SMTP", StringComparison.OrdinalIgnoreCase))
+                    address = Safe(() => mail.SenderEmailAddress, string.Empty) ?? string.Empty;
+
+                if (address.Length == 0)
+                {
+                    // Exchange / other address types: the real SMTP address lives in
+                    // PR_SENDER_SMTP_ADDRESS (no body read, envelope property only).
+                    address = Safe(() =>
+                    {
+                        var pa = mail.PropertyAccessor;
+                        try
+                        {
+                            return pa.GetProperty("http://schemas.microsoft.com/mapi/proptag/0x5D01001F") as string;
+                        }
+                        finally { Marshal.ReleaseComObject(pa); }
+                    }, string.Empty) ?? string.Empty;
+                }
+
+                return new SenderInfo(name, address);
+            }
+            catch (Exception ex)
+            {
+                Log.Debug(ex, "GetSenderInfo failed.");
+                return SenderInfo.Unknown;
+            }
+        }
+
+        public string GetLiveItemHtmlBody(object liveMailItem)
+        {
+            var mail = liveMailItem as OutlookOM.MailItem;
+            return mail == null ? null : Safe(() => mail.HTMLBody, null);
+        }
+
         public string GetSelectedItemHtmlBody()
         {
             OutlookOM.Explorer rawExplorer;

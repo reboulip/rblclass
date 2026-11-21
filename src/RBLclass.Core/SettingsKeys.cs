@@ -65,6 +65,9 @@
         /// <summary>Warn before sending to recipients outside the org (legacy settingsSendExt).</summary>
         public const string SendExternalWarning = "SendExternalWarning";
 
+        /// <summary>Warn before an attachment from an external-banner mail opens (v2.13.0.0 D2, default on).</summary>
+        public const string PhishingWarnAttachments = "PhishingWarnAttachments";
+
         /// <summary>
         /// Semicolon-separated domains treated as internal in addition to
         /// Exchange-resolved recipients (empty by default - nothing

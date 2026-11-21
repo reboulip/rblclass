@@ -1177,4 +1177,25 @@ Relancez votre recherche pour voir les dossiers créés ou renommés.</value>
   <data name="EncryptedPdf_Skip" xml:space="preserve">
     <value>Ignorer les messages chiffrés</value>
   </data>
+  <data name="PhishingLink_Title" xml:space="preserve">
+    <value>Hameçonnage possible</value>
+  </data>
+  <data name="PhishingLink_Sender" xml:space="preserve">
+    <value>Expéditeur : {0} &lt;{1}></value>
+  </data>
+  <data name="PhishingLink_OpenAnyway" xml:space="preserve">
+    <value>Ouvrir quand même</value>
+  </data>
+  <data name="PhishingLink_Cancel" xml:space="preserve">
+    <value>Annuler</value>
+  </data>
+  <data name="PhishingAttachment_Text" xml:space="preserve">
+    <value>Cette pièce jointe provient d'un e-mail externe. Il peut s'agir d'une tentative d'hameçonnage.</value>
+  </data>
+  <data name="PhishingAttachment_FileName" xml:space="preserve">
+    <value>Pièce jointe : {0}</value>
+  </data>
+  <data name="Settings_PhishingWarnAttachments" xml:space="preserve">
+    <value>Avertir avant d'ouvrir une pièce jointe provenant d'un e-mail externe</value>
+  </data>
 </root>

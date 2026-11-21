@@ -532,6 +532,13 @@ namespace RBLclass.AddIn.ViewModels
             set => Apply(_settings.UpdateCheckUrl, value ?? string.Empty, v => _settings.UpdateCheckUrl = v);
         }
 
+        /// <summary>D2: warn before an attachment from an external-banner mail opens.</summary>
+        public bool PhishingWarnAttachments
+        {
+            get => _settings.PhishingWarnAttachments;
+            set => Apply(_settings.PhishingWarnAttachments, value, v => _settings.PhishingWarnAttachments = v);
+        }
+
         public bool SendExternalWarning
         {
             get => _settings.SendExternalWarning;

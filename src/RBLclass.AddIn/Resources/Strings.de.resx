@@ -1177,4 +1177,25 @@ Führen Sie Ihre Suche erneut aus, um neu erstellte oder umbenannte Ordner zu se
   <data name="EncryptedPdf_Skip" xml:space="preserve">
     <value>Verschlüsselte E-Mails überspringen</value>
   </data>
+  <data name="PhishingLink_Title" xml:space="preserve">
+    <value>Möglicher Phishing-Versuch</value>
+  </data>
+  <data name="PhishingLink_Sender" xml:space="preserve">
+    <value>Absender: {0} &lt;{1}></value>
+  </data>
+  <data name="PhishingLink_OpenAnyway" xml:space="preserve">
+    <value>Trotzdem öffnen</value>
+  </data>
+  <data name="PhishingLink_Cancel" xml:space="preserve">
+    <value>Abbrechen</value>
+  </data>
+  <data name="PhishingAttachment_Text" xml:space="preserve">
+    <value>Dieser Anhang stammt aus einer externen E-Mail. Es könnte sich um einen Phishing-Versuch handeln.</value>
+  </data>
+  <data name="PhishingAttachment_FileName" xml:space="preserve">
+    <value>Anhang: {0}</value>
+  </data>
+  <data name="Settings_PhishingWarnAttachments" xml:space="preserve">
+    <value>Vor dem Öffnen eines Anhangs aus einer externen E-Mail warnen</value>
+  </data>
 </root>

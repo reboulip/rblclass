@@ -538,6 +538,20 @@ patching, no modification of the stored mail.
       banner (UIA + COM, [[e2e-outlook-testing]]). Real banner mail is not
       verifiable on the dev machine: leave the checkbox open with
       `- shipped, pending tests` and re-verify on the real target. [#37]
+      - shipped, pending tests (real banner / Stormshield mail, and the hook
+        on an opened mail's own window, are not verifiable on the dev
+        machine; re-verify both on the real target before pilot).
+        **Recorded on the dev machine** (fake banner mail, reading pane): a
+        click on the attachment fires `BeforeAttachmentWriteToTempFile` and
+        then `BeforeAttachmentPreview`, both on the selected mail, and both
+        carry the attachment. After "Open anyway" a 4 s grace period for the
+        same mail avoids a second dialog for the follow-up event. Cancel
+        leaves the reading pane on Outlook's "Loading…" state with its "Back
+        to message" link. For an opened mail the item events are hooked on
+        the first `Inspector.Activate` (at `NewInspector` the inspector's
+        `CurrentItem` is not yet a `MailItem`); firing there could not be
+        driven by synthetic input and stays to verify. Drag to the desktop
+        was not tested.
 
 - [ ] **D3.** Warn before a link from a banner mail opens (requires: D1,
       D4, and D2 for `PhishingWarningPolicy`/the warning window if D2 lands

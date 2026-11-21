@@ -58,6 +58,9 @@ namespace RBLclass.Core
         public bool StripBannerOnAutoClassify { get; set; }
         public bool WidenConversation { get; set; }
         public bool SendExternalWarning { get; set; }
+
+        /// <summary>Warn before an attachment from an external-banner mail opens (v2.13.0.0 D2, default on).</summary>
+        public bool PhishingWarnAttachments { get; set; }
         public IReadOnlyList<string> InternalDomains { get; set; }
         public IReadOnlyList<string> ForgottenAttachmentKeywords { get; set; }
         public SentItemTriageMode SentItemTriageMode { get; set; }
@@ -130,6 +133,7 @@ namespace RBLclass.Core
                 StripBannerOnAutoClassify = Bool(SettingsKeys.StripBannerOnAutoClassify, false),
                 WidenConversation = Bool(SettingsKeys.WidenConversation, false),
                 SendExternalWarning = Bool(SettingsKeys.SendExternalWarning, true),
+                PhishingWarnAttachments = Bool(SettingsKeys.PhishingWarnAttachments, true),
                 InternalDomains = ParseList(Str(SettingsKeys.InternalDomains, string.Empty)),
                 ForgottenAttachmentKeywords = ParseList(Str(
                     SettingsKeys.ForgottenAttachmentKeywords, DefaultForgottenAttachmentKeywords)),
@@ -187,6 +191,7 @@ namespace RBLclass.Core
                 Pair(SettingsKeys.StripBannerOnAutoClassify,    StripBannerOnAutoClassify ? "1" : "0"),
                 Pair(SettingsKeys.WidenConversation,            WidenConversation ? "1" : "0"),
                 Pair(SettingsKeys.SendExternalWarning,          SendExternalWarning ? "1" : "0"),
+                Pair(SettingsKeys.PhishingWarnAttachments,      PhishingWarnAttachments ? "1" : "0"),
                 Pair(SettingsKeys.InternalDomains,              FormatList(InternalDomains)),
                 Pair(SettingsKeys.ForgottenAttachmentKeywords,  FormatList(ForgottenAttachmentKeywords)),
                 Pair(SettingsKeys.SentItemTriageMode,           SentItemTriageMode.ToString()),

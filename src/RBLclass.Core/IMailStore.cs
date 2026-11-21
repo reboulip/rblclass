@@ -343,5 +343,20 @@ namespace RBLclass.Core
         /// read or saved. Touches COM - call on the Outlook UI thread. (v2.13.0.0 C1)
         /// </summary>
         bool SaveMailAsMht(MailItemRef item, string mhtPath, out string baseName);
+
+        /// <summary>
+        /// Sender display name and real SMTP address of a LIVE mail item (the COM
+        /// object Outlook hands to an event; it is not released here). Envelope
+        /// properties only, never the body. <see cref="SenderInfo.Unknown"/> when the
+        /// item is not a mail or cannot be read. Call on the UI thread. (v2.13.0.0 D2)
+        /// </summary>
+        SenderInfo GetSenderInfo(object liveMailItem);
+
+        /// <summary>
+        /// HTML body of a LIVE mail item (not released here), or null when it cannot
+        /// be read. Call only when an event fires (reading an S/MIME body can prompt
+        /// for the smart card). Call on the UI thread. (v2.13.0.0 D2)
+        /// </summary>
+        string GetLiveItemHtmlBody(object liveMailItem);
     }
 }

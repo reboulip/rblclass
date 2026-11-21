@@ -1177,4 +1177,25 @@ Re-run your search to see newly created or renamed folders.</value>
   <data name="EncryptedPdf_Skip" xml:space="preserve">
     <value>Skip encrypted mails</value>
   </data>
+  <data name="PhishingLink_Title" xml:space="preserve">
+    <value>Possible phishing</value>
+  </data>
+  <data name="PhishingLink_Sender" xml:space="preserve">
+    <value>From: {0} &lt;{1}></value>
+  </data>
+  <data name="PhishingLink_OpenAnyway" xml:space="preserve">
+    <value>Open anyway</value>
+  </data>
+  <data name="PhishingLink_Cancel" xml:space="preserve">
+    <value>Cancel</value>
+  </data>
+  <data name="PhishingAttachment_Text" xml:space="preserve">
+    <value>This attachment comes from an external email. It may be a phishing attempt.</value>
+  </data>
+  <data name="PhishingAttachment_FileName" xml:space="preserve">
+    <value>Attachment: {0}</value>
+  </data>
+  <data name="Settings_PhishingWarnAttachments" xml:space="preserve">
+    <value>Warn before opening an attachment from an external email</value>
+  </data>
 </root>
