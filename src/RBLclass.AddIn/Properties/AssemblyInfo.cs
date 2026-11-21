@@ -17,8 +17,8 @@ using System.Runtime.InteropServices;
 // diagnostics. Windows Installer ignores the 4th version field, so the bump
 // to the third field is what the MSI's MajorUpgrade sees as newer and
 // auto-removes the previous version.
-[assembly: AssemblyVersion("2.12.0.0")]
-[assembly: AssemblyFileVersion("2.12.0.0")]
+[assembly: AssemblyVersion("2.13.0.0")]
+[assembly: AssemblyFileVersion("2.13.0.0")]
 
 // The add-in class opts into COM visibility explicitly with [ComVisible(true)];
 // nothing else in the assembly should be exposed.
