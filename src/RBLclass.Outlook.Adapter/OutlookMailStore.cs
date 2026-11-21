@@ -1692,6 +1692,41 @@ namespace RBLclass.Outlook.Adapter
             return false;
         }
 
+        public bool SaveMailAsMht(MailItemRef item, string mhtPath, out string baseName)
+        {
+            baseName = "email";
+            if (item == null || string.IsNullOrWhiteSpace(mhtPath)) return false;
+
+            try
+            {
+                using (var session = new ComRef<OutlookOM.NameSpace>(_app.Session))
+                {
+                    object rawItem;
+                    try { rawItem = session.Value.GetItemFromID(item.EntryId, item.StoreId); }
+                    catch { return false; }
+
+                    using (var comItem = new ComRef<object>(rawItem))
+                    {
+                        var mail = comItem.Value as OutlookOM.MailItem;
+                        if (mail == null) return false;
+
+                        string subject = Safe(() => mail.Subject, string.Empty) ?? string.Empty;
+                        string name = SanitizeFileName(subject);
+                        baseName = string.IsNullOrWhiteSpace(name) ? "email" : name;
+
+                        System.IO.Directory.CreateDirectory(System.IO.Path.GetDirectoryName(mhtPath));
+                        mail.SaveAs(mhtPath, OutlookOM.OlSaveAsType.olMHTML);
+                        return true;
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Log.Error(ex, "SaveMailAsMht failed for {EntryId}", item.EntryId);
+                return false;
+            }
+        }
+
         public bool SaveMailAsFile(MailItemRef item, string destinationDirectory)
         {
             if (item == null || string.IsNullOrWhiteSpace(destinationDirectory)) return false;
@@ -1816,7 +1851,24 @@ namespace RBLclass.Outlook.Adapter
         public bool StripBannerFromDraft(object draft, string bannerSignature)
         {
             if (string.IsNullOrWhiteSpace(bannerSignature)) return false;
-            return StripBannerOnLiveMail(draft as OutlookOM.MailItem, bannerSignature, isDraft: true);
+
+            var mail = draft as OutlookOM.MailItem;
+            if (mail == null) return false;
+
+            // Guard (v2.13.0.0 D4): this method is reached from Inspector.Activate, which
+            // also fires for a RECEIVED mail opened in its own window. A received mail
+            // (Sent == true) must never be rewritten and saved: only drafts (reply /
+            // forward / new) are stripped. StripExternalBanner, the classify path, is the
+            // one place allowed to strip a sent mail (the filed copy). An unreadable Sent
+            // flag counts as sent: failing open would reintroduce the defect.
+            if (Safe(() => mail.Sent, true))
+            {
+                Log.Debug("Banner strip skipped: {EntryId} is a sent/received mail, not a draft.",
+                    Safe(() => mail.EntryID, "(unknown)"));
+                return false;
+            }
+
+            return StripBannerOnLiveMail(mail, bannerSignature, isDraft: true);
         }
 
         /// <summary>
@@ -1857,6 +1909,50 @@ namespace RBLclass.Outlook.Adapter
                 Log.Warning(ex, "Writing the banner-stripped body failed for {EntryId}.", entryId);
                 return false;
             }
+        }
+
+        public SenderInfo GetSenderInfo(object liveMailItem)
+        {
+            var mail = liveMailItem as OutlookOM.MailItem;
+            if (mail == null) return SenderInfo.Unknown;
+
+            try
+            {
+                string name = Safe(() => mail.SenderName, string.Empty) ?? string.Empty;
+                string address = string.Empty;
+
+                string type = Safe(() => mail.SenderEmailType, string.Empty) ?? string.Empty;
+                if (string.Equals(type, "SMTP", StringComparison.OrdinalIgnoreCase))
+                    address = Safe(() => mail.SenderEmailAddress, string.Empty) ?? string.Empty;
+
+                if (address.Length == 0)
+                {
+                    // Exchange / other address types: the real SMTP address lives in
+                    // PR_SENDER_SMTP_ADDRESS (no body read, envelope property only).
+                    address = Safe(() =>
+                    {
+                        var pa = mail.PropertyAccessor;
+                        try
+                        {
+                            return pa.GetProperty("http://schemas.microsoft.com/mapi/proptag/0x5D01001F") as string;
+                        }
+                        finally { Marshal.ReleaseComObject(pa); }
+                    }, string.Empty) ?? string.Empty;
+                }
+
+                return new SenderInfo(name, address);
+            }
+            catch (Exception ex)
+            {
+                Log.Debug(ex, "GetSenderInfo failed.");
+                return SenderInfo.Unknown;
+            }
+        }
+
+        public string GetLiveItemHtmlBody(object liveMailItem)
+        {
+            var mail = liveMailItem as OutlookOM.MailItem;
+            return mail == null ? null : Safe(() => mail.HTMLBody, null);
         }
 
         public string GetSelectedItemHtmlBody()

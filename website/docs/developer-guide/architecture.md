@@ -90,6 +90,10 @@ Outlook COM objects must be released explicitly, or Outlook leaks and crashes:
 - A `SynchronizationContext` captured at add-in startup marshals results back to
   the Outlook UI thread.
 - Never block the UI thread on COM calls inside loops — batch and yield.
+- The PDF export of *Save as file* follows this rule: Outlook saves each mail to
+  a temporary MHTML file on the UI thread, then Word (late-bound, out of process)
+  converts the files on a **dedicated STA thread**. Outlook OM calls stay on the
+  UI thread.
 
 ## Storage & SQLite policy
 
@@ -106,6 +110,29 @@ Outlook COM objects must be released explicitly, or Outlook leaks and crashes:
 - Register handlers in `OnStartupComplete`, unregister in `OnBeginShutdown`.
 - Keep references to event source objects in **fields** — otherwise GC collects
   them and events stop firing silently.
+- Item-level events (`BeforeAttachmentWriteToTempFile`, `BeforeAttachmentPreview`,
+  used by the external-attachment phishing warning) follow the same rule: keep the
+  hooked item and its delegates in fields, hook the single selected mail (re-hooked
+  from the debounced selection tick) and each opened mail window's item (hooked on
+  its first `Inspector.Activate`), and release the hooks on change, on
+  `Inspector.Close` and at shutdown.
+- The external-link phishing warning uses two **thread-scoped** Windows hooks on
+  Outlook's own UI thread (`WH_MOUSE` for clicks, `WH_GETMESSAGE` for ++enter++),
+  installed with `hMod` NULL: never global, nothing injected, no API patched. It
+  also repurposes the built-in ribbon command `HyperlinkOpen` through a
+  `<commands>` block in the three Ribbon XML files; the public callback must keep
+  exactly the signature `OnHyperlinkOpenRepurposed(IRibbonControl, bool pressed,
+  ref bool cancelDefault)`. The Word object model is reached late-bound through
+  `AccessibleObjectFromWindow` (`OBJID_NATIVEOM`); the only hand-declared COM
+  interface is the standard `IOleWindow`. Hook rules:
+    - hold the hook delegates in **fields**: a collected callback crashes the
+      process;
+    - never show UI or pump messages inside a hook: post the warning so it runs
+      after the hook returns;
+    - always call `CallNextHookEx`;
+    - unhook in both `OnBeginShutdown` and `OnDisconnection`. A fast shutdown may
+      skip `OnBeginShutdown`, which is harmless because thread hooks die with the
+      process.
 - Handle `StoreRemove` gracefully: PST stores can be closed by the user at any
   time.
 

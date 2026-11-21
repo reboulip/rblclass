@@ -334,5 +334,29 @@ namespace RBLclass.Core
         /// Outlook UI thread. (v2.8.0.0 A1)
         /// </summary>
         bool SaveMailAsFile(MailItemRef item, string destinationDirectory);
+
+        /// <summary>
+        /// Save <paramref name="item"/> as an MHTML (.mht) file at <paramref name="mhtPath"/>
+        /// (header block, body and inline images), the intermediate of the PDF export.
+        /// <paramref name="baseName"/> receives the sanitized subject (the name the
+        /// .msg would get, "email" when blank). Returns false when the item cannot be
+        /// read or saved. Touches COM - call on the Outlook UI thread. (v2.13.0.0 C1)
+        /// </summary>
+        bool SaveMailAsMht(MailItemRef item, string mhtPath, out string baseName);
+
+        /// <summary>
+        /// Sender display name and real SMTP address of a LIVE mail item (the COM
+        /// object Outlook hands to an event; it is not released here). Envelope
+        /// properties only, never the body. <see cref="SenderInfo.Unknown"/> when the
+        /// item is not a mail or cannot be read. Call on the UI thread. (v2.13.0.0 D2)
+        /// </summary>
+        SenderInfo GetSenderInfo(object liveMailItem);
+
+        /// <summary>
+        /// HTML body of a LIVE mail item (not released here), or null when it cannot
+        /// be read. Call only when an event fires (reading an S/MIME body can prompt
+        /// for the smart card). Call on the UI thread. (v2.13.0.0 D2)
+        /// </summary>
+        string GetLiveItemHtmlBody(object liveMailItem);
     }
 }

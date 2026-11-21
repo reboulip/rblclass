@@ -1,6 +1,7 @@
 using System.Collections.ObjectModel;
 using System.Linq;
 using RBLclass.AddIn.Mvvm;
+using RBLclass.Core;
 
 namespace RBLclass.AddIn.ViewModels
 {
@@ -13,6 +14,8 @@ namespace RBLclass.AddIn.ViewModels
     {
         private string _favoriteQuery = string.Empty;
         private string _targetDirectory = string.Empty;
+        private bool _askFormat;
+        private bool _pdfSelected;
 
         public ObservableCollection<string> FavoriteResults { get; } =
             new ObservableCollection<string>();
@@ -34,6 +37,28 @@ namespace RBLclass.AddIn.ViewModels
         }
 
         public bool HasTarget => !string.IsNullOrWhiteSpace(_targetDirectory);
+
+        /// <summary>True when the format setting is "Ask each time": the picker shows the format choice.</summary>
+        public bool AskFormat
+        {
+            get => _askFormat;
+            set => SetProperty(ref _askFormat, value);
+        }
+
+        /// <summary>The picker's format answer: .msg is preselected, per action (never persisted).</summary>
+        public bool IsPdfSelected
+        {
+            get => _pdfSelected;
+            set { if (SetProperty(ref _pdfSelected, value)) OnPropertyChanged(nameof(IsMsgSelected)); }
+        }
+
+        public bool IsMsgSelected
+        {
+            get => !_pdfSelected;
+            set { if (value) IsPdfSelected = false; }
+        }
+
+        public SaveAsFormat SelectedFormat => _pdfSelected ? SaveAsFormat.Pdf : SaveAsFormat.Msg;
 
         public void ChooseDirectory(string directory)
         {

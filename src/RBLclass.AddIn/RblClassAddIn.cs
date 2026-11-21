@@ -91,6 +91,10 @@ namespace RBLclass.AddIn
         // New-inspector subscription for the v2.2 reply/forward banner strip.
         // Held in a field for the add-in's lifetime (GC rule - CLAUDE.md).
         private OutlookOM.Inspectors _inspectors;
+        // Warns before an attachment from an external-banner mail opens (v2.13.0.0 D2).
+        private RBLclass.AddIn.Phishing.AttachmentWarningGuard _attachmentWarningGuard;
+        // Warns before a link from an external-banner mail opens (v2.13.0.0 D3).
+        private RBLclass.AddIn.Phishing.LinkClickGuard _linkGuard;
 
         // Debounces SelectionChange bursts (e.g. shift-drag across 1000+ rows)
         // using the same SearchDebounceMs setting as folder search (C1).
@@ -120,6 +124,10 @@ namespace RBLclass.AddIn
 
         public void OnDisconnection(ext_DisconnectMode removeMode, ref Array custom)
         {
+            // Unhook before the add-in is released: Outlook must never call a freed callback.
+            try { _linkGuard?.Dispose(); } catch { }
+            _linkGuard = null;
+
             try
             {
                 if (_outlookApp != null)
@@ -469,12 +477,23 @@ namespace RBLclass.AddIn
                     _classifier.ApplyAttachmentDispositions(dispositions, labelOptions, stripSaved);
 
                 // A1: "Save as" - pick a target directory, then save each item as .msg.
-                TaskPaneServices.ShowSaveAsPicker = () =>
+                TaskPaneServices.ShowSaveAsPicker = askFormat =>
                 {
-                    var vm = new SaveAsPickerViewModel();
+                    var vm = new SaveAsPickerViewModel { AskFormat = askFormat };
                     var window = new SaveAsPickerWindow { DataContext = vm };
-                    return window.ShowDialog() == true ? vm.TargetDirectory : null;
+                    return window.ShowDialog() == true
+                        ? new SaveAsChoice(vm.TargetDirectory, vm.SelectedFormat)
+                        : null;
                 };
+                TaskPaneServices.IsWordAvailable = () => WordPdfConverter.IsWordInstalled();
+                TaskPaneServices.IsEncryptedMail = item => _mailStore.IsEncryptedMail(item);
+                TaskPaneServices.ConfirmEncryptedPdf = count =>
+                {
+                    var vm = new EncryptedPdfConfirmViewModel(count);
+                    var window = new EncryptedPdfConfirmWindow { DataContext = vm };
+                    return window.ShowDialog() == true;
+                };
+                TaskPaneServices.SaveMailsAsPdf = (items, directory, report) => SaveMailsAsPdf(items, directory, report);
                 TaskPaneServices.SaveMailsAsFiles = (items, directory) =>
                 {
                     int saved = 0, failed = 0;
@@ -550,6 +569,31 @@ namespace RBLclass.AddIn
                     _inspectors.NewInspector += OnNewInspector;
                 }
                 catch (Exception ex) { TryLog("NewInspector subscribe failed", ex); }
+
+                // D2: attachment warning for external-banner mail (item events on the
+                // selected mail and on each opened inspector). Never blocks startup.
+                try
+                {
+                    _attachmentWarningGuard = new RBLclass.AddIn.Phishing.AttachmentWarningGuard(_mailStore, _settingsStore);
+                    if (_inspectors != null) _inspectors.NewInspector += OnNewInspectorForAttachmentGuard;
+                    RefreshAttachmentGuardSelection();
+                }
+                catch (Exception ex) { TryLog("Attachment guard setup failed", ex); }
+
+                // D3: link warning for external-banner mail (two thread-scoped hooks on this
+                // UI thread + the repurposed HyperlinkOpen command). A failure leaves it inert.
+                try
+                {
+                    var resolver = new RBLclass.AddIn.Phishing.LinkMailResolver(_outlookApp, _mailStore);
+                    _linkGuard = new RBLclass.AddIn.Phishing.LinkClickGuard(_settingsStore, resolver);
+                    _linkGuard.Install();
+                }
+                catch (Exception ex)
+                {
+                    TryLog("Link guard setup failed", ex);
+                    try { _linkGuard?.Dispose(); } catch { }
+                    _linkGuard = null;
+                }
 
                 // Fast path: load the persisted index (SQLite only, no COM walk).
                 _lastIndexResult = _folderTree.Load();
@@ -669,8 +713,15 @@ namespace RBLclass.AddIn
                     try { _outlookApp.ItemSend -= Application_ItemSend; } catch { }
                 }
 
+                try { _attachmentWarningGuard?.Dispose(); } catch { }
+                _attachmentWarningGuard = null;
+
+                try { _linkGuard?.Dispose(); } catch { }
+                _linkGuard = null;
+
                 if (_inspectors != null)
                 {
+                    try { _inspectors.NewInspector -= OnNewInspectorForAttachmentGuard; } catch { }
                     try { _inspectors.NewInspector -= OnNewInspector; } catch { }
                     try { Marshal.ReleaseComObject(_inspectors); } catch { }
                     _inspectors = null;
@@ -734,6 +785,28 @@ namespace RBLclass.AddIn
             {
                 ShowError("GetCustomUI failed", ex);
                 return string.Empty;
+            }
+        }
+
+        /// <summary>
+        /// Repurposed built-in "Open hyperlink" command (v2.13.0.0 D3). Office finds this
+        /// callback through the AutoDispatch class interface, and it needs EXACTLY the
+        /// toggle signature (control, pressed, ref cancelDefault): any other signature
+        /// leaves the menu item dead. Cancelling the default queues the warning, whose
+        /// "Open anyway" follows the link itself. Never throws; on any error the link opens.
+        /// </summary>
+        public void OnHyperlinkOpenRepurposed(Office.IRibbonControl control, bool pressed, ref bool cancelDefault)
+        {
+            cancelDefault = false;
+            try
+            {
+                var guard = _linkGuard;
+                if (guard != null) cancelDefault = guard.OnHyperlinkOpenRequested();
+            }
+            catch (Exception ex)
+            {
+                cancelDefault = false;
+                TryLog("OnHyperlinkOpenRepurposed failed", ex);
             }
         }
 
@@ -869,6 +942,53 @@ namespace RBLclass.AddIn
         /// burst and notifies the pane once. Best-effort; never throws into
         /// Outlook. (v2.10.0.0 C1)
         /// </summary>
+        /// <summary>
+        /// Re-hook the attachment guard on the single selected mail (none for a multiple
+        /// or non-mail selection). Runs from the debounced selection tick; never throws.
+        /// </summary>
+        private void RefreshAttachmentGuardSelection()
+        {
+            var guard = _attachmentWarningGuard;
+            if (guard == null) return;
+
+            OutlookOM.Explorer explorer = null;
+            OutlookOM.Selection selection = null;
+            try
+            {
+                try { explorer = _outlookApp?.ActiveExplorer(); } catch { }
+                if (explorer == null) { guard.UnhookSelected(); return; }
+
+                selection = explorer.Selection;
+                if (selection == null || selection.Count != 1) { guard.UnhookSelected(); return; }
+
+                object item = selection[1];
+                var mail = item as OutlookOM.MailItem;
+                if (mail == null)
+                {
+                    try { if (item != null) Marshal.ReleaseComObject(item); } catch { }
+                    guard.UnhookSelected();
+                    return;
+                }
+                guard.HookSelected(mail); // the guard owns the mail reference from here
+            }
+            catch (Exception ex)
+            {
+                Log.Debug(ex, "Attachment guard: re-hooking the selection failed.");
+                try { guard.UnhookSelected(); } catch { }
+            }
+            finally
+            {
+                if (selection != null) { try { Marshal.ReleaseComObject(selection); } catch { } }
+                if (explorer != null) { try { Marshal.ReleaseComObject(explorer); } catch { } }
+            }
+        }
+
+        private void OnNewInspectorForAttachmentGuard(OutlookOM.Inspector inspector)
+        {
+            try { _attachmentWarningGuard?.HookInspector(inspector); }
+            catch (Exception ex) { Log.Debug(ex, "Attachment guard: hooking an inspector failed."); }
+        }
+
         private void OnSelectionTimerTick(object sender, EventArgs e)
         {
             try
@@ -884,6 +1004,7 @@ namespace RBLclass.AddIn
                 }
 
                 _selectionDebouncer?.Reset();
+                RefreshAttachmentGuardSelection();
                 TaskPaneServices.Host?.OnExplorerSelectionChanged();
             }
             catch (Exception ex)
@@ -1214,16 +1335,107 @@ namespace RBLclass.AddIn
         /// </summary>
         private static void ApplyDockSize(Office.CustomTaskPane pane)
         {
+            double scale = GetDpiScale();
             switch (pane.DockPosition)
             {
                 case Office.MsoCTPDockPosition.msoCTPDockPositionLeft:
                 case Office.MsoCTPDockPosition.msoCTPDockPositionRight:
-                    if (pane.Width != 360) pane.Width = 360;
+                    {
+                        int w = Math.Max(360, (int)Math.Ceiling(229 * scale) + 16);
+                        Log.Information("Task pane size requested: width {W} px (dpi scale {S}).", w, scale);
+                        if (pane.Width != w) pane.Width = w;
+                    }
                     break;
                 case Office.MsoCTPDockPosition.msoCTPDockPositionTop:
                 case Office.MsoCTPDockPosition.msoCTPDockPositionBottom:
-                    if (pane.Height != 300) pane.Height = 300;
+                    {
+                        int h = Math.Max(300, (int)Math.Ceiling(207 * scale));
+                        Log.Information("Task pane size requested: height {H} px (dpi scale {S}).", h, scale);
+                        if (pane.Height != h) pane.Height = h;
+                    }
                     break;
+            }
+        }
+
+        [System.Runtime.InteropServices.DllImport("user32.dll")]
+        private static extern uint GetDpiForWindow(IntPtr hwnd);
+
+        /// <summary>
+        /// PDF export (v2.13.0.0 C1). Outlook OM stays on this (UI) thread: each mail is
+        /// saved as a temporary MHTML file; Word then converts the batch on a dedicated
+        /// STA thread while the UI thread keeps pumping messages (so the busy overlay
+        /// repaints). The temporary files are always deleted.
+        /// </summary>
+        private (int Saved, int Failed, bool WordUnavailable) SaveMailsAsPdf(
+            IReadOnlyList<MailItemRef> items, string directory, Action<int, int> report)
+        {
+            var temp = System.IO.Path.Combine(System.IO.Path.GetTempPath(), "RBLclass", "pdf");
+            var jobs = new List<PdfJob>();
+            var tempFiles = new List<string>();
+            int failed = 0;
+            var dispatcher = System.Windows.Threading.Dispatcher.CurrentDispatcher;
+            try
+            {
+                System.IO.Directory.CreateDirectory(directory);
+                var reserved = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+                foreach (var item in items)
+                {
+                    string mht = System.IO.Path.Combine(temp, System.IO.Path.GetRandomFileName() + ".mht");
+                    string baseName;
+                    if (!_mailStore.SaveMailAsMht(item, mht, out baseName))
+                    {
+                        failed++;
+                        continue;
+                    }
+                    tempFiles.Add(mht);
+                    string pdf = SaveAsPlanner.PdfPath(directory, baseName,
+                        p => System.IO.File.Exists(p) || reserved.Contains(p));
+                    reserved.Add(pdf);
+                    jobs.Add(new PdfJob(mht, pdf));
+                }
+
+                if (jobs.Count == 0) return (0, failed, false);
+
+                var converter = new WordPdfConverter();
+                var task = Task.Run(() => converter.ConvertAll(jobs,
+                    (done, total) => dispatcher.BeginInvoke(new Action(() => report?.Invoke(done, jobs.Count)))));
+
+                // Keep the UI thread pumping until Word is done (no SynchronizationContext assumed).
+                var frame = new System.Windows.Threading.DispatcherFrame();
+                task.ContinueWith(_ => frame.Continue = false, TaskScheduler.Default);
+                System.Windows.Threading.Dispatcher.PushFrame(frame);
+
+                var result = task.Result;
+                if (result.WordUnavailable) return (0, 0, true);
+                return (result.Converted, failed + result.Failed, false);
+            }
+            finally
+            {
+                foreach (var f in tempFiles)
+                {
+                    try { System.IO.File.Delete(f); }
+                    catch (Exception ex) { Log.Warning(ex, "Could not delete temporary MHTML file."); }
+                }
+            }
+        }
+
+        /// <summary>
+        /// DPI scale of the Outlook main window (1.0 = 96 dpi) used to size the pane
+        /// at creation (v2.13.0.0 A2). <c>GetDpiForWindow</c> needs Windows 10 1607,
+        /// below the 1809 minimum; any failure falls back to 1.0.
+        /// </summary>
+        private static double GetDpiScale()
+        {
+            try
+            {
+                var hwnd = System.Diagnostics.Process.GetCurrentProcess().MainWindowHandle;
+                uint dpi = hwnd == IntPtr.Zero ? 0 : GetDpiForWindow(hwnd);
+                return dpi >= 96 ? dpi / 96.0 : 1.0;
+            }
+            catch (Exception ex)
+            {
+                Log.Warning(ex, "GetDpiForWindow failed; assuming 100% scale.");
+                return 1.0;
             }
         }
 

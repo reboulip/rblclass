@@ -5,9 +5,9 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:loc="clr-namespace:RBLclass.AddIn.Localization"
-        Title="{loc:Loc Key=SentTriage_Title}" Height="330" Width="380"
+        Title="{loc:Loc Key=SentTriage_Title}" Width="380" SizeToContent="Height"
         WindowStartupLocation="CenterOwner" ResizeMode="NoResize"
-        d:DesignHeight="330" d:DesignWidth="380">
+        d:DesignHeight="300" d:DesignWidth="380">
     <Grid Margin="12">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />
@@ -21,17 +21,27 @@
                    Text="{Binding Subject}" TextTrimming="CharacterEllipsis" />
 
         <StackPanel Grid.Row="2" VerticalAlignment="Top">
-            <Button Margin="0,0,0,4" Padding="8,6" HorizontalAlignment="Stretch"
-                    Content="{loc:Loc Key=SentTriage_MoveToInbox_Button}" Command="{Binding MoveToInboxCommand}" />
-            <Button Margin="0,0,0,4" Padding="8,6" HorizontalAlignment="Stretch"
-                    Content="{loc:Loc Key=SentTriage_CopyToInbox_Button}" Command="{Binding CopyToInboxCommand}" />
-            <Button Margin="0,0,0,4" Padding="8,6" HorizontalAlignment="Stretch"
-                    Content="{loc:Loc Key=SentTriage_Delete_Button}" Command="{Binding DeleteCommand}" />
-            <Button Margin="0,0,0,4" Padding="8,6" HorizontalAlignment="Stretch"
-                    Content="{loc:Loc Key=SentTriage_Leave_Button}" Command="{Binding LeaveCommand}" />
+            <Button Margin="0,0,0,4" Padding="8,6" HorizontalAlignment="Stretch" Command="{Binding MoveToInboxCommand}">
+                <TextBlock TextWrapping="Wrap" TextAlignment="Center" Text="{loc:Loc Key=SentTriage_MoveToInbox_Button}"
+                           Foreground="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}" />
+            </Button>
+            <Button Margin="0,0,0,4" Padding="8,6" HorizontalAlignment="Stretch" Command="{Binding CopyToInboxCommand}">
+                <TextBlock TextWrapping="Wrap" TextAlignment="Center" Text="{loc:Loc Key=SentTriage_CopyToInbox_Button}"
+                           Foreground="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}" />
+            </Button>
+            <Button Margin="0,0,0,4" Padding="8,6" HorizontalAlignment="Stretch" Command="{Binding DeleteCommand}">
+                <TextBlock TextWrapping="Wrap" TextAlignment="Center" Text="{loc:Loc Key=SentTriage_Delete_Button}"
+                           Foreground="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}" />
+            </Button>
+            <Button Margin="0,0,0,4" Padding="8,6" HorizontalAlignment="Stretch" Command="{Binding LeaveCommand}">
+                <TextBlock TextWrapping="Wrap" TextAlignment="Center" Text="{loc:Loc Key=SentTriage_Leave_Button}"
+                           Foreground="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}" />
+            </Button>
             <Button Margin="0" Padding="8,6" HorizontalAlignment="Stretch"
-                    IsEnabled="{Binding HasArchiveFolder}"
-                    Content="{Binding MoveToArchiveButtonLabel}" Command="{Binding MoveToArchiveCommand}" />
+                    IsEnabled="{Binding HasArchiveFolder}" Command="{Binding MoveToArchiveCommand}">
+                <TextBlock TextWrapping="Wrap" TextAlignment="Center" Text="{Binding MoveToArchiveButtonLabel}"
+                           Foreground="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}" />
+            </Button>
         </StackPanel>
     </Grid>
 </Window>

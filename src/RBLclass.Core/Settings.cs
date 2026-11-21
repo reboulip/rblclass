@@ -41,6 +41,12 @@ namespace RBLclass.Core
         public bool AllResults { get; set; }
         public FolderMatchMode FolderMatchMode { get; set; }
         public int MaxResults { get; set; }
+
+        /// <summary>Deepest folder level searched (store root = 0); 0 = unlimited (v2.13.0.0 B1).</summary>
+        public int MaxSearchDepth { get; set; }
+
+        /// <summary>Upper clamp for <see cref="MaxSearchDepth"/>; far deeper than any real tree.</summary>
+        public const int MaxMaxSearchDepth = 100;
         public int MinSearchLength { get; set; }
         public int SearchDebounceMs { get; set; }
         public bool KeepCopy { get; set; }
@@ -52,6 +58,12 @@ namespace RBLclass.Core
         public bool StripBannerOnAutoClassify { get; set; }
         public bool WidenConversation { get; set; }
         public bool SendExternalWarning { get; set; }
+
+        /// <summary>Warn before an attachment from an external-banner mail opens (v2.13.0.0 D2, default on).</summary>
+        public bool PhishingWarnAttachments { get; set; }
+
+        /// <summary>Warn before a link from an external-banner mail opens (v2.13.0.0 D3, default on).</summary>
+        public bool PhishingWarnLinks { get; set; }
         public IReadOnlyList<string> InternalDomains { get; set; }
         public IReadOnlyList<string> ForgottenAttachmentKeywords { get; set; }
         public SentItemTriageMode SentItemTriageMode { get; set; }
@@ -62,6 +74,9 @@ namespace RBLclass.Core
         public IReadOnlyList<string> AttachmentFavoriteFolders { get; set; }
         public AttachmentRemovalMode AttachmentRemovalMode { get; set; }
         public AttachmentLabelLocation AttachmentLabelLocation { get; set; }
+
+        /// <summary>Format the Save-as button writes (v2.13.0.0 C1).</summary>
+        public SaveAsFormat SaveAsFormat { get; set; }
         public SearchPathDisplayMode SearchPathDisplayMode { get; set; }
         public int AutoClassHistoryDays { get; set; }
         public bool ClassifyMeetingItems { get; set; }
@@ -106,6 +121,8 @@ namespace RBLclass.Core
                 AllResults = Bool(SettingsKeys.AllResults, false),
                 FolderMatchMode = ParseMatchMode(Str(SettingsKeys.FolderMatchMode)),
                 MaxResults = ParseMaxResults(Str(SettingsKeys.MaxResults)),
+                MaxSearchDepth = ParseClampedInt(Str(SettingsKeys.MaxSearchDepth),
+                    FolderSearchOptions.DefaultMaxDepth, 0, MaxMaxSearchDepth),
                 MinSearchLength = ParseClampedInt(Str(SettingsKeys.MinSearchLength),
                     FolderSearchOptions.DefaultMinQueryLength, 1, MaxMinSearchLength),
                 SearchDebounceMs = ParseClampedInt(Str(SettingsKeys.SearchDebounceMs),
@@ -119,6 +136,8 @@ namespace RBLclass.Core
                 StripBannerOnAutoClassify = Bool(SettingsKeys.StripBannerOnAutoClassify, false),
                 WidenConversation = Bool(SettingsKeys.WidenConversation, false),
                 SendExternalWarning = Bool(SettingsKeys.SendExternalWarning, true),
+                PhishingWarnAttachments = Bool(SettingsKeys.PhishingWarnAttachments, true),
+                PhishingWarnLinks = Bool(SettingsKeys.PhishingWarnLinks, true),
                 InternalDomains = ParseList(Str(SettingsKeys.InternalDomains, string.Empty)),
                 ForgottenAttachmentKeywords = ParseList(Str(
                     SettingsKeys.ForgottenAttachmentKeywords, DefaultForgottenAttachmentKeywords)),
@@ -132,6 +151,7 @@ namespace RBLclass.Core
                 AttachmentFavoriteFolders = ParseList(Str(SettingsKeys.AttachmentFavoriteFolders, string.Empty)),
                 AttachmentRemovalMode = ParseAttachmentRemovalMode(Str(SettingsKeys.AttachmentRemovalMode)),
                 AttachmentLabelLocation = ParseAttachmentLabelLocation(Str(SettingsKeys.AttachmentLabelLocation)),
+                SaveAsFormat = ParseSaveAsFormat(Str(SettingsKeys.SaveAsFormat)),
                 SearchPathDisplayMode = ParsePathDisplayMode(
                     Str(SettingsKeys.SearchPathDisplayMode),
                     Bool(SettingsKeys.AutoExpandResults, false)),
@@ -163,6 +183,7 @@ namespace RBLclass.Core
                 Pair(SettingsKeys.AllResults,                   AllResults ? "1" : "0"),
                 Pair(SettingsKeys.FolderMatchMode,              FolderMatchMode.ToString()),
                 Pair(SettingsKeys.MaxResults,                   MaxResults.ToString(CultureInfo.InvariantCulture)),
+                Pair(SettingsKeys.MaxSearchDepth,               MaxSearchDepth.ToString(CultureInfo.InvariantCulture)),
                 Pair(SettingsKeys.MinSearchLength,              MinSearchLength.ToString(CultureInfo.InvariantCulture)),
                 Pair(SettingsKeys.SearchDebounceMs,             SearchDebounceMs.ToString(CultureInfo.InvariantCulture)),
                 Pair(SettingsKeys.KeepCopy,                     KeepCopy ? "1" : "0"),
@@ -174,6 +195,8 @@ namespace RBLclass.Core
                 Pair(SettingsKeys.StripBannerOnAutoClassify,    StripBannerOnAutoClassify ? "1" : "0"),
                 Pair(SettingsKeys.WidenConversation,            WidenConversation ? "1" : "0"),
                 Pair(SettingsKeys.SendExternalWarning,          SendExternalWarning ? "1" : "0"),
+                Pair(SettingsKeys.PhishingWarnAttachments,      PhishingWarnAttachments ? "1" : "0"),
+                Pair(SettingsKeys.PhishingWarnLinks,            PhishingWarnLinks ? "1" : "0"),
                 Pair(SettingsKeys.InternalDomains,              FormatList(InternalDomains)),
                 Pair(SettingsKeys.ForgottenAttachmentKeywords,  FormatList(ForgottenAttachmentKeywords)),
                 Pair(SettingsKeys.SentItemTriageMode,           SentItemTriageMode.ToString()),
@@ -184,6 +207,7 @@ namespace RBLclass.Core
                 Pair(SettingsKeys.AttachmentFavoriteFolders,    FormatList(AttachmentFavoriteFolders)),
                 Pair(SettingsKeys.AttachmentRemovalMode,        AttachmentRemovalMode.ToString()),
                 Pair(SettingsKeys.AttachmentLabelLocation,      AttachmentLabelLocation.ToString()),
+                Pair(SettingsKeys.SaveAsFormat,                 SaveAsFormat.ToString()),
                 Pair(SettingsKeys.SearchPathDisplayMode,        SearchPathDisplayMode.ToString()),
                 Pair(SettingsKeys.AutoClassHistoryDays,         AutoClassHistoryDays.ToString(CultureInfo.InvariantCulture)),
                 Pair(SettingsKeys.ClassifyMeetingItems,         ClassifyMeetingItems ? "1" : "0"),
@@ -258,6 +282,13 @@ namespace RBLclass.Core
         }
 
         /// <summary>Unrecognised or missing values fall back to Body (the reliable label location).</summary>
+        private static SaveAsFormat ParseSaveAsFormat(string raw)
+        {
+            SaveAsFormat format;
+            return Enum.TryParse(raw, out format) && Enum.IsDefined(typeof(SaveAsFormat), format)
+                ? format : SaveAsFormat.Msg;
+        }
+
         private static AttachmentLabelLocation ParseAttachmentLabelLocation(string raw)
         {
             AttachmentLabelLocation loc;

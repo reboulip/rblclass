@@ -7,7 +7,8 @@
              xmlns:v="clr-namespace:RBLclass.AddIn.Views"
              xmlns:loc="clr-namespace:RBLclass.AddIn.Localization"
              xmlns:core="clr-namespace:RBLclass.Core;assembly=RBLclass.Core"
-             d:DesignHeight="520" d:DesignWidth="320"
+             d:DesignHeight="520" d:DesignWidth="200"
+             FontFamily="Segoe UI" FontSize="12"
              PreviewKeyDown="MainPane_PreviewKeyDown"
              PreviewTextInput="MainPane_PreviewTextInput">
     <UserControl.Resources>
@@ -34,36 +35,53 @@
         <Grid.Resources>
             <BooleanToVisibilityConverter x:Key="BoolToVis" />
             <v:InverseBoolToVisibilityConverter x:Key="InverseBoolToVis" />
+            <!-- Row/column sizes that follow the layout mode (v2.13.0.0 A2). -->
+            <v:BoolToGridLengthConverter x:Key="Col0Width" TrueValue="300" FalseValue="*" />
+            <v:BoolToGridLengthConverter x:Key="Col2Width" TrueValue="*" FalseValue="0" />
+            <v:BoolToGridLengthConverter x:Key="ResultsRowHeight" TrueValue="Auto" FalseValue="*" />
+            <v:BoolToGridLengthConverter x:Key="FillerRowHeight" TrueValue="*" FalseValue="Auto" />
         </Grid.Resources>
 
-        <!-- Disabled while a classify runs (re-entrancy guard). -->
+        <!-- Disabled while a classify runs (re-entrancy guard).
+             Vertical mode stacks Top / Results / Toggles / Side / Action in column 0.
+             Horizontal mode (view >= 560 DIP wide and wider than tall) re-places the
+             Results into column 2 and the Side panel (Options + Journal) into column 1;
+             everything else stays in the 300 DIP column 0. -->
         <Grid Margin="8" IsEnabled="{Binding IsNotBusy}">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="{Binding IsHorizontalLayout, Converter={StaticResource Col0Width}}" />
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="{Binding IsHorizontalLayout, Converter={StaticResource Col2Width}}" />
+            </Grid.ColumnDefinitions>
             <Grid.RowDefinitions>
-                <RowDefinition Height="Auto" />  <!-- 0: header -->
-                <RowDefinition Height="Auto" />  <!-- 1: query box -->
-                <RowDefinition Height="*" />     <!-- 2: results list -->
-                <RowDefinition Height="Auto" />  <!-- 3: chip strip -->
-                <RowDefinition Height="Auto" />  <!-- 4: Options toggle -->
-                <RowDefinition Height="Auto" />  <!-- 5: Options panel -->
-                <RowDefinition Height="Auto" />  <!-- 6: classify + undo -->
-                <RowDefinition Height="Auto" />  <!-- 7: status -->
+                <RowDefinition Height="Auto" />  <!-- 0: banners, command bar, search -->
+                <RowDefinition Height="{Binding IsHorizontalLayout, Converter={StaticResource ResultsRowHeight}}" />  <!-- 1: results -->
+                <RowDefinition Height="Auto" />  <!-- 2: Options / Journal toggles -->
+                <RowDefinition Height="Auto" />  <!-- 3: side panel (Options + Journal) -->
+                <RowDefinition Height="Auto" />  <!-- 4: classify + undo, status -->
+                <RowDefinition Height="{Binding IsHorizontalLayout, Converter={StaticResource FillerRowHeight}}" />  <!-- 5: filler -->
             </Grid.RowDefinitions>
 
-            <StackPanel Grid.Row="0" Margin="0,0,0,6">
-                <!-- v2.7.0.0 E1: opt-in "a newer version is available" banner. -->
+            <StackPanel Grid.Row="0" Grid.Column="0" Margin="0,0,0,6">
+                <!-- v2.7.0.0 E1: opt-in "a newer version is available" banner.
+                     Dark text on the orange for contrast (v2.13.0.0 A2). -->
                 <Border Background="#FF8C00" CornerRadius="4" Padding="8,6" Margin="0,0,0,6"
                         Visibility="{Binding HasUpdateAvailable, Converter={StaticResource BoolToVis}}">
                     <!-- Focus ring readable on the orange banner (v2.11.0.0 B4). -->
                     <Border.Resources>
                         <SolidColorBrush x:Key="Theme.FocusBorder" Color="#FF201F1E" />
                     </Border.Resources>
-                    <DockPanel LastChildFill="True">
-                        <Button DockPanel.Dock="Right" Content="{loc:Loc Key=MainPane_UpdateAvailable_Dismiss}"
-                                Background="Transparent" BorderThickness="0" Foreground="White"
-                                Padding="4,0" VerticalAlignment="Top" Click="DismissUpdate_Click" />
-                        <TextBlock Foreground="White" FontWeight="Bold" TextWrapping="Wrap"
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Grid.Column="0" Foreground="#FF201F1E" FontWeight="Bold" TextWrapping="Wrap"
                                    VerticalAlignment="Center" Text="{Binding UpdateBannerText}" />
-                    </DockPanel>
+                        <Button Grid.Column="1" Content="{loc:Loc Key=MainPane_UpdateAvailable_Dismiss}"
+                                Background="Transparent" BorderThickness="0" Foreground="#FF201F1E"
+                                Padding="4,0" Margin="4,0,0,0" VerticalAlignment="Top" Click="DismissUpdate_Click" />
+                    </Grid>
                 </Border>
                 <!-- E1: prominent, width-adapting banner for a pinned just-sent mail. -->
                 <Border Background="#0078D4" CornerRadius="4" Padding="8,6" Margin="0,0,0,6"
@@ -77,56 +95,99 @@
                                    Text="{loc:Loc Key=MainPane_PinnedSentMail_Indicator}" />
                         <TextBlock Foreground="White" FontStyle="Italic" TextWrapping="Wrap" Margin="0,2,0,0" FontSize="11"
                                    Text="{Binding PinnedItemSubject}" />
-                        <!-- B1: one-click delete of the sent-and-moved-to-Inbox copy, on its own line. -->
+                        <!-- B1: one-click delete of the sent-and-moved-to-Inbox copy, on its own line;
+                             the label wraps (v2.13.0.0 A2). -->
                         <Button HorizontalAlignment="Right" Margin="0,4,0,0" Padding="6,1" FontSize="11"
-                                Content="{loc:Loc Key=MainPane_PinnedSentMail_Delete_Button}"
                                 Background="Transparent" BorderBrush="White" BorderThickness="1" Foreground="White"
                                 Click="DeletePinned_Click"
-                                ToolTip="{loc:Loc Key=MainPane_PinnedSentMail_Delete_ToolTip}" />
+                                ToolTip="{loc:Loc Key=MainPane_PinnedSentMail_Delete_ToolTip}">
+                            <TextBlock Foreground="White" TextWrapping="Wrap" TextAlignment="Center"
+                                       Text="{loc:Loc Key=MainPane_PinnedSentMail_Delete_Button}" />
+                        </Button>
                     </StackPanel>
                 </Border>
-                <DockPanel LastChildFill="False">
-                    <!-- The label wraps so FR/DE leave room for the icon buttons at the
-                         narrow default pane width (v2.11.0.0 B2). -->
-                    <Button DockPanel.Dock="Right" Padding="3,1"
+
+                <!-- Command bar: the Auto-class button takes the free width and its label
+                     wraps; the three icon buttons sit at the right (v2.13.0.0 A2). -->
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <Button Grid.Column="0" HorizontalAlignment="Left" Padding="8,4"
+                            AutomationProperties.Name="{loc:Loc Key=MainPane_AutoClass_Button}"
                             IsEnabled="{Binding CanAutoClass}" Click="AutoClass_Click"
                             ToolTip="{loc:Loc Key=MainPane_AutoClass_ToolTip}">
                         <Button.Content>
                             <Grid>
-                                <TextBlock Text="{Binding AutoClassLabel}" FontSize="10" MaxWidth="48"
-                                           TextWrapping="Wrap" TextAlignment="Center" VerticalAlignment="Center"
+                                <TextBlock Text="{Binding AutoClassLabel}"
+                                           TextWrapping="WrapWithOverflow" TextAlignment="Center" VerticalAlignment="Center"
+                                           Foreground="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"
                                            Visibility="{Binding IsEasterEggActive, Converter={StaticResource InverseBoolToVis}}" />
-                                <Image Width="26" Height="26" Source="{StaticResource PigDrawingImage}"
+                                <Image Width="20" Height="20" Source="{StaticResource PigDrawingImage}"
                                        Visibility="{Binding IsEasterEggActive, Converter={StaticResource BoolToVis}}" />
                             </Grid>
                         </Button.Content>
                     </Button>
-                    <Button DockPanel.Dock="Right" Padding="3,1" Margin="0,0,3,0"
-                            Content="{loc:Loc Key=MainPane_SaveAs_Button}"
-                            FontFamily="Segoe UI Emoji" FontSize="14"
+                    <Button Grid.Column="1" Width="28" Height="28" Padding="0" Margin="4,0,0,0"
+                            FontFamily="Segoe MDL2 Assets" FontSize="16" Content="&#xE74E;"
+                            AutomationProperties.Name="{loc:Loc Key=MainPane_SaveAs_Name}"
                             Click="SaveAs_Click"
                             ToolTip="{loc:Loc Key=MainPane_SaveAs_ToolTip}" />
-                    <Button DockPanel.Dock="Right" Padding="3,1" Margin="0,0,3,0"
-                            Content="{loc:Loc Key=MainPane_ManageAttachments_Button}"
-                            FontFamily="Segoe UI Emoji" FontSize="14"
+                    <Button Grid.Column="2" Width="28" Height="28" Padding="0" Margin="4,0,0,0"
+                            FontFamily="Segoe MDL2 Assets" FontSize="16" Content="&#xE723;"
+                            AutomationProperties.Name="{loc:Loc Key=MainPane_ManageAttachments_Name}"
                             Click="ManageAttachments_Click"
                             ToolTip="{loc:Loc Key=MainPane_ManageAttachments_ToolTip}" />
-                    <Button DockPanel.Dock="Right" Padding="3,1" Margin="0,0,3,0"
-                            Content="{loc:Loc Key=MainPane_UpdateFolders_Button}"
-                            FontFamily="Segoe UI Emoji" FontSize="14"
-                            Click="UpdateFolders_Click"
-                            ToolTip="{loc:Loc Key=MainPane_UpdateFolders_ToolTip}" />
-                    <Button DockPanel.Dock="Right" Padding="3,1" Margin="0,0,3,0"
-                            Content="{loc:Loc Key=MainPane_Settings_Button}"
-                            FontFamily="Segoe UI Emoji" FontSize="14"
-                            Click="Settings_Click"
-                            ToolTip="{loc:Loc Key=MainPane_Settings_ToolTip}" />
-                    <Button DockPanel.Dock="Right" Padding="3,1" Margin="0,0,3,0"
-                            Content="{loc:Loc Key=MainPane_Help_Button}" FontSize="14"
-                            Click="Help_Click"
-                            ToolTip="{loc:Loc Key=MainPane_Help_ToolTip}" />
-                    <Ellipse DockPanel.Dock="Right" Width="10" Height="10" Margin="0,0,3,0"
-                             VerticalAlignment="Center" ToolTip="{Binding IndexStatusToolTip}">
+                    <Button Grid.Column="3" x:Name="MoreButton" Width="28" Height="28" Padding="0" Margin="4,0,0,0"
+                            FontFamily="Segoe MDL2 Assets" FontSize="16" Content="&#xE712;"
+                            AutomationProperties.Name="{loc:Loc Key=MainPane_More_Name}"
+                            Click="More_Click"
+                            ToolTip="{loc:Loc Key=MainPane_More_ToolTip}">
+                        <Button.ContextMenu>
+                            <ContextMenu DataContext="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource Self}}">
+                                <MenuItem Header="{loc:Loc Key=MainPane_UpdateFolders_MenuItem}" Click="UpdateFolders_Click" />
+                                <MenuItem Header="{loc:Loc Key=MainPane_Settings_MenuItem}" Click="Settings_Click" />
+                                <MenuItem Header="{loc:Loc Key=MainPane_Help_MenuItem}" Click="Help_Click" />
+                                <Separator />
+                                <TextBlock Margin="10,4" MaxWidth="260" TextWrapping="Wrap" FontSize="11"
+                                           Foreground="{DynamicResource Theme.MutedForeground}"
+                                           Text="{Binding IndexStatusToolTip}" />
+                            </ContextMenu>
+                        </Button.ContextMenu>
+                    </Button>
+                </Grid>
+
+                <!-- Search row: placeholder overlay and index status dot inside the box. -->
+                <Grid Margin="0,6,0,0">
+                    <TextBox x:Name="QueryBox" Padding="4,3,20,3"
+                             AutomationProperties.Name="{loc:Loc Key=MainPane_QueryBox_Name}"
+                             Text="{Binding Query, UpdateSourceTrigger=PropertyChanged}"
+                             KeyDown="QueryBox_KeyDown"
+                             PreviewKeyDown="QueryBox_PreviewKeyDown"
+                             KeyUp="QueryBox_KeyUp"
+                             ToolTip="{loc:Loc Key=MainPane_QueryBox_ToolTip}" />
+                    <TextBlock IsHitTestVisible="False" Margin="10,0,22,0" VerticalAlignment="Center"
+                               TextTrimming="CharacterEllipsis"
+                               Foreground="{DynamicResource Theme.MutedForeground}"
+                               Text="{loc:Loc Key=MainPane_QueryBox_Placeholder}">
+                        <TextBlock.Style>
+                            <Style TargetType="TextBlock">
+                                <Setter Property="Visibility" Value="Collapsed" />
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding Query}" Value="">
+                                        <Setter Property="Visibility" Value="Visible" />
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </TextBlock.Style>
+                    </TextBlock>
+                    <Ellipse Width="8" Height="8" Margin="0,0,8,0" HorizontalAlignment="Right" VerticalAlignment="Center"
+                             StrokeThickness="1" Stroke="{DynamicResource Theme.MutedForeground}"
+                             AutomationProperties.Name="{loc:Loc Key=MainPane_IndexStatus_Name}"
+                             ToolTip="{Binding IndexStatusToolTip}">
                         <Ellipse.Style>
                             <Style TargetType="Ellipse">
                                 <Setter Property="Fill" Value="#D13438" />
@@ -141,193 +202,344 @@
                             </Style>
                         </Ellipse.Style>
                     </Ellipse>
-                </DockPanel>
+                </Grid>
+                <!-- Shown only while the index is not ready; announced politely. -->
+                <TextBlock x:Name="IndexNotice" Margin="0,3,0,0" TextWrapping="Wrap" FontSize="11"
+                           Foreground="{DynamicResource Theme.MutedForeground}"
+                           AutomationProperties.LiveSetting="Polite"
+                           Text="{Binding IndexStatusToolTip}">
+                    <TextBlock.Style>
+                        <Style TargetType="TextBlock">
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding IsIndexReady}" Value="True">
+                                    <Setter Property="Visibility" Value="Collapsed" />
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </TextBlock.Style>
+                </TextBlock>
             </StackPanel>
 
-            <TextBox Grid.Row="1" x:Name="QueryBox" Margin="0,0,0,6"
-                     Text="{Binding Query, UpdateSourceTrigger=PropertyChanged}"
-                     KeyDown="QueryBox_KeyDown"
-                     PreviewKeyDown="QueryBox_PreviewKeyDown"
-                     KeyUp="QueryBox_KeyUp"
-                     ToolTip="{loc:Loc Key=MainPane_QueryBox_ToolTip}" />
-
-            <!-- The shared list. Single-click toggles a folder as a destination;
-                 double-click files into that one folder; the 👁 button opens the
-                 folder in Outlook, the ⤢ button expands that one row to a
-                 multi-line full path, and right-click adds a sub-folder. -->
-            <ListBox Grid.Row="2" x:Name="ResultsList"
-                     ItemsSource="{Binding Results}"
-                     SelectedItem="{Binding SelectedResult}"
-                     MouseDoubleClick="ResultsList_MouseDoubleClick"
-                     ScrollViewer.HorizontalScrollBarVisibility="Disabled">
-                <ListBox.ItemContainerStyle>
-                    <Style TargetType="ListBoxItem">
-                        <Setter Property="HorizontalContentAlignment" Value="Stretch" />
-                        <Setter Property="BorderThickness" Value="0,0,0,1" />
-                        <Setter Property="BorderBrush" Value="{DynamicResource Theme.ControlBorder}" />
-                        <Setter Property="Padding" Value="0" />
-                        <Setter Property="FocusVisualStyle" Value="{x:Null}" />
-                        <!-- No BasedOn: these rows keep their own separator look, so the
-                             keyboard-focus ring (v2.11.0.0 B4) is set here. -->
+            <!-- Results area: the shared list and the destination chips. Vertical mode
+                 shows the chips under the list; horizontal mode puts them above it. -->
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="*" />
+                    <RowDefinition Height="Auto" />
+                </Grid.RowDefinitions>
+                <Grid.Style>
+                    <!-- Placement lives in the style (not as local values) so the trigger can override it. -->
+                    <Style TargetType="Grid">
+                        <Setter Property="Grid.Row" Value="1" />
+                        <Setter Property="Grid.Column" Value="0" />
                         <Style.Triggers>
-                            <Trigger Property="IsKeyboardFocused" Value="True">
-                                <Setter Property="BorderBrush" Value="{DynamicResource Theme.FocusBorder}" />
-                                <Setter Property="BorderThickness" Value="1" />
-                            </Trigger>
+                            <DataTrigger Binding="{Binding IsHorizontalLayout}" Value="True">
+                                <Setter Property="Grid.Column" Value="2" />
+                                <Setter Property="Grid.Row" Value="0" />
+                                <Setter Property="Grid.RowSpan" Value="6" />
+                            </DataTrigger>
                         </Style.Triggers>
                     </Style>
-                </ListBox.ItemContainerStyle>
-                <ListBox.ItemTemplate>
-                    <DataTemplate>
-                        <DockPanel LastChildFill="True">
-                            <DockPanel.ContextMenu>
-                                <ContextMenu>
-                                    <MenuItem Header="{loc:Loc Key=MainPane_NewSubfolder_MenuItem}"
-                                              Click="NewSubfolder_Click" />
-                                    <MenuItem Header="{loc:Loc Key=MainPane_RenameFolder_MenuItem}"
-                                              Click="RenameFolder_Click"
-                                              IsEnabled="{Binding IsRenameEnabled}" />
-                                    <MenuItem Header="{loc:Loc Key=MainPane_DeleteFolder_MenuItem}"
-                                              Click="DeleteFolder_Click"
-                                              IsEnabled="{Binding IsDeleteEnabled}" />
-                                </ContextMenu>
-                            </DockPanel.ContextMenu>
-                            <Button DockPanel.Dock="Right" Content="👁" Width="22" Padding="0" VerticalAlignment="Top"
-                                    Click="OpenFolder_Click" ToolTip="{loc:Loc Key=MainPane_OpenFolder_ToolTip}" />
-                            <Button DockPanel.Dock="Right" Content="⤢" Width="22" Padding="0" Margin="0,0,3,0" VerticalAlignment="Top"
-                                    Click="ExpandPath_Click"
-                                    ToolTip="{loc:Loc Key=MainPane_ExpandPath_ToolTip}" />
-                            <CheckBox IsChecked="{Binding IsSelected}"
-                                      HorizontalContentAlignment="Stretch" VerticalContentAlignment="Center">
-                                <Grid>
-                                    <!-- Mode 1 (OneLine): single left-trimmed line. -->
-                                    <TextBlock v:PathTrim.FullPath="{Binding DisplayPath}"
-                                               v:PathTrim.RightReserve="52"
-                                               Visibility="{Binding IsOneLine, Converter={StaticResource BoolToVis}}" />
-                                    <!-- Mode 2 (Wrapped): full path on one line, wrapping on pane width. -->
-                                    <TextBlock Text="{Binding DisplayPath}" TextWrapping="Wrap"
-                                               Visibility="{Binding IsWrapped, Converter={StaticResource BoolToVis}}" />
-                                    <!-- Mode 3 (PerSegment): full path, one segment per line, no indentation. -->
-                                    <ItemsControl ItemsSource="{Binding PathSegments}"
-                                                  Visibility="{Binding IsPerSegment, Converter={StaticResource BoolToVis}}">
-                                        <ItemsControl.ItemTemplate>
-                                            <DataTemplate>
-                                                <TextBlock Text="{Binding}" TextWrapping="Wrap" />
-                                            </DataTemplate>
-                                        </ItemsControl.ItemTemplate>
-                                    </ItemsControl>
-                                </Grid>
-                            </CheckBox>
-                        </DockPanel>
-                    </DataTemplate>
-                </ListBox.ItemTemplate>
-            </ListBox>
+                </Grid.Style>
 
-            <!-- Destinations accumulated across searches (v2.2): removable
-                 chips; survives re-searches; clears after a classify. -->
-            <StackPanel Grid.Row="3" Margin="0,6,0,0"
-                        Visibility="{Binding HasSelectedDestinations, Converter={StaticResource BoolToVis}}">
-                <DockPanel LastChildFill="False">
-                    <TextBlock Text="{Binding SelectionHeader}" FontWeight="Bold"
-                               VerticalAlignment="Center" />
-                    <Button DockPanel.Dock="Right" Content="{loc:Loc Key=MainPane_ClearSelection_Button}" Padding="6,0"
+                <!-- The shared list. Single-click toggles a folder as a destination;
+                     double-click files into that one folder; the eye button opens the
+                     folder in Outlook, the path button cycles that row's path display,
+                     and right-click adds a sub-folder. -->
+                <ListBox Grid.Row="1" x:Name="ResultsList"
+                         ItemsSource="{Binding Results}"
+                         SelectedItem="{Binding SelectedResult}"
+                         MouseDoubleClick="ResultsList_MouseDoubleClick"
+                         ScrollViewer.HorizontalScrollBarVisibility="Disabled">
+                    <ListBox.ItemContainerStyle>
+                        <Style TargetType="ListBoxItem">
+                            <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+                            <Setter Property="BorderThickness" Value="0,0,0,1" />
+                            <Setter Property="BorderBrush" Value="{DynamicResource Theme.ControlBorder}" />
+                            <Setter Property="Padding" Value="0" />
+                            <Setter Property="MinHeight" Value="24" />
+                            <Setter Property="AutomationProperties.Name" Value="{Binding DisplayPath}" />
+                            <Setter Property="FocusVisualStyle" Value="{x:Null}" />
+                            <!-- No BasedOn: these rows keep their own separator look, so the
+                                 keyboard-focus ring (v2.11.0.0 B4) is set here. -->
+                            <Style.Triggers>
+                                <Trigger Property="IsKeyboardFocused" Value="True">
+                                    <Setter Property="BorderBrush" Value="{DynamicResource Theme.FocusBorder}" />
+                                    <Setter Property="BorderThickness" Value="1" />
+                                </Trigger>
+                            </Style.Triggers>
+                        </Style>
+                    </ListBox.ItemContainerStyle>
+                    <ListBox.ItemTemplate>
+                        <DataTemplate>
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
+                                <Grid.ContextMenu>
+                                    <ContextMenu>
+                                        <MenuItem Header="{loc:Loc Key=MainPane_NewSubfolder_MenuItem}"
+                                                  Click="NewSubfolder_Click" />
+                                        <MenuItem Header="{loc:Loc Key=MainPane_RenameFolder_MenuItem}"
+                                                  Click="RenameFolder_Click"
+                                                  IsEnabled="{Binding IsRenameEnabled}" />
+                                        <MenuItem Header="{loc:Loc Key=MainPane_DeleteFolder_MenuItem}"
+                                                  Click="DeleteFolder_Click"
+                                                  IsEnabled="{Binding IsDeleteEnabled}" />
+                                    </ContextMenu>
+                                </Grid.ContextMenu>
+                                <CheckBox Grid.Column="0" IsChecked="{Binding IsSelected}"
+                                          AutomationProperties.Name="{Binding DisplayPath}"
+                                          HorizontalContentAlignment="Stretch" VerticalContentAlignment="Center">
+                                    <Grid>
+                                        <!-- Mode 1 (OneLine): single left-trimmed line. -->
+                                        <TextBlock v:PathTrim.FullPath="{Binding DisplayPath}"
+                                                   v:PathTrim.RightReserve="56"
+                                                   Visibility="{Binding IsOneLine, Converter={StaticResource BoolToVis}}" />
+                                        <!-- Mode 2 (Wrapped): full path on one line, wrapping on pane width. -->
+                                        <TextBlock Text="{Binding DisplayPath}" TextWrapping="Wrap"
+                                                   Visibility="{Binding IsWrapped, Converter={StaticResource BoolToVis}}" />
+                                        <!-- Mode 3 (PerSegment): full path, one segment per line, no indentation. -->
+                                        <ItemsControl ItemsSource="{Binding PathSegments}"
+                                                      Visibility="{Binding IsPerSegment, Converter={StaticResource BoolToVis}}">
+                                            <ItemsControl.ItemTemplate>
+                                                <DataTemplate>
+                                                    <TextBlock Text="{Binding}" TextWrapping="Wrap" />
+                                                </DataTemplate>
+                                            </ItemsControl.ItemTemplate>
+                                        </ItemsControl>
+                                    </Grid>
+                                </CheckBox>
+                                <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Top">
+                                    <Button Width="24" Height="24" Padding="0" Margin="0,0,3,0"
+                                            FontFamily="Segoe MDL2 Assets" FontSize="16" Content="&#xE740;"
+                                            AutomationProperties.Name="{loc:Loc Key=MainPane_ExpandPath_Name}"
+                                            Click="ExpandPath_Click"
+                                            ToolTip="{loc:Loc Key=MainPane_ExpandPath_ToolTip}" />
+                                    <Button Width="24" Height="24" Padding="0"
+                                            FontFamily="Segoe MDL2 Assets" FontSize="16" Content="&#xE890;"
+                                            AutomationProperties.Name="{loc:Loc Key=MainPane_OpenFolder_Name}"
+                                            Click="OpenFolder_Click"
+                                            ToolTip="{loc:Loc Key=MainPane_OpenFolder_ToolTip}" />
+                                </StackPanel>
+                            </Grid>
+                        </DataTemplate>
+                    </ListBox.ItemTemplate>
+                </ListBox>
+
+                <!-- Destinations accumulated across searches (v2.2): removable chips;
+                     survives re-searches; clears after a classify. -->
+                <Grid x:Name="DestinationChips"
+                      AutomationProperties.Name="{Binding SelectionHeader}"
+                      Visibility="{Binding HasSelectedDestinations, Converter={StaticResource BoolToVis}}">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <Grid.Style>
+                        <Style TargetType="Grid">
+                            <Setter Property="Grid.Row" Value="2" />
+                            <Setter Property="Margin" Value="0,6,0,0" />
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding IsHorizontalLayout}" Value="True">
+                                    <Setter Property="Grid.Row" Value="0" />
+                                    <Setter Property="Margin" Value="0,0,0,6" />
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </Grid.Style>
+                    <ItemsControl Grid.Column="0" ItemsSource="{Binding SelectedDestinations}">
+                        <ItemsControl.ItemsPanel>
+                            <ItemsPanelTemplate>
+                                <WrapPanel />
+                            </ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <Border Background="{DynamicResource Theme.SelectionBackground}"
+                                        BorderBrush="{DynamicResource Theme.ControlBorder}"
+                                        BorderThickness="1" CornerRadius="10"
+                                        Padding="6,0,2,0" Margin="0,0,4,4"
+                                        ToolTip="{Binding FullPath}">
+                                    <StackPanel Orientation="Horizontal">
+                                        <TextBlock Text="{Binding Name}" VerticalAlignment="Center"
+                                                   MaxWidth="150" TextTrimming="CharacterEllipsis" />
+                                        <Button Width="20" Height="20" Margin="2,0,0,0" Padding="0"
+                                                FontFamily="Segoe MDL2 Assets" FontSize="10" Content="&#xE711;"
+                                                BorderThickness="0" Background="Transparent"
+                                                AutomationProperties.Name="{loc:Loc Key=MainPane_RemoveDestination_ToolTip}"
+                                                Click="RemoveDestination_Click"
+                                                ToolTip="{loc:Loc Key=MainPane_RemoveDestination_ToolTip}" />
+                                    </StackPanel>
+                                </Border>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                    <Button Grid.Column="1" Width="24" Height="24" Padding="0" Margin="4,0,0,0"
+                            VerticalAlignment="Top"
+                            FontFamily="Segoe MDL2 Assets" FontSize="16" Content="&#xE8E6;"
+                            AutomationProperties.Name="{loc:Loc Key=MainPane_ClearAll_Name}"
                             Click="ClearSelection_Click"
                             ToolTip="{loc:Loc Key=MainPane_ClearSelection_ToolTip}" />
-                </DockPanel>
-                <ItemsControl ItemsSource="{Binding SelectedDestinations}" Margin="0,3,0,0">
-                    <ItemsControl.ItemsPanel>
-                        <ItemsPanelTemplate>
-                            <WrapPanel />
-                        </ItemsPanelTemplate>
-                    </ItemsControl.ItemsPanel>
-                    <ItemsControl.ItemTemplate>
-                        <DataTemplate>
-                            <Border Background="{DynamicResource Theme.SelectionBackground}"
-                                    BorderBrush="{DynamicResource Theme.ControlBorder}"
-                                    BorderThickness="1" CornerRadius="9"
-                                    Padding="6,1" Margin="0,0,4,4"
-                                    ToolTip="{Binding FullPath}">
-                                <StackPanel Orientation="Horizontal">
-                                    <TextBlock Text="{Binding Name}" VerticalAlignment="Center" />
-                                    <Button Content="✕" Margin="4,0,0,0" Padding="2,0"
-                                            BorderThickness="0" Background="Transparent"
-                                            Click="RemoveDestination_Click"
-                                            ToolTip="{loc:Loc Key=MainPane_RemoveDestination_ToolTip}" />
-                                </StackPanel>
-                            </Border>
-                        </DataTemplate>
-                    </ItemsControl.ItemTemplate>
-                </ItemsControl>
-            </StackPanel>
-
-            <!-- Row 4: action button bar.
-                 VERTICAL mode (pane taller than wide): Options toggle only (v2.4 B1).
-                 HORIZONTAL mode (pane wider than tall): all four action buttons on one line (v2.9.0.0 A2). -->
-            <Grid Grid.Row="4" Margin="0,4,0,0">
-                <Button x:Name="OptionsToggle"
-                        Content="{loc:Loc Key=Pane_Options}"
-                        HorizontalAlignment="Left" Padding="4,2" FontSize="11"
-                        Click="Options_Click"
-                        Visibility="{Binding IsHorizontalLayout, Converter={StaticResource InverseBoolToVis}}" />
-                <StackPanel Orientation="Horizontal"
-                            Visibility="{Binding IsHorizontalLayout, Converter={StaticResource BoolToVis}}">
-                    <Button Content="{loc:Loc Key=Pane_Options}" Padding="4,2" FontSize="11"
-                            Margin="0,0,6,0" Click="Options_Click" />
-                    <Button Style="{DynamicResource AccentButton}" Margin="0,0,6,0"
-                            Content="{Binding ClassifyButtonText}" Click="Classify_Click" />
-                    <Button Padding="12,4" Margin="0,0,6,0"
-                            Content="{loc:Loc Key=MainPane_Undo_Button}"
-                            IsEnabled="{Binding CanUndo}" Click="Undo_Click"
-                            ToolTip="{loc:Loc Key=MainPane_Undo_ToolTip}" />
-                    <Button Content="{loc:Loc Key=Pane_Journal}" Padding="4,2" FontSize="11"
-                            Click="Journal_Click"
-                            Visibility="{Binding HasStatusEntries, Converter={StaticResource BoolToVis}}" />
-                </StackPanel>
+                </Grid>
             </Grid>
 
-            <!-- Options panel: collapsed by default; opened by the toggle or Tab from the query box. -->
-            <StackPanel Grid.Row="5" x:Name="OptionsPanel" Margin="0,4,0,0"
-                        Visibility="{Binding IsOptionsExpanded, Converter={StaticResource BoolToVis}}">
-                <CheckBox x:Name="FirstOptionCheckBox"
-                          Content="{loc:Loc Key=MainPane_ListEveryFolder_CheckBox}" IsChecked="{Binding AllResults}" />
-                <CheckBox Content="{loc:Loc Key=MainPane_KeepCopy_CheckBox}" Margin="0,3,0,0" IsChecked="{Binding KeepCopy}" />
-                <CheckBox Content="{loc:Loc Key=MainPane_RemoveAttachments_CheckBox}" Margin="0,3,0,0" IsChecked="{Binding RemoveAttachments}" />
-                <CheckBox Content="{loc:Loc Key=MainPane_WidenConversation_CheckBox}" Margin="0,3,0,0" IsChecked="{Binding WidenConversation}" />
-                <CheckBox Content="{loc:Loc Key=MainPane_StripBanner_CheckBox}" Margin="0,3,0,0"
-                          IsChecked="{Binding StripBanner}"
-                          Visibility="{Binding CanStripBanner, Converter={StaticResource BoolToVis}}" />
-                <CheckBox Content="{loc:Loc Key=MainPane_MarkAsRead_CheckBox}" Margin="0,3,0,0"
-                          IsChecked="{Binding MarkAsRead}" />
-            </StackPanel>
+            <!-- Options and Journal toggles: a chevron that turns when open. -->
+            <Grid Grid.Row="2" Grid.Column="0" Margin="0,4,0,0">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+                <ToggleButton x:Name="OptionsToggle" Grid.Column="0" HorizontalAlignment="Left"
+                              AutomationProperties.Name="{loc:Loc Key=Pane_Options_Label}"
+                              IsChecked="{Binding IsOptionsExpanded, Mode=TwoWay}"
+                              Click="Toggle_Click">
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock FontFamily="Segoe MDL2 Assets" FontSize="10" VerticalAlignment="Center"
+                                   Margin="0,0,5,0"
+                                   Foreground="{Binding Foreground, RelativeSource={RelativeSource AncestorType=ToggleButton}}">
+                            <TextBlock.Style>
+                                <Style TargetType="TextBlock">
+                                    <Setter Property="Text" Value="&#xE76C;" />
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding IsChecked, RelativeSource={RelativeSource AncestorType=ToggleButton}}" Value="True">
+                                            <Setter Property="Text" Value="&#xE70D;" />
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </TextBlock.Style>
+                        </TextBlock>
+                        <TextBlock Text="{loc:Loc Key=Pane_Options_Label}"
+                                   Foreground="{Binding Foreground, RelativeSource={RelativeSource AncestorType=ToggleButton}}" />
+                    </StackPanel>
+                </ToggleButton>
+                <ToggleButton x:Name="JournalToggle" Grid.Column="1" HorizontalAlignment="Right"
+                              AutomationProperties.Name="{loc:Loc Key=Pane_Journal_Label}"
+                              IsChecked="{Binding IsStatusLogExpanded, Mode=TwoWay}"
+                              Visibility="{Binding HasStatusEntries, Converter={StaticResource BoolToVis}}"
+                              Click="Toggle_Click">
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock FontFamily="Segoe MDL2 Assets" FontSize="10" VerticalAlignment="Center"
+                                   Margin="0,0,5,0"
+                                   Foreground="{Binding Foreground, RelativeSource={RelativeSource AncestorType=ToggleButton}}">
+                            <TextBlock.Style>
+                                <Style TargetType="TextBlock">
+                                    <Setter Property="Text" Value="&#xE76C;" />
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding IsChecked, RelativeSource={RelativeSource AncestorType=ToggleButton}}" Value="True">
+                                            <Setter Property="Text" Value="&#xE70D;" />
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </TextBlock.Style>
+                        </TextBlock>
+                        <TextBlock Text="{loc:Loc Key=Pane_Journal_Label}"
+                                   Foreground="{Binding Foreground, RelativeSource={RelativeSource AncestorType=ToggleButton}}" />
+                    </StackPanel>
+                </ToggleButton>
+            </Grid>
 
-            <StackPanel Grid.Row="6" Orientation="Horizontal" Margin="0,8,0,0"
-                        Visibility="{Binding IsHorizontalLayout, Converter={StaticResource InverseBoolToVis}}">
-                <Button Style="{DynamicResource AccentButton}"
-                        Content="{Binding ClassifyButtonText}" Click="Classify_Click" />
-                <Button Padding="12,4" Margin="6,0,0,0" Content="{loc:Loc Key=MainPane_Undo_Button}"
-                        IsEnabled="{Binding CanUndo}" Click="Undo_Click"
-                        ToolTip="{loc:Loc Key=MainPane_Undo_ToolTip}" />
-            </StackPanel>
+            <!-- Side panel: the Options checkboxes and the rolling journal (newest first).
+                 Vertical mode shows it under the toggles; horizontal mode gives it its own
+                 column (visible only while Options or Journal is open). Options open by the
+                 toggle or by Tab from the query box. -->
+            <ScrollViewer x:Name="SidePanel"
+                          VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+                <ScrollViewer.Style>
+                    <Style TargetType="ScrollViewer">
+                        <Setter Property="Grid.Row" Value="3" />
+                        <Setter Property="Grid.Column" Value="0" />
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding IsHorizontalLayout}" Value="True">
+                                <Setter Property="Grid.Column" Value="1" />
+                                <Setter Property="Grid.Row" Value="0" />
+                                <Setter Property="Grid.RowSpan" Value="6" />
+                                <Setter Property="MaxWidth" Value="240" />
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </ScrollViewer.Style>
+                <StackPanel>
+                    <StackPanel x:Name="OptionsPanel"
+                                Visibility="{Binding IsOptionsExpanded, Converter={StaticResource BoolToVis}}">
+                        <StackPanel.Style>
+                            <Style TargetType="StackPanel">
+                                <Setter Property="Margin" Value="0,4,0,0" />
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding IsHorizontalLayout}" Value="True">
+                                        <Setter Property="Margin" Value="8,0,8,6" />
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </StackPanel.Style>
+                        <CheckBox x:Name="FirstOptionCheckBox" IsChecked="{Binding AllResults}">
+                            <TextBlock TextWrapping="Wrap" Text="{loc:Loc Key=MainPane_ListEveryFolder_CheckBox}" />
+                        </CheckBox>
+                        <CheckBox Margin="0,3,0,0" IsChecked="{Binding KeepCopy}">
+                            <TextBlock TextWrapping="Wrap" Text="{loc:Loc Key=MainPane_KeepCopy_CheckBox}" />
+                        </CheckBox>
+                        <CheckBox Margin="0,3,0,0" IsChecked="{Binding RemoveAttachments}">
+                            <TextBlock TextWrapping="Wrap" Text="{loc:Loc Key=MainPane_RemoveAttachments_CheckBox}" />
+                        </CheckBox>
+                        <CheckBox Margin="0,3,0,0" IsChecked="{Binding WidenConversation}">
+                            <TextBlock TextWrapping="Wrap" Text="{loc:Loc Key=MainPane_WidenConversation_CheckBox}" />
+                        </CheckBox>
+                        <CheckBox Margin="0,3,0,0" IsChecked="{Binding StripBanner}"
+                                  Visibility="{Binding CanStripBanner, Converter={StaticResource BoolToVis}}">
+                            <TextBlock TextWrapping="Wrap" Text="{loc:Loc Key=MainPane_StripBanner_CheckBox}" />
+                        </CheckBox>
+                        <CheckBox Margin="0,3,0,0" IsChecked="{Binding MarkAsRead}">
+                            <TextBlock TextWrapping="Wrap" Text="{loc:Loc Key=MainPane_MarkAsRead_CheckBox}" />
+                        </CheckBox>
+                    </StackPanel>
+                    <ItemsControl ItemsSource="{Binding StatusLog}"
+                                  Visibility="{Binding IsStatusLogExpanded, Converter={StaticResource BoolToVis}}">
+                        <ItemsControl.Style>
+                            <Style TargetType="ItemsControl">
+                                <Setter Property="Margin" Value="0,2,0,0" />
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding IsHorizontalLayout}" Value="True">
+                                        <Setter Property="Margin" Value="8,0,8,0" />
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </ItemsControl.Style>
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <TextBlock Style="{DynamicResource MutedText}" TextWrapping="Wrap" FontSize="11"
+                                           Text="{Binding}" />
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </StackPanel>
+            </ScrollViewer>
 
-            <!-- Row 7: live search feedback (single self-superseding line) above a
-                 collapsible rolling journal of action outcomes, newest first,
-                 collapsed by default and toggled like the Options zone (v2.5.0.0 A1). -->
-            <StackPanel Grid.Row="7" Margin="0,6,0,0">
-                <TextBlock Style="{DynamicResource MutedText}" TextWrapping="Wrap"
+            <!-- Action row (a single instance for both modes) and live search feedback. -->
+            <StackPanel Grid.Row="4" Grid.Column="0" Margin="0,8,0,0">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <Button Grid.Column="0" Style="{DynamicResource AccentButton}" Padding="10,5"
+                            HorizontalAlignment="Stretch" Click="Classify_Click">
+                        <TextBlock Text="{Binding ClassifyButtonText}" TextWrapping="Wrap" TextAlignment="Center"
+                                   Foreground="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}" />
+                    </Button>
+                    <Button Grid.Column="1" Width="28" Height="28" Padding="0" Margin="6,0,0,0"
+                            VerticalAlignment="Center"
+                            FontFamily="Segoe MDL2 Assets" FontSize="16" Content="&#xE7A7;"
+                            AutomationProperties.Name="{loc:Loc Key=MainPane_Undo_Button}"
+                            IsEnabled="{Binding CanUndo}" Click="Undo_Click"
+                            ToolTip="{loc:Loc Key=MainPane_Undo_ToolTip}" />
+                </Grid>
+                <!-- Single self-superseding line; announced politely. -->
+                <TextBlock x:Name="FeedbackText" Margin="0,6,0,0" TextWrapping="Wrap" FontSize="11"
+                           Foreground="{DynamicResource Theme.MutedForeground}"
+                           AutomationProperties.LiveSetting="Polite"
                            Text="{Binding SearchFeedback}" />
-                <Button x:Name="JournalToggle" Content="{loc:Loc Key=Pane_Journal}"
-                        HorizontalAlignment="Left" Padding="4,2" Margin="0,4,0,0" FontSize="11"
-                        Click="Journal_Click"
-                        Visibility="{Binding CanShowJournalInVerticalMode, Converter={StaticResource BoolToVis}}" />
-                <ItemsControl Margin="0,2,0,0" ItemsSource="{Binding StatusLog}"
-                              Visibility="{Binding IsStatusLogExpanded, Converter={StaticResource BoolToVis}}">
-                    <ItemsControl.ItemTemplate>
-                        <DataTemplate>
-                            <TextBlock Style="{DynamicResource MutedText}" TextWrapping="Wrap"
-                                       Text="{Binding}" />
-                        </DataTemplate>
-                    </ItemsControl.ItemTemplate>
-                </ItemsControl>
             </StackPanel>
         </Grid>
 

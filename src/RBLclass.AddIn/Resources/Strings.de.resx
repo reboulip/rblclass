@@ -70,7 +70,7 @@
     <value>💾</value>
   </data>
   <data name="MainPane_SaveAs_ToolTip" xml:space="preserve">
-    <value>Die ausgewählte(n) E-Mail(s) als .msg-Dateien in einem Ordner speichern</value>
+    <value>Die ausgewählten E-Mails als Dateien (.msg oder PDF, laut Einstellungen) in einem Ordner speichern</value>
   </data>
   <data name="MainPane_ManageAttachments_Button" xml:space="preserve">
     <value>📎</value>
@@ -157,7 +157,7 @@
     <value>Rückgängig</value>
   </data>
   <data name="MainPane_Undo_ToolTip" xml:space="preserve">
-    <value>Letzte Ablage rückgängig machen: verschobene E-Mails zurücklegen und abgelegte Kopien entfernen</value>
+    <value>Letzte Ablage rückgängig machen: verschobene E-Mails zurücklegen und abgelegte Kopien entfernen (Strg+Z)</value>
   </data>
   <data name="MainPane_Busy_Filing" xml:space="preserve">
     <value>Wird abgelegt…</value>
@@ -325,7 +325,7 @@
     <value>E-Mail(s) als Dateien speichern</value>
   </data>
   <data name="SaveAsPicker_Intro" xml:space="preserve">
-    <value>Wählen Sie einen Ordner aus, in dem die ausgewählte(n) E-Mail(s) als .msg-Dateien gespeichert werden sollen.</value>
+    <value>Wählen Sie einen Ordner, in dem die ausgewählten E-Mails gespeichert werden.</value>
   </data>
   <data name="SaveAsPicker_Save_Button" xml:space="preserve">
     <value>Speichern</value>
@@ -385,6 +385,9 @@
   </data>
   <data name="Settings_MaxResults_Label" xml:space="preserve">
     <value>Maximale Anzahl angezeigter Ergebnisse:</value>
+  </data>
+  <data name="Settings_MaxSearchDepth_Label" xml:space="preserve">
+    <value>Maximale Suchtiefe (0 = unbegrenzt):</value>
   </data>
   <data name="Settings_MinSearchLength_Label" xml:space="preserve">
     <value>Suche starten nach mindestens (Zeichen):</value>
@@ -1013,19 +1016,13 @@ Führen Sie Ihre Suche erneut aus, um neu erstellte oder umbenannte Ordner zu se
     <value>RBLclass - {0}</value>
   </data>
   <data name="IndexStatus_NotFound" xml:space="preserve">
-    <value>Ordnerindex noch nicht erstellt — klicken Sie auf Ordner aktualisieren, um ihn zu erstellen</value>
+    <value>Ordnerindex noch nicht erstellt — öffnen Sie das Menü ⋯ und wählen Sie Ordner aktualisieren, um ihn zu erstellen</value>
   </data>
   <data name="IndexStatus_Indexing" xml:space="preserve">
     <value>Ordnerindex wird erstellt…</value>
   </data>
   <data name="IndexStatus_Ready" xml:space="preserve">
     <value>Ordnerindex bereit</value>
-  </data>
-  <data name="Pane_Journal" xml:space="preserve">
-    <value>▶ Journal</value>
-  </data>
-  <data name="Pane_Options" xml:space="preserve">
-    <value>▶ Optionen</value>
   </data>
   <data name="About_Title" xml:space="preserve">
     <value>RBLclass - Info</value>
@@ -1089,5 +1086,128 @@ Führen Sie Ihre Suche erneut aus, um neu erstellte oder umbenannte Ordner zu se
   </data>
   <data name="Settings_ReencryptCertificate_Missing" xml:space="preserve">
     <value>Zertifikat nicht verfügbar ({0})</value>
+  </data>
+  <data name="MainPane_More_Name" xml:space="preserve">
+    <value>Weitere Aktionen</value>
+  </data>
+  <data name="MainPane_More_ToolTip" xml:space="preserve">
+    <value>Mehr: Ordner aktualisieren, Einstellungen, Online-Dokumentation</value>
+  </data>
+  <data name="MainPane_UpdateFolders_MenuItem" xml:space="preserve">
+    <value>Ordner aktualisieren</value>
+  </data>
+  <data name="MainPane_Settings_MenuItem" xml:space="preserve">
+    <value>Einstellungen…</value>
+  </data>
+  <data name="MainPane_Help_MenuItem" xml:space="preserve">
+    <value>Online-Dokumentation</value>
+  </data>
+  <data name="MainPane_SaveAs_Name" xml:space="preserve">
+    <value>Als Datei speichern</value>
+  </data>
+  <data name="MainPane_ManageAttachments_Name" xml:space="preserve">
+    <value>Anlagen verwalten</value>
+  </data>
+  <data name="MainPane_OpenFolder_Name" xml:space="preserve">
+    <value>Ordner öffnen</value>
+  </data>
+  <data name="MainPane_ExpandPath_Name" xml:space="preserve">
+    <value>Pfadanzeige ändern</value>
+  </data>
+  <data name="MainPane_ClearAll_Name" xml:space="preserve">
+    <value>Alle Ziele entfernen</value>
+  </data>
+  <data name="MainPane_QueryBox_Name" xml:space="preserve">
+    <value>Ordner suchen</value>
+  </data>
+  <data name="MainPane_QueryBox_Placeholder" xml:space="preserve">
+    <value>Ordner suchen…</value>
+  </data>
+  <data name="MainPane_IndexStatus_Name" xml:space="preserve">
+    <value>Status des Ordnerindex</value>
+  </data>
+  <data name="Pane_Options_Label" xml:space="preserve">
+    <value>Optionen</value>
+  </data>
+  <data name="Pane_Journal_Label" xml:space="preserve">
+    <value>Journal</value>
+  </data>
+  <data name="Settings_SaveAsFormat_Label" xml:space="preserve">
+    <value>Speicherformat:</value>
+  </data>
+  <data name="Settings_SaveAsFormat_Msg" xml:space="preserve">
+    <value>Outlook-Nachricht (.msg)</value>
+  </data>
+  <data name="Settings_SaveAsFormat_Pdf" xml:space="preserve">
+    <value>PDF (.pdf)</value>
+  </data>
+  <data name="Settings_SaveAsFormat_Ask" xml:space="preserve">
+    <value>Jedes Mal fragen</value>
+  </data>
+  <data name="SaveAsPicker_Format_Label" xml:space="preserve">
+    <value>Format:</value>
+  </data>
+  <data name="MainPane_Busy_SavingPdf_One" xml:space="preserve">
+    <value>Speichern als PDF… {0} von {1}</value>
+  </data>
+  <data name="MainPane_Busy_SavingPdf_Other" xml:space="preserve">
+    <value>Speichern als PDF… {0} von {1}</value>
+  </data>
+  <data name="Status_SaveAs_NeedsWord" xml:space="preserve">
+    <value>Für den PDF-Export ist Microsoft Word erforderlich</value>
+  </data>
+  <data name="Status_SaveAs_EncryptedSkipped_One" xml:space="preserve">
+    <value>{0} verschlüsselte E-Mail übersprungen.</value>
+  </data>
+  <data name="Status_SaveAs_EncryptedSkipped_Other" xml:space="preserve">
+    <value>{0} verschlüsselte E-Mails übersprungen.</value>
+  </data>
+  <data name="EncryptedPdf_Title" xml:space="preserve">
+    <value>Verschlüsselte E-Mails</value>
+  </data>
+  <data name="EncryptedPdf_Body_One" xml:space="preserve">
+    <value>{0} der ausgewählten E-Mails ist verschlüsselt. Das PDF enthält sie unverschlüsselt.</value>
+  </data>
+  <data name="EncryptedPdf_Body_Other" xml:space="preserve">
+    <value>{0} der ausgewählten E-Mails sind verschlüsselt. Das PDF enthält sie unverschlüsselt.</value>
+  </data>
+  <data name="EncryptedPdf_Continue" xml:space="preserve">
+    <value>Fortfahren</value>
+  </data>
+  <data name="EncryptedPdf_Skip" xml:space="preserve">
+    <value>Verschlüsselte E-Mails überspringen</value>
+  </data>
+  <data name="PhishingLink_Title" xml:space="preserve">
+    <value>Möglicher Phishing-Versuch</value>
+  </data>
+  <data name="PhishingLink_Sender" xml:space="preserve">
+    <value>Absender: {0} &lt;{1}></value>
+  </data>
+  <data name="PhishingLink_OpenAnyway" xml:space="preserve">
+    <value>Trotzdem öffnen</value>
+  </data>
+  <data name="PhishingLink_Cancel" xml:space="preserve">
+    <value>Abbrechen</value>
+  </data>
+  <data name="PhishingAttachment_Text" xml:space="preserve">
+    <value>Dieser Anhang stammt aus einer externen E-Mail. Es könnte sich um einen Phishing-Versuch handeln.</value>
+  </data>
+  <data name="PhishingAttachment_FileName" xml:space="preserve">
+    <value>Anhang: {0}</value>
+  </data>
+  <data name="Settings_PhishingWarnAttachments" xml:space="preserve">
+    <value>Vor dem Öffnen eines Anhangs aus einer externen E-Mail warnen</value>
+  </data>
+  <data name="PhishingLink_Text" xml:space="preserve">
+    <value>Dieser Link stammt aus einer externen E-Mail. Es könnte sich um einen Phishing-Versuch handeln.</value>
+  </data>
+  <data name="PhishingLink_Url" xml:space="preserve">
+    <value>Linkziel: {0}</value>
+  </data>
+  <data name="PhishingLink_DisplayedText" xml:space="preserve">
+    <value>In der E-Mail angezeigt als: {0}</value>
+  </data>
+  <data name="Settings_PhishingWarnLinks" xml:space="preserve">
+    <value>Vor dem Öffnen eines Links aus einer externen E-Mail warnen</value>
   </data>
 </root>

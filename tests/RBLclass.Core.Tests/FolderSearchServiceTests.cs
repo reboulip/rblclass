@@ -286,5 +286,114 @@ namespace RBLclass.Core.Tests
             outcome.Results.Should().ContainSingle()
                    .Which.Folder.EntryId.Should().Be("e9");
         }
+
+        // ---- MaxDepth (v2.13.0.0 B1) -------------------------------------
+
+        // A store root node (null parent, path == name), a top-level folder, its
+        // child and grandchild, mirroring the adapter's output.
+        private static readonly FolderNode[] DepthTree =
+        {
+            new FolderNode("s1", "root", null, "Archive", "Archive", isLeaf: false),
+            new FolderNode("s1", "a", null, "Alpha", "Archive / Alpha", isLeaf: false),
+            new FolderNode("s1", "b", "a", "Beta", "Archive / Alpha / Beta", isLeaf: false),
+            new FolderNode("s1", "c", "b", "Gamma", "Archive / Alpha / Beta / Gamma", isLeaf: true),
+        };
+
+        private static string[] Paths(FolderSearchOutcome o) =>
+            o.Results.Select(r => r.Folder.EntryId).ToArray();
+
+        [Fact]
+        public void MaxDepth_zero_means_unlimited()
+        {
+            var outcome = SearchOver(DepthTree).Search("archive",
+                new FolderSearchOptions(allResults: true, maxDepth: 0));
+
+            Paths(outcome).Should().BeEquivalentTo("root", "a", "b", "c");
+        }
+
+        [Fact]
+        public void Negative_MaxDepth_clamps_to_unlimited()
+        {
+            new FolderSearchOptions(maxDepth: -3).MaxDepth.Should().Be(0);
+        }
+
+        [Fact]
+        public void Store_root_is_level_zero_and_its_children_level_one()
+        {
+            var outcome = SearchOver(DepthTree).Search("archive",
+                new FolderSearchOptions(allResults: true, maxDepth: 1));
+
+            Paths(outcome).Should().BeEquivalentTo("root", "a");
+        }
+
+        [Fact]
+        public void A_match_deeper_than_the_limit_is_excluded()
+        {
+            SearchOver(DepthTree).Search("gamma", new FolderSearchOptions(maxDepth: 2))
+                .Results.Should().BeEmpty();
+            Paths(SearchOver(DepthTree).Search("gamma", new FolderSearchOptions(maxDepth: 3)))
+                .Should().Equal("c");
+        }
+
+        [Fact]
+        public void A_matching_ancestor_within_the_limit_still_collapses_its_deep_subtree()
+        {
+            var outcome = SearchOver(DepthTree).Search("alpha", new FolderSearchOptions(maxDepth: 1));
+
+            var only = outcome.Results.Should().ContainSingle().Which;
+            only.Folder.EntryId.Should().Be("a");
+            only.IsCollapsed.Should().BeTrue();
+        }
+
+        [Fact]
+        public void With_all_results_a_level_N_folder_with_children_carries_the_collapse_suffix()
+        {
+            var outcome = SearchOver(DepthTree).Search("alpha",
+                new FolderSearchOptions(allResults: true, maxDepth: 2));
+
+            outcome.Results.Select(r => r.Folder.EntryId).Should().Equal("a", "b");
+            outcome.Results.Single(r => r.Folder.EntryId == "a").IsCollapsed.Should().BeFalse();
+            outcome.Results.Single(r => r.Folder.EntryId == "b").IsCollapsed.Should().BeTrue();
+        }
+
+        [Fact]
+        public void A_folder_name_containing_the_separator_gets_the_right_depth()
+        {
+            var nodes = new[]
+            {
+                new FolderNode("s1", "x", null, "A / B", "Archive / A / B", isLeaf: false),
+                new FolderNode("s1", "y", "x", "Child", "Archive / A / B / Child", isLeaf: true),
+            };
+
+            Paths(SearchOver(nodes).Search("child", new FolderSearchOptions(maxDepth: 1)))
+                .Should().BeEmpty();
+            Paths(SearchOver(nodes).Search("child", new FolderSearchOptions(maxDepth: 2)))
+                .Should().Equal("y");
+        }
+
+        [Fact]
+        public void The_cap_counts_results_after_depth_filtering()
+        {
+            var outcome = SearchOver(DepthTree).Search("archive",
+                new FolderSearchOptions(allResults: true, maxResults: 2, maxDepth: 2));
+
+            outcome.TotalMatchCount.Should().Be(3); // root, a, b: c is too deep
+            outcome.LimitExceeded.Should().BeTrue();
+            outcome.Results.Should().HaveCount(2);
+        }
+
+        [Fact]
+        public void A_parent_cycle_does_not_hang_the_depth_computation()
+        {
+            var nodes = new[]
+            {
+                new FolderNode("s1", "p", "q", "P", "Archive / P", isLeaf: false),
+                new FolderNode("s1", "q", "p", "Q", "Archive / Q", isLeaf: false),
+            };
+
+            var outcome = SearchOver(nodes).Search("archive", new FolderSearchOptions(allResults: true, maxDepth: 5));
+
+            outcome.Results.Should().HaveCount(2);
+        }
     }
 }

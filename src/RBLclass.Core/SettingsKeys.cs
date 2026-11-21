@@ -21,6 +21,9 @@
         /// <summary>Cap on displayed folder-search results (legacy settingsMaxResults).</summary>
         public const string MaxResults = "MaxResults";
 
+        /// <summary>Maximum folder-search depth; 0 = unlimited (v2.13.0.0 B1).</summary>
+        public const string MaxSearchDepth = "MaxSearchDepth";
+
         /// <summary>Minimum (trimmed) query length before folder search runs (v2.2).</summary>
         public const string MinSearchLength = "MinSearchLength";
 
@@ -61,6 +64,12 @@
 
         /// <summary>Warn before sending to recipients outside the org (legacy settingsSendExt).</summary>
         public const string SendExternalWarning = "SendExternalWarning";
+
+        /// <summary>Warn before an attachment from an external-banner mail opens (v2.13.0.0 D2, default on).</summary>
+        public const string PhishingWarnAttachments = "PhishingWarnAttachments";
+
+        /// <summary>Warn before a link from an external-banner mail opens (v2.13.0.0 D3, default on).</summary>
+        public const string PhishingWarnLinks = "PhishingWarnLinks";
 
         /// <summary>
         /// Semicolon-separated domains treated as internal in addition to
@@ -152,6 +161,9 @@
         /// InfoBar deferred, falls back to Body).
         /// </summary>
         public const string AttachmentLabelLocation = "AttachmentLabelLocation";
+
+        /// <summary>Format written by the Save-as button: Msg (default), Pdf or Ask (v2.13.0.0 C1).</summary>
+        public const string SaveAsFormat = "SaveAsFormat";
 
         /// <summary>Whether the Auto-class button easter egg (pig icon) is active (v2.6.0.0).</summary>
         public const string EasterEggActive = "EasterEggActive";

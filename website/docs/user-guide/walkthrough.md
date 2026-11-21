@@ -14,10 +14,17 @@ splitter; the position is remembered across restarts.
 
 !!! note "Pane size after live-redocking"
     If you drag the pane to a new edge during a session, it keeps whatever size
-    Outlook assigns it for that session. The standard size (360 px wide for
-    Left/Right docking, 300 px tall for Top/Bottom docking) is restored the
-    next time Outlook starts. You can resize the pane freely with the splitter
-    at any time.
+    Outlook assigns it for that session. The standard size is restored the
+    next time Outlook starts: at least 360 px wide for Left/Right docking and
+    at least 300 px tall for Top/Bottom docking, enlarged on high-DPI displays
+    so the content always fits. It is applied only when the pane is created, so
+    you can resize the pane freely with the splitter at any time.
+
+!!! note "Three-column layout"
+    When the pane is docked Top or Bottom and is at least 560 DIP wide and
+    wider than it is tall, it switches to three columns: the command bar, search
+    box and action buttons on the left, the **Options** and **Journal** panel in
+    the middle, and the destination chips above the results on the right.
 
 ## The ribbon tab
 
@@ -28,7 +35,7 @@ The **RBLclass** ribbon tab has two buttons:
   documentation** link that opens this site in your default browser.
 
 **Settings** and **Update folders** have moved into the pane itself (see
-[the icon-button row](#pane-icon-buttons) below).
+[the command bar](#pane-icon-buttons) below).
 
 !!! tip "Keyboard access to the pane"
     Press ++alt++, then ++r++ (the RBLclass tab), then ++r++ again (the pane
@@ -36,17 +43,23 @@ The **RBLclass** ribbon tab has two buttons:
 
 ## Pane icon buttons
 
-The top row of the task pane contains a set of icon buttons:
+The top row of the task pane is a command bar:
 
-- **?** (Online documentation) — just left of the Settings gear; opens this
-  documentation site in your default browser.
-- **⚙️** (Settings) — opens the Settings dialog (see the
-  [Settings reference](#settings-reference)).
-- **🔄** (Update folders) — re-scans your mailboxes so folders you created or
-  renamed directly in Outlook appear in search. The index-status dot turns yellow
-  while the scan runs and green when it finishes.
-- **Auto-class**, **Save As**, and **Manage attachments** icon buttons (described
-  under [Classify](#classify) and [Attachment management](#attachment-management)).
+- **Auto-class**, **Save as file**, and **Manage attachments** buttons (described
+  under [Classify](#classify), [Save as file](#save-as-file) and
+  [Attachment management](#attachment-management)).
+- **⋯** (More) — a menu holding:
+    - **Update folders** — re-scans your mailboxes so folders you created or
+      renamed directly in Outlook appear in search.
+    - **Settings…** — opens the Settings dialog (see the
+      [Settings reference](#settings-reference)).
+    - **Online documentation** — opens this documentation site in your default
+      browser.
+    - The index status line.
+
+The search box shows a placeholder, with the index-status dot inside it: yellow
+while a scan runs, green when it finishes. If the index has not been built yet,
+the pane points you to **⋯ → Update folders**.
 
 ## Features
 
@@ -60,7 +73,7 @@ short pause. For each result row:
 - ++enter++ files the selected mail into the highlighted folder.
 - ++ctrl+enter++ *opens* the highlighted folder in Outlook instead of filing.
 - **Double-click** a row to file into that folder immediately.
-- The **👁** button opens that folder in Outlook.
+- The **eye** icon opens that folder in Outlook.
 - Right-click → **Add subfolder…** creates a sub-folder under it (with a targeted
   re-index so it's searchable straight away).
 - Right-click → **Rename folder…** opens a small dialog pre-filled with the
@@ -77,8 +90,11 @@ short pause. For each result row:
   is permanently deleted. This item is grayed out on a store's root folder, the
   same restriction as **Rename folder**. On failure, a status message is shown in
   the pane instead of a crash.
-- The **⤢** button cycles how that row shows its path (see *Search result path
-  display* in Settings).
+- The **path-display** icon cycles how that row shows its path (see *Search
+  result path display* in Settings).
+
+Checked destinations appear as chips above the results, with a clear-all icon to
+uncheck them at once.
 
 Tapping ++ctrl++ on its own (press and release, without another key) toggles
 *"List every matching folder"*.
@@ -89,7 +105,8 @@ Select one or more mails in Outlook, check the destination folder(s) in the
 pane, then click **Classify** (or press ++enter++ / double-click for a single
 folder).
 
-The **Options** zone offers five per-action overrides, seeded from your settings
+**Options** and **Journal** are collapsible panels toggled with a chevron. The
+**Options** zone offers five per-action overrides, seeded from your settings
 and **reset after each classify**:
 
 - Keep a copy
@@ -103,13 +120,32 @@ classified, without picking a folder by hand.
 
 ### Undo
 
-The **Undo** button — or ++ctrl+z++ anywhere in the pane — reverses the last
+The **Undo** icon next to the Classify button — or ++ctrl+z++ anywhere in the pane — reverses the last
 classify: moved mails go back to their source folder (and are re-selected there
 so you can re-file them elsewhere) and filed copies are removed.
 
 !!! warning "Undo has limits"
     Only the **last** classify can be undone, and **removed attachments cannot be
     restored**.
+
+### Save as file
+
+The **Save as file** button writes the selected mail(s) to a folder you pick, as
+Outlook messages (**.msg**) or as **PDF**, depending on the *Save as format*
+setting (see the [Settings reference](#settings-reference)). Only mails are saved.
+
+PDF export converts each mail with **Microsoft Word**, which must be installed;
+Word runs in the background and is not shown. The busy overlay reads *"Saving as
+PDF… n of N"*. Each PDF is named after the mail's subject (made file-name safe),
+with " (1)", " (2)"… added when the name already exists in the folder. If Word is
+not available, nothing is written and the status line reads *"PDF export needs
+Microsoft Word"*.
+
+!!! warning "Encrypted mail in a PDF"
+    If any selected mail is encrypted, one confirmation covers the whole batch: the
+    PDF would contain those mails **unencrypted**. Choose **Continue** to include
+    them, or **Skip encrypted mails** (the default, also ++esc++) to save only the
+    others. Skipped mails are listed in the pane journal, separately from failures.
 
 ### Attachment management
 
@@ -235,12 +271,40 @@ pinned as the next thing to file.
 Many organisations add a *"this email came from outside"* banner to incoming
 mail. Teach RBLclass that banner once (**Settings → External-sender banner →
 Learn from selected mail**), and it can strip it automatically from your replies
-and forwards, and from filed copies.
+and forwards, and from filed copies. A received mail is never rewritten: the
+strip only touches the reply or forward you are composing.
+
+### Phishing warnings
+
+Once a banner is learned, RBLclass also uses it to recognise external mail and
+asks for confirmation before something in it is opened:
+
+- **Link** — clicking a link, pressing ++enter++ on a selected link, or choosing
+  **Open hyperlink**. In a reply, ++ctrl+click++ is covered; a plain click does
+  not follow links, so it does not warn. `mailto:` links and `#` anchors never
+  warn.
+- **Attachment** — opening or previewing one. After **Open anyway**, the same
+  mail does not ask again for 4 seconds.
+
+A **Possible phishing** dialog shows the sender's display name and real SMTP
+address, plus the link destination (and, when the mail displays something
+different, a *"Shown in the email as: …"* line) or the attachment's file name.
+**Open anyway** continues (Outlook's own security prompts still apply);
+**Cancel**, the default and ++esc++, opens nothing. Without a learned banner it
+never warns, and if the check itself fails the item opens.
+
+!!! note "After Cancel in the reading pane"
+    Outlook leaves the reading pane on *"Loading…"* with its own *"Back to
+    message"* link; click it to return to the mail.
+
+!!! warning "Touch taps are not covered"
+    The link warning cannot block a link opened by a touch tap. This is a known,
+    accepted gap; mouse and keyboard are covered.
 
 ## Settings reference
 
-Open **Settings** by clicking the **⚙️** button in the top icon row of the
-RBLclass pane. Every change applies and persists immediately — there is no
+Open **Settings** from the **⋯** menu in the command bar of the RBLclass pane
+(**Settings…**). Every change applies and persists immediately — there is no
 "Apply" button, and closing is always safe.
 
 ### Folder search
@@ -250,8 +314,9 @@ RBLclass pane. Every change applies and persists immediately — there is no
 | List every matching folder | Off | When off, duplicate branches of the tree are collapsed; when on, every matching folder is listed separately. |
 | Match only the start of words | Off | Stricter matching: "proj" matches "Projects" but "security" does *not* match "Cybersecurity". The default (off) is the broader "contains" search. |
 | Open folders in a new Outlook window | Off | When on, "open folder" opens a new Outlook window instead of navigating the current one. |
-| Search result path display | Single line | How each result row shows its folder path: a single left-trimmed line, the full path wrapped to the pane width, or the full path with one sub-folder per line. The per-row ⤢ button cycles all three for that row. |
-| Maximum results to display | 50 | Cap on the number of result rows. |
+| Search result path display | Single line | How each result row shows its folder path: a single left-trimmed line, the full path wrapped to the pane width, or the full path with one sub-folder per line. The per-row path-display icon cycles all three for that row. |
+| Maximum results to display | 50 | Cap on the number of result rows. Applied after the depth filter below. |
+| Maximum search depth (0 = unlimited) | 0 | Limits how deep in the folder tree a folder can match. The store root is level 0 and its direct sub-folders are level 1. Folders deeper than N are not match candidates; they only appear inside a matching ancestor's collapsed `\| [...]` entry. With *List every matching folder* on, folders deeper than N are not listed, and a level-N folder that has sub-folders gets a ` \| [...]` suffix. 0 means unlimited; negative values become 0; the maximum is 100. Favourite filesystem folders are not affected. |
 | Search after at least N characters | 2 | Avoids searching on a single letter. Range 1–10. |
 | Pause before searching (ms) | 200 | Search fires this many milliseconds after your last keystroke. Range 0–2000. |
 
@@ -263,6 +328,7 @@ RBLclass pane. Every change applies and persists immediately — there is no
 | Remove attachments from the filed copy | Off | Strips attachments from the copy that lands in the destination; the original is untouched. Sub-options: ask per attachment (default) or delete all silently; and whether to record a "former attachments" note in the body. |
 | Default folder for saved attachments (Settings → Attachments) | *Not configured* | **Pick folder…** / **Clear**. Pre-fills the save folder in the attachment window. If the folder cannot be reached (for example a disconnected network share), the field is simply left empty; the window still opens immediately. |
 | Offer the images of the message body for removal (Settings → Manage attachments) | Off | Also lists body (inline `cid:`) images in the attachment window so you can remove or save them; they default to Keep. Removing one rewrites the HTML body (placeholder text) and cannot be undone. Never applied to encrypted mail. |
+| Save as format (Settings → Attachments → Manage attachments) | Outlook message (.msg) | What the pane's **Save as file** button writes: **Outlook message (.msg)**, **PDF (.pdf)** or **Ask each time**. With *Ask each time*, the folder picker shows a format choice with .msg preselected; that choice applies to that action only and is not saved. PDF export needs Microsoft Word installed — see [Save as file](#save-as-file). |
 | Keep a safety copy in Deleted Items | Off | When the original is not kept, also places a copy in Deleted Items as a safety net. |
 | Include the whole conversation by default | Off | Pre-checks the pane's "Include the whole conversation" option. |
 | Classify meeting requests and responses | Off | Allows meeting items selected in Outlook to be classified alongside regular mails. |
@@ -276,9 +342,14 @@ RBLclass pane. Every change applies and persists immediately — there is no
 *Save diagnostic file* writes a self-contained HTML file to
 `%LocalAppData%\RBLclass\diagnostics\` — the mail body with the matched banner
 highlighted — useful for sending to your support contact when diagnosing why a
-banner is not stripped correctly. Then three toggles (all off by default, and
-only useful once a banner is learned): strip on reply/forward, strip on classify,
-and strip during Auto-class.
+banner is not stripped correctly. Then five toggles, only useful once a banner is
+learned:
+
+| Setting | Default | What it does |
+| --- | --- | --- |
+| Strip on reply/forward, on classify, during Auto-class | Off | Remove the banner in each case (see [External-sender banner strip](#external-sender-banner-strip)). |
+| Warn before opening a link from an external email | On | Confirmation before a link opens (see [Phishing warnings](#phishing-warnings)). |
+| Warn before opening an attachment from an external email | On | Confirmation before an attachment opens or previews. |
 
 ### Sending guards
 
@@ -347,7 +418,7 @@ override it to English, Français or Deutsch.
 | ++slash++ | Move focus to the search box from anywhere else in the pane (the `/` is not typed). Inside the search box it types `/` normally. Pane only — it does not work from Outlook's message list. |
 
 After a pane action or a dialog closed from the pane (classify, Auto-class,
-Undo, Save As, Manage attachments, Settings, Update folders and so on), keyboard
+Undo, Save as file, Manage attachments, Settings, Update folders and so on), keyboard
 focus returns to the search box with its text selected, so you can type
 straight away. It does not take focus while another Outlook window, such as a
 compose window, is in front. **Open folder** (the row button and
@@ -367,8 +438,8 @@ focus moves elsewhere.
 
 The folder index is built automatically in the background when Outlook starts. If
 you create or rename a folder directly in Outlook and it doesn't appear in
-search, click the **🔄** (Update folders) button in the top icon row of the
-RBLclass pane.
+search, open the **⋯** menu in the command bar of the RBLclass pane and choose
+**Update folders**.
 
 ## Suggesting improvements / reporting problems
 

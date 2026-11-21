@@ -24,6 +24,7 @@ administrator rights** and runs **inside the Outlook process**.
 | **User account ↔ add-in data** | All persisted state lives under `%LocalAppData%\RBLclass\` and is protected by the standard per-user NTFS ACL. Other non-admin users on the machine cannot read it; a local administrator can (accepted — the OS trust boundary). |
 | **Machine ↔ network** | By default the add-in makes **no** network calls. The single optional exception is the opt-in update check (below), which reaches out to a user-configured HTTPS URL only. |
 | **Decrypted mail ↔ add-in** | With the opt-in, experimental `ReencryptProtectedOnFile` setting (v2.12.0.0, off by default), the add-in reads mail content that Outlook and an endpoint product such as Stormshield have already decrypted in memory, and encrypts it again locally (see Protected mail). |
+| **Add-in ↔ Microsoft Word** | The optional *Save as file → PDF* export (`SaveAsFormat`) drives Word through late-bound automation, **out of process**, to convert mail to PDF. Word is optional at runtime (no Word interop reference, no new dependency); without it, nothing is written. Word runs on its own dedicated STA thread; Outlook OM calls stay on the UI thread. Real-target validation pending: Word automation under the corporate EDR on the 32-bit workstation. |
 | **Add-in ↔ registry** | COM registration and the Outlook add-in load entry are written under **HKCU only** (`Software\Classes\...` and `Software\Microsoft\Office\Outlook\Addins\`). No HKLM writes; no admin rights required. |
 
 ## Data handled
@@ -52,6 +53,43 @@ administrator rights** and runs **inside the Outlook process**.
   mail body content to disk. It is never triggered automatically; the
   `diagnostics\` directory is created lazily on first use; files accumulate until
   the user manually deletes them (no rolling retention, unlike the log files).
+- **External-attachment phishing warning (transient, on by default,
+  `PhishingWarnAttachments`):** the add-in hooks two Outlook item events
+  (`BeforeAttachmentWriteToTempFile`, `BeforeAttachmentPreview`) on the single
+  selected mail and on each opened mail window's item. The mail's HTML body is
+  read **only when the event fires**, to look for the learned banner, and is not
+  persisted. No network call and no mail modified. The only output is a
+  confirmation dialog (default and Esc: cancel); a failing check fails open (the
+  attachment opens). The log gets only counts and outcomes, never file names or
+  addresses. Real-target validation pending: a real banner/Stormshield mail, and
+  the hook inside an opened mail's own window.
+- **External-link phishing warning (transient, on by default,
+  `PhishingWarnLinks`):** two **thread-scoped** Windows hooks (`WH_MOUSE` for
+  clicks, `WH_GETMESSAGE` for Enter) are installed on Outlook's own UI thread with
+  hMod NULL: never global, nothing injected, no API patched. The built-in ribbon
+  command `HyperlinkOpen` is also repurposed (`<commands>` in the three Ribbon XML
+  files). The Word object model of the mail is reached late-bound through
+  `AccessibleObjectFromWindow` (OBJID_NATIVEOM); the only hand-declared COM
+  interface is `IOleWindow`. The mail's **rendered text** is read at click time to
+  look for the learned banner (so it works whatever the stored character set);
+  nothing is persisted, no network, no mail modified. The only output is a
+  confirmation dialog (default and Esc: cancel); "Open anyway" uses Word's own
+  hyperlink follow, so Outlook's security prompts still apply. Fails open on any
+  error. The log gets only `scheme://host`, never the full URL. `mailto:` and `#`
+  links are not checked. **Known gap (accepted, documented):** touch taps cannot
+  be blocked; plain clicks in a reply do not follow links and so do not warn
+  (Ctrl+click is covered). Related (D4): the reply banner strip never rewrites a
+  received mail opened in its own window. Real-target validation pending: the
+  corporate EDR's reaction to `SetWindowsHookEx` on the 32-bit workstation, and a
+  real banner/Stormshield mail.
+- **PDF export (user-initiated, plaintext):** *Save as file → PDF* writes each
+  mail as a temporary MHTML file under `%TEMP%\RBLclass\pdf\`, which Word converts
+  to a PDF in the folder the user picked. The temporary files hold plaintext mail
+  and are always deleted, in a `finally` block. A PDF of **encrypted** mail (shared
+  protected-mail check) is created only after one explicit confirmation for the
+  whole batch (default and Esc: skip encrypted mails; skipped mails are reported
+  in the pane journal, separately from failures). No mail content reaches the log.
+  Real-target validation pending: the confirmation for a real Stormshield mail.
 - **Re-encrypted filing (transient, opt-in, v2.12.0.0):** decrypted content
   (body, body images, attachments) is held in memory while a copy is rebuilt and
   encrypted; the plaintext MIME buffer is cleared after encryption. Certificates

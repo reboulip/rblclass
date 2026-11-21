@@ -28,6 +28,7 @@ namespace RBLclass.AddIn.ViewModels
         private readonly ILocalizationService _loc;
         private readonly IAppLog _log;
         private string _maxResultsText;
+        private string _maxSearchDepthText;
         private string _minSearchLengthText;
         private string _searchDebounceMsText;
         private string _autoClassHistoryDaysText;
@@ -55,6 +56,7 @@ namespace RBLclass.AddIn.ViewModels
             _loc = TaskPaneServices.Localization;
             _settings = Settings.Load(_store);
             _maxResultsText = _settings.MaxResults.ToString(CultureInfo.InvariantCulture);
+            _maxSearchDepthText = _settings.MaxSearchDepth.ToString(CultureInfo.InvariantCulture);
             _minSearchLengthText = _settings.MinSearchLength.ToString(CultureInfo.InvariantCulture);
             _searchDebounceMsText = _settings.SearchDebounceMs.ToString(CultureInfo.InvariantCulture);
             _autoClassHistoryDaysText = _settings.AutoClassHistoryDays.ToString(CultureInfo.InvariantCulture);
@@ -144,6 +146,35 @@ namespace RBLclass.AddIn.ViewModels
         {
             get => _settings.AttachmentLabelLocation == AttachmentLabelLocation.None;
             set { if (value) UpdateAttachmentLabelLocation(AttachmentLabelLocation.None); }
+        }
+
+        /// <summary>C1: format written by the pane's Save-as button.</summary>
+        public bool SaveAsFormatIsMsg
+        {
+            get => _settings.SaveAsFormat == SaveAsFormat.Msg;
+            set { if (value) UpdateSaveAsFormat(SaveAsFormat.Msg); }
+        }
+
+        public bool SaveAsFormatIsPdf
+        {
+            get => _settings.SaveAsFormat == SaveAsFormat.Pdf;
+            set { if (value) UpdateSaveAsFormat(SaveAsFormat.Pdf); }
+        }
+
+        public bool SaveAsFormatIsAsk
+        {
+            get => _settings.SaveAsFormat == SaveAsFormat.Ask;
+            set { if (value) UpdateSaveAsFormat(SaveAsFormat.Ask); }
+        }
+
+        private void UpdateSaveAsFormat(SaveAsFormat format)
+        {
+            if (_settings.SaveAsFormat == format) return;
+            _settings.SaveAsFormat = format;
+            _settings.Save(_store, _log);
+            OnPropertyChanged(nameof(SaveAsFormatIsMsg));
+            OnPropertyChanged(nameof(SaveAsFormatIsPdf));
+            OnPropertyChanged(nameof(SaveAsFormatIsAsk));
         }
 
         private void UpdateAttachmentLabelLocation(AttachmentLabelLocation location)
@@ -271,6 +302,27 @@ namespace RBLclass.AddIn.ViewModels
                 if (int.TryParse(value, NumberStyles.Integer, CultureInfo.InvariantCulture, out parsed) && parsed >= 1)
                 {
                     _settings.MaxResults = parsed;
+                    _settings.Save(_store, _log);
+                }
+            }
+        }
+
+        /// <summary>
+        /// Free-text editor for <see cref="Settings.MaxSearchDepth"/> (v2.13.0.0 B1):
+        /// 0 means unlimited. A negative value clamps to 0 and a huge one to the
+        /// maximum; text that does not parse is left alone while the user types.
+        /// </summary>
+        public string MaxSearchDepthText
+        {
+            get => _maxSearchDepthText;
+            set
+            {
+                if (!SetProperty(ref _maxSearchDepthText, value)) return;
+
+                int parsed;
+                if (int.TryParse(value, NumberStyles.Integer, CultureInfo.InvariantCulture, out parsed))
+                {
+                    _settings.MaxSearchDepth = System.Math.Max(0, System.Math.Min(parsed, Settings.MaxMaxSearchDepth));
                     _settings.Save(_store, _log);
                 }
             }
@@ -478,6 +530,20 @@ namespace RBLclass.AddIn.ViewModels
         {
             get => _settings.UpdateCheckUrl;
             set => Apply(_settings.UpdateCheckUrl, value ?? string.Empty, v => _settings.UpdateCheckUrl = v);
+        }
+
+        /// <summary>D2: warn before an attachment from an external-banner mail opens.</summary>
+        public bool PhishingWarnAttachments
+        {
+            get => _settings.PhishingWarnAttachments;
+            set => Apply(_settings.PhishingWarnAttachments, value, v => _settings.PhishingWarnAttachments = v);
+        }
+
+        /// <summary>D3: warn before a link from an external-banner mail opens.</summary>
+        public bool PhishingWarnLinks
+        {
+            get => _settings.PhishingWarnLinks;
+            set => Apply(_settings.PhishingWarnLinks, value, v => _settings.PhishingWarnLinks = v);
         }
 
         public bool SendExternalWarning

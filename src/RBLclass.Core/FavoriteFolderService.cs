@@ -96,6 +96,12 @@ namespace RBLclass.Core
             IReadOnlyList<FavoriteFolder> snapshot;
             lock (_gate) { snapshot = _cache; }
 
+            // Favourites are a flat list of filesystem folders: the folder-search
+            // depth limit (v2.13.0.0 B1) does not apply to them.
+            if (options != null && options.MaxDepth != 0)
+                options = new FolderSearchOptions(options.MatchMode, options.AllResults,
+                                                  options.MaxResults, options.MinQueryLength);
+
             return new FolderSearchService(new FavoriteFolderSearchAdapter(snapshot))
                 .Search(query, options);
         }

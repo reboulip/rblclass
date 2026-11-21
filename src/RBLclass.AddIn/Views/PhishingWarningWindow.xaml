@@ -1,0 +1,37 @@
+<Window x:Class="RBLclass.AddIn.Views.PhishingWarningWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        mc:Ignorable="d"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:loc="clr-namespace:RBLclass.AddIn.Localization"
+        Title="{loc:Loc Key=PhishingLink_Title}" Width="440" SizeToContent="Height"
+        WindowStartupLocation="CenterOwner" ResizeMode="NoResize" ShowInTaskbar="False"
+        d:DesignHeight="220" d:DesignWidth="440">
+    <Window.Resources>
+        <BooleanToVisibilityConverter x:Key="BoolToVis" />
+    </Window.Resources>
+    <!-- Cancel is the default button and Esc (v2.13.0.0 D2): opening needs a deliberate choice. -->
+    <StackPanel Margin="14">
+        <TextBlock TextWrapping="Wrap" FontWeight="SemiBold" Text="{Binding Text}" />
+        <TextBlock Margin="0,10,0,0" TextWrapping="Wrap" Text="{Binding SenderLine}"
+                   Visibility="{Binding HasSender, Converter={StaticResource BoolToVis}}" />
+        <TextBlock Margin="0,4,0,0" TextWrapping="Wrap" Text="{Binding DetailLine}"
+                   Visibility="{Binding HasDetail, Converter={StaticResource BoolToVis}}" />
+        <TextBox Margin="0,8,0,0" IsReadOnly="True" TextWrapping="Wrap" Text="{Binding UrlText, Mode=OneWay}"
+                 MaxHeight="90" VerticalScrollBarVisibility="Auto"
+                 Visibility="{Binding HasUrl, Converter={StaticResource BoolToVis}}" />
+        <TextBlock Margin="0,4,0,0" TextWrapping="Wrap" Text="{Binding DisplayedTextLine}"
+                   Visibility="{Binding HasDisplayedText, Converter={StaticResource BoolToVis}}" />
+        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,14,0,0">
+            <Button Padding="14,5" Margin="0,0,8,0" Click="OpenAnyway_Click">
+                <TextBlock Text="{loc:Loc Key=PhishingLink_OpenAnyway}" TextWrapping="Wrap"
+                           Foreground="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}" />
+            </Button>
+            <Button Padding="14,5" IsDefault="True" IsCancel="True" Click="Cancel_Click">
+                <TextBlock Text="{loc:Loc Key=PhishingLink_Cancel}" TextWrapping="Wrap"
+                           Foreground="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}" />
+            </Button>
+        </StackPanel>
+    </StackPanel>
+</Window>

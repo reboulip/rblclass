@@ -31,6 +31,7 @@ namespace RBLclass.AddIn
         private MainPaneView _view;
         // Coalesces nav-rail inset recomputes queued from OnResize.
         private bool _railInsetPending;
+        private bool _firstResizeLogged;
 
         public RblClassTaskPaneHost()
         {
@@ -40,6 +41,9 @@ namespace RBLclass.AddIn
                 TaskPaneServices.Host = this;
 
                 _elementHost = new ElementHost { Dock = DockStyle.Fill };
+                // The WinForms host maps its own Font onto the WPF root, which would
+                // override the pane's Segoe UI 12 (v2.13.0.0 A2).
+                _elementHost.PropertyMap.Remove("Font");
                 Controls.Add(_elementHost);
 
                 EnsureView();
@@ -128,6 +132,11 @@ namespace RBLclass.AddIn
         protected override void OnResize(EventArgs e)
         {
             base.OnResize(e);
+            if (!_firstResizeLogged && Width > 0 && Height > 0)
+            {
+                _firstResizeLogged = true;
+                Log.Information("TaskPaneHost first resize: {W}x{H} px.", Width, Height);
+            }
             QueueNavRailInsetUpdate();
         }
 

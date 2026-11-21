@@ -38,6 +38,8 @@ namespace RBLclass.Core.Tests
             settings.AllResults.Should().BeFalse();
             settings.FolderMatchMode.Should().Be(FolderMatchMode.Substring);
             settings.MaxResults.Should().Be(FolderSearchOptions.DefaultMaxResults);
+            settings.MaxSearchDepth.Should().Be(0);
+            settings.SaveAsFormat.Should().Be(SaveAsFormat.Msg);
             settings.KeepCopy.Should().BeFalse();
             settings.RemoveAttachments.Should().BeFalse();
             settings.ClassifySafetyCopy.Should().BeFalse();
@@ -46,6 +48,8 @@ namespace RBLclass.Core.Tests
             settings.StripBannerOnClassify.Should().BeFalse();
             settings.WidenConversation.Should().BeFalse();
             settings.SendExternalWarning.Should().BeTrue();
+            settings.PhishingWarnAttachments.Should().BeTrue();
+            settings.PhishingWarnLinks.Should().BeTrue();
             settings.InternalDomains.Should().BeEmpty();
             settings.ForgottenAttachmentKeywords.Should().Equal("attach", "enclos", "joint", "PJ");
             settings.SentItemTriageMode.Should().Be(SentItemTriageMode.AskEveryTime);
@@ -84,6 +88,8 @@ namespace RBLclass.Core.Tests
                 AllResults = true,
                 FolderMatchMode = FolderMatchMode.Substring,
                 MaxResults = 250,
+                MaxSearchDepth = 3,
+                SaveAsFormat = SaveAsFormat.Ask,
                 KeepCopy = true,
                 RemoveAttachments = true,
                 ClassifySafetyCopy = true,
@@ -92,6 +98,8 @@ namespace RBLclass.Core.Tests
                 StripBannerOnClassify = true,
                 WidenConversation = true,
                 SendExternalWarning = false,
+                PhishingWarnAttachments = false,
+                PhishingWarnLinks = false,
                 InternalDomains = new[] { "example.com", "example.org" },
                 ForgottenAttachmentKeywords = new[] { "pièce jointe", "ci-joint" },
                 SentItemTriageMode = SentItemTriageMode.Delete,
@@ -128,6 +136,8 @@ namespace RBLclass.Core.Tests
             reloaded.AllResults.Should().BeTrue();
             reloaded.FolderMatchMode.Should().Be(FolderMatchMode.Substring);
             reloaded.MaxResults.Should().Be(250);
+            reloaded.MaxSearchDepth.Should().Be(3);
+            reloaded.SaveAsFormat.Should().Be(SaveAsFormat.Ask);
             reloaded.KeepCopy.Should().BeTrue();
             reloaded.RemoveAttachments.Should().BeTrue();
             reloaded.ClassifySafetyCopy.Should().BeTrue();
@@ -136,6 +146,8 @@ namespace RBLclass.Core.Tests
             reloaded.StripBannerOnClassify.Should().BeTrue();
             reloaded.WidenConversation.Should().BeTrue();
             reloaded.SendExternalWarning.Should().BeFalse();
+            reloaded.PhishingWarnAttachments.Should().BeFalse();
+            reloaded.PhishingWarnLinks.Should().BeFalse();
             reloaded.InternalDomains.Should().Equal("example.com", "example.org");
             reloaded.ForgottenAttachmentKeywords.Should().Equal("pièce jointe", "ci-joint");
             reloaded.SentItemTriageMode.Should().Be(SentItemTriageMode.Delete);
@@ -182,6 +194,30 @@ namespace RBLclass.Core.Tests
         public void Load_defaults_the_preferred_ui_language_to_auto_when_unset()
         {
             Settings.Load(_store).PreferredUiLanguage.Should().Be("Auto");
+        }
+
+        [Theory]
+        [InlineData("Pdf", SaveAsFormat.Pdf)]
+        [InlineData("Ask", SaveAsFormat.Ask)]
+        [InlineData("Msg", SaveAsFormat.Msg)]
+        [InlineData("garbage", SaveAsFormat.Msg)]
+        [InlineData("42", SaveAsFormat.Msg)]
+        public void Load_parses_the_save_as_format_and_falls_back_to_msg(string stored, SaveAsFormat expected)
+        {
+            _store.Set(SettingsKeys.SaveAsFormat, stored);
+            Settings.Load(_store).SaveAsFormat.Should().Be(expected);
+        }
+
+        [Theory]
+        [InlineData("garbage", 0)] // invalid -> unlimited
+        [InlineData("-4", 0)]      // negative -> clamped to 0
+        [InlineData("0", 0)]
+        [InlineData("3", 3)]
+        [InlineData("5000", Settings.MaxMaxSearchDepth)] // above range -> clamped
+        public void Load_clamps_or_defaults_the_max_search_depth(string stored, int expected)
+        {
+            _store.Set(SettingsKeys.MaxSearchDepth, stored);
+            Settings.Load(_store).MaxSearchDepth.Should().Be(expected);
         }
 
         [Theory]

@@ -58,6 +58,10 @@ the same name.
   Outlook's `ItemSend`.
 - **Sent-item triage** — a prompt to Class / Delete / Move-to-Inbox / Leave a
   sent item or its whole conversation.
+- **Save as file** — export the selected mails as `.msg` or PDF (PDF needs
+  Microsoft Word).
+- **Phishing warnings** — once the external-sender banner is learned, a
+  confirmation before a link or attachment of an external mail opens.
 - **Settings** — every option persists across restarts, backed by a local
   SQLite database under `%LocalAppData%\RBLclass\`.
 

@@ -65,6 +65,11 @@
                                          Text="{Binding MaxResultsText, UpdateSourceTrigger=LostFocus}" />
                             </DockPanel>
                             <DockPanel Margin="0,4,0,2" LastChildFill="False">
+                                <TextBlock Text="{loc:Loc Key=Settings_MaxSearchDepth_Label}" VerticalAlignment="Center" />
+                                <TextBox DockPanel.Dock="Right" Width="60" Margin="6,0,0,0"
+                                         Text="{Binding MaxSearchDepthText, UpdateSourceTrigger=LostFocus}" />
+                            </DockPanel>
+                            <DockPanel Margin="0,4,0,2" LastChildFill="False">
                                 <TextBlock Text="{loc:Loc Key=Settings_MinSearchLength_Label}" VerticalAlignment="Center" />
                                 <TextBox DockPanel.Dock="Right" Width="60" Margin="6,0,0,0"
                                          Text="{Binding MinSearchLengthText, UpdateSourceTrigger=LostFocus}" />
@@ -97,7 +102,7 @@
                                           Content="{loc:Loc Key=Settings_RemoveAttachments_CheckBox}" />
                             </DockPanel>
                             <StackPanel Margin="18,0,0,3">
-                                <TextBlock Margin="0,2,0,0" FontStyle="Italic" Foreground="#777"
+                                <TextBlock Margin="0,2,0,0" FontStyle="Italic" Style="{DynamicResource MutedText}"
                                            Text="{loc:Loc Key=Settings_AttachmentRemovalMode_Label}" />
                                 <RadioButton Margin="0,2" GroupName="AttachMode"
                                              IsChecked="{Binding AttachmentRemovalModeIsModal}">
@@ -109,7 +114,7 @@
                                     <TextBlock TextWrapping="Wrap" MaxWidth="360"
                                                Text="{loc:Loc Key=Settings_AttachmentRemovalMode_DeleteSilently}" />
                                 </RadioButton>
-                                <TextBlock Margin="0,6,0,0" FontStyle="Italic" Foreground="#777"
+                                <TextBlock Margin="0,6,0,0" FontStyle="Italic" Style="{DynamicResource MutedText}"
                                            Text="{loc:Loc Key=Settings_AttachmentLabelLocation_Label}" />
                                 <RadioButton Margin="0,2" GroupName="AttachLabelLoc"
                                              IsChecked="{Binding AttachmentLabelLocationIsBody}">
@@ -221,6 +226,22 @@
                                                    Text="{loc:Loc Key=Settings_StripSavedAttachments_CheckBox}" />
                                     </CheckBox>
                                 </DockPanel>
+                                <StackPanel Margin="0,6,0,3">
+                                    <TextBlock Margin="0,0,0,2" TextWrapping="Wrap"
+                                               Text="{loc:Loc Key=Settings_SaveAsFormat_Label}" />
+                                    <RadioButton Margin="18,2,0,2" GroupName="SaveAsFormat"
+                                                 IsChecked="{Binding SaveAsFormatIsMsg}">
+                                        <TextBlock TextWrapping="Wrap" Text="{loc:Loc Key=Settings_SaveAsFormat_Msg}" />
+                                    </RadioButton>
+                                    <RadioButton Margin="18,2,0,2" GroupName="SaveAsFormat"
+                                                 IsChecked="{Binding SaveAsFormatIsPdf}">
+                                        <TextBlock TextWrapping="Wrap" Text="{loc:Loc Key=Settings_SaveAsFormat_Pdf}" />
+                                    </RadioButton>
+                                    <RadioButton Margin="18,2,0,2" GroupName="SaveAsFormat"
+                                                 IsChecked="{Binding SaveAsFormatIsAsk}">
+                                        <TextBlock TextWrapping="Wrap" Text="{loc:Loc Key=Settings_SaveAsFormat_Ask}" />
+                                    </RadioButton>
+                                </StackPanel>
                                 <DockPanel Margin="0,3">
                                     <TextBlock DockPanel.Dock="Right" Style="{DynamicResource InfoGlyph}"
                                                ToolTip="{loc:Loc Key=Settings_TreatInlineImagesAsAttachments_Info}" />
@@ -278,6 +299,14 @@
                                        Style="{DynamicResource MutedText}" Text="{Binding BannerStatus}" />
                             <TextBlock Margin="0,0,0,4" TextWrapping="Wrap"
                                        Style="{DynamicResource MutedText}" Text="{Binding BannerDiagnosticStatus}" />
+                            <CheckBox Margin="0,3" IsChecked="{Binding PhishingWarnAttachments}">
+                                <TextBlock TextWrapping="Wrap" MaxWidth="400"
+                                           Text="{loc:Loc Key=Settings_PhishingWarnAttachments}" />
+                            </CheckBox>
+                            <CheckBox Margin="0,3" IsChecked="{Binding PhishingWarnLinks}">
+                                <TextBlock TextWrapping="Wrap" MaxWidth="400"
+                                           Text="{loc:Loc Key=Settings_PhishingWarnLinks}" />
+                            </CheckBox>
                             <CheckBox Margin="0,3" IsChecked="{Binding StripBannerOnReply}"
                                       IsEnabled="{Binding HasBanner}"
                                       Content="{loc:Loc Key=Settings_StripBannerOnReply_CheckBox}" />
