@@ -22,7 +22,10 @@ exactly why CI can run them (see below).
 The experimental re-encrypted filing is covered at the Core level by
 `MimeEntityBuilderTests` (with the `MimeTestReader` helper),
 `ReencryptContentPlannerTests`, `EncryptionCertificatePolicyTests`,
-`ReencryptEligibilityTests` and `ClassifierServiceReencryptTests`.
+`ReencryptEligibilityTests` and `ClassifierServiceReencryptTests`. The Save-as
+planner (`SaveAsPlannerTests`) and the phishing-warning decisions
+(`PhishingLinkTests`, `PhishingWarningPolicyTests`) are Core logic with their own
+tests; the hooks, Word automation and dialogs around them are not.
 
 ### Resource parity is a test
 
@@ -52,6 +55,12 @@ interactively on the dev machine:
   Stormshield decryption**: the item is stored as `IPM.Note.SMIME` while an
   external COM handle holds it with an unsaved in-memory class `IPM.Note` during
   the classify. Real Stormshield behaviour is verified only on the target.
+- The **phishing warnings** and **PDF export** are exercised end to end on the dev
+  machine by driving Outlook through UI Automation and COM with fake mails that
+  carry a simulated banner (link click, Enter, context menu, attachment open,
+  Cancel and *Open anyway*). What stays real-target only: a genuine banner or
+  Stormshield mail, the corporate EDR's reaction to the thread-scoped
+  `SetWindowsHookEx` calls on 32-bit Outlook, and Word automation under the EDR.
 - `tools/Inspect-SmimeMsg.ps1` reads a dragged-out `.msg` offline and reports its
   S/MIME CMS envelope (content-encryption and key-transport algorithms, and the
   recipients).

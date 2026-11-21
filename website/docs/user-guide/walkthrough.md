@@ -59,8 +59,7 @@ The top row of the task pane is a command bar:
 
 The search box shows a placeholder, with the index-status dot inside it: yellow
 while a scan runs, green when it finishes. If the index has not been built yet,
-the pane points you to **⋯ → Update folders**. The pane uses Segoe UI at size 12
-and Segoe MDL2 icons.
+the pane points you to **⋯ → Update folders**.
 
 ## Features
 
@@ -272,7 +271,35 @@ pinned as the next thing to file.
 Many organisations add a *"this email came from outside"* banner to incoming
 mail. Teach RBLclass that banner once (**Settings → External-sender banner →
 Learn from selected mail**), and it can strip it automatically from your replies
-and forwards, and from filed copies.
+and forwards, and from filed copies. A received mail is never rewritten: the
+strip only touches the reply or forward you are composing.
+
+### Phishing warnings
+
+Once a banner is learned, RBLclass also uses it to recognise external mail and
+asks for confirmation before something in it is opened:
+
+- **Link** — clicking a link, pressing ++enter++ on a selected link, or choosing
+  **Open hyperlink**. In a reply, ++ctrl+click++ is covered; a plain click does
+  not follow links, so it does not warn. `mailto:` links and `#` anchors never
+  warn.
+- **Attachment** — opening or previewing one. After **Open anyway**, the same
+  mail does not ask again for 4 seconds.
+
+A **Possible phishing** dialog shows the sender's display name and real SMTP
+address, plus the link destination (and, when the mail displays something
+different, a *"Shown in the email as: …"* line) or the attachment's file name.
+**Open anyway** continues (Outlook's own security prompts still apply);
+**Cancel**, the default and ++esc++, opens nothing. Without a learned banner it
+never warns, and if the check itself fails the item opens.
+
+!!! note "After Cancel in the reading pane"
+    Outlook leaves the reading pane on *"Loading…"* with its own *"Back to
+    message"* link; click it to return to the mail.
+
+!!! warning "Touch taps are not covered"
+    The link warning cannot block a link opened by a touch tap. This is a known,
+    accepted gap; mouse and keyboard are covered.
 
 ## Settings reference
 
@@ -316,24 +343,13 @@ Open **Settings** from the **⋯** menu in the command bar of the RBLclass pane
 `%LocalAppData%\RBLclass\diagnostics\` — the mail body with the matched banner
 highlighted — useful for sending to your support contact when diagnosing why a
 banner is not stripped correctly. Then five toggles, only useful once a banner is
-learned. Three strip toggles are off by default: strip on reply/forward, strip on
-classify, and strip during Auto-class. Two phishing warnings are on by default:
+learned:
 
 | Setting | Default | What it does |
 | --- | --- | --- |
-| Warn before opening a link from an external email | On | When you click a link, press ++enter++ on a selected link, or choose **Open hyperlink** in a mail that carries the learned banner, a **Possible phishing** dialog first shows the sender's display name and real SMTP address, the full link destination and, when the mail displays something different, a *"Shown in the email as: …"* line. **Open anyway** opens the link (Outlook's own security prompts still apply); **Cancel** (the default, also ++esc++) opens nothing. `mailto:` links and in-document `#` anchors never warn. In replies, ++ctrl+click++ is covered (own window and inline); a plain click in a reply does not follow links, so it does not warn. Without a learned banner it never warns. If the check itself fails, the link opens. |
-| Warn before opening an attachment from an external email | On | When you open or preview an attachment of a mail that carries the learned banner, a **Possible phishing** dialog first shows the sender's display name, the real SMTP address and the attachment's file name. **Open anyway** continues; **Cancel** (the default, also ++esc++) stops the attachment from opening. After **Open anyway**, the same mail does not ask again for 4 seconds, so Outlook's follow-up event does not show a second dialog. Without a learned banner it never warns. If the check itself fails, the attachment opens. |
-
-!!! note "After Cancel in the reading pane"
-    Outlook leaves the reading pane on *"Loading…"* with its own *"Back to
-    message"* link; click it to return to the mail.
-
-!!! warning "Touch taps are not covered"
-    The link warning cannot block a link opened by a touch tap. This is a known,
-    accepted gap; mouse and keyboard are covered.
-
-The reply banner strip never rewrites a received mail that you open in its own
-window; it only touches the reply or forward you are composing.
+| Strip on reply/forward, on classify, during Auto-class | Off | Remove the banner in each case (see [External-sender banner strip](#external-sender-banner-strip)). |
+| Warn before opening a link from an external email | On | Confirmation before a link opens (see [Phishing warnings](#phishing-warnings)). |
+| Warn before opening an attachment from an external email | On | Confirmation before an attachment opens or previews. |
 
 ### Sending guards
 
