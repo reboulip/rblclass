@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Net;
 using FluentAssertions;
 using RBLclass.Core;
@@ -127,6 +127,16 @@ namespace RBLclass.Core.Tests
         {
             var html = AttachmentLabelFormatter.Format(new[] { Deleted("x.docx") }, Options, When);
             html.Should().StartWith("<div").And.EndWith("</div>");
+        }
+            [Theory]
+        [InlineData("<html><body lang=FR><p>x</p></body></html>", "<html><body lang=FR>[L]<p>x</p></body></html>")]
+        [InlineData("<HTML><BODY><p>x</p></BODY></HTML>", "<HTML><BODY>[L]<p>x</p></BODY></HTML>")]
+        [InlineData("<p>no body</p>", "[L]<p>no body</p>")]
+        [InlineData("", "[L]")]
+        [InlineData(null, "[L]")]
+        public void InsertAfterBodyTag_places_the_block_inside_the_body(string html, string expected)
+        {
+            AttachmentLabelFormatter.InsertAfterBodyTag(html, "[L]").Should().Be(expected);
         }
     }
 }

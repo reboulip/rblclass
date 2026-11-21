@@ -115,5 +115,16 @@ namespace RBLclass.Core
         /// inbox/archive instead of where the user actually classifies.
         /// </summary>
         public bool RecordHistory => Options.RecordHistory;
+
+        /// <summary>
+        /// Experimental re-encrypted filing (v2.12.0.0): an encrypted mail readable
+        /// decrypted in memory is rebuilt with the requested changes, encrypted
+        /// again and created directly as S/MIME in each destination; the original
+        /// goes to Deleted Items. Not undoable. Needs an <see cref="IMailRebuilder"/>.
+        /// </summary>
+        public bool ReencryptProtected => Options.ReencryptProtected;
+
+        /// <summary>The certificate to re-encrypt to; empty = Automatic.</summary>
+        public string ReencryptCertificateThumbprint => Options.ReencryptCertificateThumbprint;
     }
 }

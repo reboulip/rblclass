@@ -5,7 +5,9 @@ namespace RBLclass.Core
     {
         public ClassifyResult(int itemsProcessed, int copiesMade, int originalsMoved,
                               int errors, int encryptedStripSkips = 0,
-                              ClassifyUndoPlan undo = null)
+                              ClassifyUndoPlan undo = null,
+                              int reencrypted = 0, int reencryptFallbacks = 0,
+                              bool reencryptNoCertificate = false)
         {
             ItemsProcessed = itemsProcessed;
             CopiesMade = copiesMade;
@@ -13,6 +15,9 @@ namespace RBLclass.Core
             Errors = errors;
             EncryptedStripSkips = encryptedStripSkips;
             Undo = undo;
+            Reencrypted = reencrypted;
+            ReencryptFallbacks = reencryptFallbacks;
+            ReencryptNoCertificate = reencryptNoCertificate;
         }
 
         /// <summary>Items filed without error.</summary>
@@ -43,5 +48,21 @@ namespace RBLclass.Core
         /// reversible happened.
         /// </summary>
         public ClassifyUndoPlan Undo { get; }
+
+        /// <summary>
+        /// Encrypted mails filed as re-encrypted copies (v2.12.0.0, experimental).
+        /// Included in <see cref="ItemsProcessed"/>, never in the copy/move counts,
+        /// and never undoable.
+        /// </summary>
+        public int Reencrypted { get; }
+
+        /// <summary>Encrypted mails that should have been re-encrypted but were filed by the standard path.</summary>
+        public int ReencryptFallbacks { get; }
+
+        /// <summary>
+        /// No usable encryption certificate was found. Reported once per classifier
+        /// (that is, once per Outlook session) so the status line does not repeat it.
+        /// </summary>
+        public bool ReencryptNoCertificate { get; }
     }
 }

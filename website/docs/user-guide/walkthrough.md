@@ -150,10 +150,64 @@ signature logos survive.
 !!! danger "Encrypted mail is never stripped"
     Encrypted (S/MIME) mails are never stripped — RBLclass skips attachment
     removal for them and reports it, so a filed copy never silently loses
-    protected content. The same applies to the other changes RBLclass would make
+    protected content. This holds even when a mail-encryption product decrypts
+    the open mail in memory: RBLclass also checks the class stored in the folder,
+    the S/MIME payload and whether the mail was already modified when opened.
+    The filed copy is then left untouched. One limitation remains: if such a
+    product has decrypted the mail in memory (smart card inserted, mail
+    displayed), Outlook itself writes the decrypted version when the mail is
+    filed, and RBLclass cannot prevent that. The same applies to the other changes RBLclass would make
     to a mail: encrypted or signed mails are never rewritten, never marked as
     read, and a flagged one stays flagged and is simply not offered in the
     "mark flagged tasks complete" prompt. Filing (moving) them works as usual.
+    The experimental re-encrypted filing below is the only exception.
+
+### Re-encrypted filing (experimental)
+
+!!! warning "Experimental and not undoable"
+    This feature is for pilot tests and is **off by default** (Settings →
+    **Experimental**). A re-encrypted filing **cannot be undone**: there is no
+    Undo entry, and Undo does not roll back its Auto-class history.
+
+When **Re-encrypt encrypted mail when filing** is on, Classify and Auto-class
+handle an **encrypted** mail that your mail-encryption product has decrypted in
+memory (smart card inserted) differently:
+
+1. The mail is rebuilt from its decrypted content (body, body images,
+   attachments).
+2. Your classify options are applied to that content: remove attachments,
+   per-attachment choices (including **Save to…**), body images, the "former
+   attachments" label and the external-sender banner strip.
+3. The result is encrypted again (S/MIME) to your certificate and stored as an
+   encrypted mail in every destination, with the original subject, sender,
+   recipients, dates, categories, importance and flag. It keeps the original's
+   read state unless **Mark as read** is on.
+4. Unless **Keep a copy** is on, the original goes to its store's Deleted Items.
+   If Outlook wrote that original decrypted, it is deleted permanently instead.
+   Mail already in Deleted Items is not moved.
+
+Every filed copy is checked as stored encrypted before the original is touched.
+In the attachment window, an eligible encrypted mail is offered like a plain
+mail; **Manage attachments** (in place) still never offers protected mail.
+
+The status line reads *"N encrypted mail(s) re-encrypted (cannot be undone)."*
+
+**Not applicable** (standard behaviour, silently): signed-only mail, mail still
+showing its encrypted part (smart card absent, so not decrypted), and mail
+protected only by "unsaved changes".
+
+**Fallbacks.** If a mail cannot be re-encrypted, it is filed the standard way and
+the status line adds *"N encrypted mail(s) filed without re-encryption — see the
+log"*. Causes are: no usable certificate (a one-time message, *"No usable
+encryption certificate: re-encryption skipped."*, is also shown per Outlook
+session); content that cannot be rebuilt (embedded item or `.msg`, OLE or
+by-reference attachment, attachments over 25 MB in total, a read failure); an
+encryption failure; or a copy that cannot be created or verified (any copy
+already made for that mail is removed first).
+
+**Limits.** No undo; the sender's signature is not kept; the smart card must be
+inserted so the mail is readable; the original lands in Deleted Items (or is
+permanently deleted when written decrypted); 25 MB attachment cap.
 
 ### Sent-item triage
 
@@ -254,6 +308,23 @@ and strip during Auto-class.
 Pre-index Windows directories so the "Save to…" picker (in the attachment
 dialog) finds a save location as fast as an Outlook folder. Sub-folders are
 indexed to a depth of 4.
+
+### Experimental
+
+Features for pilot tests; a warning at the top of the tab says so.
+
+| Setting | Default | What it does |
+| --- | --- | --- |
+| Re-encrypt encrypted mail when filing | Off | Classify and Auto-class rebuild a readable encrypted mail, apply your classify options, encrypt it again and file it as an encrypted copy. Not undoable — see [Re-encrypted filing](#re-encrypted-filing-experimental). |
+| Re-encryption certificate | *Automatic* | The certificate used to encrypt the filed copy. The list shows **Automatic** plus each candidate as "Subject (expires yyyy-MM-dd)", flagged *private key not visible* when Windows cannot see its private key, and an *Unavailable certificate* entry if the stored one disappeared. A line under the list says which certificate Automatic resolves to, or that none is usable. |
+
+Candidates come from your personal certificate store (Current User → Personal):
+valid now (dates only, no revocation check, no network access), RSA key, allowed
+for key encipherment and for secure e-mail. **Automatic** also requires that the
+certificate's e-mail address equals your default account's address and that
+Windows sees its private key; the latest expiry wins. An explicit choice may be any
+candidate; if it stops being valid it is not silently replaced and re-encryption
+is skipped.
 
 ### Language
 

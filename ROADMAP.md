@@ -10,7 +10,7 @@ Reference docs from the legacy analysis:
 [docs/legacy-reimplementation-roadmap.md](docs/legacy-reimplementation-roadmap.md),
 [docs/parity-and-regression.md](docs/parity-and-regression.md).
 
-## Where we are (2026-11-05)
+## Where we are (2026-11-07)
 
 The rewritten add-in reached full legacy parity and shipped as **v2.0.0.0**,
 followed by feedback/refinement waves **v2.1.0.0** through **v2.8.0.0**
@@ -23,6 +23,9 @@ all complete and recorded in [history](docs/roadmap-history.md). **v2.9.0.0**
 **v2.10.0.0** (folder context-menu completeness, pane consolidation,
 selection-lag fix, banner diagnostics) shipped 2026-07-29 —
 [release](https://github.com/reboulip/rblclass/releases/tag/2.10.0.0).
+**v2.11.0.0** (install & encryption diagnostics, keyboard flow, attachments)
+shipped 2026-11-07 —
+[release](https://github.com/reboulip/rblclass/releases/tag/2.11.0.0).
 
 Open work: the two v2.6.0.0 items still pending live verification (banner
 strip B3, meeting classify C1), and v2.9.0.0 B1 (banner strip on
@@ -30,9 +33,9 @@ reply/forward) likewise shipped pending live verification on the real
 target — **confirmed still broken on the real target on 2026-07-28**
 (issue #46: detection works, stripping doesn't); v2.10.0.0 D1 adds the
 diagnostic capability needed to root-cause it, itself shipped pending a
-real-target re-check. **v2.11.0.0** (install & encryption diagnostics,
-keyboard flow, attachments) is planned from the 2026-11-05 `/gh-issues`
-triage. Phases 8–9 are forward-looking.
+real-target re-check. v2.11.0.0 A3 (encrypted-mail guard and trace) and
+C2 (body-image removal on encrypted mail) likewise await a real-target
+check. Phases 8–9 are forward-looking.
 
 ## Testing & validation strategy (applies to every item)
 
@@ -604,6 +607,39 @@ text as the specification.
       present there. Also pending a live regression pass on ordinary mail:
       copy, safety copy, mark as read, attachment removal, conversation
       widening (only move, task-flag completion and Undo were exercised).
+      Target result 2026-11-13 (v2.11.0.0, Stormshield): with the smart card
+      inserted, "remove attachments" silently stripped an encrypted mail's
+      attachments and body images (`encryptedKept=0`). Stormshield decrypts the
+      opened item in memory and it reports `IPM.Note`, so the class-only check
+      passed. Fixed on develop 2026-11-14: `ProtectedMailPolicy.Evaluate`
+      also treats as protected a protected **stored** class (parent folder
+      contents table, narrowed by Internet message id, matched with
+      `CompareEntryIDs`), a `smime.p7m`/`smime.p7s` part, and unsaved changes
+      on open (not for drafts). A non-class detection logs `protected mail
+      detected by <Reason>` at Information. Dev machine: verified by driving
+      the adapter (plain mail still stripped, simulated in-memory decryption
+      and dirty-on-open refused). Without the card, Classify did nothing and
+      logged nothing; unreadable selected items and empty classifies are now
+      logged (Warning / Information). Re-verify on the target: card in,
+      classify an encrypted mail with "remove attachments" on: the attachments
+      stay, and the log shows `protected mail detected by StoredMessageClass`
+      (or another reason). Card out: send the new `GetSelectedItems` warning
+      line.
+      E2E on the dev machine 2026-11-14 (fake mails, add-in driven through UI
+      Automation): Outlook's `Move`/`Copy` **write the in-memory state** of an
+      item held modified by another handle (`Close(olDiscard)` does not stop
+      it). A Stormshield-decrypted mail is therefore filed decrypted, which
+      likely explains the original "loses its encryption" report and cannot be
+      prevented through the object model. Fix: `ClassifierService` decides
+      protection once on the source **before** filing and makes no write on
+      any filed copy of a protected source (no strip, body images, label,
+      banner, mark as read, task flag). It always logs a Warning `Protected
+      mail filed by … no longer reads as protected` when the filed item came
+      out plain. E2E green: plain move, strip via the window, mark as read,
+      manage attachments, Undo, empty selection, and the Stormshield simulation
+      (attachments kept, not marked read, `encryptedKept=1`, warning logged).
+      Target: with the card in, check that the attachments stay and look for
+      that warning (it means the mail was filed decrypted).
 ### B — Pane & keyboard
 
 - [x] **B1.** Remove the selection-count label at the bottom of the pane:
@@ -683,6 +719,292 @@ text as the specification.
       shipped, pending tests (not verifiable on the dev machine per the testing
       strategy above; re-verify on the real target that an S/MIME/Stormshield
       mail with body images keeps them and its body untouched before pilot)
+
+---
+
+## v2.12.0.0 — experimental: re-encrypted filing of protected mail
+
+Context (GH #62, 2026-11-13/14). With the Stormshield smart card inserted, an
+encrypted mail is decrypted **in memory** when Outlook opens it, and Outlook's
+`MailItem.Move`/`Copy` write that in-memory (decrypted) state into the filed
+item. That plaintext write cannot be prevented through the object model; it was
+reproduced on the dev machine by simulation. The standard path (develop,
+commits 981f1fe and d50c145) never writes to a protected mail's filed copy.
+That stops the attachment loss, but the copy can still be filed decrypted (a
+Warning is logged when it is). This milestone adds an **opt-in experimental
+alternative**: rebuild the protected mail from its decrypted in-memory view,
+apply the requested actions to that content, re-encrypt it as standard S/MIME
+to the user's certificate, and create the filed item directly as
+`IPM.Note.SMIME`, so that no plaintext is ever stored. The standard path stays
+the default and remains the fallback whenever re-encryption cannot be done.
+
+Spike (2026-11-14, dev machine, PowerShell): a MIME entity encrypted with
+`System.Security.Cryptography.Pkcs.EnvelopedCms` (`System.Security.dll`, part
+of .NET Framework 4.8, so no new package) to a self-signed certificate in
+`CurrentUser\My` (AES-256-CBC; key transport defaults to RSA-OAEP), saved as a
+`smime.p7m` attachment (`PR_ATTACH_MIME_TAG` = `application/pkcs7-mime`) on an
+item created with the PostItem trick (`Folder.Items.Add(olPostItem)`,
+attachment, Save, then `MessageClass = "IPM.Note.SMIME"`, Save). Outlook's own
+S/MIME layer decrypts it: body and kept attachment are shown, and the list
+shows the encrypted icon. `MailItem.SaveAs(..., olMSG)` writes the stored
+(encrypted) form. Script: `tools/Inspect-SmimeMsg.ps1` reads a `.msg` offline
+and reports the CMS envelope (content cipher, key transport, recipient
+certificate, whether it is in `CurrentUser\My`). **Step 0, pending:** its
+output for a real Stormshield mail on the target decides the key-transport
+default in A1 and confirms Stormshield uses standard CMS. If it does not, the
+feature is shelved.
+
+Decisions (user, 2026-11-14): experimental and off by default, in a new
+"Experimental" Settings tab. When on, **every** protected mail that is readable
+(decrypted in memory) is rebuilt, even with no action requested. The sender's
+signature on the filed copy is lost (accepted). The original goes to Deleted
+Items (recoverable); if that move writes it decrypted, it is permanently
+deleted and logged. Certificate: automatic, with an explicit choice in
+Settings. **No Undo** for re-encrypted filings (accepted).
+
+Not verifiable on the dev machine: Stormshield itself. Everything else is
+verifiable with a self-signed certificate and the simulated-Stormshield
+technique (memory `e2e-outlook-testing`: stored `IPM.Note.SMIME`, class
+rewritten to `IPM.Note` in memory by a held COM reference). Target check: a
+pilot machine opens a re-encrypted mail with Stormshield.
+
+### A — Re-encrypted filing (experimental)
+
+- [x] **A1.** Settings: an "Experimental" tab and the re-encryption settings.
+      Add a new `TabItem` at the end of `SettingsWindow.xaml` (after
+      General), header key `Settings_Nav_Experimental`, holding one
+      `GroupBox` `Settings_Experimental_Header`. Start it with a warning
+      `TextBlock` (`Settings_Experimental_Warning`) saying that these features
+      are experimental and meant for pilot testing. Then:
+      (1) CheckBox `Settings_ReencryptProtected_CheckBox` "Re-encrypt
+      protected mail when filing" with an info tooltip
+      (`Settings_ReencryptProtected_Info`) explaining that the mail is
+      rebuilt and re-encrypted to your certificate, the sender's signature is
+      not kept, the filing cannot be undone, the original goes to Deleted
+      Items, and it only applies while the mail is readable (smart card
+      inserted);
+      (2) a ComboBox `Settings_ReencryptCertificate_Label` listing "Automatic"
+      plus every candidate certificate (see A4 `ListEncryptionCertificates`)
+      shown as `Subject (expires yyyy-MM-dd)`; the selected value is stored
+      as a thumbprint, empty = Automatic;
+      (3) a read-only line showing the certificate Automatic currently
+      resolves to, or `Settings_ReencryptCertificate_None` when none.
+      Keys in `SettingsKeys`: `ReencryptProtectedOnFile` (bool, default
+      false), `ReencryptCertificateThumbprint` (string, default empty),
+      `ReencryptKeyTransport` (string `Oaep` | `Pkcs1`, default from step 0,
+      `Oaep` until then; no UI). Add them to `Settings` (load/save pairs, like
+      `TreatInlineImagesAsAttachments`) and to `SettingsViewModel`
+      (`Apply(...)` pattern, persisted immediately per memory
+      `settings-always-persistent`). The certificate list comes from a
+      `TaskPaneServices` delegate wired in `RblClassAddIn` to the adapter.
+      All strings go in EN/FR/DE resx (`ResourceParityTests`). Update
+      `SettingsTests` for the new keys.
+
+- [x] **A2.** Core: `MimeEntityBuilder`, a pure MIME writer
+      (`RBLclass.Core`). Input: a new `MailContent` model (`HtmlBody`,
+      `PlainBody` (either may be null), `IReadOnlyList<MailPart> Parts`, where
+      `MailPart` = `FileName`, `ContentType`, `byte[] Data`, `ContentId`
+      (null when not inline), `IsInline`). Output: the bytes of one MIME
+      entity (no RFC 822 envelope headers: those stay outside the encryption,
+      as S/MIME specifies). Structure: `multipart/mixed` when there are
+      non-inline parts, wrapping `multipart/related` (HTML body plus inline
+      parts with `Content-ID: <cid>`) when there are inline parts, wrapping
+      `multipart/alternative` when both bodies exist; a single part collapses
+      to itself. Bodies `charset=utf-8`, `Content-Transfer-Encoding:
+      quoted-printable` or base64. Parts are base64 with 76-character lines.
+      CRLF line ends everywhere. Boundaries are random and must not occur in
+      the content. Non-ASCII file names use RFC 2231 `filename*=utf-8''...`
+      plus an RFC 2047 encoded `name=` fallback. A missing `ContentType`
+      defaults to `application/octet-stream`. xUnit tests (new file
+      `MimeEntityBuilderTests`): each structure shape, a boundary collision
+      guard, line length ≤ 998 and base64 ≤ 76, round-trip of a non-ASCII
+      file name, an empty body, a large part (5 MB) with no excessive
+      allocation (stream to a `MemoryStream`).
+
+- [x] **A3.** Core: `ReencryptContentPlanner`, which applies the classify
+      actions to a decrypted `MailContent` and returns the content to
+      encrypt, with no Outlook. Inputs: the `MailContent`, the
+      `ClassifyRequest` options for that item (`RemoveAttachments`, the
+      item's `AttachmentDisposition` rows, `BannerSignature`, `LabelOptions`).
+      Rules, the same as the standard path's on plain mail:
+      strip-all removes every non-inline part. Dispositions remove parts by
+      attachment id: map ids to part order, documented in the adapter (A5).
+      "Save to" rows are saved by the caller before planning (A6). Inline
+      image rows rewrite `HtmlBody` through `InlineImageHtmlRewriter` and drop
+      the part. The banner goes through `ExternalBannerStripper.Strip`. The
+      label goes through `AttachmentLabelFormatter` and is inserted after
+      `<body>` (reuse the adapter's `InsertAfterBodyTag` logic, moved to Core
+      as a public static helper). Output: the new `MailContent` plus the
+      labelled rows. xUnit tests mirroring `ClassifierServiceInlineImageTests`
+      and the strip/keep/label cases.
+
+- [x] **A4.** Core interface `IMailRebuilder`, implemented by the adapter,
+      kept separate from `IMailStore` so the shipped contract does not grow
+      (memory `prefer-isolated-new-ui-over-retrofit`):
+      `MailContent ReadDecryptedContent(MailItemRef item)` returns null when
+      the item is not readable decrypted, i.e. it still shows its
+      `smime.p7m` part, or the read failed.
+      `byte[] Encrypt(byte[] mimeEntity, string certificateThumbprint, string keyTransport)`
+      returns null on failure, after logging the reason.
+      `MailItemRef CreateEncryptedCopy(MailItemRef source, FolderNode destination, byte[] smimePayload, bool unread)`
+      copies the envelope from `source`.
+      `bool VerifyEncryptedCopy(MailItemRef copy, byte[] smimePayload)`.
+      `CertificateInfo ResolveCertificate(string preferredThumbprint)` returns
+      null when nothing is usable.
+      `IReadOnlyList<CertificateInfo> ListEncryptionCertificates()`.
+      `CertificateInfo` = Thumbprint, Subject, NotAfter, HasPrivateKey.
+      Also define `ReencryptOutcome` (see A6).
+
+- [x] **A5.** Adapter: `OutlookMailRebuilder : IMailRebuilder`
+      (`RBLclass.Outlook.Adapter`; COM rules from CLAUDE.md: `ComRef`,
+      indexed loops, no chained property access, STA only).
+      *ReadDecryptedContent*: resolve the item and refuse (return null) when
+      `ProtectedMailPolicy.IsSmimePayloadName` matches any attachment (not
+      decrypted: the card is absent). Read `HTMLBody` when `BodyFormat` is
+      HTML, else `Body`. For each attachment (by index), read the bytes from
+      `PR_ATTACH_DATA_BIN` (0x37010102) through the attachment's
+      `PropertyAccessor`. If that throws (large attachments can), fall back to
+      `SaveAsFile` into `%LocalAppData%\RBLclass\tmp\<guid>`, read the bytes,
+      overwrite the file with zeros, delete it, and log the fallback (no file
+      name). Also read `PR_ATTACH_MIME_TAG` and the content id
+      (0x3712001F), mark inline with the same rule as `IsInlineAttachment`,
+      and skip embedded items and OLE parts (`olEmbeddeditem`/`olOLE`), which
+      cannot be faithfully rebuilt: refuse the whole item (return null) when
+      one is present, so it falls back to the standard path. Cap the total at
+      50 MB (refuse above it; 32-bit memory budget). Part order = attachment
+      index order, and that is the id mapping A3 uses.
+      *Encrypt*: `EnvelopedCms` with
+      `ContentInfo(new Oid("1.2.840.113549.1.7.1"), mime)`, AES-256-CBC
+      (`2.16.840.1.101.3.4.1.42`), and `CmsRecipient` with the certificate.
+      For `Pkcs1`, use the `CmsRecipient(cert, RSAEncryptionPadding.Pkcs1)`
+      overload (check it exists in .NET 4.8; if not, record that
+      `Pkcs1` is unsupported and use the default). Encrypt to the user's
+      certificate only.
+      *CreateEncryptedCopy*: write `smimePayload` to a temp file (it is
+      ciphertext, so that is safe), then in `destination` create
+      `Items.Add(olPostItem)`. Set `Subject` from the source and leave the
+      body empty (no plaintext outside the envelope). Add the attachment
+      `smime.p7m`, set `PR_ATTACH_MIME_TAG` = `application/pkcs7-mime`, Save,
+      set `MessageClass = "IPM.Note"`, Save, release, and re-open as a
+      `MailItem`. Add the source's recipients by type (`Recipients.Add`
+      with the SMTP address, `Type` To/Cc/Bcc). Copy through
+      `PropertyAccessor`: sender and sent-representing name, address and
+      address type (0x0C1A001F, 0x0C1F001F, 0x0C1E001F, 0x0042001F,
+      0x0065001F, 0x0064001F), `PR_CLIENT_SUBMIT_TIME` (0x00390040),
+      `PR_MESSAGE_DELIVERY_TIME` (0x0E060040), `PR_INTERNET_MESSAGE_ID`
+      (0x1035001F), conversation topic and index (0x0070001F, 0x00710102),
+      importance and categories. Set `UnRead`, Save, set
+      `MessageClass = "IPM.Note.SMIME"`, Save, release, delete the temp file.
+      A property Outlook refuses is logged (tag only) and skipped. Verify on
+      dev which ones stick, and record the result in this item. Return the
+      new item's ref.
+      *VerifyEncryptedCopy*: re-open fresh and check, through
+      `ReadStoredProtectedClass` (move it to a shared internal helper), that
+      the stored class is `IPM.Note.SMIME` and that the folder table holds
+      the row. Without decrypting, compare the stored `smime.p7m` bytes
+      with `smimePayload` (read via `PR_ATTACH_DATA_BIN`). If Outlook's
+      S/MIME layer hides the attachment, accept the class check alone and log
+      that.
+      *ResolveCertificate / ListEncryptionCertificates*: certificates in
+      `CurrentUser\My` that are valid now, have an RSA key, have
+      `KeyEncipherment` in Key Usage (or no Key Usage extension), and have
+      `1.3.6.1.5.5.7.3.4` in EKU (or no EKU). Automatic = among those, the
+      ones whose subject e-mail or SAN rfc822 equals the SMTP address of the
+      default store's account (`Session.Accounts`, matching store, else the
+      first account); then the latest `NotAfter`. An explicit thumbprint that
+      is no longer valid resolves to null (no silent switch).
+
+- [x] **A6.** `ClassifierService`: the re-encrypted path
+      (requires: A2, A3, A4). `ClassifierService` takes an optional
+      `IMailRebuilder` (ctor parameter, default null = feature unavailable).
+      `ClassifyOptions` gains `ReencryptProtected` (bool) and
+      `ReencryptCertificateThumbprint`; the AddIn sets them from A1's
+      settings for both Classify and AutoClass. In `ProcessItem`, when
+      `wasProtected && ReencryptProtected && rebuilder != null`:
+      1. Run the "Save to" dispositions on the source first
+         (`SaveAttachmentToFile` on the source, which is readable in memory).
+      2. `ReadDecryptedContent`. If it returns null, use the standard path.
+      3. Plan (A3), then `MimeEntityBuilder`, then `ResolveCertificate`, then
+         `Encrypt`. If any step fails, use the standard path.
+      4. For every destination, `CreateEncryptedCopy` (unread = the source's
+         unread state, or false when MarkAsRead is requested) followed by
+         `VerifyEncryptedCopy`. If a copy fails verification, delete that
+         copy, use the standard path for this item, and stop.
+      5. Unless KeepCopy is on: move the source to its store's Deleted Items
+         (`GetDeletedItemsFolder` + `MoveItemToFolder`, markAsRead false).
+         Check the moved item with `IsEncryptedMail`; when it no longer reads
+         as protected (plaintext written by Move), delete it permanently
+         (`Delete()` in Deleted Items, as `DeleteItemPermanently` does) and
+         log a Warning.
+      6. Count the item as processed and filed. Record history (conversation
+         key read beforehand) but add nothing to the Undo plan.
+      `ClassifyResult` gains `Reencrypted` and `ReencryptFallbacks` counts.
+      The AddIn status appends `Status_Classify_Reencrypted_One/_Other`
+      ("{0} encrypted mail(s) re-encrypted (cannot be undone)") and
+      `Status_Classify_ReencryptFallback_One/_Other` ("{0} encrypted mail(s)
+      filed without re-encryption — see the log"), plus a one-time-per-session
+      `Status_Classify_ReencryptNoCertificate` when no certificate resolves.
+      Logs at Information: "Re-encrypted filing: {Destinations}
+      destination(s), {Parts} part(s), cert {Thumbprint}" (no subject, no file
+      names). Fallback reasons at Warning. The attachment window: in
+      re-encryption mode, protected items readable in memory are offered like
+      plain mail (they will be rebuilt). Gate this in
+      `AllAttachmentBearersAreEncrypted`/`GatherAttachments` on the setting.
+      xUnit tests with NSubstitute for `IMailRebuilder`: the happy path
+      (copies, source to Deleted Items, no undo entry, counts), each fallback
+      point, KeepCopy keeps the source, a plaintext Deleted Items copy is
+      deleted permanently, the setting off means the standard path is
+      unchanged.
+      Done (2026-11-14): eligibility in `ReencryptEligibility` (new outcome
+      `NotEncrypted` for mail protected only by unsaved changes); the original
+      already in Deleted Items is not moved; a regular part keeps its
+      `Content-ID`, so an unflagged body image (IMAP/PST stores) still renders
+      in the rebuilt copy. Verified on dev with the simulated-Stormshield
+      technique: move + strip + modal + mark as read, keep a copy, no strip
+      (copy opens decrypted, label, accents, image, original hard-deleted after
+      the plaintext move). Stormshield itself is re-checked in A8.
+
+- [x] **A7.** Docs and the security posture (through `doc-keeper`):
+      `website/docs/user-guide/walkthrough.md` (the Experimental tab, what it
+      does, the limits: no undo, signature lost, card required),
+      `docs/security.md` + `website/docs/security.md` (a new trust boundary:
+      the add-in handles decrypted content in memory and performs S/MIME
+      encryption; the temp-file fallback is zeroed then deleted; the
+      certificate is public-key only; the original in Deleted Items, or
+      permanently deleted when written decrypted), and
+      `developer-guide/architecture.md` (`IMailRebuilder`, the MIME builder,
+      use of in-box `System.Security.dll`). Commit
+      `tools/Inspect-SmimeMsg.ps1` and mention it in
+      `developer-guide/testing.md`.
+
+- [ ] **A8.** E2E verification on the dev machine (no user involvement; memory
+      `e2e-outlook-testing`). Use the self-signed `CN=RBLclass E2E Test`
+      certificate (created by the spike) and fake mails made truly encrypted
+      by the spike technique, plus the in-memory-decrypted simulation for the
+      Stormshield case. Scenarios: re-encrypted move with strip, banner and
+      mark as read; KeepCopy; two destinations; card-absent (payload visible),
+      which falls back to the standard path; no certificate, which falls back
+      with the status line; an embedded `.msg` attachment, which falls back;
+      the setting off, which runs the standard path. Each re-encrypted copy
+      must open decrypted in Outlook with the expected parts. Target: a pilot
+      machine with Stormshield opens a re-encrypted mail. [#62]
+      Dev results (2026-11-14, simulated Stormshield, explicit E2E
+      certificate): move + strip + attachment window + mark as read, keep a
+      copy, no strip, two destinations all re-encrypted; each copy is stored
+      `IPM.Note.SMIME`, opens decrypted with the expected parts, accents and
+      label, unread state kept or cleared as asked; the original written
+      decrypted by the move to Deleted Items is hard-deleted (logged). Card
+      absent (payload visible) takes the standard path silently
+      (`NotDecrypted`, fixed here: the eligibility now reads the parts when
+      the live class is protected); embedded `.msg` falls back (`Unsupported`);
+      Automatic with no usable certificate falls back with both status lines;
+      setting off runs the standard path. Certificate pick in Settings saved.
+      No temp file left. - shipped, pending tests (not verifiable on the dev
+      machine per the testing strategy above; re-verify on the real target
+      before pilot: with the card inserted, a classified Stormshield mail is
+      filed re-encrypted and opens decrypted in Outlook with all its parts;
+      Stormshield accepts the RSA-OAEP key transport (step 0); the external
+      banner is stripped from the rebuilt body; card absent files normally)
 
 ---
 

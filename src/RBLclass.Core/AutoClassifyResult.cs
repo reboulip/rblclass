@@ -14,7 +14,9 @@ namespace RBLclass.Core
                                   int errors, int partialErrors, int encryptedStripSkips,
                                   int alreadyInPlace,
                                   ClassifyUndoPlan undo,
-                                  IReadOnlyList<FolderNode> filedDestinations = null)
+                                  IReadOnlyList<FolderNode> filedDestinations = null,
+                                  int reencrypted = 0, int reencryptFallbacks = 0,
+                                  bool reencryptNoCertificate = false)
         {
             Filed = filed;
             NoHistory = noHistory;
@@ -25,6 +27,9 @@ namespace RBLclass.Core
             AlreadyInPlace = alreadyInPlace;
             Undo = undo;
             FiledDestinations = (filedDestinations ?? new FolderNode[0]).ToArray();
+            Reencrypted = reencrypted;
+            ReencryptFallbacks = reencryptFallbacks;
+            ReencryptNoCertificate = reencryptNoCertificate;
         }
 
         /// <summary>Mails filed to a remembered destination.</summary>
@@ -76,6 +81,15 @@ namespace RBLclass.Core
         /// show the user where things went. Empty when nothing was filed.
         /// </summary>
         public IReadOnlyList<FolderNode> FiledDestinations { get; }
+
+        /// <summary><see cref="ClassifyResult.Reencrypted"/> summed over the inner runs (v2.12.0.0).</summary>
+        public int Reencrypted { get; }
+
+        /// <summary><see cref="ClassifyResult.ReencryptFallbacks"/> summed over the inner runs.</summary>
+        public int ReencryptFallbacks { get; }
+
+        /// <summary>True when an inner run reported <see cref="ClassifyResult.ReencryptNoCertificate"/>.</summary>
+        public bool ReencryptNoCertificate { get; }
 
         /// <summary>True when at least one mail was filed.</summary>
         public bool AnyFiled => Filed > 0;

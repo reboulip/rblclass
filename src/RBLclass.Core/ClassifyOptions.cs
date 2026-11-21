@@ -16,7 +16,9 @@ namespace RBLclass.Core
             bool markTasksComplete = false,
             bool safetyCopy = false,
             bool markAsRead = false,
-            bool recordHistory = true)
+            bool recordHistory = true,
+            bool reencryptProtected = false,
+            string reencryptCertificateThumbprint = null)
         {
             KeepCopy = keepCopy;
             RemoveAttachments = removeAttachments;
@@ -24,6 +26,8 @@ namespace RBLclass.Core
             SafetyCopy = safetyCopy;
             MarkAsRead = markAsRead;
             RecordHistory = recordHistory;
+            ReencryptProtected = reencryptProtected;
+            ReencryptCertificateThumbprint = reencryptCertificateThumbprint ?? string.Empty;
         }
 
         public bool KeepCopy { get; }
@@ -32,5 +36,14 @@ namespace RBLclass.Core
         public bool SafetyCopy { get; }
         public bool MarkAsRead { get; }
         public bool RecordHistory { get; }
+
+        /// <summary>
+        /// Experimental (v2.12.0.0): file encrypted mail readable decrypted in
+        /// memory as a rebuilt, re-encrypted copy instead of moving it.
+        /// </summary>
+        public bool ReencryptProtected { get; }
+
+        /// <summary>The certificate to re-encrypt to; empty = Automatic.</summary>
+        public string ReencryptCertificateThumbprint { get; }
     }
 }

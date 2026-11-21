@@ -6,10 +6,18 @@ namespace RBLclass.Core
     /// </summary>
     public sealed class MailProtectionState
     {
-        public MailProtectionState(string messageClass, int? securityFlags)
+        public MailProtectionState(string messageClass, int? securityFlags,
+                                   string storedMessageClass = null,
+                                   bool hasSmimePayload = false,
+                                   bool hasUnsavedChanges = false)
         {
             MessageClass = messageClass;
             SecurityFlags = securityFlags;
+            StoredMessageClass = storedMessageClass;
+            HasSmimePayload = hasSmimePayload;
+            HasUnsavedChanges = hasUnsavedChanges;
+            Reason = ProtectedMailPolicy.Evaluate(new ProtectionSignals(
+                messageClass, storedMessageClass, hasSmimePayload, hasUnsavedChanges));
         }
 
         /// <summary>The message class, or null when it could not be read.</summary>
@@ -21,6 +29,16 @@ namespace RBLclass.Core
         /// </summary>
         public int? SecurityFlags { get; }
 
-        public bool IsProtected => ProtectedMailPolicy.IsProtected(MessageClass);
+        /// <summary>The class stored in the folder, or null when not looked up / not found.</summary>
+        public string StoredMessageClass { get; }
+
+        public bool HasSmimePayload { get; }
+
+        public bool HasUnsavedChanges { get; }
+
+        /// <summary>The first signal that made the mail protected, or <see cref="ProtectionReason.None"/>.</summary>
+        public ProtectionReason Reason { get; }
+
+        public bool IsProtected => Reason != ProtectionReason.None;
     }
 }

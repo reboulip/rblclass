@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using RBLclass.AddIn.Localization;
 using RBLclass.Core;
@@ -198,9 +198,12 @@ namespace RBLclass.AddIn
 
         /// <summary>
         /// Gather each item's attachments (and whether it is encrypted) for the
-        /// F2 disposition modal. Touches COM - invoked on the UI thread.
+        /// F2 disposition modal. Touches COM - invoked on the UI thread. The bool
+        /// is true when re-encrypted filing is on (v2.12.0.0): an encrypted mail
+        /// readable decrypted in memory is then offered like plain mail, since it
+        /// will be rebuilt. Manage Attachments always passes false.
         /// </summary>
-        public static Func<IReadOnlyList<MailItemRef>,
+        public static Func<IReadOnlyList<MailItemRef>, bool,
             IReadOnlyList<(MailItemRef Item, IReadOnlyList<AttachmentInfo> Attachments, bool IsEncrypted)>>
             GatherAttachments;
 
@@ -285,5 +288,17 @@ namespace RBLclass.AddIn
         /// startup; null until then. UI thread only.
         /// </summary>
         public static Action RefreshFolders;
+
+        /// <summary>
+        /// Experimental re-encrypted filing (v2.12.0.0 A1): the certificates that
+        /// can be chosen in Settings. STA. Null when unavailable.
+        /// </summary>
+        public static Func<IReadOnlyList<CertificateInfo>> ListEncryptionCertificates;
+
+        /// <summary>
+        /// Experimental re-encrypted filing (v2.12.0.0 A1): the certificate a
+        /// thumbprint (empty = Automatic) resolves to, or null. STA.
+        /// </summary>
+        public static Func<string, CertificateInfo> ResolveEncryptionCertificate;
     }
 }

@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.IO;
 using FluentAssertions;
 using RBLclass.Core;
@@ -71,6 +71,8 @@ namespace RBLclass.Core.Tests
             settings.StripSavedAttachments.Should().BeTrue();
             settings.AttachmentDefaultFolder.Should().BeEmpty();
             settings.TreatInlineImagesAsAttachments.Should().BeFalse();
+            settings.ReencryptProtectedOnFile.Should().BeFalse();
+            settings.ReencryptCertificateThumbprint.Should().BeEmpty();
         }
 
         [Fact]
@@ -113,6 +115,8 @@ namespace RBLclass.Core.Tests
                 ShowPaneOnStartup = false,
                 StripSavedAttachments = false,
                 TreatInlineImagesAsAttachments = true,
+                ReencryptProtectedOnFile = true,
+                ReencryptCertificateThumbprint = "ABCD1234",
                 AttachmentDefaultFolder = @"\\server\partage\Pièces jointes",
                 PreferredUiLanguage = "fr"
             };
@@ -155,6 +159,8 @@ namespace RBLclass.Core.Tests
             reloaded.ShowPaneOnStartup.Should().BeFalse();
             reloaded.StripSavedAttachments.Should().BeFalse();
             reloaded.TreatInlineImagesAsAttachments.Should().BeTrue();
+            reloaded.ReencryptProtectedOnFile.Should().BeTrue();
+            reloaded.ReencryptCertificateThumbprint.Should().Be("ABCD1234");
             reloaded.AttachmentDefaultFolder.Should().Be(@"\\server\partage\Pièces jointes");
             reloaded.PreferredUiLanguage.Should().Be("fr");
         }

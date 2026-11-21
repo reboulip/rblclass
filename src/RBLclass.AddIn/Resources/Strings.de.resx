@@ -906,6 +906,21 @@
   <data name="Status_Classify_EncryptedKept_Other" xml:space="preserve">
     <value> {0} verschlüsselte E-Mails haben ihre Anhänge behalten.</value>
   </data>
+  <data name="Status_Classify_Reencrypted_One" xml:space="preserve">
+    <value> {0} verschlüsselte E-Mail neu verschlüsselt (nicht rückgängig zu machen).</value>
+  </data>
+  <data name="Status_Classify_Reencrypted_Other" xml:space="preserve">
+    <value> {0} verschlüsselte E-Mails neu verschlüsselt (nicht rückgängig zu machen).</value>
+  </data>
+  <data name="Status_Classify_ReencryptFallback_One" xml:space="preserve">
+    <value> {0} verschlüsselte E-Mail ohne Neuverschlüsselung abgelegt – siehe Protokoll.</value>
+  </data>
+  <data name="Status_Classify_ReencryptFallback_Other" xml:space="preserve">
+    <value> {0} verschlüsselte E-Mails ohne Neuverschlüsselung abgelegt – siehe Protokoll.</value>
+  </data>
+  <data name="Status_Classify_ReencryptNoCertificate" xml:space="preserve">
+    <value> Kein verwendbares Verschlüsselungszertifikat: Neuverschlüsselung übersprungen.</value>
+  </data>
   <data name="Status_Classify_EncryptedAttachmentsKept_One" xml:space="preserve">
     <value> Anhänge behalten — {0} verschlüsselte E-Mail kann nicht verarbeitet werden.</value>
   </data>
@@ -1038,5 +1053,41 @@ Führen Sie Ihre Suche erneut aus, um neu erstellte oder umbenannte Ordner zu se
   </data>
   <data name="MainPane_AutoClass_EasterEgg" xml:space="preserve">
     <value>🐷</value>
+  </data>
+  <data name="Settings_Nav_Experimental" xml:space="preserve">
+    <value>Experimentell</value>
+  </data>
+  <data name="Settings_Experimental_Header" xml:space="preserve">
+    <value>Experimentelle Funktionen</value>
+  </data>
+  <data name="Settings_Experimental_Warning" xml:space="preserve">
+    <value>Diese Funktionen sind experimentell und für Pilottests gedacht. Lassen Sie sie ausgeschaltet, sofern Sie nicht ausdrücklich um einen Test gebeten wurden.</value>
+  </data>
+  <data name="Settings_ReencryptProtected_CheckBox" xml:space="preserve">
+    <value>Verschlüsselte Mails beim Ablegen neu verschlüsseln</value>
+  </data>
+  <data name="Settings_ReencryptProtected_Info" xml:space="preserve">
+    <value>Ist eine verschlüsselte Mail lesbar (Smartcard eingesteckt), baut RBLclass sie neu auf, wendet die Ablageoptionen an, verschlüsselt sie mit Ihrem Zertifikat neu und legt diese Kopie ab, sodass die Mail nie entschlüsselt gespeichert wird. Die Signatur des Absenders bleibt nicht erhalten, die Ablage kann nicht rückgängig gemacht werden und das Original wird in Gelöschte Elemente verschoben. Nur signierte und nicht lesbare Mails werden wie gewohnt abgelegt.</value>
+  </data>
+  <data name="Settings_ReencryptCertificate_Label" xml:space="preserve">
+    <value>Zertifikat für die Neuverschlüsselung:</value>
+  </data>
+  <data name="Settings_ReencryptCertificate_Automatic" xml:space="preserve">
+    <value>Automatisch</value>
+  </data>
+  <data name="Settings_ReencryptCertificate_Item" xml:space="preserve">
+    <value>{0} (läuft ab am {1})</value>
+  </data>
+  <data name="Settings_ReencryptCertificate_NoPrivateKey" xml:space="preserve">
+    <value>- privater Schlüssel für Windows nicht sichtbar</value>
+  </data>
+  <data name="Settings_ReencryptCertificate_Resolved" xml:space="preserve">
+    <value>Automatisch verwendet: {0}</value>
+  </data>
+  <data name="Settings_ReencryptCertificate_None" xml:space="preserve">
+    <value>Automatisch findet kein verwendbares Zertifikat (gültig, für sichere E-Mail, mit Ihrer Adresse, privater Schlüssel für Windows sichtbar). Wählen Sie eines in der Liste, sonst entfällt die Neuverschlüsselung.</value>
+  </data>
+  <data name="Settings_ReencryptCertificate_Missing" xml:space="preserve">
+    <value>Zertifikat nicht verfügbar ({0})</value>
   </data>
 </root>

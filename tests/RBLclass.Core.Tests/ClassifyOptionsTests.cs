@@ -17,6 +17,18 @@ namespace RBLclass.Core.Tests
             o.SafetyCopy.Should().BeFalse();
             o.MarkAsRead.Should().BeFalse();
             o.RecordHistory.Should().BeTrue(); // the one non-false default
+            o.ReencryptProtected.Should().BeFalse();
+            o.ReencryptCertificateThumbprint.Should().BeEmpty();
+        }
+
+        [Fact]
+        public void Re_encryption_options_are_stored_and_passed_through_the_request()
+        {
+            var o = new ClassifyOptions(reencryptProtected: true, reencryptCertificateThumbprint: "AB12");
+            var request = new ClassifyRequest(new MailItemRef[0], new FolderNode[0], o);
+
+            request.ReencryptProtected.Should().BeTrue();
+            request.ReencryptCertificateThumbprint.Should().Be("AB12");
         }
 
         [Fact]

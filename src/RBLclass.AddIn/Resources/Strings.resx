@@ -906,6 +906,21 @@
   <data name="Status_Classify_EncryptedKept_Other" xml:space="preserve">
     <value> {0} encrypted mails kept their attachments.</value>
   </data>
+  <data name="Status_Classify_Reencrypted_One" xml:space="preserve">
+    <value> {0} encrypted mail re-encrypted (cannot be undone).</value>
+  </data>
+  <data name="Status_Classify_Reencrypted_Other" xml:space="preserve">
+    <value> {0} encrypted mails re-encrypted (cannot be undone).</value>
+  </data>
+  <data name="Status_Classify_ReencryptFallback_One" xml:space="preserve">
+    <value> {0} encrypted mail filed without re-encryption — see the log.</value>
+  </data>
+  <data name="Status_Classify_ReencryptFallback_Other" xml:space="preserve">
+    <value> {0} encrypted mails filed without re-encryption — see the log.</value>
+  </data>
+  <data name="Status_Classify_ReencryptNoCertificate" xml:space="preserve">
+    <value> No usable encryption certificate: re-encryption skipped.</value>
+  </data>
   <data name="Status_Classify_EncryptedAttachmentsKept_One" xml:space="preserve">
     <value> Attachments were retained — {0} encrypted mail cannot be stripped.</value>
   </data>
@@ -1038,5 +1053,41 @@ Re-run your search to see newly created or renamed folders.</value>
   </data>
   <data name="MainPane_AutoClass_EasterEgg" xml:space="preserve">
     <value>🐷</value>
+  </data>
+  <data name="Settings_Nav_Experimental" xml:space="preserve">
+    <value>Experimental</value>
+  </data>
+  <data name="Settings_Experimental_Header" xml:space="preserve">
+    <value>Experimental features</value>
+  </data>
+  <data name="Settings_Experimental_Warning" xml:space="preserve">
+    <value>These features are experimental and meant for pilot testing. Leave them off unless you have been asked to test them.</value>
+  </data>
+  <data name="Settings_ReencryptProtected_CheckBox" xml:space="preserve">
+    <value>Re-encrypt encrypted mail when filing it</value>
+  </data>
+  <data name="Settings_ReencryptProtected_Info" xml:space="preserve">
+    <value>When an encrypted mail is readable (smart card inserted), RBLclass rebuilds it, applies the filing options to it, re-encrypts it to your certificate and files that copy, so the mail is never stored decrypted. The sender's signature is not kept, the filing cannot be undone, and the original goes to Deleted Items. Signed-only mail, and mail that is not readable, is filed as usual.</value>
+  </data>
+  <data name="Settings_ReencryptCertificate_Label" xml:space="preserve">
+    <value>Certificate to re-encrypt to:</value>
+  </data>
+  <data name="Settings_ReencryptCertificate_Automatic" xml:space="preserve">
+    <value>Automatic</value>
+  </data>
+  <data name="Settings_ReencryptCertificate_Item" xml:space="preserve">
+    <value>{0} (expires {1})</value>
+  </data>
+  <data name="Settings_ReencryptCertificate_NoPrivateKey" xml:space="preserve">
+    <value>- private key not visible to Windows</value>
+  </data>
+  <data name="Settings_ReencryptCertificate_Resolved" xml:space="preserve">
+    <value>Automatic uses: {0}</value>
+  </data>
+  <data name="Settings_ReencryptCertificate_None" xml:space="preserve">
+    <value>Automatic finds no usable certificate (valid, for secure e-mail, matching your address, with its private key visible to Windows). Choose one in the list, or re-encryption is skipped.</value>
+  </data>
+  <data name="Settings_ReencryptCertificate_Missing" xml:space="preserve">
+    <value>Unavailable certificate ({0})</value>
   </data>
 </root>

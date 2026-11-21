@@ -906,6 +906,21 @@
   <data name="Status_Classify_EncryptedKept_Other" xml:space="preserve">
     <value> {0} messages chiffrés ont conservé leurs pièces jointes.</value>
   </data>
+  <data name="Status_Classify_Reencrypted_One" xml:space="preserve">
+    <value> {0} message chiffré rechiffré (impossible à annuler).</value>
+  </data>
+  <data name="Status_Classify_Reencrypted_Other" xml:space="preserve">
+    <value> {0} messages chiffrés rechiffrés (impossible à annuler).</value>
+  </data>
+  <data name="Status_Classify_ReencryptFallback_One" xml:space="preserve">
+    <value> {0} message chiffré classé sans rechiffrement — voir le journal.</value>
+  </data>
+  <data name="Status_Classify_ReencryptFallback_Other" xml:space="preserve">
+    <value> {0} messages chiffrés classés sans rechiffrement — voir le journal.</value>
+  </data>
+  <data name="Status_Classify_ReencryptNoCertificate" xml:space="preserve">
+    <value> Aucun certificat de chiffrement utilisable : rechiffrement ignoré.</value>
+  </data>
   <data name="Status_Classify_EncryptedAttachmentsKept_One" xml:space="preserve">
     <value> Pièces jointes conservées — {0} message chiffré ne peut pas être traité.</value>
   </data>
@@ -1038,5 +1053,41 @@ Relancez votre recherche pour voir les dossiers créés ou renommés.</value>
   </data>
   <data name="MainPane_AutoClass_EasterEgg" xml:space="preserve">
     <value>🐷</value>
+  </data>
+  <data name="Settings_Nav_Experimental" xml:space="preserve">
+    <value>Expérimental</value>
+  </data>
+  <data name="Settings_Experimental_Header" xml:space="preserve">
+    <value>Fonctions expérimentales</value>
+  </data>
+  <data name="Settings_Experimental_Warning" xml:space="preserve">
+    <value>Ces fonctions sont expérimentales et destinées aux tests pilotes. Laissez-les désactivées sauf si l'on vous a demandé de les tester.</value>
+  </data>
+  <data name="Settings_ReencryptProtected_CheckBox" xml:space="preserve">
+    <value>Re-chiffrer les mails chiffrés lors du classement</value>
+  </data>
+  <data name="Settings_ReencryptProtected_Info" xml:space="preserve">
+    <value>Quand un mail chiffré est lisible (badge inséré), RBLclass le reconstruit, lui applique les options de classement, le re-chiffre avec votre certificat et classe cette copie : le mail n'est jamais enregistré déchiffré. La signature de l'expéditeur n'est pas conservée, le classement ne peut pas être annulé et l'original va dans les Éléments supprimés. Les mails seulement signés, et ceux qui ne sont pas lisibles, sont classés normalement.</value>
+  </data>
+  <data name="Settings_ReencryptCertificate_Label" xml:space="preserve">
+    <value>Certificat de re-chiffrement :</value>
+  </data>
+  <data name="Settings_ReencryptCertificate_Automatic" xml:space="preserve">
+    <value>Automatique</value>
+  </data>
+  <data name="Settings_ReencryptCertificate_Item" xml:space="preserve">
+    <value>{0} (expire le {1})</value>
+  </data>
+  <data name="Settings_ReencryptCertificate_NoPrivateKey" xml:space="preserve">
+    <value>- clé privée non visible par Windows</value>
+  </data>
+  <data name="Settings_ReencryptCertificate_Resolved" xml:space="preserve">
+    <value>Automatique utilise : {0}</value>
+  </data>
+  <data name="Settings_ReencryptCertificate_None" xml:space="preserve">
+    <value>Automatique ne trouve aucun certificat utilisable (valide, pour la messagerie sécurisée, à votre adresse, avec sa clé privée visible par Windows). Choisissez-en un dans la liste, sinon le re-chiffrement est ignoré.</value>
+  </data>
+  <data name="Settings_ReencryptCertificate_Missing" xml:space="preserve">
+    <value>Certificat indisponible ({0})</value>
   </data>
 </root>
