@@ -10,7 +10,7 @@ Reference docs from the legacy analysis:
 [docs/legacy-reimplementation-roadmap.md](docs/legacy-reimplementation-roadmap.md),
 [docs/parity-and-regression.md](docs/parity-and-regression.md).
 
-## Where we are (2026-11-07)
+## Where we are (2026-11-21)
 
 The rewritten add-in reached full legacy parity and shipped as **v2.0.0.0**,
 followed by feedback/refinement waves **v2.1.0.0** through **v2.8.0.0**
@@ -26,6 +26,9 @@ selection-lag fix, banner diagnostics) shipped 2026-07-29 —
 **v2.11.0.0** (install & encryption diagnostics, keyboard flow, attachments)
 shipped 2026-11-07 —
 [release](https://github.com/reboulip/rblclass/releases/tag/2.11.0.0).
+**v2.12.0.0** (experimental re-encrypted filing of protected mail) shipped
+2026-11-21 —
+[release](https://github.com/reboulip/rblclass/releases/tag/v2.12.0.0).
 
 Open work: the two v2.6.0.0 items still pending live verification (banner
 strip B3, meeting classify C1), and v2.9.0.0 B1 (banner strip on
@@ -35,7 +38,9 @@ target — **confirmed still broken on the real target on 2026-07-28**
 diagnostic capability needed to root-cause it, itself shipped pending a
 real-target re-check. v2.11.0.0 A3 (encrypted-mail guard and trace) and
 C2 (body-image removal on encrypted mail) likewise await a real-target
-check. Phases 8–9 are forward-looking.
+check, as does v2.12.0.0 A8 (re-encrypted filing with real Stormshield
+mail, including the step-0 `Inspect-SmimeMsg.ps1` key-transport check).
+Phases 8–9 are forward-looking.
 
 ## Testing & validation strategy (applies to every item)
 
