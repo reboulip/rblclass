@@ -27,6 +27,7 @@ administrator rights** and runs **inside the Outlook process**.
 | **User account ↔ add-in data** | All persisted state lives under `%LocalAppData%\RBLclass\`, protected by the standard per-user NTFS ACL. Other non-admin users cannot read it; a local administrator can (accepted — the OS trust boundary). |
 | **Machine ↔ network** | By default the add-in makes **no** network calls. The single optional exception is the opt-in update check, which reaches a user-configured HTTPS URL only. |
 | **Decrypted mail ↔ add-in** | With the opt-in, experimental *Re-encrypt encrypted mail when filing* setting (off by default), the add-in reads mail content that Outlook and an endpoint product such as Stormshield have already decrypted in memory, and encrypts it again locally. See [Protected mail](#protected-encrypted-signed-mail). |
+| **Add-in ↔ Microsoft Word** | The optional *Save as file → PDF* export drives Word through late-bound automation, **out of process**, to convert mail to PDF. Word is optional at runtime (no Word interop reference, no new dependency); without it, nothing is written. Word runs on its own dedicated STA thread; Outlook OM calls stay on the UI thread. |
 | **Add-in ↔ registry** | COM registration and the Outlook load entry are written under **HKCU only**. No HKLM writes; no admin rights. |
 
 ## Data handled
@@ -50,6 +51,32 @@ administrator rights** and runs **inside the Outlook process**.
   the **only** path that writes mail body content to disk. It is never triggered
   automatically; the `diagnostics\` directory is created on first use; files
   accumulate until the user manually deletes them (no rolling retention).
+- **External-attachment phishing warning (transient, on by default):** the
+  add-in hooks two Outlook item events (`BeforeAttachmentWriteToTempFile`,
+  `BeforeAttachmentPreview`) on the selected mail and on opened mail windows. The
+  mail's HTML body is read **only when the event fires**, to look for the learned
+  banner, and is not persisted. Nothing is sent over the network and no mail is
+  modified. The only output is a confirmation dialog (default and Esc: cancel);
+  if the check fails, it fails open and the attachment opens. The log gets only
+  counts and outcomes, never file names or addresses.
+- **External-link phishing warning (transient, on by default):** the add-in
+  installs two **thread-scoped** Windows hooks (`WH_MOUSE`, `WH_GETMESSAGE`) on
+  Outlook's own UI thread, never global, with nothing injected and no API
+  patched, and repurposes the built-in ribbon command `HyperlinkOpen`. When a link
+  is activated in a mail, the mail's **rendered text** is read at click time to
+  look for the learned banner; nothing is persisted, nothing goes over the
+  network and no mail is modified. The only output is a confirmation dialog
+  (default and Esc: cancel). It fails open: on any error the link opens, and
+  "Open anyway" goes through Word's own hyperlink follow, so Outlook's security
+  prompts still apply. The log gets only `scheme://host`, never the full URL.
+  `mailto:` and `#` links are not checked. **Known gap:** a touch tap cannot be
+  blocked (accepted, documented).
+- **PDF export (user-initiated, plaintext):** *Save as file → PDF* writes each
+  mail as a temporary MHTML file under `%TEMP%\RBLclass\pdf\`, which Word converts
+  to a PDF in the folder the user picked. The temporary files hold plaintext mail
+  and are always deleted, in a `finally` block. A PDF of **encrypted** mail is
+  created only after an explicit confirmation for the whole batch (default and
+  Esc: skip encrypted mails). No mail content reaches the log.
 - **Re-encrypted filing (transient, opt-in):** decrypted content (body, body
   images, attachments) is held in memory while a copy is rebuilt and encrypted;
   the plaintext MIME buffer is cleared after encryption. Certificates are read

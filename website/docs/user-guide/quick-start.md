@@ -36,14 +36,14 @@ That's it — the mail moves to the destination folder.
 
 ## 5. Made a mistake? Undo
 
-Press ++ctrl+z++ anywhere in the pane (or click **Undo**) to reverse the last
+Press ++ctrl+z++ anywhere in the pane (or click the **Undo** icon) to reverse the last
 classify: moved mails go back where they came from, and any filed copies are
 removed. Only the **last** classify can be undone.
 
 !!! tip "Open a folder instead of filing"
     ++ctrl+enter++ on a highlighted result *opens* that folder in Outlook
     instead of filing into it — handy when you just want to go look at a folder.
-    The **👁** button on a result row does the same.
+    The **eye** icon on a result row does the same.
 
 ## Next steps
 
