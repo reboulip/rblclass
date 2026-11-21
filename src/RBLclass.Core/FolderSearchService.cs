@@ -30,6 +30,10 @@ namespace RBLclass.Core
             new Dictionary<string, NormalizedFolder>();
         private int _lastCacheVersion = -1;
 
+        // Folder depth by (StoreId, EntryId), rebuilt with the normalized-path cache
+        // (v2.13.0.0 B1). Store root = 0, its direct sub-folders = 1.
+        private Dictionary<string, int> _depthCache = new Dictionary<string, int>();
+
         public FolderSearchService(IFolderTree tree)
         {
             _tree = tree ?? throw new ArgumentNullException(nameof(tree));
@@ -73,6 +77,7 @@ namespace RBLclass.Core
             if (treeVersion != _lastCacheVersion)
             {
                 _normCache = BuildNormCache(all);
+                _depthCache = BuildDepthCache(all);
                 _lastCacheVersion = treeVersion;
             }
 
@@ -83,6 +88,8 @@ namespace RBLclass.Core
                 NormalizedFolder norm;
                 if (!_normCache.TryGetValue(KeyOf(folder), out norm))
                     norm = new NormalizedFolder(folder.FullPath); // cache miss: compute once
+                if (options.MaxDepth > 0 && DepthOf(folder) > options.MaxDepth)
+                    continue; // deeper than the configured maximum search depth
                 if (IsMatch(norm, keywords, options.MatchMode))
                     matches.Add(folder);
             }
@@ -92,7 +99,10 @@ namespace RBLclass.Core
             if (options.AllResults)
             {
                 emitted = matches
-                    .Select(f => new FolderSearchResult(f, isCollapsed: false))
+                    // A level-N folder that still has sub-folders carries the collapse
+                    // suffix so the user can tell its subtree was cut off.
+                    .Select(f => new FolderSearchResult(f, isCollapsed:
+                        options.MaxDepth > 0 && !f.IsLeaf && DepthOf(f) == options.MaxDepth))
                     .ToList();
             }
             else
@@ -123,6 +133,63 @@ namespace RBLclass.Core
                 : emitted;
 
             return new FolderSearchOutcome(results, total, exceeded);
+        }
+
+        private int DepthOf(FolderNode folder)
+        {
+            int depth;
+            return _depthCache.TryGetValue(KeyOf(folder), out depth) ? depth : 1;
+        }
+
+        /// <summary>
+        /// Depth of every folder from the ParentEntryId chain (never by splitting
+        /// FullPath: folder names may contain the separator). The adapter gives the
+        /// store root node and the top-level folders the same null parent, so a null
+        /// parent is level 0 only for the root node itself (its path is its name) and
+        /// level 1 otherwise. A missing parent or a cycle ends the chain safely.
+        /// </summary>
+        private static Dictionary<string, int> BuildDepthCache(IEnumerable<FolderNode> all)
+        {
+            var byKey = new Dictionary<string, FolderNode>();
+            foreach (var f in all) byKey[KeyOf(f)] = f;
+
+            var depths = new Dictionary<string, int>(byKey.Count);
+            foreach (var f in byKey.Values)
+            {
+                var chain = new List<string>();
+                var seen = new HashSet<string>();
+                var cur = f;
+                int baseDepth;
+                while (true)
+                {
+                    string key = KeyOf(cur);
+                    int known;
+                    if (depths.TryGetValue(key, out known)) { baseDepth = known; break; }
+                    if (!seen.Add(key)) { baseDepth = 0; break; } // cycle guard
+                    chain.Add(key);
+                    if (cur.ParentEntryId == null)
+                    {
+                        baseDepth = string.Equals(cur.FullPath, cur.Name, StringComparison.Ordinal) ? -1 : 0;
+                        // -1 + 1 = 0 for the root node; 0 + 1 = 1 for top-level folders.
+                        break;
+                    }
+                    FolderNode parent;
+                    if (!byKey.TryGetValue(Key(cur.StoreId, cur.ParentEntryId), out parent))
+                    {
+                        baseDepth = 0; // unknown parent: treat as a top-level folder
+                        break;
+                    }
+                    cur = parent;
+                }
+                // chain is child-first; the last entry is the one whose base we know.
+                int d = baseDepth;
+                for (int i = chain.Count - 1; i >= 0; i--)
+                {
+                    d++;
+                    depths[chain[i]] = d;
+                }
+            }
+            return depths;
         }
 
         private static List<string> Tokenize(string query)

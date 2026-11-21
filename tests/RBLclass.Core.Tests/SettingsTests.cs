@@ -38,6 +38,7 @@ namespace RBLclass.Core.Tests
             settings.AllResults.Should().BeFalse();
             settings.FolderMatchMode.Should().Be(FolderMatchMode.Substring);
             settings.MaxResults.Should().Be(FolderSearchOptions.DefaultMaxResults);
+            settings.MaxSearchDepth.Should().Be(0);
             settings.KeepCopy.Should().BeFalse();
             settings.RemoveAttachments.Should().BeFalse();
             settings.ClassifySafetyCopy.Should().BeFalse();
@@ -84,6 +85,7 @@ namespace RBLclass.Core.Tests
                 AllResults = true,
                 FolderMatchMode = FolderMatchMode.Substring,
                 MaxResults = 250,
+                MaxSearchDepth = 3,
                 KeepCopy = true,
                 RemoveAttachments = true,
                 ClassifySafetyCopy = true,
@@ -128,6 +130,7 @@ namespace RBLclass.Core.Tests
             reloaded.AllResults.Should().BeTrue();
             reloaded.FolderMatchMode.Should().Be(FolderMatchMode.Substring);
             reloaded.MaxResults.Should().Be(250);
+            reloaded.MaxSearchDepth.Should().Be(3);
             reloaded.KeepCopy.Should().BeTrue();
             reloaded.RemoveAttachments.Should().BeTrue();
             reloaded.ClassifySafetyCopy.Should().BeTrue();
@@ -182,6 +185,18 @@ namespace RBLclass.Core.Tests
         public void Load_defaults_the_preferred_ui_language_to_auto_when_unset()
         {
             Settings.Load(_store).PreferredUiLanguage.Should().Be("Auto");
+        }
+
+        [Theory]
+        [InlineData("garbage", 0)] // invalid -> unlimited
+        [InlineData("-4", 0)]      // negative -> clamped to 0
+        [InlineData("0", 0)]
+        [InlineData("3", 3)]
+        [InlineData("5000", Settings.MaxMaxSearchDepth)] // above range -> clamped
+        public void Load_clamps_or_defaults_the_max_search_depth(string stored, int expected)
+        {
+            _store.Set(SettingsKeys.MaxSearchDepth, stored);
+            Settings.Load(_store).MaxSearchDepth.Should().Be(expected);
         }
 
         [Theory]

@@ -55,6 +55,7 @@ namespace RBLclass.AddIn.ViewModels
         private int _searchDebounceMs = Settings.DefaultSearchDebounceMs;
         private FolderMatchMode _matchMode = FolderMatchMode.Substring;
         private int _maxResults = FolderSearchOptions.DefaultMaxResults;
+        private int _maxSearchDepth = FolderSearchOptions.DefaultMaxDepth;
         private int _minSearchLength = FolderSearchOptions.DefaultMinQueryLength;
         private string _searchFeedback = string.Empty;
         private string _busyStatus = string.Empty;
@@ -1533,6 +1534,7 @@ namespace RBLclass.AddIn.ViewModels
             _searchDebounceMs = s.SearchDebounceMs;
             _matchMode = s.FolderMatchMode;
             _maxResults = s.MaxResults;
+            _maxSearchDepth = s.MaxSearchDepth;
             _minSearchLength = s.MinSearchLength;
             _pathDisplayMode = s.SearchPathDisplayMode;
             OnPropertyChanged(nameof(AllResults));
@@ -1601,7 +1603,8 @@ namespace RBLclass.AddIn.ViewModels
             // SeedOptionsFromSettings, refreshed whenever settings change
             // (v2.7.1.0 E3), so the search path does no per-search settings load.
             var outcome = _search.Search(_query,
-                new FolderSearchOptions(_matchMode, _allResults, _maxResults, _minSearchLength));
+                new FolderSearchOptions(_matchMode, _allResults, _maxResults, _minSearchLength,
+                                        _maxSearchDepth));
 
             Results.Clear();
             foreach (var r in outcome.Results)

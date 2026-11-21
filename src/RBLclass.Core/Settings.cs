@@ -41,6 +41,12 @@ namespace RBLclass.Core
         public bool AllResults { get; set; }
         public FolderMatchMode FolderMatchMode { get; set; }
         public int MaxResults { get; set; }
+
+        /// <summary>Deepest folder level searched (store root = 0); 0 = unlimited (v2.13.0.0 B1).</summary>
+        public int MaxSearchDepth { get; set; }
+
+        /// <summary>Upper clamp for <see cref="MaxSearchDepth"/>; far deeper than any real tree.</summary>
+        public const int MaxMaxSearchDepth = 100;
         public int MinSearchLength { get; set; }
         public int SearchDebounceMs { get; set; }
         public bool KeepCopy { get; set; }
@@ -106,6 +112,8 @@ namespace RBLclass.Core
                 AllResults = Bool(SettingsKeys.AllResults, false),
                 FolderMatchMode = ParseMatchMode(Str(SettingsKeys.FolderMatchMode)),
                 MaxResults = ParseMaxResults(Str(SettingsKeys.MaxResults)),
+                MaxSearchDepth = ParseClampedInt(Str(SettingsKeys.MaxSearchDepth),
+                    FolderSearchOptions.DefaultMaxDepth, 0, MaxMaxSearchDepth),
                 MinSearchLength = ParseClampedInt(Str(SettingsKeys.MinSearchLength),
                     FolderSearchOptions.DefaultMinQueryLength, 1, MaxMinSearchLength),
                 SearchDebounceMs = ParseClampedInt(Str(SettingsKeys.SearchDebounceMs),
@@ -163,6 +171,7 @@ namespace RBLclass.Core
                 Pair(SettingsKeys.AllResults,                   AllResults ? "1" : "0"),
                 Pair(SettingsKeys.FolderMatchMode,              FolderMatchMode.ToString()),
                 Pair(SettingsKeys.MaxResults,                   MaxResults.ToString(CultureInfo.InvariantCulture)),
+                Pair(SettingsKeys.MaxSearchDepth,               MaxSearchDepth.ToString(CultureInfo.InvariantCulture)),
                 Pair(SettingsKeys.MinSearchLength,              MinSearchLength.ToString(CultureInfo.InvariantCulture)),
                 Pair(SettingsKeys.SearchDebounceMs,             SearchDebounceMs.ToString(CultureInfo.InvariantCulture)),
                 Pair(SettingsKeys.KeepCopy,                     KeepCopy ? "1" : "0"),

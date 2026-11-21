@@ -21,6 +21,9 @@
         /// <summary>Cap on displayed folder-search results (legacy settingsMaxResults).</summary>
         public const string MaxResults = "MaxResults";
 
+        /// <summary>Maximum folder-search depth; 0 = unlimited (v2.13.0.0 B1).</summary>
+        public const string MaxSearchDepth = "MaxSearchDepth";
+
         /// <summary>Minimum (trimmed) query length before folder search runs (v2.2).</summary>
         public const string MinSearchLength = "MinSearchLength";
 

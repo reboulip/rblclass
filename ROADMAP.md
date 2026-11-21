@@ -356,7 +356,7 @@ do not depend on the studies and run in the waves after that validation.
 
 ### B — Folder search
 
-- [ ] **B1.** Add a maximum search depth for the folder search. New setting
+- [x] **B1.** Add a maximum search depth for the folder search. New setting
       `MaxSearchDepth` (`SettingsKeys`, parsed in `Settings` like
       `MaxResults`): an integer, default **0 = unlimited**, negative values
       clamp to 0. It sits in Settings → Search as a numeric field labelled

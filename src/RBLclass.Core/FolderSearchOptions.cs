@@ -17,16 +17,21 @@ namespace RBLclass.Core
         /// </summary>
         public const int DefaultMinQueryLength = 2;
 
+        /// <summary>Default maximum search depth: 0 means unlimited (v2.13.0.0 B1).</summary>
+        public const int DefaultMaxDepth = 0;
+
         public FolderSearchOptions(
             FolderMatchMode matchMode = FolderMatchMode.Substring,
             bool allResults = false,
             int maxResults = DefaultMaxResults,
-            int minQueryLength = DefaultMinQueryLength)
+            int minQueryLength = DefaultMinQueryLength,
+            int maxDepth = DefaultMaxDepth)
         {
             MatchMode = matchMode;
             AllResults = allResults;
             MaxResults = maxResults < 1 ? 1 : maxResults;
             MinQueryLength = minQueryLength < 1 ? 1 : minQueryLength;
+            MaxDepth = maxDepth < 0 ? 0 : maxDepth;
         }
 
         /// <summary>How keywords are tested against folder paths.</summary>
@@ -52,6 +57,14 @@ namespace RBLclass.Core
         /// has not "started" yet. Clamped to at least 1.
         /// </summary>
         public int MinQueryLength { get; }
+
+        /// <summary>
+        /// Deepest folder level that can match: the store root is level 0 and its
+        /// direct sub-folders level 1. Deeper folders are not match candidates (they
+        /// only show up inside a matching ancestor's collapsed entry). 0 = unlimited;
+        /// negatives clamp to 0 (v2.13.0.0 B1).
+        /// </summary>
+        public int MaxDepth { get; }
 
         public static FolderSearchOptions Default { get; } = new FolderSearchOptions();
     }

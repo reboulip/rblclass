@@ -24,7 +24,9 @@ namespace RBLclass.Core
 
         /// <summary>
         /// True when this is a collapsed non-leaf match standing in for its
-        /// whole matching subtree (only happens when All results is off).
+        /// whole matching subtree (All results off), or, with All results on and a
+        /// maximum search depth set, a folder at that depth whose deeper sub-folders
+        /// are not listed.
         /// </summary>
         public bool IsCollapsed { get; }
 

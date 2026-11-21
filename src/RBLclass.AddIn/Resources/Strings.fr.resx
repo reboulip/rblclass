@@ -386,6 +386,9 @@
   <data name="Settings_MaxResults_Label" xml:space="preserve">
     <value>Nombre maximal de résultats à afficher :</value>
   </data>
+  <data name="Settings_MaxSearchDepth_Label" xml:space="preserve">
+    <value>Profondeur maximale de recherche (0 = illimitée) :</value>
+  </data>
   <data name="Settings_MinSearchLength_Label" xml:space="preserve">
     <value>Lancer la recherche après au moins (caractères) :</value>
   </data>

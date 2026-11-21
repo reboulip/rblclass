@@ -65,6 +65,11 @@
                                          Text="{Binding MaxResultsText, UpdateSourceTrigger=LostFocus}" />
                             </DockPanel>
                             <DockPanel Margin="0,4,0,2" LastChildFill="False">
+                                <TextBlock Text="{loc:Loc Key=Settings_MaxSearchDepth_Label}" VerticalAlignment="Center" />
+                                <TextBox DockPanel.Dock="Right" Width="60" Margin="6,0,0,0"
+                                         Text="{Binding MaxSearchDepthText, UpdateSourceTrigger=LostFocus}" />
+                            </DockPanel>
+                            <DockPanel Margin="0,4,0,2" LastChildFill="False">
                                 <TextBlock Text="{loc:Loc Key=Settings_MinSearchLength_Label}" VerticalAlignment="Center" />
                                 <TextBox DockPanel.Dock="Right" Width="60" Margin="6,0,0,0"
                                          Text="{Binding MinSearchLengthText, UpdateSourceTrigger=LostFocus}" />
