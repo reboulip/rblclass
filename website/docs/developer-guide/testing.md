@@ -22,7 +22,10 @@ exactly why CI can run them (see below).
 The experimental re-encrypted filing is covered at the Core level by
 `MimeEntityBuilderTests` (with the `MimeTestReader` helper),
 `ReencryptContentPlannerTests`, `EncryptionCertificatePolicyTests`,
-`ReencryptEligibilityTests` and `ClassifierServiceReencryptTests`. The Save-as
+`ReencryptEligibilityTests`, `ClassifierServiceReencryptTests` and
+`CmsEnvelopeBuilderTests` (parses the envelope with `System.Formats.Asn1` from the
+net8.0 shared framework, decrypts it with the private key, checks a fresh key/IV
+per envelope and minimal INTEGER serials). The Save-as
 planner (`SaveAsPlannerTests`) and the phishing-warning decisions
 (`PhishingLinkTests`, `PhishingWarningPolicyTests`) are Core logic with their own
 tests; the hooks, Word automation and dialogs around them are not.
@@ -54,7 +57,14 @@ interactively on the dev machine:
   does not select it and the tests pick it explicitly) and a **simulated
   Stormshield decryption**: the item is stored as `IPM.Note.SMIME` while an
   external COM handle holds it with an unsaved in-memory class `IPM.Note` during
-  the classify. Real Stormshield behaviour is verified only on the target.
+  the classify. The log shows key transport `1.2.840.113549.1.1.1`, and the copy
+  is stored `IPM.Note.SMIME` and opens decrypted with all its parts. Real
+  Stormshield behaviour is verified only on the target.
+- **Store-level filing of protected mail** (`MapiMessageMover`) is covered in Core
+  by `ClassifierServiceStoreLevelTests` (untracked and verified refs). The MAPI
+  call itself is exercised end to end on the dev machine with the same simulated
+  Stormshield decryption and a real Stormshield `smime.p7m` envelope; the real
+  card-inserted case on 32-bit Outlook is verified only on the target.
 - The **phishing warnings** and **PDF export** are exercised end to end on the dev
   machine by driving Outlook through UI Automation and COM with fake mails that
   carry a simulated banner (link click, Enter, context menu, attachment open,

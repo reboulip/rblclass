@@ -172,19 +172,63 @@ administrator rights** and runs **inside the Outlook process**.
   a held handle: the stored class after the move was `IPM.Note`). If Stormshield
   has decrypted a mail in memory (smart card inserted, mail displayed), filing it
   therefore writes the decrypted version; this is the likely cause of the
-  original #62 report ("the mail loses its encryption"). RBLclass cannot prevent
-  this through the Outlook object model; by default the add-in does no
-  re-encryption (see the experimental option below).
+  original #62 report ("the mail loses its encryption", target log 2026-11-23).
+  RBLclass cannot prevent this through the Outlook object model, which is why
+  protected mail no longer goes through it when filed (next item).
+- **Store-level filing of protected mail (v2.14.0.0, GH #62; closes the
+  limitation above on every filing path).** When the resolved item is a
+  `MailItem` that reads as protected (`OutlookMailStore.IsProtectedMail`), or was
+  filed at store level earlier in the session, `OutlookMailStore` releases the item
+  and moves/copies it with Extended MAPI (`MapiMessageMover`:
+  `IMAPIFolder::CopyMessages`, `MESSAGE_MOVE` for a move, 0 for a copy) instead of
+  `MailItem.Move`/`Copy`. The item is never opened through the object model when
+  filed, so no decrypted in-memory state can be written. Covered paths: move,
+  copy, keep a copy, multi-destination, safety copy, AutoClass, Undo, sent-item
+  triage and delete. Delete moves a protected mail to its store's Deleted Items
+  at store level (or hard-deletes it with `IMAPIFolder::DeleteMessages` if
+  already there); permanent delete is `DeleteMessages` in place.
+  - **No object-model fallback.** A failed transfer throws: the mail stays where
+    it was, still encrypted, and counts as an error. Failures are logged at
+    Warning with the HRESULT; success logs an Information line (move or copy,
+    old and new EntryID, duration). No subject is logged.
+  - **New EntryID.** Found by diffing the destination's contents table
+    (protected-class filter, narrowed on Internet Message-ID, else subject)
+    before and after. If the new row cannot be identified, the mail is filed but
+    untracked: it is counted as filed, never added to Undo, never used for a
+    safety copy.
+  - **Stale items.** A PST move keeps the EntryID and Outlook can hand back its
+    stale in-memory (decrypted) item; refs for store-level filings are
+    therefore flagged verified-protected, skip the post-filing object-model check
+    and its protection trace, and a session map of store-level filings keeps
+    treating them as protected.
+  - **Surface.** Extended MAPI has no PIA: two `IMAPIFolder` vtable slots are
+    called through the pointer from `Folder.MAPIOBJECT`; in-process, UI thread
+    only; every pointer and buffer is released in `finally`. No network, no new
+    data persisted.
+  - **Status: pending real-target verification** (smart card inserted, 32-bit
+    Outlook); validated on the dev machine by simulation and a real Stormshield
+    `smime.p7m` envelope.
 - **Experimental: re-encrypted filing (v2.12.0.0, GH #62, off by default).** With
   `ReencryptProtectedOnFile` on (Settings → Experimental), `ClassifierService`
   tries, for a protected mail that is readable decrypted in memory, a path that
   rebuilds it (`IMailRebuilder`, `OutlookMailRebuilder`), applies the classify
   options (`ReencryptContentPlanner`), encrypts it again and creates it directly
   as an `IPM.Note.SMIME` item in each destination, before falling back to the
-  standard loop.
-  - **Local, no network.** `EnvelopedCms` from the in-box `System.Security.dll`:
-    CMS EnvelopedData, AES-256-CBC, RSA-OAEP key transport (the only RSA scheme
-    .NET Framework 4.8 produces). Candidates come from `CurrentUser\My`, filtered
+  standard loop. **Since v2.14.0.0 it runs only when the filing changes the
+  mail's content** (`ClassifierService.ChangesContent`: remove attachments, banner
+  strip, or an attachment/body-image disposition other than Keep for that mail).
+  Otherwise the mail goes through store-level filing and keeps its original
+  envelope, so the sender's signature and Undo are lost only when content is
+  actually changed.
+  - **Local, no network.** `CmsEnvelopeBuilder` (Core, pure
+    managed DER, no new dependency) builds the CMS EnvelopedData (v2.14.0.0):
+    AES-256-CBC, RSA PKCS#1 v1.5 key transport (`rsaEncryption`,
+    1.2.840.113549.1.1.1), one `KeyTransRecipientInfo` by issuer + serial: the same
+    shape as a real Stormshield mail (inspected 2026-11-24). `EnvelopedCms` on
+    .NET Framework 4.8 emits RSA-OAEP with no padding option, and a target
+    crashed on OAEP copies; it is now used only for a decode-only self-check that
+    warns if the key transport is not `rsaEncryption`. Real-target acceptance by
+    Stormshield/smart card is pending. Candidates come from `CurrentUser\My`, filtered
     on validity window, RSA key, Key Usage (key encipherment or none) and EKU
     (secure e-mail or none): no chain building, no revocation check, so no network
     access. Only the public key is used; RBLclass never uses the private key.
@@ -225,6 +269,12 @@ administrator rights** and runs **inside the Outlook process**.
 - **Non-class detection is logged.** When a signal other than the live class
   decides, an Information line `"<action>: protected mail detected by <Reason>
   (class=..., stored=..., entry=...)"` is written; no subject or body.
+- **Re-encryption step breadcrumbs (v2.14.0.0).** The experimental re-encrypted
+  filing logs Information lines `Re-encrypted filing step <step> (<EntryId>)`
+  (`ClassifierService`) and `Re-encryption step <step> (<EntryId>).`
+  (`OutlookMailRebuilder`) before each step, so a crash on a target without
+  Diagnostic logging is pinpointed. Only a step name and an EntryID: no subject,
+  body, address or file name.
 - **Unreadable selection diagnostics.** A selected item Outlook cannot read
   (exception or missing EntryID/StoreID) is logged as a Warning with the count
   and exception type/HRESULT; a classify that finds nothing to file logs an
@@ -304,8 +354,9 @@ Tracked in [ROADMAP.md](../ROADMAP.md) Phase 9. Highlights still open:
 - CI: dependency vulnerability scanning, SAST, SBOM per release.
 - Input caps: length-limit free-text inputs; upper-bound `MaxResults`; validate
   `InternalDomains` shape.
-- Re-encrypted filing uses RSA-OAEP only; if Stormshield requires PKCS#1 v1.5, a
-  `CryptMsg` P/Invoke follow-up is needed.
+- Re-encrypted filing now emits RSA PKCS#1 v1.5 key transport (v2.14.0.0);
+  acceptance by Stormshield with the smart card is still to be verified on the
+  real target.
 
 ## Accepted by design
 

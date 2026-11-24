@@ -132,20 +132,37 @@ administrator rights** and runs **inside the Outlook process**.
   no attachment or body-image removal, label, banner strip, mark-as-read or task
   completion. A requested strip is reported as kept. If the filed item no longer
   reads as protected, a warning is always logged (no subject).
-- **Known limitation: filing can persist an in-memory decryption.** Outlook's
-  move and copy write the item's in-memory state into the filed item. If an
-  endpoint product such as Stormshield has decrypted a mail in memory (smart card
-  inserted, mail displayed), filing it writes the decrypted version, which is the
-  likely cause of the "mail loses its encryption" report. RBLclass cannot prevent
-  this through the Outlook object model, and by default it performs no
-  re-encryption (see the experimental option below).
+- **Cause of the "mail loses its encryption" report.** Outlook's move and copy
+  write the item's in-memory state into the filed item. If an endpoint product
+  such as Stormshield has decrypted a mail in memory (smart card inserted, mail
+  displayed), filing it through the object model writes the decrypted version.
+- **Store-level filing (closes the problem above on every filing path).**
+  Protected mail is moved, copied and deleted at store level through Extended
+  MAPI and is never opened through the Outlook object model when filed, so no
+  decrypted state is written. This covers move, copy, keep a copy,
+  multi-destination, safety copy, AutoClass, Undo, sent-item triage and delete.
+    - **No fallback.** If the transfer fails, the mail stays where it was, still
+      encrypted, and is reported as an error; it is never filed through the
+      object model.
+    - **Rare case.** If the filed mail's new position cannot be identified, it is
+      filed but cannot be undone and is not used for a safety copy.
+    - **Surface.** No network call, no new data persisted; the failure is logged
+      with its error code and no subject.
+    - **Status:** pending verification on the real target workstation (smart card
+      inserted, 32-bit Outlook).
 - **Experimental: re-encrypted filing (off by default).** With *Re-encrypt
   encrypted mail when filing* on (Settings → Experimental), an encrypted mail that
   is readable decrypted in memory is rebuilt from its content, encrypted again and
   created directly as an S/MIME item in each destination, instead of letting
-  Outlook persist the decrypted version.
-    - **Local, no network.** Encryption uses the in-box `System.Security.dll`
-      (`EnvelopedCms`: CMS EnvelopedData, AES-256-CBC, RSA-OAEP key transport). No
+  Outlook persist the decrypted version. It only runs when the filing changes the
+  mail's content (attachments or banner removed, or an attachment or body image
+  removed or saved out); otherwise the mail is filed as it is, keeps its original
+  encryption and signature, and can be undone.
+    - **Local, no network.** The add-in builds the CMS EnvelopedData itself, in
+      managed code with no new dependency (AES-256-CBC, RSA PKCS#1 v1.5 key
+      transport, one recipient: the same shape as a real Stormshield mail). The
+      in-box `System.Security.dll` is only used to decode and check the result.
+      Acceptance by Stormshield is pending on the real target. No
       network call is made. Certificates come from `CurrentUser\My`, filtered on
       validity window, RSA key, key usage and EKU only: no chain building and no
       revocation check. Only the public key is used; RBLclass never uses the
@@ -182,6 +199,10 @@ administrator rights** and runs **inside the Outlook process**.
 - **Non-class detection is logged.** When a signal other than the live class
   decides, an Information line records the action, reason, classes and EntryID;
   no subject or body.
+- **Re-encryption step breadcrumbs.** The experimental re-encrypted filing logs an
+  Information line before each step, so a crash can be pinpointed without
+  Diagnostic logging. Each line holds only a step name and an EntryID: no subject,
+  body, address or file name.
 - **Unreadable selection diagnostics.** A selected item Outlook cannot read is
   logged as a Warning (count, exception type/HRESULT), and a classify that finds
   nothing to file logs an Information line.
@@ -262,8 +283,8 @@ Highlights still open:
   user believes were removed.
 - Decide & document the send-guard fail-open vs. fail-safe stance.
 - CI: dependency vulnerability scanning, SAST, SBOM per release.
-- Re-encrypted filing encrypts with RSA-OAEP only (the one RSA scheme .NET
-  Framework 4.8 produces); if Stormshield requires PKCS#1 v1.5, a `CryptMsg`
-  P/Invoke follow-up is needed.
+- Re-encrypted filing now uses RSA PKCS#1 v1.5 key transport, the scheme a real
+  Stormshield mail uses; acceptance by Stormshield with the smart card is still to
+  be verified on the real target.
 - Input caps: length-limit free-text inputs; upper-bound `MaxResults`; validate
   `InternalDomains` shape.

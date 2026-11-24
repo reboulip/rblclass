@@ -33,7 +33,7 @@ files, and load on the classic Win32 Outlook client.
 | UI | WPF with a **hand-rolled minimal MVVM** (`ObservableObject` + `RelayCommand`), hosted in Custom Task Panes via `ElementHost` inside a ComVisible WinForms host. |
 | Ribbon | `IRibbonExtensibility.GetCustomUI` returning Ribbon XML (not the Ribbon Designer). |
 | Storage | SQLite via **Microsoft.Data.Sqlite**, with **FTS5** for full-text folder search. Database in `%LocalAppData%\RBLclass\`. |
-| S/MIME encryption | **`System.Security.dll`** (in-box .NET Framework assembly, `EnvelopedCms`), used by the Outlook adapter only for the experimental re-encrypted filing. A GAC reference that is not copied to the output, so it needs no binding redirect. No new NuGet dependency. |
+| S/MIME encryption | **`System.Security.dll`** (in-box .NET Framework assembly, `EnvelopedCms`), used by the Outlook adapter only for the decode-only self-check of the experimental re-encrypted filing (the envelope itself is built by `CmsEnvelopeBuilder` in Core). A GAC reference that is not copied to the output, so it needs no binding redirect. No new NuGet dependency. |
 | PDF export | **Microsoft Word**, driven **late-bound** (COM `IDispatch`, no Word interop reference, no new dependency) and **optional at runtime**: used out of process only by *Save as file → PDF*. If Word is missing, the export reports it and writes nothing. |
 | Logging | **Serilog** with a rolling file sink under `%LocalAppData%\RBLclass\logs\`. |
 | Tests | **xUnit + FluentAssertions + NSubstitute** against `RBLclass.Core`. |

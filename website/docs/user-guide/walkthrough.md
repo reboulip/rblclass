@@ -189,14 +189,19 @@ signature logos survive.
     protected content. This holds even when a mail-encryption product decrypts
     the open mail in memory: RBLclass also checks the class stored in the folder,
     the S/MIME payload and whether the mail was already modified when opened.
-    The filed copy is then left untouched. One limitation remains: if such a
-    product has decrypted the mail in memory (smart card inserted, mail
-    displayed), Outlook itself writes the decrypted version when the mail is
-    filed, and RBLclass cannot prevent that. The same applies to the other changes RBLclass would make
-    to a mail: encrypted or signed mails are never rewritten, never marked as
-    read, and a flagged one stays flagged and is simply not offered in the
-    "mark flagged tasks complete" prompt. Filing (moving) them works as usual.
-    The experimental re-encrypted filing below is the only exception.
+    The filed copy is then left untouched. The same applies to the other changes
+    RBLclass would make to a mail: encrypted or signed mails are never rewritten,
+    never marked as read, and a flagged one stays flagged and is simply not
+    offered in the "mark flagged tasks complete" prompt. The experimental
+    re-encrypted filing below is the only exception.
+
+    Filing, copying, Undo and deleting an encrypted mail work as usual, and the
+    mail **stays encrypted** in its new folder: RBLclass moves it as-is, without
+    opening it, so a mail-encryption product that has decrypted it in memory
+    (smart card inserted) cannot leak that decrypted version into the filed
+    mail. If the filed mail cannot be moved, it stays where it was, still
+    encrypted, and counts as an error. In the rare case where its new position
+    cannot be identified, the mail is filed but cannot be undone.
 
 ### Re-encrypted filing (experimental)
 
@@ -205,9 +210,13 @@ signature logos survive.
     **Experimental**). A re-encrypted filing **cannot be undone**: there is no
     Undo entry, and Undo does not roll back its Auto-class history.
 
-When **Re-encrypt encrypted mail when filing** is on, Classify and Auto-class
-handle an **encrypted** mail that your mail-encryption product has decrypted in
-memory (smart card inserted) differently:
+Without this option, an encrypted mail is always filed as it is and stays
+encrypted. When **Re-encrypt encrypted mail when filing** is on, it only matters
+if the filing would change the mail: you remove its attachments, strip the
+external-sender banner, or delete or save out an attachment or body image in the
+attachment window. A plain classify still files the mail as it is. In that case,
+Classify and Auto-class handle an **encrypted** mail that your mail-encryption
+product has decrypted in memory (smart card inserted) differently:
 
 1. The mail is rebuilt from its decrypted content (body, body images,
    attachments).
@@ -386,7 +395,7 @@ Features for pilot tests; a warning at the top of the tab says so.
 
 | Setting | Default | What it does |
 | --- | --- | --- |
-| Re-encrypt encrypted mail when filing | Off | Classify and Auto-class rebuild a readable encrypted mail, apply your classify options, encrypt it again and file it as an encrypted copy. Not undoable — see [Re-encrypted filing](#re-encrypted-filing-experimental). |
+| Re-encrypt encrypted mail when filing | Off | Encrypted mail is always filed as it is and stays encrypted. When you also remove attachments or the external banner (or delete or save out an attachment or body image) from a readable encrypted mail, Classify and Auto-class rebuild it without them, encrypt it again and file it as an encrypted copy. Not undoable — see [Re-encrypted filing](#re-encrypted-filing-experimental). |
 | Re-encryption certificate | *Automatic* | The certificate used to encrypt the filed copy. The list shows **Automatic** plus each candidate as "Subject (expires yyyy-MM-dd)", flagged *private key not visible* when Windows cannot see its private key, and an *Unavailable certificate* entry if the stored one disappeared. A line under the list says which certificate Automatic resolves to, or that none is usable. |
 
 Candidates come from your personal certificate store (Current User → Personal):

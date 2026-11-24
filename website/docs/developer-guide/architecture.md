@@ -70,6 +70,16 @@ and is very hard to diagnose:
   `IDispatch::GetIDsOfNames` on the class itself.
 - **Do not embed Office interop types** — use direct GAC references, which are
   never copied to the output.
+- **One narrow exception: Extended MAPI in the adapter.** Extended MAPI has no
+  PIA, so `MapiMessageMover` calls exactly two `IMAPIFolder` methods,
+  `CopyMessages` (vtable slot 20) and `DeleteMessages` (slot 21), through their
+  vtable slots with explicit `StdCall` delegates. The pointer comes from
+  `Folder.MAPIOBJECT` plus `QueryInterface` for `IID_IMAPIFolder`
+  (`{0002030C-0000-0000-C000-000000000046}`). There is still **no `[ComImport]`
+  interface**, so the rule above stands. `MAPIOBJECT` is in-process and
+  UI-thread only. `ENTRYLIST`/`SBinary` are declared with `IntPtr` fields, so the
+  same AnyCPU binary works in 32-bit and 64-bit Outlook. Do not add further
+  hand-rolled MAPI calls without the same justification.
 
 ## COM lifetime (adapter only)
 
@@ -81,6 +91,29 @@ Outlook COM objects must be released explicitly, or Outlook leaks and crashes:
   leaks the intermediate `Parent` objects.
 - Loop over `Items` / `Folders` / `Stores` with a `for` index (not `foreach`),
   disposing each element.
+- `MapiMessageMover` calls `Marshal.Release` on every pointer it obtains and
+  frees every `HGlobal` in a `finally` block; it never throws and logs failures
+  at Warning with the HRESULT.
+
+### Protected mail is filed at store level
+
+`MailItem.Move`/`Copy`/`Delete` persist an item's in-memory state, and a
+mail-encryption product (Stormshield) decrypts the opened item in memory, so
+filing a protected mail through the object model stores it in clear. In
+`OutlookMailStore`, when the resolved item is a `MailItem` that reads as
+protected (or was filed at store level earlier in the session), the item
+reference is released and `Move`, `Copy`, `DeleteItem` and
+`DeleteItemPermanently` go through `MapiMessageMover` instead. There is no
+object-model fallback: a failed transfer throws and the mail stays where it was.
+The new EntryID is found by diffing the destination's contents table before and
+after (protected-class filter, narrowed on Internet Message-ID, else subject).
+
+A PST move keeps the EntryID, and Outlook can hand back its stale in-memory
+item. Refs from a store-level filing are therefore `MailItemRef.VerifiedProtected`
+(`ClassifierService` skips its object-model post-filing check for them), and a
+session map of store-level filings keeps them recognised as protected. If the new
+row is not identified, the ref is `MailItemRef.Untracked` (`IsTracked` is false):
+counted as filed, never added to Undo, never used for a safety copy.
 
 ## Threading
 
@@ -183,6 +216,10 @@ It follows the usual layering.
 - `ClassifierService` takes an optional `IMailRebuilder`; with
   `ClassifyOptions.ReencryptProtected`, its protected-item branch tries the
   re-encrypted path before the standard loop, and falls back to it on any failure.
+  The path is gated on `ChangesContent(request, item)`: `RemoveAttachments`, or
+  `StripBanner` (a banner signature is set), or any `AttachmentDisposition` row
+  for this item whose action is not Keep. A plain classify never touches
+  `IMailRebuilder` and goes through store-level filing.
 
 **`RBLclass.Outlook.Adapter`**:
 
@@ -193,8 +230,23 @@ It follows the usual layering.
   properties, set `PR_ICON_INDEX` to -1, then flip to `IPM.Note.SMIME`. The
   payload is byte-checked before the flip and the stub is deleted on failure.
 - `MailItemProbes` — probes shared with `OutlookMailStore` (moved out of it).
-- Encryption uses `EnvelopedCms` from the in-box `System.Security.dll`
-  (AES-256-CBC, RSA-OAEP key transport).
+- `CmsEnvelopeBuilder` (Core) builds the CMS EnvelopedData DER itself: pure
+  managed, `netstandard2.0`, no new dependency (AES-256-CBC, RSA PKCS#1 v1.5 key
+  transport, one `KeyTransRecipientInfo` by issuer + serial, like a real
+  Stormshield mail). `EnvelopedCms` on .NET Framework 4.8 can only emit RSA-OAEP.
+  The adapter passes the certificate's issuer name DER, serial (big-endian) and
+  RSA public key, then keeps a decode-only `EnvelopedCms` self-check that logs
+  cipher and key transport at Debug and warns if the key transport is not
+  `rsaEncryption`.
+- **Step breadcrumbs.** Before each step `ClassifierService.TryReencrypt` logs
+  `Re-encrypted filing step {Step} ({EntryId})` (eligibility, certificate, read,
+  build, encrypt, then create and verify once per destination, and original only
+  when the original goes to Deleted Items). `OutlookMailRebuilder.CreateEncryptedCopy`
+  logs `Re-encryption step {Step} ({EntryId}).` (stub, reopen, payload-check,
+  envelope, class-switch, and `saved` after the final save). They are
+  **Information**, not Debug, because target workstations run without Diagnostic
+  logging; the Serilog file sink is unbuffered, so after an Outlook crash the last
+  line names the step that hung.
 
 See [Security](../security.md) for the trust and plaintext-handling implications.
 
