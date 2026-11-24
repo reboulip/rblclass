@@ -1064,7 +1064,7 @@ Führen Sie Ihre Suche erneut aus, um neu erstellte oder umbenannte Ordner zu se
     <value>Verschlüsselte Mails beim Ablegen neu verschlüsseln</value>
   </data>
   <data name="Settings_ReencryptProtected_Info" xml:space="preserve">
-    <value>Ist eine verschlüsselte Mail lesbar (Smartcard eingesteckt), baut RBLclass sie neu auf, wendet die Ablageoptionen an, verschlüsselt sie mit Ihrem Zertifikat neu und legt diese Kopie ab, sodass die Mail nie entschlüsselt gespeichert wird. Die Signatur des Absenders bleibt nicht erhalten, die Ablage kann nicht rückgängig gemacht werden und das Original wird in Gelöschte Elemente verschoben. Nur signierte und nicht lesbare Mails werden wie gewohnt abgelegt.</value>
+    <value>Verschlüsselte Mails werden immer unverändert abgelegt und bleiben verschlüsselt. Aktivieren Sie diese Option, um aus einer verschlüsselten Mail auch Anhänge oder das externe Banner entfernen zu können: Ist sie lesbar (Smartcard eingesteckt) und entfernen Sie ihre Anhänge oder ihr Banner, baut RBLclass sie ohne diese neu auf, verschlüsselt sie mit Ihrem Zertifikat neu und legt diese Kopie ab. Die Signatur des Absenders bleibt nicht erhalten, diese Ablage kann nicht rückgängig gemacht werden und das Original wird in Gelöschte Elemente verschoben. Ohne diese Option sowie bei nur signierten oder nicht lesbaren Mails bleiben Anhänge und Banner einer verschlüsselten Mail unverändert.</value>
   </data>
   <data name="Settings_ReencryptCertificate_Label" xml:space="preserve">
     <value>Zertifikat für die Neuverschlüsselung:</value>

@@ -159,7 +159,10 @@ namespace RBLclass.Core
                 // Experimental (v2.12.0.0): an encrypted mail readable decrypted in
                 // memory is rebuilt, encrypted again and created as S/MIME in each
                 // destination. Any failure falls through to the standard path below.
+                // v2.14.0.0 B3: only when the request changes this mail's content;
+                // otherwise the standard path keeps it encrypted (store-level filing).
                 if (wasProtected && request.ReencryptProtected && _rebuilder != null
+                    && ChangesContent(request, item)
                     && TryReencrypt(item, request, acc, sourceFolder, conversationKey))
                     return;
 
@@ -484,6 +487,20 @@ namespace RBLclass.Core
                 copies.Count, partCount, certificate.Thumbprint, item.EntryId);
             return true;
         }
+
+        /// <summary>
+        /// True when filing <paramref name="item"/> would change its content: all
+        /// attachments removed, the external banner stripped, or at least one of its
+        /// attachments (or body images) deleted or saved out in the modal. Only then
+        /// is re-encryption worth it (v2.14.0.0 B3): plain filing of a protected
+        /// mail already keeps it encrypted at store level.
+        /// </summary>
+        private static bool ChangesContent(ClassifyRequest request, MailItemRef item) =>
+            request.RemoveAttachments
+            || request.StripBanner
+            || request.AttachmentDispositions.Any(d => d.Item.StoreId == item.StoreId
+                                                       && d.Item.EntryId == item.EntryId
+                                                       && d.Action != AttachmentDispositionAction.Keep);
 
         /// <summary>
         /// Breadcrumb before each re-encryption step, at Information because the

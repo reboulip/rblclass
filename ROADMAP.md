@@ -842,6 +842,16 @@ experimental, off-by-default feature and fixes what the target exposed.
       "remove attachments" on a protected mail. Expected: filed
       re-encrypted, it opens decrypted without its attachments, and no
       freeze. If it still freezes, send the last `step` line from the log.
+      **As implemented:** a disposition row counts only when its action is not
+      `Keep`; the banner counts when a banner signature is set.
+      **Verified on the dev machine (2026-11-24, re-encryption on):** a plain
+      classify of a protected mail is filed at store level with no
+      re-encryption step in the log; with "remove attachments" the mail is
+      re-encrypted (copy `IPM.Note.SMIME`, no attachments, opens decrypted)
+      and the original goes to Deleted Items at store level, still encrypted.
+      The new Experimental description renders in the Settings window.
+      - shipped, pending tests (not verifiable on the dev machine per the
+      testing strategy above; re-verify the real-target case above)
 
 ---
 

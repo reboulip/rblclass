@@ -1064,7 +1064,7 @@ Re-run your search to see newly created or renamed folders.</value>
     <value>Re-encrypt encrypted mail when filing it</value>
   </data>
   <data name="Settings_ReencryptProtected_Info" xml:space="preserve">
-    <value>When an encrypted mail is readable (smart card inserted), RBLclass rebuilds it, applies the filing options to it, re-encrypts it to your certificate and files that copy, so the mail is never stored decrypted. The sender's signature is not kept, the filing cannot be undone, and the original goes to Deleted Items. Signed-only mail, and mail that is not readable, is filed as usual.</value>
+    <value>Encrypted mail is always filed as it is and stays encrypted. Turn this on to also remove attachments or the external banner from an encrypted mail: when it is readable (smart card inserted) and you remove its attachments or banner, RBLclass rebuilds it without them, re-encrypts it to your certificate and files that copy. The sender's signature is not kept, that filing cannot be undone, and the original goes to Deleted Items. Without this option, and for signed-only or unreadable mail, the attachments and banner of encrypted mail are left untouched.</value>
   </data>
   <data name="Settings_ReencryptCertificate_Label" xml:space="preserve">
     <value>Certificate to re-encrypt to:</value>

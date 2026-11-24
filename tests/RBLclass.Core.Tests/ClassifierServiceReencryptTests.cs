@@ -84,14 +84,78 @@ namespace RBLclass.Core.Tests
             new ClassifyOptions(keepCopy: keepCopy, removeAttachments: removeAttachments, markAsRead: markAsRead,
                                 reencryptProtected: true, reencryptCertificateThumbprint: thumbprint);
 
+        /// <summary>
+        /// Since v2.14.0.0 B3 re-encryption only runs when the request changes the
+        /// content. This banner signature is in no test mail: the request asks for a
+        /// strip (so re-encryption runs) without changing anything.
+        /// </summary>
+        private const string NoMatchBanner = "[[banner absent from every test mail]]";
+
         private static ClassifyRequest Request(ClassifyOptions options, FolderNode[] destinations,
                                                IReadOnlyList<AttachmentDisposition> rows = null,
-                                               string banner = null, params MailItemRef[] items) =>
+                                               string banner = NoMatchBanner, params MailItemRef[] items) =>
             new ClassifyRequest(items.Length == 0 ? new[] { Item() } : items, destinations, options,
                                 bannerSignature: banner, attachmentDispositions: rows);
 
         private static IEnumerable<string> FileNames(MimeNode node) =>
             new[] { node.FileName }.Where(n => n != null).Concat(node.Children.SelectMany(FileNames));
+
+        // ---- only when the content changes (v2.14.0.0 B3) ---------------------------
+
+        [Fact]
+        public void A_plain_classify_of_a_protected_mail_never_opens_the_rebuilder()
+        {
+            var store = Store();
+            var rb = new Rebuilder();
+
+            var result = new ClassifierService(store, rebuilder: rb.Mock).Classify(
+                Request(On(), new[] { D1 }, banner: null));
+
+            rb.Mock.ReceivedCalls().Should().BeEmpty();
+            store.Received(1).MoveItemToFolder(Arg.Is<MailItemRef>(r => r.EntryId == "e1"), D1, false);
+            result.Reencrypted.Should().Be(0);
+            result.ReencryptFallbacks.Should().Be(0);
+        }
+
+        [Fact]
+        public void Removing_attachments_re_encrypts()
+        {
+            var store = Store();
+            var rb = new Rebuilder();
+
+            var result = new ClassifierService(store, rebuilder: rb.Mock).Classify(
+                Request(On(removeAttachments: true), new[] { D1 }, banner: null));
+
+            result.Reencrypted.Should().Be(1);
+            rb.Mock.Received(1).CreateEncryptedCopy(Arg.Any<MailItemRef>(), D1, Arg.Any<byte[]>(), Arg.Any<bool>());
+        }
+
+        [Fact]
+        public void A_disposition_row_that_deletes_an_attachment_re_encrypts()
+        {
+            var store = Store();
+            var rb = new Rebuilder();
+            var rows = new[] { new AttachmentDisposition(Item(), 1, "rapport.pdf", AttachmentDispositionAction.Delete) };
+
+            var result = new ClassifierService(store, rebuilder: rb.Mock).Classify(
+                Request(On(), new[] { D1 }, rows: rows, banner: null));
+
+            result.Reencrypted.Should().Be(1);
+        }
+
+        [Fact]
+        public void Keep_only_disposition_rows_do_not_re_encrypt()
+        {
+            var store = Store();
+            var rb = new Rebuilder();
+            var rows = new[] { new AttachmentDisposition(Item(), 1, "rapport.pdf", AttachmentDispositionAction.Keep) };
+
+            var result = new ClassifierService(store, rebuilder: rb.Mock).Classify(
+                Request(On(), new[] { D1 }, rows: rows, banner: null));
+
+            result.Reencrypted.Should().Be(0);
+            rb.Mock.DidNotReceive().ReadDecryptedContent(Arg.Any<MailItemRef>());
+        }
 
         // ---- step breadcrumbs (v2.14.0.0 B2) ---------------------------------------
 
@@ -576,7 +640,7 @@ namespace RBLclass.Core.Tests
             rb.Mock.ReadDecryptedContent(Arg.Is<MailItemRef>(r => r.EntryId == "e2")).Returns((MailContent)null);
 
             var result = new ClassifierService(store, history, rebuilder: rb.Mock).AutoClassify(
-                new[] { Item("e1"), Item("e2") }, (s, e) => D1, On());
+                new[] { Item("e1"), Item("e2") }, (s, e) => D1, On(), bannerSignature: NoMatchBanner);
 
             result.Filed.Should().Be(2);
             result.Reencrypted.Should().Be(1);

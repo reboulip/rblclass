@@ -1064,7 +1064,7 @@ Relancez votre recherche pour voir les dossiers créés ou renommés.</value>
     <value>Re-chiffrer les mails chiffrés lors du classement</value>
   </data>
   <data name="Settings_ReencryptProtected_Info" xml:space="preserve">
-    <value>Quand un mail chiffré est lisible (badge inséré), RBLclass le reconstruit, lui applique les options de classement, le re-chiffre avec votre certificat et classe cette copie : le mail n'est jamais enregistré déchiffré. La signature de l'expéditeur n'est pas conservée, le classement ne peut pas être annulé et l'original va dans les Éléments supprimés. Les mails seulement signés, et ceux qui ne sont pas lisibles, sont classés normalement.</value>
+    <value>Un mail chiffré est toujours classé tel quel et reste chiffré. Activez cette option pour pouvoir aussi retirer les pièces jointes ou la bannière externe d'un mail chiffré : s'il est lisible (badge inséré) et que vous retirez ses pièces jointes ou sa bannière, RBLclass le reconstruit sans elles, le re-chiffre avec votre certificat et classe cette copie. La signature de l'expéditeur n'est pas conservée, ce classement ne peut pas être annulé et l'original va dans les Éléments supprimés. Sans cette option, et pour les mails seulement signés ou illisibles, les pièces jointes et la bannière d'un mail chiffré restent intactes.</value>
   </data>
   <data name="Settings_ReencryptCertificate_Label" xml:space="preserve">
     <value>Certificat de re-chiffrement :</value>
