@@ -93,6 +93,26 @@ namespace RBLclass.Core.Tests
         private static IEnumerable<string> FileNames(MimeNode node) =>
             new[] { node.FileName }.Where(n => n != null).Concat(node.Children.SelectMany(FileNames));
 
+        // ---- step breadcrumbs (v2.14.0.0 B2) ---------------------------------------
+
+        [Fact]
+        public void Every_step_leaves_an_information_breadcrumb_in_order()
+        {
+            var store = Store();
+            var rb = new Rebuilder();
+            var log = Substitute.For<IAppLog>();
+
+            new ClassifierService(store, log: log, rebuilder: rb.Mock).Classify(Request(On(), new[] { D1, D2 }));
+
+            var steps = log.ReceivedCalls()
+                .Where(c => c.GetMethodInfo().Name == nameof(IAppLog.Information)
+                            && (string)c.GetArguments()[0] == "Re-encrypted filing step {Step} ({EntryId})")
+                .Select(c => (string)((object[])c.GetArguments()[1])[0])
+                .ToList();
+            steps.Should().Equal("eligibility", "certificate", "read", "build", "encrypt",
+                                 "create", "verify", "create", "verify", "original");
+        }
+
         // ---- happy path ---------------------------------------------------------
 
         [Fact]

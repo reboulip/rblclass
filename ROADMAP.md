@@ -812,7 +812,7 @@ experimental, off-by-default feature and fixes what the target exposed.
       on the dev machine per the testing strategy above; re-verify on the real
       target that Stormshield and the smart card open a re-encrypted copy)
 
-- [ ] **B2.** Step breadcrumbs so a crash on the target pinpoints the
+- [x] **B2.** Step breadcrumbs so a crash on the target pinpoints the
       step. In `ClassifierService.TryReencrypt`, log at **`Information`**
       (not `Debug`: the target runs without diagnostic logging) "Re-encrypted
       filing step {Step} ({EntryId})" before each step: `eligibility`,

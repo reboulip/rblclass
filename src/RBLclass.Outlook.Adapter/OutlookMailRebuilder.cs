@@ -489,9 +489,11 @@ namespace RBLclass.Outlook.Adapter
                     string payloadPath = Path.Combine(stageDir, "smime.p7m");  // ciphertext: safe on disk
                     File.WriteAllBytes(payloadPath, smimePayload);
 
+                    Step("stub", source.EntryId);
                     entryId = CreateStub(session.Value, destination, envelope, payloadPath);
                     if (entryId == null) return null;
 
+                    Step("reopen", entryId);
                     using (var comItem = new ComRef<object>(session.Value.GetItemFromID(entryId, destination.StoreId)))
                     {
                         var mail = comItem.Value as OutlookOM.MailItem;
@@ -504,6 +506,7 @@ namespace RBLclass.Outlook.Adapter
 
                         // Checked while the item is still IPM.Note: on an S/MIME item,
                         // touching the attachment would trigger decryption.
+                        Step("payload-check", entryId);
                         if (!PayloadMatches(mail, smimePayload))
                         {
                             Log.Warning("Re-encryption: the stored payload does not match ({EntryId}).", entryId);
@@ -511,13 +514,16 @@ namespace RBLclass.Outlook.Adapter
                             return null;
                         }
 
+                        Step("envelope", entryId);
                         AddRecipients(mail, envelope);
                         ApplyEnvelope(mail, envelope);
                         mail.UnRead = !markAsRead && envelope.UnRead;
                         mail.Save();
 
+                        Step("class-switch", entryId);
                         mail.MessageClass = "IPM.Note.SMIME";
                         mail.Save();
+                        Step("saved", entryId);
                     }
                     Log.Debug("Re-encryption: encrypted copy created ({EntryId}).", entryId);
                     return new MailItemRef(destination.StoreId, entryId, source.Subject, false);
@@ -542,6 +548,13 @@ namespace RBLclass.Outlook.Adapter
                 if (stageDir != null) ScrubDirectory(stageDir);
             }
         }
+
+        /// <summary>
+        /// Breadcrumb at Information (v2.14.0.0 B2): the target runs without
+        /// diagnostic logging, and after a crash the last line names the step.
+        /// </summary>
+        private static void Step(string step, string entryId) =>
+            Log.Information("Re-encryption step {Step} ({EntryId}).", step, entryId);
 
         /// <summary>The PostItem stage: subject, ciphertext attachment, then class IPM.Note. Returns the EntryID.</summary>
         private static string CreateStub(OutlookOM.NameSpace session, FolderNode destination, Envelope envelope, string payloadPath)

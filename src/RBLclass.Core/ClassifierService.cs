@@ -326,6 +326,7 @@ namespace RBLclass.Core
         {
             // 1. Only encrypted mail readable decrypted in memory qualifies. The
             //    other verdicts are expected cases, not fallbacks.
+            ReencryptStep("eligibility", item);
             MailProtectionState state;
             try { state = _store.GetProtectionState(item); }
             catch { state = null; }
@@ -348,6 +349,7 @@ namespace RBLclass.Core
             }
 
             // 2. The certificate, resolved once per user action.
+            ReencryptStep("certificate", item);
             var session = acc.Reencrypt;
             if (!session.CertificateResolved)
             {
@@ -367,6 +369,7 @@ namespace RBLclass.Core
             }
 
             // 3. The content as decrypted in memory.
+            ReencryptStep("read", item);
             MailContent content;
             try { content = _rebuilder.ReadDecryptedContent(item); }
             catch { content = null; }
@@ -410,6 +413,7 @@ namespace RBLclass.Core
             }
 
             // 5. Plan the rebuilt content and build its MIME entity.
+            ReencryptStep("build", item);
             byte[] mime;
             int partCount;
             try
@@ -430,6 +434,7 @@ namespace RBLclass.Core
             content = null; // the plaintext is no longer needed once built
 
             // 6. Encrypt, then wipe the plaintext entity.
+            ReencryptStep("encrypt", item);
             byte[] payload;
             try { payload = _rebuilder.Encrypt(mime, certificate.Thumbprint); }
             catch { payload = null; }
@@ -442,6 +447,7 @@ namespace RBLclass.Core
             foreach (var destination in request.Destinations)
             {
                 MailItemRef copy;
+                ReencryptStep("create", item);
                 try { copy = _rebuilder.CreateEncryptedCopy(item, destination, payload, request.MarkAsRead); }
                 catch { copy = null; }
                 if (copy == null)
@@ -452,6 +458,7 @@ namespace RBLclass.Core
                 copies.Add(copy);
 
                 bool verified;
+                ReencryptStep("verify", item);
                 try { verified = _rebuilder.VerifyEncryptedCopy(copy); }
                 catch { verified = false; }
                 if (!verified)
@@ -463,7 +470,10 @@ namespace RBLclass.Core
 
             // 8. The original goes to Deleted Items unless "keep a copy" is on.
             if (!request.KeepCopy)
+            {
+                ReencryptStep("original", item);
                 MoveOriginalToDeletedItems(item, sourceFolder, acc);
+            }
 
             acc.Processed++;
             acc.Reencrypted++;
@@ -474,6 +484,14 @@ namespace RBLclass.Core
                 copies.Count, partCount, certificate.Thumbprint, item.EntryId);
             return true;
         }
+
+        /// <summary>
+        /// Breadcrumb before each re-encryption step, at Information because the
+        /// target runs without diagnostic logging (v2.14.0.0 B2): after a crash, the
+        /// last line names the step. No subject, body, address or file name.
+        /// </summary>
+        private void ReencryptStep(string step, MailItemRef item) =>
+            _log.Information("Re-encrypted filing step {Step} ({EntryId})", step, item.EntryId);
 
         private bool FallBack(MailItemRef item, ReencryptOutcome reason, ClassifyAccumulator acc)
         {
