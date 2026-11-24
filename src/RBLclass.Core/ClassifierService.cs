@@ -193,7 +193,10 @@ namespace RBLclass.Core
                                 continue;
                             }
                             acc.Moved++;
-                            if (sourceFolder != null)
+                            // An untracked ref (protected mail filed at store level,
+                            // new EntryID unknown, v2.14.0.0 A2) is filed but cannot
+                            // be undone or copied.
+                            if (sourceFolder != null && filedRef.IsTracked)
                                 acc.Moves.Add(new UndoableMove(filedRef, sourceFolder));
 
                             // Opt-in guardrail: leave a copy in the source
@@ -202,7 +205,7 @@ namespace RBLclass.Core
                             // the displayed folder) and BEFORE stripping so
                             // the guardrail copy keeps its attachments. Its
                             // failure never fails the filing itself.
-                            if (request.SafetyCopy)
+                            if (request.SafetyCopy && filedRef.IsTracked)
                             {
                                 try
                                 {
@@ -211,10 +214,11 @@ namespace RBLclass.Core
                                     if (deletedItems != null)
                                     {
                                         var safety = _store.CopyItemToFolder(filedRef, deletedItems);
-                                        if (safety != null)
+                                        if (safety != null && safety.IsTracked)
                                         {
                                             acc.CreatedCopies.Add(safety);
-                                            TraceProtectionAfter(protectionBefore, "safety-copy", safety);
+                                            if (!safety.ProtectionVerified)
+                                                TraceProtectionAfter(protectionBefore, "safety-copy", safety);
                                         }
                                     }
                                 }
@@ -229,7 +233,7 @@ namespace RBLclass.Core
                         {
                             filedRef = _store.CopyItemToFolder(item, destination, markAsRead);
                             acc.Copies++;
-                            if (filedRef != null) acc.CreatedCopies.Add(filedRef);
+                            if (filedRef != null && filedRef.IsTracked) acc.CreatedCopies.Add(filedRef);
                         }
                         filed++;
 
@@ -245,8 +249,14 @@ namespace RBLclass.Core
                             // Reported like the adapter's own strip guard.
                             if (request.RemoveAttachments)
                                 acc.EncryptedSkips++;
-                            WarnIfProtectionLost(filedRef, moveSlot ? "move" : "copy");
-                            TraceProtectionAfter(protectionBefore, moveSlot ? "move" : "copy", filedRef);
+                            // A store-level filing already read the stored row back
+                            // as encrypted (v2.14.0.0 A2); the object model could
+                            // return the decrypted in-memory item instead.
+                            if (filedRef.IsTracked && !filedRef.ProtectionVerified)
+                            {
+                                WarnIfProtectionLost(filedRef, moveSlot ? "move" : "copy");
+                                TraceProtectionAfter(protectionBefore, moveSlot ? "move" : "copy", filedRef);
+                            }
                         }
                         else if (filedRef != null)
                         {
@@ -517,6 +527,9 @@ namespace RBLclass.Core
                 acc.Errors++;
                 return;
             }
+            // Moved at store level (v2.14.0.0 A2) without a known new EntryID:
+            // a store-level move never decrypts, so there is nothing to check.
+            if (!moved.IsTracked || moved.ProtectionVerified) return;
 
             bool stillProtected;
             try { stillProtected = _store.IsEncryptedMail(moved); }

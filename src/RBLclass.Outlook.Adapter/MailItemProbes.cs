@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using RBLclass.Core;
 using Serilog;
@@ -122,27 +123,9 @@ namespace RBLclass.Outlook.Adapter
             string entryId = Safe(() => mail.EntryID, null);
             if (string.IsNullOrEmpty(entryId)) return null; // never saved: nothing stored
 
-            string narrowing = null;
-            try
-            {
-                using (var pa = new ComRef<OutlookOM.PropertyAccessor>(mail.PropertyAccessor))
-                {
-                    string messageId = Safe(() => pa.Value.GetProperty(PR_INTERNET_MESSAGE_ID_W) as string, null);
-                    if (!string.IsNullOrWhiteSpace(messageId))
-                        narrowing = "\"" + PR_INTERNET_MESSAGE_ID_W + "\" = '" + DaslLiteral(messageId) + "'";
-                }
-            }
-            catch { /* fall back to the subject */ }
-
-            if (narrowing == null)
-            {
-                string subject = Safe(() => mail.Subject, null);
-                if (string.IsNullOrEmpty(subject)) return null; // no key to narrow on: skip, don't scan the folder
-                narrowing = "\"" + DaslSubject + "\" = '" + DaslLiteral(subject) + "'";
-            }
-
-            string filter = "@SQL=(\"" + PR_MESSAGE_CLASS_W + "\" LIKE 'IPM.Note.SMIME%' OR \""
-                          + PR_MESSAGE_CLASS_W + "\" LIKE 'IPM.Note.Secure%') AND " + narrowing;
+            // No key to narrow on: skip, don't scan the folder.
+            string filter = ProtectedRowFilter(ReadMessageId(mail), Safe(() => mail.Subject, null));
+            if (filter == null) return null;
 
             object rawParent = null;
             try
@@ -178,6 +161,72 @@ namespace RBLclass.Outlook.Adapter
             {
                 if (rawParent != null && Marshal.IsComObject(rawParent))
                     Marshal.ReleaseComObject(rawParent);
+            }
+        }
+
+        /// <summary>The item's Internet message id, or null.</summary>
+        internal static string ReadMessageId(OutlookOM.MailItem mail)
+        {
+            try
+            {
+                using (var pa = new ComRef<OutlookOM.PropertyAccessor>(mail.PropertyAccessor))
+                {
+                    string messageId = Safe(() => pa.Value.GetProperty(PR_INTERNET_MESSAGE_ID_W) as string, null);
+                    return string.IsNullOrWhiteSpace(messageId) ? null : messageId;
+                }
+            }
+            catch { return null; }
+        }
+
+        /// <summary>
+        /// DASL filter for a folder table: protected classes only, narrowed on
+        /// the message id, else on the subject. Null when there is neither.
+        /// </summary>
+        internal static string ProtectedRowFilter(string messageId, string subject)
+        {
+            string narrowing;
+            if (!string.IsNullOrWhiteSpace(messageId))
+                narrowing = "\"" + PR_INTERNET_MESSAGE_ID_W + "\" = '" + DaslLiteral(messageId) + "'";
+            else if (!string.IsNullOrEmpty(subject))
+                narrowing = "\"" + DaslSubject + "\" = '" + DaslLiteral(subject) + "'";
+            else
+                return null;
+
+            return "@SQL=(\"" + PR_MESSAGE_CLASS_W + "\" LIKE 'IPM.Note.SMIME%' OR \""
+                 + PR_MESSAGE_CLASS_W + "\" LIKE 'IPM.Note.Secure%') AND " + narrowing;
+        }
+
+        /// <summary>
+        /// The EntryIDs of the folder's stored protected rows matching the message
+        /// id (or subject), read from the contents table: no item is opened, so an
+        /// add-in that decrypts opened items is not triggered (v2.14.0.0 A2). Null
+        /// when there is no key to narrow on or the table cannot be read.
+        /// </summary>
+        internal static List<string> FindProtectedEntryIds(OutlookOM.Folder folder, string messageId, string subject)
+        {
+            string filter = ProtectedRowFilter(messageId, subject);
+            if (filter == null || folder == null) return null;
+            try
+            {
+                var ids = new List<string>();
+                using (var table = new ComRef<OutlookOM.Table>(folder.GetTable(filter, OutlookOM.OlTableContents.olUserItems)))
+                {
+                    // Narrowed to one message id or subject: a handful of rows.
+                    for (int guard = 0; guard < 200 && !table.Value.EndOfTable; guard++)
+                    {
+                        using (var row = new ComRef<OutlookOM.Row>(table.Value.GetNextRow()))
+                        {
+                            string rowId = Safe(() => row.Value["EntryID"] as string, null);
+                            if (!string.IsNullOrEmpty(rowId)) ids.Add(rowId);
+                        }
+                    }
+                }
+                return ids;
+            }
+            catch (Exception ex)
+            {
+                Log.Debug(ex, "Protected row lookup failed.");
+                return null;
             }
         }
 

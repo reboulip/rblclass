@@ -652,7 +652,7 @@ experimental, off-by-default feature and fixes what the target exposed.
 
 ### A — Store-level filing of protected mail (default)
 
-- [ ] **A1.** Add `MapiMessageMover` (internal, `RBLclass.Outlook.Adapter`):
+- [x] **A1.** Add `MapiMessageMover` (internal, `RBLclass.Outlook.Adapter`):
       a store-level move/copy of one message through Extended MAPI
       `IMAPIFolder::CopyMessages`, the call Outlook itself makes on a
       drag-and-drop, which copies the stored message (its `IPM.Note.SMIME`
@@ -749,6 +749,29 @@ experimental, off-by-default feature and fixes what the target exposed.
       path. It must open decrypted from its new folder, the log must show
       `filed at store level`, and it must never show `no longer reads as
       protected`.
+      **As implemented (2026-11-24).** The filed ref of a store-level filing is
+      `MailItemRef.VerifiedProtected` (its row matched the protected filter),
+      and the classifier skips the object-model post-check for it: in a PST
+      the EntryID does not change on a move, and Outlook hands back the item
+      it still holds (decrypted, stale parent), which made that check report
+      a false loss. An unidentified new row gives `MailItemRef.Untracked`
+      (filed, not undoable). The adapter remembers, for the session, the
+      folder of every mail it filed at store level, so Undo and the safety
+      copy do not read the source folder from that stale object. The deletes
+      are routed too, since `MailItem.Delete` is an object-model move:
+      `DeleteItem` moves a protected mail to Deleted Items at store level, and
+      `DeleteItemPermanently` hard-deletes it in place through
+      `IMAPIFolder::DeleteMessages` (vtable slot 21).
+      **Verified on the dev machine:** Stormshield simulation (stored
+      `IPM.Note.SMIME`, held decrypted in memory) and the real Stormshield
+      `smime.p7m` envelope: move, keep a copy, two destinations, each followed
+      by Undo. The filed rows stay `IPM.Note.SMIME` at identical size, Undo
+      restores them, and Undo of a copy hard-deletes it (nothing left in
+      Deleted Items). Ordinary mail regression (move + Undo, keep a copy +
+      attachment removal) unchanged. - shipped, pending tests (not verifiable
+      on the dev machine per the testing strategy above; re-verify on the
+      real 32-bit target with the smart card inserted: every filing path keeps
+      the mail encrypted and readable, and nothing crashes in 32-bit Outlook)
 
 ### B — Experimental re-encryption fixes
 

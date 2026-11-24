@@ -1215,7 +1215,7 @@ namespace RBLclass.AddIn
                     Log.Information("Sent-item triage copied the sent mail to the Inbox ({Outcome}).",
                         copyRef != null ? "success" : "copy failed");
 
-                    if (settings.ClassifyAfterMoveToInbox && copyRef != null)
+                    if (settings.ClassifyAfterMoveToInbox && copyRef != null && copyRef.IsTracked)
                     {
                         EnsureTaskPane();
                         TaskPaneServices.PinMailForClassify?.Invoke(copyRef);

@@ -471,6 +471,16 @@ namespace RBLclass.Outlook.Adapter
                         return null;
                     }
 
+                    // v2.14.0.0 A2 (#62): a protected mail is copied at store level,
+                    // never through MailItem.Copy, which writes the in-memory
+                    // decrypted state. The item is released first.
+                    var storeLevel = mail != null ? PlanStoreLevelFiling(mail, item) : null;
+                    if (storeLevel != null)
+                    {
+                        comItem.Dispose();
+                        return FileAtStoreLevel(session.Value, storeLevel, destination, move: false);
+                    }
+
                     OutlookOM.Folder rawDest;
                     try { rawDest = (OutlookOM.Folder)session.Value.GetFolderFromID(
                         destination.EntryId, destination.StoreId); }
@@ -603,6 +613,16 @@ namespace RBLclass.Outlook.Adapter
                         return null;
                     }
 
+                    // v2.14.0.0 A2 (#62): a protected mail is moved at store level,
+                    // never through MailItem.Move, which writes the in-memory
+                    // decrypted state. The item is released first.
+                    var storeLevel = mail != null ? PlanStoreLevelFiling(mail, item) : null;
+                    if (storeLevel != null)
+                    {
+                        comItem.Dispose();
+                        return FileAtStoreLevel(session.Value, storeLevel, destination, move: true);
+                    }
+
                     OutlookOM.Folder rawDest;
                     try { rawDest = (OutlookOM.Folder)session.Value.GetFolderFromID(
                         destination.EntryId, destination.StoreId); }
@@ -705,6 +725,23 @@ namespace RBLclass.Outlook.Adapter
                 using (var comItem = new ComRef<object>(rawItem))
                 {
                     var mail = comItem.Value as OutlookOM.MailItem;
+
+                    // v2.14.0.0 A2 (#62): MailItem.Delete moves the item to Deleted
+                    // Items through the object model, which can write a protected
+                    // mail's in-memory decrypted state. Move it at store level.
+                    StoreLevelPlan storeLevel = null;
+                    if (mail != null)
+                    {
+                        try { storeLevel = PlanStoreLevelFiling(mail, item); }
+                        catch { return; } // logged; the protected mail stays where it is
+                    }
+                    if (storeLevel != null)
+                    {
+                        comItem.Dispose();
+                        DeleteAtStoreLevel(session.Value, storeLevel, item, permanently: false);
+                        return;
+                    }
+
                     if (mail != null)
                     {
                         try { mail.Delete(); Log.Information("DeleteItem: deleted {EntryId}", item.EntryId); }
@@ -806,7 +843,29 @@ namespace RBLclass.Outlook.Adapter
 
         public void DeleteItemPermanently(MailItemRef item)
         {
-            if (item == null) return;
+            if (item == null || !item.IsTracked) return;
+
+            // v2.14.0.0 A2: a protected mail is hard-deleted at store level, right
+            // where it is (the object model could hand back a stale item after a
+            // store-level move, and its Delete is an object-model move).
+            using (var session = new ComRef<OutlookOM.NameSpace>(_app.Session))
+            {
+                StoreLevelPlan storeLevel = null;
+                try
+                {
+                    using (var comItem = new ComRef<object>(session.Value.GetItemFromID(item.EntryId, item.StoreId)))
+                    {
+                        var mail = comItem.Value as OutlookOM.MailItem;
+                        if (mail != null) storeLevel = PlanStoreLevelFiling(mail, item);
+                    }
+                }
+                catch { storeLevel = null; } // no longer resolves / unknown folder: the path below handles it
+                if (storeLevel != null)
+                {
+                    DeleteAtStoreLevel(session.Value, storeLevel, item, permanently: true);
+                    return;
+                }
+            }
 
             // The OM has no direct hard delete: Delete() only moves to Deleted
             // Items, under a NEW EntryID we never learn. So: move it to Deleted
@@ -820,6 +879,13 @@ namespace RBLclass.Outlook.Adapter
             {
                 // No Deleted Items / move failed - fall back to a soft delete.
                 DeleteItem(item);
+                return;
+            }
+            if (!inTrash.IsTracked)
+            {
+                // A protected mail moved at store level whose new entry was not
+                // identified: it stays in Deleted Items (still encrypted).
+                Log.Warning("DeleteItemPermanently: {EntryId} is in Deleted Items but could not be deleted for good.", item.EntryId);
                 return;
             }
 
@@ -2257,6 +2323,190 @@ namespace RBLclass.Outlook.Adapter
             }
             catch { return null; } // store has no Deleted Items default - fine
             finally { deleted?.Dispose(); }
+        }
+
+        /// <summary>What a store-level filing needs, read before the item is released.</summary>
+        private sealed class StoreLevelPlan
+        {
+            public string EntryId;
+            public string SourceFolderEntryId;
+            public string SourceStoreId;
+            public string MessageId;
+            public string Subject;
+        }
+
+        /// <summary>
+        /// Where each protected mail filed at store level now sits, by
+        /// "StoreID|EntryID", for this session (v2.14.0.0 A2). After a store-level
+        /// move Outlook can keep handing back the item object it held before
+        /// (decrypted in memory, parent still the old folder; in a PST the EntryID
+        /// does not even change), so Undo and the safety copy must not read the
+        /// source folder from that object.
+        /// </summary>
+        private readonly Dictionary<string, KeyValuePair<string, string>> _storeLevelFiled =
+            new Dictionary<string, KeyValuePair<string, string>>(StringComparer.OrdinalIgnoreCase);
+
+        private static string StoreLevelKey(string storeId, string entryId) => storeId + "|" + entryId;
+
+        /// <summary>
+        /// Null for ordinary mail (the object-model path stays); for a protected
+        /// mail, the data needed to file it at store level (v2.14.0.0 A2). Throws
+        /// when the source folder cannot be read: falling back to MailItem.Move or
+        /// Copy would store the mail decrypted (#62).
+        /// </summary>
+        private StoreLevelPlan PlanStoreLevelFiling(OutlookOM.MailItem mail, MailItemRef item)
+        {
+            KeyValuePair<string, string> known;
+            bool filedBefore = _storeLevelFiled.TryGetValue(StoreLevelKey(item.StoreId, item.EntryId), out known);
+            if (!filedBefore && !IsProtectedMail(mail, "StoreLevelFiling")) return null;
+
+            var plan = new StoreLevelPlan
+            {
+                EntryId = item.EntryId,
+                MessageId = MailItemProbes.ReadMessageId(mail),
+                Subject = string.IsNullOrEmpty(item.Subject) ? Safe(() => mail.Subject, null) : item.Subject,
+            };
+
+            if (filedBefore)
+            {
+                // Filed at store level earlier this session: its folder is known.
+                plan.SourceStoreId = known.Key;
+                plan.SourceFolderEntryId = known.Value;
+                return plan;
+            }
+
+            object rawParent = null;
+            try
+            {
+                rawParent = mail.Parent;
+                var folder = rawParent as OutlookOM.Folder;
+                if (folder != null)
+                {
+                    plan.SourceFolderEntryId = Safe(() => folder.EntryID, null);
+                    plan.SourceStoreId = Safe(() => folder.StoreID, null);
+                }
+            }
+            catch { /* reported below */ }
+            finally
+            {
+                if (rawParent != null && Marshal.IsComObject(rawParent))
+                    Marshal.ReleaseComObject(rawParent);
+            }
+
+            if (string.IsNullOrEmpty(plan.SourceFolderEntryId) || string.IsNullOrEmpty(plan.SourceStoreId))
+            {
+                Log.Warning("Store-level filing: the source folder of {EntryId} could not be read; the protected mail was left in place.",
+                            item.EntryId);
+                throw new InvalidOperationException("Store-level filing: source folder unavailable.");
+            }
+            return plan;
+        }
+
+        /// <summary>
+        /// Move or copy a protected mail with <see cref="MapiMessageMover"/> and find
+        /// its new EntryID from the destination's contents table (rows that were not
+        /// there before). Throws when the transfer fails: the mail stays where it was,
+        /// still encrypted. Returns an untracked ref when the new row is not
+        /// identified (the filing itself succeeded).
+        /// </summary>
+        private MailItemRef FileAtStoreLevel(OutlookOM.NameSpace session, StoreLevelPlan plan,
+                                             FolderNode destination, bool move)
+        {
+            var sw = System.Diagnostics.Stopwatch.StartNew();
+            string op = move ? "Move" : "Copy";
+
+            // A move into the folder it already sits in is a no-op.
+            if (move && string.Equals(plan.SourceStoreId, destination.StoreId, StringComparison.OrdinalIgnoreCase)
+                && (string.Equals(plan.SourceFolderEntryId, destination.EntryId, StringComparison.OrdinalIgnoreCase)
+                    || Safe(() => session.CompareEntryIDs(plan.SourceFolderEntryId, destination.EntryId), false)))
+            {
+                Log.Debug("Store-level filing: {EntryId} is already in {Path}.", plan.EntryId, destination.FullPath);
+                return MailItemRef.VerifiedProtected(destination.StoreId, plan.EntryId, plan.Subject);
+            }
+
+            using (var source = new ComRef<OutlookOM.Folder>(
+                       (OutlookOM.Folder)session.GetFolderFromID(plan.SourceFolderEntryId, plan.SourceStoreId)))
+            using (var target = new ComRef<OutlookOM.Folder>(
+                       (OutlookOM.Folder)session.GetFolderFromID(destination.EntryId, destination.StoreId)))
+            {
+                var before = MailItemProbes.FindProtectedEntryIds(target.Value, plan.MessageId, plan.Subject);
+
+                if (!MapiMessageMover.TryTransfer(source.Value, target.Value, plan.EntryId, move))
+                {
+                    Log.Warning("Store-level filing failed ({Op}); the protected mail was left in place ({EntryId} -> {Path}).",
+                                op, plan.EntryId, destination.FullPath);
+                    throw new InvalidOperationException("Store-level filing failed.");
+                }
+
+                var after = MailItemProbes.FindProtectedEntryIds(target.Value, plan.MessageId, plan.Subject);
+                var added = new List<string>();
+                if (after != null)
+                {
+                    foreach (string id in after)
+                    {
+                        bool known = before != null
+                                     && before.Exists(b => string.Equals(b, id, StringComparison.OrdinalIgnoreCase));
+                        if (!known) added.Add(id);
+                    }
+                }
+
+                sw.Stop();
+                if (added.Count == 1)
+                {
+                    Log.Information("Protected mail filed at store level ({Op}, {EntryId} -> {NewEntryId}, {Ms} ms).",
+                                    op, plan.EntryId, added[0], sw.ElapsedMilliseconds);
+                    if (move) _storeLevelFiled.Remove(StoreLevelKey(plan.SourceStoreId, plan.EntryId));
+                    _storeLevelFiled[StoreLevelKey(destination.StoreId, added[0])] =
+                        new KeyValuePair<string, string>(destination.StoreId, destination.EntryId);
+                    // The row matched the protected-class filter: still stored encrypted.
+                    return MailItemRef.VerifiedProtected(destination.StoreId, added[0], plan.Subject);
+                }
+                if (move) _storeLevelFiled.Remove(StoreLevelKey(plan.SourceStoreId, plan.EntryId));
+
+                Log.Warning("Protected mail filed at store level ({Op}, {EntryId} -> {Path}), but its new entry was not " +
+                            "identified ({Count} candidate(s)): it cannot be undone.",
+                            op, plan.EntryId, destination.FullPath, added.Count);
+                return MailItemRef.Untracked(destination.StoreId, plan.Subject);
+            }
+        }
+
+        /// <summary>
+        /// Delete a protected mail at store level (v2.14.0.0 A2): a hard delete
+        /// when <paramref name="permanently"/> or when it already sits in Deleted
+        /// Items, else a store-level move into its store's Deleted Items. Logs and
+        /// leaves the mail in place on failure (never throws).
+        /// </summary>
+        private void DeleteAtStoreLevel(OutlookOM.NameSpace session, StoreLevelPlan plan, MailItemRef item, bool permanently)
+        {
+            try
+            {
+                var trash = GetDeletedItemsFolder(plan.SourceStoreId);
+                bool inTrash = trash != null
+                               && string.Equals(trash.StoreId, plan.SourceStoreId, StringComparison.OrdinalIgnoreCase)
+                               && (string.Equals(trash.EntryId, plan.SourceFolderEntryId, StringComparison.OrdinalIgnoreCase)
+                                   || Safe(() => session.CompareEntryIDs(trash.EntryId, plan.SourceFolderEntryId), false));
+
+                if (!permanently && !inTrash && trash != null)
+                {
+                    FileAtStoreLevel(session, plan, trash, move: true);
+                    Log.Information("DeleteItem: protected mail moved to Deleted Items at store level ({EntryId}).", item.EntryId);
+                    return;
+                }
+
+                using (var folder = new ComRef<OutlookOM.Folder>(
+                           (OutlookOM.Folder)session.GetFolderFromID(plan.SourceFolderEntryId, plan.SourceStoreId)))
+                {
+                    if (MapiMessageMover.TryDelete(folder.Value, plan.EntryId))
+                    {
+                        _storeLevelFiled.Remove(StoreLevelKey(item.StoreId, item.EntryId));
+                        Log.Information("DeleteItem: protected mail deleted for good at store level ({EntryId}).", item.EntryId);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Log.Warning(ex, "DeleteItem: the protected mail could not be deleted at store level ({EntryId}).", item.EntryId);
+            }
         }
 
         private const string PR_SECURITY_FLAGS = "http://schemas.microsoft.com/mapi/proptag/0x6E010003";
