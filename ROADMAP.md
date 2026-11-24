@@ -23,7 +23,10 @@ milestone, **v2.13.0.0** (pane UI study and redesign, search depth, PDF
 export, phishing warnings), was planned on 2026-11-21 from a `/gh-issues`
 triage.
 
-Open work: the v2.13.0.0 sprint below, plus the two real-target items,
+**v2.14.0.0** (store-level filing of encrypted mail, re-encryption fixes) was
+planned on 2026-11-24 from the real-target feedback on [#62].
+
+Open work: the v2.13.0.0 and v2.14.0.0 sprints below, plus the two real-target items,
 encrypted (Stormshield) mail [#62] and the external-sender banner on
 reply/forward [#46]. Phases 8–9 are forward-looking.
 
@@ -55,11 +58,14 @@ archived version sections of [history](docs/roadmap-history.md).
       Covers v2.11.0.0 A3 (protected-mail guard and protection trace),
       v2.11.0.0 C2 (body images as removable attachments) and v2.12.0.0 A8
       (experimental re-encrypted filing). On a target workstation:
-      1. **Step 0, first:** run `tools/Inspect-SmimeMsg.ps1` on a real
-         Stormshield `.msg`. It must show a standard CMS envelope; record the
-         key transport. RSA-OAEP keeps `ReencryptKeyTransport` = `Oaep`;
-         PKCS#1 v1.5 means switching that default to `Pkcs1`; a non-standard
-         envelope shelves the re-encryption feature.
+      **Target feedback 2026-11-23:** step 0 done (standard CMS envelope,
+      RSA PKCS#1 v1.5 key transport); the standard path files protected mail
+      decrypted; experimental re-encryption freezes then crashes Outlook.
+      Both are addressed by **v2.14.0.0** (store-level filing A, re-encryption
+      fixes B); re-run steps 2–6 on that version.
+      1. ~~**Step 0, first:** inspect a real Stormshield mail's envelope.~~
+         Done 2026-11-24 on a sample `.eml`: AES-256-CBC, RSA PKCS#1 v1.5,
+         issuer + serial (see v2.14.0.0).
       2. **Standard path, card inserted**, Diagnostic logging on: classify one
          protected mail per path (move, copy, safety copy, keep a copy) with
          "remove attachments" on. The attachments must stay, and the log must
@@ -603,6 +609,209 @@ patching, no modification of the stored mail.
         opens nothing and "Open anyway" opens the browser; a mail without
         banner opens unchanged. The warning cannot be driven by touch taps
         (accepted gap).
+
+---
+
+## v2.14.0.0 — encrypted mail: store-level filing, re-encryption fixes
+
+Planned 2026-11-24 from the real-target feedback on [#62] (log of 2026-11-23
+and a sample Stormshield `.eml`). Version to be confirmed at sprint start.
+Each item is the specification.
+
+**What the target showed.**
+1. **The standard path still leaks.** AutoClass moved a protected mail and
+   logged `Protected mail filed by move no longer reads as protected … it was
+   decrypted in memory when filed`. With the smart card inserted, Stormshield
+   decrypts the opened item in memory, and `MailItem.Move` / `MailItem.Copy`
+   persist that decrypted state: the filed mail is stored in clear in the
+   destination.
+2. **Experimental re-encryption freezes then crashes Outlook.** Three
+   attempts, each: the two `IsEncryptedMail … detected by
+   "StoredMessageClass"` lines (attachment gather, then
+   `ClassifierService.SafeIsEncrypted`), then nothing until the next add-in
+   start. No `Re-encrypted filing…` line (success or fallback) was written,
+   so the hang is inside `TryReencrypt`, between `ReadDecryptedContent` and
+   `VerifyEncryptedCopy`. Diagnostic logging was off, so the step is unknown.
+3. **Envelope mismatch (step 0 of the carried-over item, done 2026-11-24).**
+   The real Stormshield mail is an opaque `application/pkcs7-mime;
+   smime-type=enveloped-data` (`smime.p7m`): content AES-256-CBC
+   (`2.16.840.1.101.3.4.1.42`), key transport **RSA PKCS#1 v1.5**
+   (`1.2.840.113549.1.1.1`), two `KeyTransRecipientInfo` addressed by
+   issuer + serial (`FRAMATOME Encipherment CA`), no certificates in the
+   envelope. `OutlookMailRebuilder.Encrypt` (`EnvelopedCms` on .NET Framework
+   4.8) emits **RSA-OAEP** (`1.2.840.113549.1.1.7`), and the 4.8
+   `CmsRecipient` has no padding overload. The suspected crash: once the copy
+   is `IPM.Note.SMIME`, Stormshield / the smart-card middleware tries to
+   decrypt an OAEP envelope it does not support.
+
+**Strategy (user decision 2026-11-24).** A is the default behaviour for every
+protected mail: it moves or copies the stored, still-encrypted message
+without ever opening it through the Outlook object model, so nothing is
+decrypted and nothing is re-encrypted. B keeps re-encryption as an
+experimental, off-by-default feature and fixes what the target exposed.
+
+### A — Store-level filing of protected mail (default)
+
+- [ ] **A1.** Add `MapiMessageMover` (internal, `RBLclass.Outlook.Adapter`):
+      a store-level move/copy of one message through Extended MAPI
+      `IMAPIFolder::CopyMessages`, the call Outlook itself makes on a
+      drag-and-drop, which copies the stored message (its `IPM.Note.SMIME`
+      class and its `smime.p7m` attachment byte for byte) without opening it.
+      **API:** `bool TryTransfer(OutlookOM.Folder source, OutlookOM.Folder
+      destination, string entryIdHex, bool move)`. Returns false on any
+      failure, logged at `Warning` with the HRESULT (never throws).
+      **Interop, no new dependency, no `[ComImport]` interface:** CLAUDE.md
+      forbids hand-rolled `[ComImport]` declarations because every method
+      of the interface gets an IL stub and one wrong signature crashes
+      Outlook. There is no PIA for MAPI, so call the single method through
+      its vtable slot instead:
+      1. `object mapiObj = folder.MAPIOBJECT` (wrap the RCW and
+         `Marshal.ReleaseComObject` it in `finally`);
+         `IntPtr unk = Marshal.GetIUnknownForObject(mapiObj)`;
+         `Marshal.QueryInterface(unk, ref IID_IMAPIFolder, out IntPtr folderPtr)`
+         with `IID_IMAPIFolder = {0002030C-0000-0000-C000-000000000046}`.
+         Same for the destination. `Marshal.Release` every pointer obtained,
+         in `finally`.
+      2. Slot index **20** of the `IMAPIFolder` vtable (IUnknown 0–2,
+         IMAPIProp 3–13: GetLastError, SaveChanges, GetProps, GetPropList,
+         OpenProperty, SetProps, DeleteProps, CopyTo, CopyProps,
+         GetNamesFromIDs, GetIDsFromNames; IMAPIContainer 14–18:
+         GetContentsTable, GetHierarchyTable, OpenEntry, SetSearchCriteria,
+         GetSearchCriteria; IMAPIFolder 19 CreateMessage, **20
+         CopyMessages**). Read it with
+         `Marshal.ReadIntPtr(Marshal.ReadIntPtr(folderPtr), 20 * IntPtr.Size)`
+         and bind it with `Marshal.GetDelegateForFunctionPointer` to
+         `[UnmanagedFunctionPointer(CallingConvention.StdCall)] delegate int
+         CopyMessagesFn(IntPtr self, IntPtr lpMsgList, IntPtr lpInterface,
+         IntPtr lpDestFolder, IntPtr ulUIParam, IntPtr lpProgress, uint
+         ulFlags)` (`ulUIParam` is a `ULONG_PTR`, hence `IntPtr`).
+      3. `lpMsgList` points to an `ENTRYLIST { ULONG cValues; SBinary* lpbin }`
+         holding one `SBinary { ULONG cb; LPBYTE lpb }`. Declare both as
+         `[StructLayout(LayoutKind.Sequential)]` structs with a `uint` and an
+         `IntPtr` field, so the 64-bit padding is right and the same binary
+         works in 32-bit Outlook. Allocate the entry ID bytes (hex → bytes)
+         and both structs with `Marshal.AllocHGlobal` and free them in
+         `finally`. `lpInterface` = `IntPtr.Zero` (destination is an
+         `IMAPIFolder`), `lpDestFolder` = the destination `folderPtr`,
+         `ulUIParam` = `IntPtr.Zero`, `lpProgress` = `IntPtr.Zero`,
+         `ulFlags` = `MESSAGE_MOVE` (`0x1`) for a move, `0` for a copy.
+         `hr < 0` = failure; `MAPI_W_PARTIAL_COMPLETION` (`0x00040680`) is a
+         failure too.
+      UI thread only (STA), like every other adapter call.
+
+- [ ] **A2.** Route protected mail through A1 inside
+      `OutlookMailStore.MoveItemToFolder` and `CopyItemToFolder` (requires:
+      A1). Every caller is then covered without change: classify (move,
+      copy, multi-destination, keep a copy, safety copy to Deleted Items),
+      AutoClass, Undo (moves the filed item back), the delete path
+      (`MoveItemToFolder(item, deletedItems)`), the sent-item triage, and the
+      re-encryption fallback.
+      **Flow** when the resolved item is a `MailItem` and
+      `IsProtectedMail(mail, "StoreLevelFiling")` is true:
+      1. Read the source folder (`mail.Parent` in a `ComRef`, its `EntryID`
+         and `StoreID`), the entry ID, the Message-ID
+         (`PR_INTERNET_MESSAGE_ID_W`) and the subject. Then **release the
+         item** before the transfer: no OOM write may touch it, and
+         `markAsRead` is ignored (it is already false for protected mail in
+         `ClassifierService`).
+      2. Snapshot the destination's matching rows: `Folder.GetTable` with
+         the same filter as `MailItemProbes.ReadStoredProtectedClass`
+         (protected class `LIKE 'IPM.Note.SMIME%' OR LIKE 'IPM.Note.Secure%'`,
+         narrowed on Message-ID, else on subject), `EntryID` column only.
+         A table never opens an item, so Stormshield is not triggered.
+      3. `MapiMessageMover.TryTransfer(source, destination, entryId, move)`.
+      4. Re-run the table and take the one `EntryID` not in the snapshot:
+         that is the filed item, returned in the `MailItemRef`. The row
+         matched the protected-class filter, so it is still stored
+         encrypted. When no new row or more than one shows up, still return
+         success with a `MailItemRef` whose `EntryId` is null; the classifier
+         treats it like today's "EntryID could not be read" case (filed,
+         not undoable, no history). Log that at `Warning`.
+      5. On a transfer failure, **do not fall back** to `MailItem.Move/Copy`:
+         that is the leak. Log `Warning` "Store-level filing failed (hr=…);
+         the protected mail was left in place ({EntryId})" and throw, as
+         today's failed-destination path does. The item counts as an error,
+         stays where it was, and stays encrypted.
+      Log `Information` "Protected mail filed at store level ({Move|Copy},
+      {EntryId} -> {NewEntryId})". Ordinary mail and `MeetingItem` keep the
+      current OOM path unchanged. The post-filing check in `ClassifierService`
+      (`Protected mail filed by … no longer reads as protected`) stays as
+      the safety net: after A2 it must no longer appear.
+      **Verification on the dev machine:** import the sample Stormshield
+      `.eml` (kept untracked outside git: it carries a real address) into a
+      PST folder. With no key it stays stored `IPM.Note.SMIME`. Classify it
+      by move, copy, keep a copy, two destinations and safety copy, then
+      Undo, AutoClass and delete. Each time: the filed item is still
+      `IPM.Note.SMIME` with its `smime.p7m`, the `Information` line is in the
+      log, and Undo puts it back. Regression pass on ordinary mail.
+      **Real target (pending tests, not verifiable here):** smart card
+      inserted, Diagnostic logging on, classify a protected mail by every
+      path. It must open decrypted from its new folder, the log must show
+      `filed at store level`, and it must never show `no longer reads as
+      protected`.
+
+### B — Experimental re-encryption fixes
+
+- [ ] **B1.** Emit the envelope Stormshield uses: RSA PKCS#1 v1.5 key
+      transport. Add `CmsEnvelopeBuilder` in `RBLclass.Core` (pure managed,
+      netstandard2.0, no new dependency) and use it from
+      `OutlookMailRebuilder.Encrypt` in place of `EnvelopedCms`.
+      **Input:** the MIME entity bytes, the recipient's issuer name DER
+      (`cert.IssuerName.RawData`), its serial number **big-endian**
+      (`cert.GetSerialNumber()` is little-endian: reverse it in the adapter)
+      and its RSA public key (`RSAParameters` from `cert.GetRSAPublicKey()`).
+      **Output:** DER `ContentInfo { id-envelopedData (1.2.840.113549.1.7.3),
+      [0] EXPLICIT EnvelopedData { version 0, recipientInfos SET {
+      KeyTransRecipientInfo { version 0, IssuerAndSerialNumber,
+      keyEncryptionAlgorithm rsaEncryption (1.2.840.113549.1.1.1) with NULL
+      parameters, encryptedKey OCTET STRING } }, EncryptedContentInfo {
+      id-data (1.2.840.113549.1.7.1), aes256-CBC (2.16.840.1.101.3.4.1.42)
+      with the 16-byte IV as OCTET STRING parameters, [0] IMPLICIT encrypted
+      content } } }`. The key is a random 32-byte AES key
+      (`RandomNumberGenerator`), PKCS7 padding, encrypted with
+      `RSA.Encrypt(key, RSAEncryptionPadding.Pkcs1)`. Zero the key and the IV
+      buffers after use. A small private DER writer (definite lengths) is
+      enough. Keep the adapter's self-check (decode the envelope, log the
+      cipher and key transport at `Debug`), and log a `Warning` if the key
+      transport is not `1.2.840.113549.1.1.1`.
+      **Tests** (`CmsEnvelopeBuilderTests`): with a throwaway RSA key and a
+      self-signed certificate (`CertificateRequest`), parse the output with
+      `System.Formats.Asn1.AsnReader` (in the net8.0 shared framework, no
+      package). Check the structure and OIDs above, the issuer and serial
+      match, then decrypt the key with the private key (PKCS#1) and the
+      content with AES-CBC, and get the input back. Two encryptions of the
+      same input differ (random key and IV).
+
+- [ ] **B2.** Step breadcrumbs so a crash on the target pinpoints the
+      step. In `ClassifierService.TryReencrypt`, log at **`Information`**
+      (not `Debug`: the target runs without diagnostic logging) "Re-encrypted
+      filing step {Step} ({EntryId})" before each step: `eligibility`,
+      `certificate`, `read`, `build`, `encrypt`, `create` (once per
+      destination), `verify`, `original`. Inside
+      `OutlookMailRebuilder.CreateEncryptedCopy`, log the same way before
+      `stub`, `reopen`, `payload-check`, `envelope`, `class-switch` (the
+      `MessageClass = "IPM.Note.SMIME"` + `Save`) and after the final save.
+      No subject, body, address or file name, as today. The Serilog file
+      sink is not buffered, so the last line written before a crash
+      survives.
+
+- [ ] **B3.** Re-encrypt only when it buys something (requires: A2). With
+      A2, the standard path keeps a protected mail encrypted, so rebuilding
+      it is only needed to change its content. In `ClassifierService`, call
+      `TryReencrypt` only when `ReencryptProtected` is on **and** the request
+      changes the content of this item: `RemoveAttachments`, at least one
+      attachment-disposition row for this item, or `StripBanner`. Otherwise
+      the item takes the standard path (store-level filing, A2) without
+      opening the rebuilder. Update the Experimental setting's description
+      (EN/FR/DE resx) to say it applies when attachments are removed or the
+      banner is stripped from an encrypted mail. Unit tests in
+      `ClassifierServiceReencryptTests`: with re-encryption on, a plain
+      classify of a protected mail never calls `IMailRebuilder`; with
+      "remove attachments", it does.
+      **Real target (pending tests):** card inserted, Diagnostic logging on,
+      "remove attachments" on a protected mail. Expected: filed
+      re-encrypted, it opens decrypted without its attachments, and no
+      freeze. If it still freezes, send the last `step` line from the log.
 
 ---
 
