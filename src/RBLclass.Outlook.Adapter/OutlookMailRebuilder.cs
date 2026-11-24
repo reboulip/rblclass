@@ -267,11 +267,15 @@ namespace RBLclass.Outlook.Adapter
                     return null;
                 }
 
-                var cms = new EnvelopedCms(new ContentInfo(new Oid(OidData), mimeEntity),
-                                           new AlgorithmIdentifier(new Oid(OidAes256Cbc)));
-                // Never the parameterless Encrypt(): it opens a certificate picker.
-                cms.Encrypt(new CmsRecipient(SubjectIdentifierType.IssuerAndSerialNumber, certificate));
-                byte[] payload = cms.Encode();
+                // v2.14.0.0 B1: the envelope Stormshield uses (RSA PKCS#1 v1.5 key
+                // transport). EnvelopedCms on .NET Framework 4.8 emits RSA-OAEP and
+                // has no padding option; a target crashed on those copies.
+                RSAParameters publicKey;
+                using (var rsa = certificate.GetRSAPublicKey())
+                    publicKey = rsa.ExportParameters(false);
+                byte[] serial = certificate.GetSerialNumber();   // little-endian
+                Array.Reverse(serial);
+                byte[] payload = CmsEnvelopeBuilder.Build(mimeEntity, certificate.IssuerName.RawData, serial, publicKey);
 
                 // Self-check: decode the envelope (no decryption) and record what was produced.
                 var check = new EnvelopedCms();
@@ -284,6 +288,8 @@ namespace RBLclass.Outlook.Adapter
                           payload.Length, cipher, keyTransport);
                 if (cipher != OidAes256Cbc)
                     Log.Warning("Re-encryption: unexpected content cipher {Cipher}.", cipher);
+                if (keyTransport != OidRsa)
+                    Log.Warning("Re-encryption: unexpected key transport {KeyTransport}.", keyTransport);
                 return payload;
             }
             catch (OutOfMemoryException)

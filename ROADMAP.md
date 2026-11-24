@@ -804,6 +804,13 @@ experimental, off-by-default feature and fixes what the target exposed.
       match, then decrypt the key with the private key (PKCS#1) and the
       content with AES-CBC, and get the input back. Two encryptions of the
       same input differ (random key and IV).
+      **Verified on the dev machine (2026-11-24):** a re-encrypted filing with
+      the self-signed test certificate logs `key transport
+      1.2.840.113549.1.1.1`; the copy is stored `IPM.Note.SMIME` and Outlook
+      opens it decrypted with both parts; the original goes to Deleted Items
+      at store level, still encrypted. - shipped, pending tests (not verifiable
+      on the dev machine per the testing strategy above; re-verify on the real
+      target that Stormshield and the smart card open a re-encrypted copy)
 
 - [ ] **B2.** Step breadcrumbs so a crash on the target pinpoints the
       step. In `ClassifierService.TryReencrypt`, log at **`Information`**
