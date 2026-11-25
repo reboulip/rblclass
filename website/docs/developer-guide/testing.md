@@ -22,7 +22,8 @@ exactly why CI can run them (see below).
 The experimental re-encrypted filing is covered at the Core level by
 `MimeEntityBuilderTests` (with the `MimeTestReader` helper),
 `ReencryptContentPlannerTests`, `EncryptionCertificatePolicyTests`,
-`ReencryptEligibilityTests`, `ClassifierServiceReencryptTests` and
+`ReencryptEligibilityTests`, `ClassifierServiceReencryptTests`,
+`EncryptedCopyCheckTests` (the stored-copy check rule) and
 `CmsEnvelopeBuilderTests` (parses the envelope with `System.Formats.Asn1` from the
 net8.0 shared framework, decrypts it with the private key, checks a fresh key/IV
 per envelope and minimal INTEGER serials). The Save-as

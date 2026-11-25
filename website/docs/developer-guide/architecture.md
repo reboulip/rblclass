@@ -224,11 +224,21 @@ It follows the usual layering.
 **`RBLclass.Outlook.Adapter`**:
 
 - `OutlookMailRebuilder` creates the `IPM.Note.SMIME` item with a "PostItem
-  trick": `Items.Add(olPostItem)`, add a `smime.p7m` attachment tagged
-  `PR_ATTACH_MIME_TAG` `application/pkcs7-mime`, flip `MessageClass` to
-  `IPM.Note` and reopen as a `MailItem`, copy the recipients and envelope MAPI
-  properties, set `PR_ICON_INDEX` to -1, then flip to `IPM.Note.SMIME`. The
-  payload is byte-checked before the flip and the stub is deleted on failure.
+  trick": `Items.Add(olPostItem)` as a stub with no attachment, flip
+  `MessageClass` to `IPM.Note` and reopen it as a `MailItem`, copy the recipients
+  and envelope MAPI properties and save, set `PR_ICON_INDEX` to -1, then attach
+  the ciphertext as `smime.p7m` (tagged `PR_ATTACH_MIME_TAG`
+  `application/pkcs7-mime`) and flip to `IPM.Note.SMIME` in the same save. The
+  item is never re-opened while it carries the payload and the payload is never
+  read back through the object model (that let Stormshield decrypt it in memory).
+  Instead a `stored-check` reads the destination folder's contents table
+  (narrowed on the copied Message-ID, else the subject, any class): the copy must
+  show class exactly `IPM.Note.SMIME`, `PR_HASATTACH` true and `PR_MESSAGE_SIZE`
+  at least the payload length (`EncryptedCopyCheck.Evaluate` in Core; an unreadable
+  column is not a failure). An incomplete copy is hard-deleted at store level
+  (`IMAPIFolder::DeleteMessages` via `MapiMessageMover.TryDelete`), never with
+  `MailItem.Delete`, so no partial or decrypted stub reaches Deleted Items.
+  `VerifyEncryptedCopy` runs the same table check and does not open the copy.
 - `MailItemProbes` — probes shared with `OutlookMailStore` (moved out of it).
 - `CmsEnvelopeBuilder` (Core) builds the CMS EnvelopedData DER itself: pure
   managed, `netstandard2.0`, no new dependency (AES-256-CBC, RSA PKCS#1 v1.5 key
@@ -242,8 +252,8 @@ It follows the usual layering.
   `Re-encrypted filing step {Step} ({EntryId})` (eligibility, certificate, read,
   build, encrypt, then create and verify once per destination, and original only
   when the original goes to Deleted Items). `OutlookMailRebuilder.CreateEncryptedCopy`
-  logs `Re-encryption step {Step} ({EntryId}).` (stub, reopen, payload-check,
-  envelope, class-switch, and `saved` after the final save). They are
+  logs `Re-encryption step {Step} ({EntryId}).` (stub, reopen, envelope,
+  attach, class-switch, `saved` after the final save, and `stored-check`). They are
   **Information**, not Debug, because target workstations run without Diagnostic
   logging; the Serilog file sink is unbuffered, so after an Outlook crash the last
   line names the step that hung.

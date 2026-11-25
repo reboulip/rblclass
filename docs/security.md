@@ -245,7 +245,15 @@ administrator rights** and runs **inside the Outlook process**.
     best effort (SSD wear levelling, EDR/AV copies). The MIME buffer is cleared
     after encryption; nothing decrypted is saved to a mail store by this path.
   - **Verification and fallback.** Each copy is verified as stored S/MIME (folder
-    contents table only). A failure (no usable certificate, content not
+    contents table only: `EncryptedCopyCheck`, class exactly `IPM.Note.SMIME`,
+    `PR_HASATTACH`, `PR_MESSAGE_SIZE` >= payload length). Since v2.14.0.1 the copy
+    is never re-opened while it carries the ciphertext and the payload is never
+    read back (the earlier `payload-check` read `smime.p7m` through the object
+    model, which let Stormshield decrypt it in memory). An incomplete copy is
+    hard-deleted at store level (`MapiMessageMover.TryDelete`), never with
+    `MailItem.Delete`, so no partial or decrypted stub reaches Deleted Items; the
+    Warning names only the failing check (class, attachment flag, size, payload
+    length). A failure (no usable certificate, content not
     rebuildable, build/encryption, copy creation or verification) removes every
     copy made for that item and falls back to the standard path; the count is
     reported.
@@ -272,7 +280,8 @@ administrator rights** and runs **inside the Outlook process**.
 - **Re-encryption step breadcrumbs (v2.14.0.0).** The experimental re-encrypted
   filing logs Information lines `Re-encrypted filing step <step> (<EntryId>)`
   (`ClassifierService`) and `Re-encryption step <step> (<EntryId>).`
-  (`OutlookMailRebuilder`) before each step, so a crash on a target without
+  (`OutlookMailRebuilder`; since v2.14.0.1: stub, reopen, envelope, attach,
+  class-switch, saved, stored-check) before each step, so a crash on a target without
   Diagnostic logging is pinpointed. Only a step name and an EntryID: no subject,
   body, address or file name.
 - **Unreadable selection diagnostics.** A selected item Outlook cannot read
@@ -357,6 +366,9 @@ Tracked in [ROADMAP.md](../ROADMAP.md) Phase 9. Highlights still open:
 - Re-encrypted filing now emits RSA PKCS#1 v1.5 key transport (v2.14.0.0);
   acceptance by Stormshield with the smart card is still to be verified on the
   real target.
+- Re-encrypted filing (v2.14.0.1) no longer re-opens the copy to check its payload
+  and removes an incomplete copy at store level instead of through
+  `MailItem.Delete`; to be verified on the real target.
 
 ## Accepted by design
 

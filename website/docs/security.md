@@ -176,10 +176,13 @@ administrator rights** and runs **inside the Outlook process**.
       zeros, flushed and deleted (3 retries); leftovers are swept at startup.
       Zeroing is best effort: SSD wear levelling and EDR/antivirus copies can keep
       data. Nothing decrypted is saved to a mail store by this path.
-    - **Verification and fallback.** Each copy is verified as stored S/MIME. Any
-      failure (no usable certificate, content not rebuildable, encryption, copy or
-      verification failure) falls back to the standard path after removing every
-      copy made for that mail; the count is reported to the user.
+    - **Verification and fallback.** Each copy is verified as stored S/MIME from
+      the destination folder's table only: the copy is never re-opened or read back
+      while it carries the ciphertext. Any failure (no usable certificate, content
+      not rebuildable, encryption, copy or verification failure) falls back to the
+      standard path after removing every copy made for that mail; the count is
+      reported to the user. An incomplete copy is hard-deleted at store level, not
+      moved to Deleted Items, so no partial or decrypted stub is left there.
     - **The original.** Unless *Keep a copy* is on, the original goes to Deleted
       Items. If Outlook's move wrote it decrypted, it is deleted permanently and a
       warning is logged; deleted data may persist in PST free space until
@@ -286,5 +289,8 @@ Highlights still open:
 - Re-encrypted filing now uses RSA PKCS#1 v1.5 key transport, the scheme a real
   Stormshield mail uses; acceptance by Stormshield with the smart card is still to
   be verified on the real target.
+- Re-encrypted filing (2.14.0.1) no longer re-opens the copy to check its payload
+  and removes an incomplete copy at store level instead of through
+  `MailItem.Delete`; to be verified on the real target.
 - Input caps: length-limit free-text inputs; upper-bound `MaxResults`; validate
   `InternalDomains` shape.

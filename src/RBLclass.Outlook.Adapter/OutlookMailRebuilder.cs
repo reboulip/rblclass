@@ -41,6 +41,7 @@ namespace RBLclass.Outlook.Adapter
         private const string PR_DISPLAY_NAME_W = Tag + "0x3001001F";
         private const string PR_MESSAGE_DELIVERY_TIME = Tag + "0x0E060040";
         private const string PR_ICON_INDEX = Tag + "0x10800003";
+        private const string PR_INTERNET_MESSAGE_ID_W = Tag + "0x1035001F";
 
         /// <summary>
         /// Envelope properties copied from the source to the rebuilt item. The
@@ -63,7 +64,7 @@ namespace RBLclass.Outlook.Adapter
             Tag + "0x5D02001F", // PR_SENT_REPRESENTING_SMTP_ADDRESS_W
             Tag + "0x00390040", // PR_CLIENT_SUBMIT_TIME
             PR_MESSAGE_DELIVERY_TIME,
-            Tag + "0x1035001F", // PR_INTERNET_MESSAGE_ID_W
+            PR_INTERNET_MESSAGE_ID_W,
             Tag + "0x0070001F", // PR_CONVERSATION_TOPIC_W
             Tag + "0x00710102", // PR_CONVERSATION_INDEX
             Tag + "0x10900003", // PR_FLAG_STATUS
@@ -71,6 +72,10 @@ namespace RBLclass.Outlook.Adapter
 
         private readonly OutlookOM.Application _app;
         private readonly string _tempDirectory;
+
+        // Copies created this session and not verified yet: VerifyEncryptedCopy checks
+        // them from their folder's table, which needs the folder and the message id.
+        private readonly Dictionary<string, CreatedCopy> _createdCopies = new Dictionary<string, CreatedCopy>();
 
         /// <param name="tempDirectory">
         /// Where an attachment too large for <c>PropertyAccessor</c> is staged
@@ -489,42 +494,58 @@ namespace RBLclass.Outlook.Adapter
                     string payloadPath = Path.Combine(stageDir, "smime.p7m");  // ciphertext: safe on disk
                     File.WriteAllBytes(payloadPath, smimePayload);
 
+                    // v2.14.0.1: the item is never re-opened while it carries the
+                    // payload, and the payload is never read back. On the target,
+                    // Stormshield decrypted the stub in memory when its smime.p7m part
+                    // was read through the object model (IPM.Note class or not), so the
+                    // byte comparison always failed. The payload is attached last, in
+                    // the save that switches the class, and checked from the folder's
+                    // contents table only.
                     Step("stub", source.EntryId);
-                    entryId = CreateStub(session.Value, destination, envelope, payloadPath);
+                    entryId = CreateStub(session.Value, destination, envelope);
                     if (entryId == null) return null;
 
+                    bool reopened;
                     Step("reopen", entryId);
                     using (var comItem = new ComRef<object>(session.Value.GetItemFromID(entryId, destination.StoreId)))
                     {
                         var mail = comItem.Value as OutlookOM.MailItem;
-                        if (mail == null)
+                        reopened = mail != null;
+                        if (reopened)
                         {
-                            Log.Warning("Re-encryption: the new item did not re-open as a mail item ({EntryId}).", entryId);
-                            DeleteStub(session.Value, entryId, destination.StoreId);
-                            return null;
+                            Step("envelope", entryId);
+                            AddRecipients(mail, envelope);
+                            ApplyEnvelope(mail, envelope);
+                            mail.UnRead = !markAsRead && envelope.UnRead;
+                            mail.Save();
+
+                            Step("attach", entryId);
+                            AttachPayload(mail, payloadPath);
+
+                            Step("class-switch", entryId);
+                            mail.MessageClass = EncryptedCopyCheck.EncryptedClass;
+                            mail.Save();
+                            Step("saved", entryId);
                         }
-
-                        // Checked while the item is still IPM.Note: on an S/MIME item,
-                        // touching the attachment would trigger decryption.
-                        Step("payload-check", entryId);
-                        if (!PayloadMatches(mail, smimePayload))
-                        {
-                            Log.Warning("Re-encryption: the stored payload does not match ({EntryId}).", entryId);
-                            DeleteStub(session.Value, entryId, destination.StoreId);
-                            return null;
-                        }
-
-                        Step("envelope", entryId);
-                        AddRecipients(mail, envelope);
-                        ApplyEnvelope(mail, envelope);
-                        mail.UnRead = !markAsRead && envelope.UnRead;
-                        mail.Save();
-
-                        Step("class-switch", entryId);
-                        mail.MessageClass = "IPM.Note.SMIME";
-                        mail.Save();
-                        Step("saved", entryId);
                     }
+                    // Released before any delete: the store-level delete must not race
+                    // an object the add-in still holds.
+                    if (!reopened)
+                    {
+                        Log.Warning("Re-encryption: the new item did not re-open as a mail item ({EntryId}).", entryId);
+                        DeleteStub(session.Value, destination, entryId);
+                        return null;
+                    }
+
+                    Step("stored-check", entryId);
+                    var expected = new CreatedCopy(destination, MessageIdOf(envelope), envelope.Subject, smimePayload.Length);
+                    if (CheckStoredCopy(session.Value, expected, entryId) != EncryptedCopyProblem.None)
+                    {
+                        DeleteStub(session.Value, destination, entryId);
+                        return null;
+                    }
+                    _createdCopies[CopyKey(destination.StoreId, entryId)] = expected;
+
                     Log.Debug("Re-encryption: encrypted copy created ({EntryId}).", entryId);
                     return new MailItemRef(destination.StoreId, entryId, source.Subject, false);
                 }
@@ -537,7 +558,7 @@ namespace RBLclass.Outlook.Adapter
                     try
                     {
                         using (var session = new ComRef<OutlookOM.NameSpace>(_app.Session))
-                            DeleteStub(session.Value, entryId, destination.StoreId);
+                            DeleteStub(session.Value, destination, entryId);
                     }
                     catch { /* best effort */ }
                 }
@@ -556,18 +577,18 @@ namespace RBLclass.Outlook.Adapter
         private static void Step(string step, string entryId) =>
             Log.Information("Re-encryption step {Step} ({EntryId}).", step, entryId);
 
-        /// <summary>The PostItem stage: subject, ciphertext attachment, then class IPM.Note. Returns the EntryID.</summary>
-        private static string CreateStub(OutlookOM.NameSpace session, FolderNode destination, Envelope envelope, string payloadPath)
+        /// <summary>
+        /// The PostItem stage: subject and delivery time, then class IPM.Note. No
+        /// attachment yet (v2.14.0.1): the item is re-opened after this, and an item
+        /// carrying the payload is never re-opened. Returns the EntryID.
+        /// </summary>
+        private static string CreateStub(OutlookOM.NameSpace session, FolderNode destination, Envelope envelope)
         {
             using (var folder = new ComRef<OutlookOM.Folder>((OutlookOM.Folder)session.GetFolderFromID(destination.EntryId, destination.StoreId)))
             using (var items = new ComRef<OutlookOM.Items>(folder.Value.Items))
             using (var post = new ComRef<OutlookOM.PostItem>((OutlookOM.PostItem)items.Value.Add(OutlookOM.OlItemType.olPostItem)))
             {
                 post.Value.Subject = envelope.Subject ?? string.Empty;
-                using (var attachments = new ComRef<OutlookOM.Attachments>(post.Value.Attachments))
-                using (var att = new ComRef<OutlookOM.Attachment>(attachments.Value.Add(payloadPath, OutlookOM.OlAttachmentType.olByValue)))
-                using (var pa = new ComRef<OutlookOM.PropertyAccessor>(att.Value.PropertyAccessor))
-                    pa.Value.SetProperty(PR_ATTACH_MIME_TAG_W, "application/pkcs7-mime");
 
                 // The delivery time may only stick before the first save; set again later.
                 int delivery = Array.IndexOf(EnvelopeTags, PR_MESSAGE_DELIVERY_TIME);
@@ -587,6 +608,67 @@ namespace RBLclass.Outlook.Adapter
                 post.Value.Save();
                 return entryId;
             }
+        }
+
+        /// <summary>
+        /// Attach the ciphertext as the item's only part, <c>smime.p7m</c> typed
+        /// <c>application/pkcs7-mime</c>. Write-only: the attachment is never read.
+        /// </summary>
+        private static void AttachPayload(OutlookOM.MailItem mail, string payloadPath)
+        {
+            using (var attachments = new ComRef<OutlookOM.Attachments>(mail.Attachments))
+            using (var att = new ComRef<OutlookOM.Attachment>(attachments.Value.Add(payloadPath, OutlookOM.OlAttachmentType.olByValue)))
+            using (var pa = new ComRef<OutlookOM.PropertyAccessor>(att.Value.PropertyAccessor))
+                pa.Value.SetProperty(PR_ATTACH_MIME_TAG_W, "application/pkcs7-mime");
+        }
+
+        /// <summary>What a re-encrypted copy must show in its folder's contents table.</summary>
+        private sealed class CreatedCopy
+        {
+            public CreatedCopy(FolderNode folder, string messageId, string subject, long payloadLength)
+            {
+                Folder = folder;
+                MessageId = messageId;
+                Subject = subject;
+                PayloadLength = payloadLength;
+            }
+
+            public FolderNode Folder { get; }
+            public string MessageId { get; }
+            public string Subject { get; }
+            public long PayloadLength { get; }
+        }
+
+        private static string CopyKey(string storeId, string entryId) =>
+            (storeId ?? string.Empty).ToUpperInvariant() + "|" + (entryId ?? string.Empty).ToUpperInvariant();
+
+        private static string MessageIdOf(Envelope envelope)
+        {
+            int index = Array.IndexOf(EnvelopeTags, PR_INTERNET_MESSAGE_ID_W);
+            return index >= 0 ? envelope.Values[index] as string : null;
+        }
+
+        /// <summary>
+        /// Check the copy from its folder's contents table (stored class, attachment
+        /// flag, size), never by opening it. Logs the failing check at Warning.
+        /// </summary>
+        private static EncryptedCopyProblem CheckStoredCopy(OutlookOM.NameSpace session, CreatedCopy expected, string entryId)
+        {
+            MailItemProbes.StoredRow row;
+            using (var folder = new ComRef<OutlookOM.Folder>((OutlookOM.Folder)session.GetFolderFromID(
+                       expected.Folder.EntryId, expected.Folder.StoreId)))
+                row = MailItemProbes.ReadStoredRow(session, folder.Value, entryId, expected.MessageId, expected.Subject);
+
+            var problem = EncryptedCopyCheck.Evaluate(row != null, row?.MessageClass, row?.HasAttachment, row?.Size,
+                                                      expected.PayloadLength);
+            if (problem != EncryptedCopyProblem.None)
+                Log.Warning("Re-encryption: the stored copy failed its check: {Problem} (class {Class}, attachment {HasAttachment}, " +
+                            "size {Size}, payload {Payload} bytes, {EntryId}).",
+                            problem, row?.MessageClass ?? "(none)", row?.HasAttachment, row?.Size, expected.PayloadLength, entryId);
+            else
+                Log.Debug("Re-encryption: stored copy checked (size {Size}, payload {Payload} bytes, {EntryId}).",
+                          row.Size, expected.PayloadLength, entryId);
+            return problem;
         }
 
         private static Envelope ReadEnvelope(OutlookOM.NameSpace session, MailItemRef source)
@@ -701,35 +783,28 @@ namespace RBLclass.Outlook.Adapter
             }
         }
 
-        private bool PayloadMatches(OutlookOM.MailItem mail, byte[] payload)
-        {
-            using (var attachments = new ComRef<OutlookOM.Attachments>(mail.Attachments))
-            {
-                if (Safe(() => attachments.Value.Count, 0) != 1) return false;
-                using (var att = new ComRef<OutlookOM.Attachment>(attachments.Value[1]))
-                {
-                    if (!ProtectedMailPolicy.IsSmimePayloadName(Safe(() => att.Value.FileName, null))) return false;
-                    byte[] stored = ReadAttachmentBytes(att.Value);
-                    return stored != null && stored.SequenceEqual(payload);
-                }
-            }
-        }
-
-        private static void DeleteStub(OutlookOM.NameSpace session, string entryId, string storeId)
+        /// <summary>
+        /// Hard-delete an incomplete copy at store level (<c>IMAPIFolder::DeleteMessages</c>,
+        /// v2.14.0.1), never through the object model: <c>MailItem.Delete</c> moves
+        /// the item to Deleted Items and writes whatever state Outlook holds in memory,
+        /// decrypted included (#62). Nothing is opened.
+        /// </summary>
+        private static void DeleteStub(OutlookOM.NameSpace session, FolderNode destination, string entryId)
         {
             try
             {
-                using (var comItem = new ComRef<object>(session.GetItemFromID(entryId, storeId)))
+                using (var folder = new ComRef<OutlookOM.Folder>((OutlookOM.Folder)session.GetFolderFromID(
+                           destination.EntryId, destination.StoreId)))
                 {
-                    var mail = comItem.Value as OutlookOM.MailItem;
-                    var post = comItem.Value as OutlookOM.PostItem;
-                    if (mail != null) mail.Delete();
-                    else post?.Delete();
+                    if (MapiMessageMover.TryDelete(folder.Value, entryId))
+                        Log.Information("Re-encryption: the incomplete copy was deleted at store level ({EntryId}).", entryId);
+                    else
+                        Log.Warning("Re-encryption: deleting the incomplete copy failed ({EntryId}).", entryId);
                 }
             }
             catch (Exception ex)
             {
-                Log.Warning(ex, "Re-encryption: deleting an incomplete copy failed ({EntryId}).", entryId);
+                Log.Warning(ex, "Re-encryption: deleting the incomplete copy failed ({EntryId}).", entryId);
             }
         }
 
@@ -738,17 +813,19 @@ namespace RBLclass.Outlook.Adapter
             if (copy == null) return false;
             try
             {
-                using (var session = new ComRef<OutlookOM.NameSpace>(_app.Session))
-                using (var comItem = new ComRef<object>(session.Value.GetItemFromID(copy.EntryId, copy.StoreId)))
+                // Only a copy this instance created can be checked: the table check
+                // needs its folder and message id, and the copy is never opened.
+                string key = CopyKey(copy.StoreId, copy.EntryId);
+                CreatedCopy expected;
+                if (!_createdCopies.TryGetValue(key, out expected))
                 {
-                    var mail = comItem.Value as OutlookOM.MailItem;
-                    if (mail == null) return false;
-                    // The folder's table row only: never the body or attachments.
-                    string stored = MailItemProbes.ReadStoredProtectedClass(mail);
-                    bool ok = stored != null && stored.StartsWith("IPM.Note.SMIME", StringComparison.OrdinalIgnoreCase);
-                    if (!ok) Log.Warning("Re-encryption: the copy is not stored as S/MIME ({EntryId}).", copy.EntryId);
-                    return ok;
+                    Log.Warning("Re-encryption: the copy to verify is unknown ({EntryId}).", copy.EntryId);
+                    return false;
                 }
+                _createdCopies.Remove(key);
+
+                using (var session = new ComRef<OutlookOM.NameSpace>(_app.Session))
+                    return CheckStoredCopy(session.Value, expected, copy.EntryId) == EncryptedCopyProblem.None;
             }
             catch (Exception ex)
             {

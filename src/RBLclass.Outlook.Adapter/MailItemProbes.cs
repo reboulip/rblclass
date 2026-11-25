@@ -17,6 +17,8 @@ namespace RBLclass.Outlook.Adapter
         internal const string PR_MESSAGE_CLASS_W = "http://schemas.microsoft.com/mapi/proptag/0x001A001F";
         internal const string PR_INTERNET_MESSAGE_ID_W = "http://schemas.microsoft.com/mapi/proptag/0x1035001F";
         internal const string DaslSubject = "urn:schemas:httpmail:subject";
+        private const string PR_HASATTACH = "http://schemas.microsoft.com/mapi/proptag/0x0E1B000B";
+        private const string PR_MESSAGE_SIZE = "http://schemas.microsoft.com/mapi/proptag/0x0E080003";
 
         /// <summary>
         /// True when the attachment is inline/embedded (a cid:-linked body image,
@@ -184,16 +186,80 @@ namespace RBLclass.Outlook.Adapter
         /// </summary>
         internal static string ProtectedRowFilter(string messageId, string subject)
         {
-            string narrowing;
-            if (!string.IsNullOrWhiteSpace(messageId))
-                narrowing = "\"" + PR_INTERNET_MESSAGE_ID_W + "\" = '" + DaslLiteral(messageId) + "'";
-            else if (!string.IsNullOrEmpty(subject))
-                narrowing = "\"" + DaslSubject + "\" = '" + DaslLiteral(subject) + "'";
-            else
-                return null;
+            string narrowing = RowNarrowing(messageId, subject);
+            if (narrowing == null) return null;
 
             return "@SQL=(\"" + PR_MESSAGE_CLASS_W + "\" LIKE 'IPM.Note.SMIME%' OR \""
                  + PR_MESSAGE_CLASS_W + "\" LIKE 'IPM.Note.Secure%') AND " + narrowing;
+        }
+
+        /// <summary>DASL condition on the message id, else on the subject. Null when there is neither.</summary>
+        private static string RowNarrowing(string messageId, string subject)
+        {
+            if (!string.IsNullOrWhiteSpace(messageId))
+                return "\"" + PR_INTERNET_MESSAGE_ID_W + "\" = '" + DaslLiteral(messageId) + "'";
+            if (!string.IsNullOrEmpty(subject))
+                return "\"" + DaslSubject + "\" = '" + DaslLiteral(subject) + "'";
+            return null;
+        }
+
+        /// <summary>What a folder's contents table shows for one stored message.</summary>
+        internal sealed class StoredRow
+        {
+            public string MessageClass;
+            public bool? HasAttachment;   // PR_HASATTACH, null when unreadable
+            public long? Size;            // PR_MESSAGE_SIZE, null when unreadable
+        }
+
+        /// <summary>
+        /// The stored class, attachment flag and size of message <paramref name="entryId"/>
+        /// in <paramref name="folder"/>, read from the contents table narrowed on the
+        /// message id (else the subject), any class (v2.14.0.1). No item is opened, so
+        /// an add-in that decrypts opened items is not triggered. Null when the row is
+        /// not found, there is no key to narrow on, or the table cannot be read.
+        /// </summary>
+        internal static StoredRow ReadStoredRow(OutlookOM.NameSpace session, OutlookOM.Folder folder,
+                                                string entryId, string messageId, string subject)
+        {
+            string narrowing = RowNarrowing(messageId, subject);
+            if (narrowing == null || folder == null || string.IsNullOrEmpty(entryId)) return null;
+            try
+            {
+                using (var table = new ComRef<OutlookOM.Table>(folder.GetTable("@SQL=" + narrowing, OutlookOM.OlTableContents.olUserItems)))
+                {
+                    using (var columns = new ComRef<OutlookOM.Columns>(table.Value.Columns))
+                    {
+                        using (new ComRef<OutlookOM.Column>(columns.Value.Add(PR_HASATTACH))) { }
+                        using (new ComRef<OutlookOM.Column>(columns.Value.Add(PR_MESSAGE_SIZE))) { }
+                    }
+
+                    // Narrowed to one message id or subject: a handful of rows.
+                    for (int guard = 0; guard < 200 && !table.Value.EndOfTable; guard++)
+                    {
+                        using (var row = new ComRef<OutlookOM.Row>(table.Value.GetNextRow()))
+                        {
+                            string rowId = Safe(() => row.Value["EntryID"] as string, null);
+                            if (rowId == null) continue;
+                            bool same = string.Equals(rowId, entryId, StringComparison.OrdinalIgnoreCase)
+                                     || (session != null && Safe(() => session.CompareEntryIDs(rowId, entryId), false));
+                            if (!same) continue;
+
+                            return new StoredRow
+                            {
+                                MessageClass = Safe(() => row.Value["MessageClass"] as string, null),
+                                HasAttachment = Safe(() => (bool?)Convert.ToBoolean(row.Value[PR_HASATTACH]), null),
+                                Size = Safe(() => (long?)Convert.ToInt64(row.Value[PR_MESSAGE_SIZE]), null),
+                            };
+                        }
+                    }
+                }
+                return null;
+            }
+            catch (Exception ex)
+            {
+                Log.Debug(ex, "Stored row lookup failed for {EntryId}.", entryId);
+                return null;
+            }
         }
 
         /// <summary>

@@ -853,6 +853,56 @@ experimental, off-by-default feature and fixes what the target exposed.
       - shipped, pending tests (not verifiable on the dev machine per the
       testing strategy above; re-verify the real-target case above)
 
+- [ ] **B4.** Create the re-encrypted copy without ever reading its payload
+      back (2.14.0.1, beta2; requires: B3). **Target result of 2026-11-24
+      (beta1):** five re-encrypted filings with "remove attachments" all
+      stopped at `Re-encryption step payload-check`, ~0.95 s later logged
+      `the stored payload does not match`, fell back (`CopyFailed`) and filed
+      the original at store level: its `smime.p7m` was byte-identical to the
+      source, so the attachment stayed, while the "Save to" files (written
+      before the build) were on disk. No freeze. Probable cause: the check
+      re-opened the `IPM.Note` stub that carried the ciphertext and read its
+      `smime.p7m` through the object model, and Stormshield decrypted it in
+      memory (the second spent each time matches a smart-card operation). The
+      failed stub was then removed with `MailItem.Delete`, an object-model
+      move to the PST's Deleted Items that can write the in-memory decrypted
+      state (#62).
+      **Change** in `OutlookMailRebuilder.CreateEncryptedCopy`:
+      1. `CreateStub` (PostItem stage) no longer attaches anything: subject
+         and delivery time, save, class `IPM.Note`, save.
+      2. Re-open as `MailItem`, add the recipients and envelope, save; then
+         `AttachPayload` (the ciphertext as `smime.p7m`,
+         `application/pkcs7-mime`), class `IPM.Note.SMIME`, save. The item is
+         never re-opened while it carries the payload and the payload is
+         never read. Breadcrumbs: `stub`, `reopen`, `envelope`, `attach`,
+         `class-switch`, `saved`, `stored-check`.
+      3. `stored-check` replaces `payload-check`: the destination's contents
+         table (narrowed on the copied Message-ID, else the subject, any
+         class; `MailItemProbes.ReadStoredRow`) must show the copy's row with
+         class exactly `IPM.Note.SMIME`, `PR_HASATTACH` true and
+         `PR_MESSAGE_SIZE` at least the payload length. The rule is
+         `EncryptedCopyCheck.Evaluate` in Core (`EncryptedCopyCheckTests`);
+         an unreadable column is not a failure. A failure logs `Warning` with
+         the failing check, class, flag, size and payload length.
+      4. An incomplete copy is hard-deleted at store level
+         (`MapiMessageMover.TryDelete`, `IMAPIFolder::DeleteMessages`), never
+         with `MailItem.Delete`, after the add-in's reference is released.
+      5. `VerifyEncryptedCopy` runs the same table check for a copy this
+         instance created (session map of folder, Message-ID, subject and
+         payload length) and no longer opens the copy.
+      **Verified on the dev machine (2026-11-25, self-signed certificate,
+      Stormshield simulation, "remove attachments" with two attachments):**
+      every step logged through `stored-check` (stored size 10914 B for a
+      972 B payload), `1 destination(s), 0 part(s)`; the copy is stored
+      `IPM.Note.SMIME` with an attachment and opens decrypted with its body
+      and sender and no attachment; the original went to Deleted Items at
+      store level, still `IPM.Note.SMIME`. - shipped, pending tests (not
+      verifiable on the dev machine per the testing strategy above; on the
+      target, card inserted, "remove attachments" with "Save to": the filed
+      copy opens decrypted without its attachments, the log shows
+      `stored-check` then `Re-encrypted filing: 1 destination(s)`, and no
+      stub is left in the PST's Deleted Items)
+
 ---
 
 ## Phase 8 — Continuous maintenance (ongoing)
