@@ -22,8 +22,8 @@ using System.Runtime.InteropServices;
 // version: the MSI replaces a DLL only when its file version changes, so a
 // DLL left on an old version keeps its previous build on upgrade
 // (VersionParityTests fails `dotnet test` on a mismatch).
-[assembly: AssemblyVersion("2.14.0.1")]
-[assembly: AssemblyFileVersion("2.14.0.1")]
+[assembly: AssemblyVersion("2.14.0.2")]
+[assembly: AssemblyFileVersion("2.14.0.2")]
 
 // The add-in class opts into COM visibility explicitly with [ComVisible(true)];
 // nothing else in the assembly should be exposed.

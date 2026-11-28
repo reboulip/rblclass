@@ -15,9 +15,9 @@
          release.config.json. The MSI replaces a DLL only when its file
          version changes, so a stale version here ships the previous build
          of this DLL on upgrade. VersionParityTests enforces the match. -->
-    <Version>2.14.0.1</Version>
-    <AssemblyVersion>2.14.0.1</AssemblyVersion>
-    <FileVersion>2.14.0.1</FileVersion>
+    <Version>2.14.0.2</Version>
+    <AssemblyVersion>2.14.0.2</AssemblyVersion>
+    <FileVersion>2.14.0.2</FileVersion>
     <Product>RBLclass</Product>
     <Company>RBLclass</Company>
   </PropertyGroup>
