@@ -31,6 +31,15 @@ bitness, on the real 32-bit target):
     registration. Target workstations need a **reinstall** (re-run the install
     kit or MSI) to pick up a new version.
 
+!!! note "One version for every RBLclass assembly"
+    At each sprint-start version stamp, the product version is set in
+    `AssemblyInfo.cs` (add-in), in the `RBLclass.Core` and
+    `RBLclass.Outlook.Adapter` csproj files, and in `release.config.json`.
+    Windows Installer replaces an installed versioned DLL only when its file
+    version changes, so a Core or Adapter left on an old version would be kept
+    by an MSI upgrade and the target would run a mix of builds.
+    `VersionParityTests` fails `dotnet test` if they drift apart.
+
 ## Packaging
 
 The full build → stage → verify → package workflow lives in the manually-invoked
@@ -47,7 +56,9 @@ effects:
 A release **must** verify that both SQLite native bitnesses
 (`runtimes\win-x86\native\` **and** `runtimes\win-x64\native\`) land in the
 output — the single AnyCPU artifact has to load into both 32-bit and 64-bit
-Outlook.
+Outlook. It also refuses to package when any `RBLclass.*.dll` in the payload
+(add-in, Core, Adapter, fr/de satellite resources) has a file or assembly version
+other than the release version.
 
 ### Signing
 

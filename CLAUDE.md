@@ -429,10 +429,17 @@ the generic defaults wherever the two disagree.
 
 Before branching, confirm the target version with the user, then update
 `AssemblyVersion` and `AssemblyFileVersion` in
-`src/RBLclass.AddIn/Properties/AssemblyInfo.cs` and `AssemblyVersion` in
-`.claude/skills/make-release/release.config.json`, and commit `Bump version to
-<version>`. A changed `AssemblyVersion` changes the COM strong name, so target
-workstations need a reinstall: remind the user. Skip this on a resumed sprint.
+`src/RBLclass.AddIn/Properties/AssemblyInfo.cs`, `Version`, `AssemblyVersion`
+and `FileVersion` in `src/RBLclass.Core/RBLclass.Core.csproj` and
+`src/RBLclass.Outlook.Adapter/RBLclass.Outlook.Adapter.csproj`, and
+`AssemblyVersion` in `.claude/skills/make-release/release.config.json`, and
+commit `Bump version to <version>`. Every RBLclass DLL carries the product
+version because the MSI replaces an installed DLL only when its file version
+changes: a DLL left on an old version keeps its previous build on upgrade.
+`VersionParityTests` fails `dotnet test` and `/make-release` refuses to
+package on a mismatch. A changed `AssemblyVersion` changes the COM strong name,
+so target workstations need a reinstall: remind the user. Skip this on a
+resumed sprint.
 
 ### Per-wave gate, between the green tests and the wave commit
 

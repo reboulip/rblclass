@@ -21,7 +21,9 @@
          the Install/Uninstall scripts + release.config.json alongside.
       5. Verifies the main DLL and BOTH x86 and x64 native SQLite payloads
          are present (target is 32-bit Outlook, but the same artifact must
-         keep working on 64-bit dev Outlook too).
+         keep working on 64-bit dev Outlook too), and that every
+         RBLclass.*.dll carries the release version (the MSI keeps an
+         installed DLL whose file version is unchanged).
       6. Zips the staging folder (AES-256 encrypted by default via 7-Zip;
          most corporate mail filters refuse unencrypted zips of .dll/.ps1).
       7. Builds the per-user MSI from the SAME Release output via
@@ -211,7 +213,7 @@ Set-Content -Path (Join-Path $StageRoot "README.txt") -Value $readme -Encoding u
 # Step 4: Sanity-check payloads
 # ----------------------------------------------------------------------
 
-Write-Host "[4/6] verify      : main DLL + native SQLite payloads"
+Write-Host "[4/6] verify      : main DLL + native SQLite payloads + RBLclass versions"
 if (-not (Test-Path (Join-Path $payloadDir $config.MainDll))) {
     throw "Payload is missing $($config.MainDll) - aborting."
 }
@@ -228,6 +230,28 @@ foreach ($rel in $config.NativePayloads) {
 }
 if ($missing) {
     throw "One or more native SQLite payloads are missing. The kit would fail at SQLite load on the target; aborting before zip."
+}
+
+# Every RBLclass assembly (add-in, Core, Adapter, satellite resources) must
+# carry the release version. The MSI replaces a DLL only when its file
+# version changes: a DLL left on an old version keeps its previous build on
+# upgrade (the 2.14.0.1 beta shipped Core/Adapter as 2.4.0.0 and the target
+# kept the beta1 Adapter).
+$stale       = @()
+$payloadFull = (Resolve-Path $payloadDir).Path
+foreach ($dll in Get-ChildItem $payloadFull -Recurse -Filter "RBLclass.*.dll") {
+    $rel        = $dll.FullName.Substring($payloadFull.Length).TrimStart('\')
+    $fileVer    = $dll.VersionInfo.FileVersion
+    $asmVer     = [Reflection.AssemblyName]::GetAssemblyName($dll.FullName).Version.ToString()
+    if ($fileVer -eq $config.AssemblyVersion -and $asmVer -eq $config.AssemblyVersion) {
+        Write-Host "  OK      $rel $fileVer"
+    } else {
+        Write-Warning "  VERSION $rel file=$fileVer assembly=$asmVer (expected $($config.AssemblyVersion))"
+        $stale += $rel
+    }
+}
+if ($stale.Count -gt 0) {
+    throw "RBLclass assemblies do not carry the release version $($config.AssemblyVersion): $($stale -join ', '). Give RBLclass.Core.csproj and RBLclass.Outlook.Adapter.csproj the version in AssemblyInfo.cs (VersionParityTests); aborting before zip."
 }
 
 # ----------------------------------------------------------------------

@@ -17,6 +17,11 @@ using System.Runtime.InteropServices;
 // diagnostics. Windows Installer ignores the 4th version field, so the bump
 // to the third field is what the MSI's MajorUpgrade sees as newer and
 // auto-removes the previous version.
+//
+// RBLclass.Core.csproj and RBLclass.Outlook.Adapter.csproj carry the same
+// version: the MSI replaces a DLL only when its file version changes, so a
+// DLL left on an old version keeps its previous build on upgrade
+// (VersionParityTests fails `dotnet test` on a mismatch).
 [assembly: AssemblyVersion("2.14.0.1")]
 [assembly: AssemblyFileVersion("2.14.0.1")]
 

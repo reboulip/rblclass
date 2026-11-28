@@ -84,6 +84,9 @@ MSBuild → refresh PATH → `Rebuild` the solution (`Release|AnyCPU`) → stage
 the add-in output under `payload\` with the install/uninstall scripts and
 config → verify the main DLL **and both** `win-x86` + `win-x64` native
 `e_sqlite3.dll` are present (aborts before zipping if any is missing) →
+verify every `RBLclass.*.dll` (add-in, Core, Adapter, satellite resources)
+carries the release version, since the MSI keeps an installed DLL whose
+file version is unchanged (aborts before zipping otherwise) →
 zip → **build the MSI** via `installer\Build-Installer.ps1
 -Configuration <Configuration>` from that same verified Release output.
 

@@ -24,8 +24,10 @@
          runtimes\) into the output so the installer can lay them down next
          to the add-in DLL. -->
     <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
-    <!-- We hand-author AssemblyInfo.cs so AssemblyVersion is pinned to
-         2.4.0.0 to match release.config.json's COM registration identity. -->
+    <!-- We hand-author AssemblyInfo.cs so AssemblyVersion is pinned to the
+         product version in release.config.json's COM registration identity.
+         RBLclass.Core and RBLclass.Outlook.Adapter carry the same version
+         (VersionParityTests). -->
     <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
   </PropertyGroup>
 

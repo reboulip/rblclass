@@ -903,6 +903,38 @@ experimental, off-by-default feature and fixes what the target exposed.
       `stored-check` then `Re-encrypted filing: 1 destination(s)`, and no
       stub is left in the PST's Deleted Items)
 
+### C — Packaging
+
+- [x] **C1.** Every RBLclass DLL carries the product version (2.14.0.2,
+      beta3). **Target result of 2026-11-27 (beta2):** the add-in started as
+      `version 2.14.0.1` but logged `Re-encryption step payload-check` and
+      `the stored payload does not match`, which exist only in the code
+      before B4. The published beta2 kit and MSI both contain B4, so B4
+      never ran there. `RBLclass.Core` and `RBLclass.Outlook.Adapter` had
+      been pinned at 2.4.0.0 since v2.4.0.0, so beta1 and beta2 shipped them
+      with the same file version, and the MSI kept the installed beta1 copies
+      while it replaced the add-in shell (2.14.0.0 → 2.14.0.1). The kit is
+      not affected: it deletes `AddIn\` before copying.
+      **Change:**
+      1. `RBLclass.Core.csproj` and `RBLclass.Outlook.Adapter.csproj` set
+         `Version`, `AssemblyVersion` and `FileVersion` to the product
+         version, bumped with `AssemblyInfo.cs` and `release.config.json`
+         (CLAUDE.md "Sprint start: version stamp").
+      2. `VersionParityTests` (Core.Tests) fails when `AssemblyInfo.cs`, either
+         csproj or the built Core assembly differs from
+         `release.config.json`'s `AssemblyVersion`.
+      3. `Stage-ProductRelease.ps1` step 4 refuses to package when any
+         `RBLclass.*.dll` in the payload (satellites included) has a file or
+         assembly version other than the release version. Run against the
+         beta2 payload, it rejects Core and Adapter.
+      4. The startup line logs `core {CoreVersion}, adapter {AdapterVersion}`
+         and a `Warning` when they differ from the add-in version.
+      **Verified on the dev machine (2026-11-28):** the build output carries
+      2.14.0.1 on all five RBLclass DLLs, and the startup line reads
+      `version 2.14.0.1, 64-bit process=true, core 2.14.0.1, adapter
+      2.14.0.1`. On the target, check the startup line after installing
+      beta3 over beta2 with the MSI: core and adapter must read 2.14.0.2.
+
 ---
 
 ## Phase 8 — Continuous maintenance (ongoing)

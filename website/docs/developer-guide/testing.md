@@ -40,6 +40,13 @@ if a ribbon label/screentip/supertip is missing from any of the three
 `Ribbon*.xml` variants. Localization is therefore enforced mechanically, not by
 review.
 
+### Version parity is a test
+
+`VersionParityTests` (in `RBLclass.Core.Tests`) fails `dotnet test`, and so CI,
+if `AssemblyInfo.cs`, either the Core or Adapter csproj, or the built Core
+assembly carries a version different from `AssemblyVersion` in
+`release.config.json`.
+
 ## What is validated by hand
 
 The **Outlook adapter** and the **add-in shell** need a live Outlook session and

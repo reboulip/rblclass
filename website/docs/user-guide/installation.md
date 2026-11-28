@@ -123,7 +123,10 @@ delete that folder by hand after uninstalling.
 
 The installer log is separate from the runtime log in
 `%LocalAppData%\RBLclass\logs\`, which records what the add-in does once Outlook
-is running.
+is running. Its startup line lists the add-in, core and adapter versions. If it
+is followed by a warning that the RBLclass assemblies come from different builds,
+do a clean reinstall: uninstall, delete only `%LocalAppData%\RBLclass\AddIn`, then
+install again.
 
 ## Reporting a problem
 

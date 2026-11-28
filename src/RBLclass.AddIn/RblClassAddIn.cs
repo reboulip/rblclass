@@ -177,9 +177,21 @@ namespace RBLclass.AddIn
                 InitializeLogging(startupSettings.DiagnosticLogging);
 
                 var version = Assembly.GetExecutingAssembly().GetName().Version;
+                var coreVersion = typeof(ProductInfo).Assembly.GetName().Version;
+                var adapterVersion = typeof(OutlookMailStore).Assembly.GetName().Version;
                 Log.Information(
-                    "RBLclass add-in starting (version {Version}, 64-bit process={Is64}).",
-                    version, Environment.Is64BitProcess);
+                    "RBLclass add-in starting (version {Version}, 64-bit process={Is64}, core {CoreVersion}, adapter {AdapterVersion}).",
+                    version, Environment.Is64BitProcess, coreVersion, adapterVersion);
+                if (coreVersion != version || adapterVersion != version)
+                {
+                    // An upgrade kept an older RBLclass DLL next to the new
+                    // add-in shell (the MSI does not replace a DLL whose file
+                    // version is unchanged).
+                    Log.Warning(
+                        "RBLclass assemblies come from different builds (add-in {Version}, core {CoreVersion}, adapter {AdapterVersion}). " +
+                        "Uninstall, delete the AddIn folder and reinstall.",
+                        version, coreVersion, adapterVersion);
+                }
 
                 _repository = new SqliteFolderRepository(connectionString);
                 _mailStore = new OutlookMailStore(_outlookApp);
